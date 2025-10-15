@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, FileText, Clock, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { toSentenceCase } from "@/lib/text";
 
 interface Plan {
   id: string;
@@ -104,25 +105,25 @@ const Plans = () => {
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">I Tuoi Piani</h1>
-        <p className="text-muted-foreground">Crea, modifica e gestisci i tuoi piani di allenamento</p>
+        <h1 className="text-4xl font-bold mb-2">{toSentenceCase("I tuoi piani")}</h1>
+        <p className="text-muted-foreground">{toSentenceCase("Crea, modifica e gestisci i tuoi piani di allenamento")}</p>
       </div>
 
       <Tabs defaultValue="my-plans" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="my-plans">I Miei Piani</TabsTrigger>
-          <TabsTrigger value="templates">Template</TabsTrigger>
+          <TabsTrigger value="my-plans">{toSentenceCase("I miei piani")}</TabsTrigger>
+          <TabsTrigger value="templates">{toSentenceCase("Template")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="my-plans" className="space-y-4">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-semibold">I Miei Piani</h2>
-              <p className="text-sm text-muted-foreground">Gestisci i tuoi piani personalizzati</p>
+              <h2 className="text-2xl font-semibold">{toSentenceCase("I miei piani")}</h2>
+              <p className="text-sm text-muted-foreground">{toSentenceCase("Gestisci i tuoi piani personalizzati")}</p>
             </div>
             <Button onClick={createNewPlan} className="gap-2">
               <Plus className="h-4 w-4" />
-              Nuovo Piano
+              {toSentenceCase("Nuovo piano")}
             </Button>
           </div>
 
@@ -133,11 +134,11 @@ const Plans = () => {
           ) : myPlans.length === 0 ? (
             <Card className="p-12 text-center">
               <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">Nessun piano ancora</h3>
-              <p className="text-muted-foreground mb-6">Inizia creando il tuo primo piano di allenamento</p>
+              <h3 className="text-xl font-semibold mb-2">{toSentenceCase("Nessun piano ancora")}</h3>
+              <p className="text-muted-foreground mb-6">{toSentenceCase("Inizia creando il tuo primo piano di allenamento")}</p>
               <Button onClick={createNewPlan} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Crea il Tuo Primo Piano
+                {toSentenceCase("Crea il tuo primo piano")}
               </Button>
             </Card>
           ) : (
@@ -169,8 +170,8 @@ const Plans = () => {
 
         <TabsContent value="templates" className="space-y-4">
           <div>
-            <h2 className="text-2xl font-semibold mb-2">Template</h2>
-            <p className="text-sm text-muted-foreground">Inizia da un template predefinito</p>
+            <h2 className="text-2xl font-semibold mb-2">{toSentenceCase("Template")}</h2>
+            <p className="text-sm text-muted-foreground">{toSentenceCase("Inizia da un template predefinito")}</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -189,7 +190,7 @@ const Plans = () => {
                     {template.duration_weeks} settimane
                   </div>
                   <Button onClick={() => createFromTemplate(template)} className="w-full">
-                    Usa Template
+                    {toSentenceCase("Usa template")}
                   </Button>
                 </CardContent>
               </Card>

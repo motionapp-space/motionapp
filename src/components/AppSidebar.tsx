@@ -2,6 +2,7 @@ import { FileText, Settings, LogOut } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { toSentenceCase } from "@/lib/text";
 import {
   Sidebar,
   SidebarContent,
@@ -17,7 +18,6 @@ import {
 
 const menuItems = [
   { title: "Piani", url: "/plans", icon: FileText },
-  { title: "Impostazioni", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -32,8 +32,8 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarContent>
+    <Sidebar collapsible="icon" className="border-r border-border flex flex-col h-full">
+      <SidebarContent className="flex flex-col h-full">
         <SidebarGroup>
           <div className="flex items-center justify-between px-4 py-6">
             {!collapsed && (
@@ -42,7 +42,7 @@ export function AppSidebar() {
             <SidebarTrigger className="ml-auto" />
           </div>
 
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>{toSentenceCase("Menu")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -52,12 +52,18 @@ export function AppSidebar() {
                       to={item.url}
                       className={({ isActive }) =>
                         isActive
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "hover:bg-muted/50"
+                          ? "bg-primary/10 text-primary font-semibold border-l-4 border-primary"
+                          : "text-muted-foreground hover:bg-muted/40"
                       }
+                      aria-current={undefined}
                     >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {({ isActive }) => (
+                        <>
+                          <item.icon className="h-4 w-4" />
+                          {!collapsed && <span>{toSentenceCase(item.title)}</span>}
+                          {isActive && <span className="sr-only">(current page)</span>}
+                        </>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -66,13 +72,46 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup className="mt-auto">
+        {/* Spacer to push settings and logout to bottom */}
+        <div className="flex-1" />
+
+        {/* Settings section at bottom */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink
+                    to="/settings"
+                    className={({ isActive }) =>
+                      isActive
+                        ? "bg-primary/10 text-primary font-semibold border-l-4 border-primary"
+                        : "text-muted-foreground hover:bg-muted/40"
+                    }
+                    aria-current={undefined}
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Settings className="h-4 w-4" />
+                        {!collapsed && <span>{toSentenceCase("Impostazioni")}</span>}
+                        {isActive && <span className="sr-only">(current page)</span>}
+                      </>
+                    )}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Logout section */}
+        <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={handleLogout}>
                   <LogOut className="h-4 w-4" />
-                  {!collapsed && <span>Esci</span>}
+                  {!collapsed && <span>{toSentenceCase("Esci")}</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
