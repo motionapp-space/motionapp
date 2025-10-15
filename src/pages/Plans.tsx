@@ -174,9 +174,9 @@ const Plans = () => {
             <p className="text-sm text-muted-foreground">{toSentenceCase("Inizia da un template predefinito")}</p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 items-stretch">
             {TEMPLATES.map((template, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
+              <Card key={index} className="h-full flex flex-col hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle>{template.name}</CardTitle>
                   <CardDescription className="flex items-center gap-2">
@@ -184,14 +184,16 @@ const Plans = () => {
                     {template.goal}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CardContent className="flex flex-col flex-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                     <Clock className="h-4 w-4" />
                     {template.duration_weeks} settimane
                   </div>
-                  <Button onClick={() => createFromTemplate(template)} className="w-full">
-                    {toSentenceCase("Usa template")}
-                  </Button>
+                  <div className="mt-auto">
+                    <Button onClick={() => createFromTemplate(template)} className="w-full h-12">
+                      {toSentenceCase("Usa template")}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
