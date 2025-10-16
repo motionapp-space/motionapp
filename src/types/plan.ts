@@ -10,6 +10,7 @@ export interface Exercise {
   load?: string;
   rest?: string;
   notes?: string;
+  goal?: string;
   order: number;
 }
 
@@ -22,6 +23,7 @@ export interface Phase {
 export interface Day {
   id: ID;
   title: string;
+  focusMuscle?: string;
   phases: Phase[];
   order: number;
 }
