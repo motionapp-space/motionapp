@@ -2,18 +2,6 @@ import { Phase, Exercise } from "@/types/plan";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { ExerciseRowCompact } from "./ExerciseRowCompact";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { useState } from "react";
 
 interface PhaseSectionCompactProps {
   phase: Phase;
@@ -36,8 +24,6 @@ export const PhaseSectionCompact = ({
   onDuplicateExercise,
   onDeleteExercise,
 }: PhaseSectionCompactProps) => {
-  const [deleteExerciseId, setDeleteExerciseId] = useState<string | null>(null);
-  
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -82,37 +68,13 @@ export const PhaseSectionCompact = ({
           {phase.exercises
             .sort((a, b) => a.order - b.order)
             .map((exercise) => (
-              <AlertDialog key={exercise.id}>
-                <ExerciseRowCompact
-                  exercise={exercise}
-                  onUpdate={(patch) => onUpdateExercise(exercise.id, patch)}
-                  onDuplicate={() => onDuplicateExercise(exercise.id)}
-                  onDelete={() => setDeleteExerciseId(exercise.id)}
-                />
-                {deleteExerciseId === exercise.id && (
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Eliminare questo esercizio?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Questa azione non può essere annullata.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel onClick={() => setDeleteExerciseId(null)}>
-                        Annulla
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          onDeleteExercise(exercise.id);
-                          setDeleteExerciseId(null);
-                        }}
-                      >
-                        Elimina
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                )}
-              </AlertDialog>
+              <ExerciseRowCompact
+                key={exercise.id}
+                exercise={exercise}
+                onUpdate={(patch) => onUpdateExercise(exercise.id, patch)}
+                onDuplicate={() => onDuplicateExercise(exercise.id)}
+                onDelete={() => onDeleteExercise(exercise.id)}
+              />
             ))}
         </div>
       )}
