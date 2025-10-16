@@ -262,4 +262,9 @@ All colors MUST be HSL.
     background: var(--background, #fff);
     padding: var(--space-16);
   }
+
+  /* Prevent text transformation on user-entered content */
+  .preserve-case {
+    text-transform: none !important;
+  }
 }

@@ -226,7 +226,7 @@ const Plans = () => {
               {myPlans.map((plan) => (
                 <Card key={plan.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/plans/${plan.id}/edit`)}>
                   <CardHeader>
-                    <CardTitle className="line-clamp-1">{plan.name}</CardTitle>
+                    <CardTitle className="line-clamp-1 preserve-case" style={{ textTransform: 'none' }}>{plan.name}</CardTitle>
                     {plan.goal && (
                       <CardDescription className="flex items-center gap-2">
                         <Target className="h-4 w-4" />

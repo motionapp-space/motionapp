@@ -96,7 +96,7 @@ const PlanEditor = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-h4 font-semibold truncate">
+            <h1 className="text-h4 font-semibold truncate preserve-case" style={{ textTransform: 'none' }}>
               {plan.name || toSentenceCase("Nuovo piano")}
             </h1>
           </div>
@@ -145,7 +145,8 @@ const PlanEditor = () => {
                 value={plan.name}
                 onChange={(e) => setPlanName(e.target.value)}
                 placeholder={toSentenceCase("Inserisci nome")}
-                className="h-11"
+                className="h-11 preserve-case"
+                style={{ textTransform: 'none' }}
               />
             </div>
             <div className="space-y-2">
