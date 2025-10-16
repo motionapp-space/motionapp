@@ -3,10 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, FileText, Clock, Target } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Plus, FileText, Clock, Target, Copy, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { toSentenceCase } from "@/lib/text";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 
 interface Plan {
   id: string;
@@ -16,6 +19,7 @@ interface Plan {
   is_template: boolean;
   created_at: string;
   updated_at: string;
+  content_json?: any;
 }
 
 const TEMPLATES = [
@@ -29,6 +33,8 @@ const Plans = () => {
   const navigate = useNavigate();
   const [myPlans, setMyPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     loadPlans();
@@ -102,6 +108,67 @@ const Plans = () => {
     }
   };
 
+  const duplicatePlan = async (plan: Plan, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { data: coach } = await supabase.auth.getUser();
+      if (!coach.user) return;
+
+      const { data, error } = await supabase
+        .from("plans")
+        .insert({
+          coach_id: coach.user.id,
+          name: `${plan.name}_copia`,
+          goal: plan.goal,
+          duration_weeks: plan.duration_weeks,
+          is_template: false,
+          content_json: plan.content_json || { weeks: [] },
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      toast.success("Piano duplicato correttamente");
+      await loadPlans();
+    } catch (error: any) {
+      toast.error("Errore nella duplicazione del piano");
+    }
+  };
+
+  const handleDeleteClick = (planId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPlanToDelete(planId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!planToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from("plans")
+        .delete()
+        .eq("id", planToDelete);
+
+      if (error) throw error;
+      toast.success("Piano eliminato con successo");
+      await loadPlans();
+    } catch (error: any) {
+      toast.error("Errore nell'eliminazione del piano");
+    } finally {
+      setDeleteDialogOpen(false);
+      setPlanToDelete(null);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd/MM/yyyy", { locale: it });
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-8">
@@ -154,13 +221,37 @@ const Plans = () => {
                       </CardDescription>
                     )}
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-3">
                     {plan.duration_weeks && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         {plan.duration_weeks} settimane
                       </div>
                     )}
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      <div>{toSentenceCase("creato il")}: {formatDate(plan.created_at)}</div>
+                      <div>{toSentenceCase("ultima modifica")}: {formatDate(plan.updated_at)}</div>
+                    </div>
+                    <div className="flex items-center gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => duplicatePlan(plan, e)}
+                        className="flex-1 gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        {toSentenceCase("duplica")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => handleDeleteClick(plan.id, e)}
+                        className="flex-1 gap-2 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        {toSentenceCase("elimina")}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -200,6 +291,23 @@ const Plans = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{toSentenceCase("elimina piano")}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {toSentenceCase("sei sicuro di voler eliminare questo piano? questa azione non può essere annullata")}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{toSentenceCase("annulla")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {toSentenceCase("elimina")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
