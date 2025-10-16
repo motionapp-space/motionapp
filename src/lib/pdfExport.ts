@@ -166,52 +166,50 @@ export const exportPlanToPDF = (plan: Plan) => {
         </div>
       </div>
       
-      ${plan.weeks.map((week) => `
-        ${week.days.map((day) => `
-          <div class="day">
-            <h2 class="day-title">${day.title}</h2>
-            ${day.phases.map((phase) => `
-              <div class="section">
-                <h3 class="section-header">
-                  ${phaseLabels[phase.type] || phase.type} 
-                  (${phase.exercises.length} ${phase.exercises.length === 1 ? 'esercizio' : 'esercizi'})
-                </h3>
-                ${phase.exercises.length === 0 ? `
-                  <div class="empty-section">Nessun esercizio</div>
-                ` : `
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style="width: 25%;">Nome</th>
-                        <th style="width: 8%;">Serie</th>
-                        <th style="width: 10%;">Rip</th>
-                        <th style="width: 12%;">Carico</th>
-                        <th style="width: 10%;">Rec</th>
-                        <th style="width: 20%;">Note</th>
-                        <th style="width: 15%;">🎯 Obiettivo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${phase.exercises
-                        .sort((a, b) => a.order - b.order)
-                        .map((ex) => `
-                          <tr>
-                            <td>${ex.name || '-'}</td>
-                            <td>${ex.sets}</td>
-                            <td>${ex.reps}</td>
-                            <td>${ex.load || '-'}</td>
-                            <td>${ex.rest || '-'}</td>
-                            <td>${ex.notes || '-'}</td>
-                            <td>${ex.goal || '-'}</td>
-                          </tr>
-                        `).join('')}
-                    </tbody>
-                  </table>
-                `}
-              </div>
-            `).join('')}
-          </div>
-        `).join('')}
+      ${plan.days.map((day) => `
+        <div class="day">
+          <h2 class="day-title">${day.title}</h2>
+          ${day.phases.map((phase) => `
+            <div class="section">
+              <h3 class="section-header">
+                ${phaseLabels[phase.type] || phase.type} 
+                (${phase.exercises.length} ${phase.exercises.length === 1 ? 'esercizio' : 'esercizi'})
+              </h3>
+              ${phase.exercises.length === 0 ? `
+                <div class="empty-section">Nessun esercizio</div>
+              ` : `
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width: 25%;">Nome</th>
+                      <th style="width: 8%;">Serie</th>
+                      <th style="width: 10%;">Rip</th>
+                      <th style="width: 12%;">Carico</th>
+                      <th style="width: 10%;">Rec</th>
+                      <th style="width: 20%;">Note</th>
+                      <th style="width: 15%;">🎯 Obiettivo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${phase.exercises
+                      .sort((a, b) => a.order - b.order)
+                      .map((ex) => `
+                        <tr>
+                          <td>${ex.name || '-'}</td>
+                          <td>${ex.sets}</td>
+                          <td>${ex.reps}</td>
+                          <td>${ex.load || '-'}</td>
+                          <td>${ex.rest || '-'}</td>
+                          <td>${ex.notes || '-'}</td>
+                          <td>${ex.goal || '-'}</td>
+                        </tr>
+                      `).join('')}
+                  </tbody>
+                </table>
+              `}
+            </div>
+          `).join('')}
+        </div>
       `).join('')}
     </body>
     </html>

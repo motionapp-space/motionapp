@@ -68,18 +68,11 @@ const PlanEditor = () => {
     }
   };
 
-  // Flatten all days from all weeks for days-first view
-  const allDays = plan?.weeks.flatMap(week => 
-    week.days.map(day => ({ ...day, weekId: week.id }))
-  ) || [];
-
-  // Get first week ID for adding days (ensure at least one week exists)
-  const firstWeekId = plan?.weeks[0]?.id || '';
+  // Days are now directly on the plan
+  const allDays = plan?.days || [];
   
   const handleAddDay = () => {
-    if (firstWeekId) {
-      addDay(firstWeekId);
-    }
+    addDay();
   };
 
   return (
@@ -209,19 +202,18 @@ const PlanEditor = () => {
                   <DayCardCompact
                     key={day.id}
                     day={day}
-                    weekId={day.weekId}
-                    onUpdateTitle={(title) => updateDayTitle(day.weekId, day.id, title)}
-                    onDuplicate={() => duplicateDay(day.weekId, day.id)}
-                    onDelete={() => deleteDay(day.weekId, day.id)}
-                    onAddExercise={(phaseType) => addExercise(day.weekId, day.id, phaseType)}
+                    onUpdateTitle={(title) => updateDayTitle(day.id, title)}
+                    onDuplicate={() => duplicateDay(day.id)}
+                    onDelete={() => deleteDay(day.id)}
+                    onAddExercise={(phaseType) => addExercise(day.id, phaseType)}
                     onUpdateExercise={(phaseType, exerciseId, patch) => 
-                      updateExercise(day.weekId, day.id, phaseType, exerciseId, patch)
+                      updateExercise(day.id, phaseType, exerciseId, patch)
                     }
                     onDuplicateExercise={(phaseType, exerciseId) => 
-                      duplicateExercise(day.weekId, day.id, phaseType, exerciseId)
+                      duplicateExercise(day.id, phaseType, exerciseId)
                     }
                     onDeleteExercise={(phaseType, exerciseId) => 
-                      deleteExercise(day.weekId, day.id, phaseType, exerciseId)
+                      deleteExercise(day.id, phaseType, exerciseId)
                     }
                   />
                 ))}

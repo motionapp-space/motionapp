@@ -17,8 +17,6 @@ import { useState } from "react";
 
 interface PhaseSectionCompactProps {
   phase: Phase;
-  weekId: string;
-  dayId: string;
   onAddExercise: () => void;
   onUpdateExercise: (exerciseId: string, patch: Partial<Exercise>) => void;
   onDuplicateExercise: (exerciseId: string) => void;

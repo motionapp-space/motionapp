@@ -44,7 +44,7 @@ export interface PlanMeta {
 }
 
 export interface Plan extends PlanMeta {
-  weeks: Week[];
+  days: Day[];
 }
 
 // ---------- Defaults ----------
@@ -89,6 +89,6 @@ export function makePlan(name = "Nuovo Piano di Allenamento", objective: Objecti
     durationWeeks,
     createdAt: now,
     updatedAt: now,
-    weeks: Array.from({ length: durationWeeks }, (_, i) => makeWeek(i + 1)),
+    days: [],
   };
 }

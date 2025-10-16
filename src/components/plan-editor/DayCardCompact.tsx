@@ -19,7 +19,6 @@ import {
 
 interface DayCardCompactProps {
   day: Day;
-  weekId: string;
   onUpdateTitle: (title: string) => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -31,7 +30,6 @@ interface DayCardCompactProps {
 
 export const DayCardCompact = ({
   day,
-  weekId,
   onUpdateTitle,
   onDuplicate,
   onDelete,
@@ -90,8 +88,6 @@ export const DayCardCompact = ({
           <PhaseSectionCompact
             key={phase.id}
             phase={phase}
-            weekId={weekId}
-            dayId={day.id}
             onAddExercise={() => onAddExercise(phase.type)}
             onUpdateExercise={(exerciseId, patch) => onUpdateExercise(phase.type, exerciseId, patch)}
             onDuplicateExercise={(exerciseId) => onDuplicateExercise(phase.type, exerciseId)}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Plan, Week, Day, Exercise, PhaseType, Objective, makeWeek, makeDay, makeExercise, makePlan } from '@/types/plan';
+import { Plan, Day, Exercise, PhaseType, Objective, makeDay, makeExercise, makePlan } from '@/types/plan';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -15,22 +15,17 @@ interface PlanStore {
   setObjective: (objective: Objective) => void;
   setDurationWeeks: (n: number) => void;
   
-  // Weeks
-  addWeek: () => void;
-  duplicateWeek: (weekId: string) => void;
-  deleteWeek: (weekId: string) => void;
-  
   // Days
-  addDay: (weekId: string) => void;
-  updateDayTitle: (weekId: string, dayId: string, title: string) => void;
-  duplicateDay: (weekId: string, dayId: string) => void;
-  deleteDay: (weekId: string, dayId: string) => void;
+  addDay: () => void;
+  updateDayTitle: (dayId: string, title: string) => void;
+  duplicateDay: (dayId: string) => void;
+  deleteDay: (dayId: string) => void;
   
   // Exercises
-  addExercise: (weekId: string, dayId: string, phaseType: PhaseType) => void;
-  updateExercise: (weekId: string, dayId: string, phaseType: PhaseType, exerciseId: string, patch: Partial<Exercise>) => void;
-  duplicateExercise: (weekId: string, dayId: string, phaseType: PhaseType, exerciseId: string) => void;
-  deleteExercise: (weekId: string, dayId: string, phaseType: PhaseType, exerciseId: string) => void;
+  addExercise: (dayId: string, phaseType: PhaseType) => void;
+  updateExercise: (dayId: string, phaseType: PhaseType, exerciseId: string, patch: Partial<Exercise>) => void;
+  duplicateExercise: (dayId: string, phaseType: PhaseType, exerciseId: string) => void;
+  deleteExercise: (dayId: string, phaseType: PhaseType, exerciseId: string) => void;
   
   // System
   loadPlan: (planId: string) => Promise<void>;
@@ -59,300 +54,192 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
   setDurationWeeks: (n) => {
     const plan = get().plan;
     if (!plan || n < 1 || n > 52) return;
-    
-    const currentWeeks = plan.weeks.length;
-    let newWeeks = [...plan.weeks];
-    
-    if (n > currentWeeks) {
-      // Add weeks
-      for (let i = currentWeeks; i < n; i++) {
-        newWeeks.push(makeWeek(i + 1));
-      }
-    } else if (n < currentWeeks) {
-      // Remove weeks
-      newWeeks = newWeeks.slice(0, n);
-    }
-    
-    set({ plan: { ...plan, durationWeeks: n, weeks: newWeeks, updatedAt: new Date().toISOString() } });
+    set({ plan: { ...plan, durationWeeks: n, updatedAt: new Date().toISOString() } });
     get().save();
   },
 
-  addWeek: () => {
+  addDay: () => {
     const plan = get().plan;
     if (!plan) return;
     
-    const newWeek = makeWeek(plan.weeks.length + 1);
-    set({ plan: { ...plan, weeks: [...plan.weeks, newWeek], updatedAt: new Date().toISOString() } });
+    // Ensure days array exists
+    const days = Array.isArray(plan.days) ? [...plan.days] : [];
+    
+    // Create new day with next sequential number
+    const nextOrder = days.length + 1;
+    const newDay = makeDay(nextOrder);
+    days.push(newDay);
+    
+    // Reindex orders (defensive)
+    days.forEach((d, i) => (d.order = i + 1));
+    
+    set({ plan: { ...plan, days, updatedAt: new Date().toISOString() } });
+    get().save();
+    
+    // Show success feedback
+    toast.success("Giorno aggiunto");
+  },
+
+  updateDayTitle: (dayId, title) => {
+    const plan = get().plan;
+    if (!plan) return;
+    
+    const newDays = plan.days.map(day => 
+      day.id === dayId ? { ...day, title } : day
+    );
+    
+    set({ plan: { ...plan, days: newDays, updatedAt: new Date().toISOString() } });
     get().save();
   },
 
-  duplicateWeek: (weekId) => {
+  duplicateDay: (dayId) => {
     const plan = get().plan;
     if (!plan) return;
     
-    const weekIndex = plan.weeks.findIndex(w => w.id === weekId);
-    if (weekIndex === -1) return;
+    const dayIndex = plan.days.findIndex(d => d.id === dayId);
+    if (dayIndex === -1) return;
     
-    const originalWeek = plan.weeks[weekIndex];
-    const newWeek: Week = {
+    const originalDay = plan.days[dayIndex];
+    const totalDays = plan.days.length;
+    
+    const newDay: Day = {
       id: crypto.randomUUID(),
-      index: plan.weeks.length + 1,
-      days: originalWeek.days.map(day => ({
-        ...day,
+      title: `Giorno ${totalDays + 1}`,
+      order: totalDays + 1,
+      phases: originalDay.phases.map(phase => ({
+        ...phase,
         id: crypto.randomUUID(),
-        phases: day.phases.map(phase => ({
-          ...phase,
-          id: crypto.randomUUID(),
-          exercises: phase.exercises.map(ex => ({ ...ex, id: crypto.randomUUID() }))
-        }))
-      }))
+        exercises: phase.exercises.map(ex => ({ ...ex, id: crypto.randomUUID() }))
+      })),
+      focusMuscle: originalDay.focusMuscle
     };
     
-    set({ plan: { ...plan, weeks: [...plan.weeks, newWeek], updatedAt: new Date().toISOString() } });
+    const newDays = [...plan.days, newDay];
+    set({ plan: { ...plan, days: newDays, updatedAt: new Date().toISOString() } });
     get().save();
   },
 
-  deleteWeek: (weekId) => {
-    const plan = get().plan;
-    if (!plan || plan.weeks.length <= 1) return;
-    
-    const newWeeks = plan.weeks.filter(w => w.id !== weekId).map((w, i) => ({ ...w, index: i + 1 }));
-    set({ plan: { ...plan, weeks: newWeeks, updatedAt: new Date().toISOString() } });
-    get().save();
-  },
-
-  addDay: (weekId) => {
+  deleteDay: (dayId) => {
     const plan = get().plan;
     if (!plan) return;
-    
-    // Count total days across all weeks
-    const totalDays = plan.weeks.reduce((sum, week) => sum + week.days.length, 0);
-    
-    const newWeeks = plan.weeks.map(week => {
-      if (week.id === weekId) {
-        const newDay = makeDay(totalDays + 1);
-        return { ...week, days: [...week.days, newDay] };
-      }
-      return week;
-    });
-    
-    set({ plan: { ...plan, weeks: newWeeks, updatedAt: new Date().toISOString() } });
-    get().save();
-  },
-
-  updateDayTitle: (weekId, dayId, title) => {
-    const plan = get().plan;
-    if (!plan) return;
-    
-    const newWeeks = plan.weeks.map(week => {
-      if (week.id === weekId) {
-        return {
-          ...week,
-          days: week.days.map(day => 
-            day.id === dayId ? { ...day, title } : day
-          )
-        };
-      }
-      return week;
-    });
-    
-    set({ plan: { ...plan, weeks: newWeeks, updatedAt: new Date().toISOString() } });
-    get().save();
-  },
-
-  duplicateDay: (weekId, dayId) => {
-    const plan = get().plan;
-    if (!plan) return;
-    
-    // Count total days across all weeks for next number
-    const totalDays = plan.weeks.reduce((sum, week) => sum + week.days.length, 0);
-    
-    const newWeeks = plan.weeks.map(week => {
-      if (week.id === weekId) {
-        const dayIndex = week.days.findIndex(d => d.id === dayId);
-        if (dayIndex === -1) return week;
-        
-        const originalDay = week.days[dayIndex];
-        const newDay: Day = {
-          id: crypto.randomUUID(),
-          title: `Giorno ${totalDays + 1}`,
-          order: week.days.length + 1,
-          phases: originalDay.phases.map(phase => ({
-            ...phase,
-            id: crypto.randomUUID(),
-            exercises: phase.exercises.map(ex => ({ ...ex, id: crypto.randomUUID() }))
-          }))
-        };
-        
-        return { ...week, days: [...week.days, newDay] };
-      }
-      return week;
-    });
-    
-    set({ plan: { ...plan, weeks: newWeeks, updatedAt: new Date().toISOString() } });
-    get().save();
-  },
-
-  deleteDay: (weekId, dayId) => {
-    const plan = get().plan;
-    if (!plan) return;
-    
-    // Count total days across all weeks
-    const totalDays = plan.weeks.reduce((sum, week) => sum + week.days.length, 0);
     
     // Prevent deletion if it's the last day
-    if (totalDays <= 1) {
+    if (plan.days.length <= 1) {
       toast.error("Non puoi eliminare l'unico giorno del piano.");
       return;
     }
     
-    const newWeeks = plan.weeks.map(week => {
-      if (week.id === weekId) {
-        const newDays = week.days.filter(d => d.id !== dayId).map((d, i) => ({ ...d, order: i + 1 }));
-        return { ...week, days: newDays };
-      }
-      return week;
-    });
+    const newDays = plan.days
+      .filter(d => d.id !== dayId)
+      .map((d, i) => ({ ...d, order: i + 1 }));
     
-    set({ plan: { ...plan, weeks: newWeeks, updatedAt: new Date().toISOString() } });
+    set({ plan: { ...plan, days: newDays, updatedAt: new Date().toISOString() } });
     get().save();
   },
 
-  addExercise: (weekId, dayId, phaseType) => {
+  addExercise: (dayId, phaseType) => {
     const plan = get().plan;
     if (!plan) return;
     
-    const newWeeks = plan.weeks.map(week => {
-      if (week.id === weekId) {
+    const newDays = plan.days.map(day => {
+      if (day.id === dayId) {
         return {
-          ...week,
-          days: week.days.map(day => {
-            if (day.id === dayId) {
-              return {
-                ...day,
-                phases: day.phases.map(phase => {
-                  if (phase.type === phaseType) {
-                    const newExercise = makeExercise(phase.exercises.length + 1);
-                    return { ...phase, exercises: [...phase.exercises, newExercise] };
-                  }
-                  return phase;
-                })
-              };
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const newExercise = makeExercise(phase.exercises.length + 1);
+              return { ...phase, exercises: [...phase.exercises, newExercise] };
             }
-            return day;
+            return phase;
           })
         };
       }
-      return week;
+      return day;
     });
     
-    set({ plan: { ...plan, weeks: newWeeks, updatedAt: new Date().toISOString() } });
+    set({ plan: { ...plan, days: newDays, updatedAt: new Date().toISOString() } });
     get().save();
   },
 
-  updateExercise: (weekId, dayId, phaseType, exerciseId, patch) => {
+  updateExercise: (dayId, phaseType, exerciseId, patch) => {
     const plan = get().plan;
     if (!plan) return;
     
-    const newWeeks = plan.weeks.map(week => {
-      if (week.id === weekId) {
+    const newDays = plan.days.map(day => {
+      if (day.id === dayId) {
         return {
-          ...week,
-          days: week.days.map(day => {
-            if (day.id === dayId) {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
               return {
-                ...day,
-                phases: day.phases.map(phase => {
-                  if (phase.type === phaseType) {
-                    return {
-                      ...phase,
-                      exercises: phase.exercises.map(ex => 
-                        ex.id === exerciseId ? { ...ex, ...patch } : ex
-                      )
-                    };
-                  }
-                  return phase;
-                })
+                ...phase,
+                exercises: phase.exercises.map(ex => 
+                  ex.id === exerciseId ? { ...ex, ...patch } : ex
+                )
               };
             }
-            return day;
+            return phase;
           })
         };
       }
-      return week;
+      return day;
     });
     
-    set({ plan: { ...plan, weeks: newWeeks, updatedAt: new Date().toISOString() } });
+    set({ plan: { ...plan, days: newDays, updatedAt: new Date().toISOString() } });
     get().save();
   },
 
-  duplicateExercise: (weekId, dayId, phaseType, exerciseId) => {
+  duplicateExercise: (dayId, phaseType, exerciseId) => {
     const plan = get().plan;
     if (!plan) return;
     
-    const newWeeks = plan.weeks.map(week => {
-      if (week.id === weekId) {
+    const newDays = plan.days.map(day => {
+      if (day.id === dayId) {
         return {
-          ...week,
-          days: week.days.map(day => {
-            if (day.id === dayId) {
-              return {
-                ...day,
-                phases: day.phases.map(phase => {
-                  if (phase.type === phaseType) {
-                    const exIndex = phase.exercises.findIndex(ex => ex.id === exerciseId);
-                    if (exIndex === -1) return phase;
-                    
-                    const original = phase.exercises[exIndex];
-                    const duplicate = { ...original, id: crypto.randomUUID(), order: phase.exercises.length + 1 };
-                    return { ...phase, exercises: [...phase.exercises, duplicate] };
-                  }
-                  return phase;
-                })
-              };
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const exIndex = phase.exercises.findIndex(ex => ex.id === exerciseId);
+              if (exIndex === -1) return phase;
+              
+              const original = phase.exercises[exIndex];
+              const duplicate = { ...original, id: crypto.randomUUID(), order: phase.exercises.length + 1 };
+              return { ...phase, exercises: [...phase.exercises, duplicate] };
             }
-            return day;
+            return phase;
           })
         };
       }
-      return week;
+      return day;
     });
     
-    set({ plan: { ...plan, weeks: newWeeks, updatedAt: new Date().toISOString() } });
+    set({ plan: { ...plan, days: newDays, updatedAt: new Date().toISOString() } });
     get().save();
   },
 
-  deleteExercise: (weekId, dayId, phaseType, exerciseId) => {
+  deleteExercise: (dayId, phaseType, exerciseId) => {
     const plan = get().plan;
     if (!plan) return;
     
-    const newWeeks = plan.weeks.map(week => {
-      if (week.id === weekId) {
+    const newDays = plan.days.map(day => {
+      if (day.id === dayId) {
         return {
-          ...week,
-          days: week.days.map(day => {
-            if (day.id === dayId) {
-              return {
-                ...day,
-                phases: day.phases.map(phase => {
-                  if (phase.type === phaseType) {
-                    const newExercises = phase.exercises
-                      .filter(ex => ex.id !== exerciseId)
-                      .map((ex, i) => ({ ...ex, order: i + 1 }));
-                    return { ...phase, exercises: newExercises };
-                  }
-                  return phase;
-                })
-              };
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const newExercises = phase.exercises
+                .filter(ex => ex.id !== exerciseId)
+                .map((ex, i) => ({ ...ex, order: i + 1 }));
+              return { ...phase, exercises: newExercises };
             }
-            return day;
+            return phase;
           })
         };
       }
-      return week;
+      return day;
     });
     
-    set({ plan: { ...plan, weeks: newWeeks, updatedAt: new Date().toISOString() } });
+    set({ plan: { ...plan, days: newDays, updatedAt: new Date().toISOString() } });
     get().save();
   },
 
@@ -377,7 +264,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
           durationWeeks: data.duration_weeks || 4,
           createdAt: data.created_at,
           updatedAt: data.updated_at,
-          weeks: contentJson?.weeks || [makeWeek(1)],
+          days: contentJson?.days || [],
         };
         set({ plan });
         
@@ -434,7 +321,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
             name: plan.name, // Preserve exact casing
             goal: plan.objective,
             duration_weeks: plan.durationWeeks,
-            content_json: { weeks: plan.weeks } as any,
+            content_json: { days: plan.days } as any,
             updated_at: new Date().toISOString(),
           })
           .eq("id", plan.id);
