@@ -67,14 +67,14 @@ export const PhaseSectionCompact = ({
       ) : (
         <div className="space-y-2">
           {/* Header Row */}
-          <div className="grid grid-cols-12 gap-2 px-3 pb-2 text-xs font-medium text-muted-foreground border-b">
+          <div className="grid grid-cols-12 gap-3 px-3 pb-2 text-xs font-medium text-muted-foreground border-b">
             <div className="col-span-3">Nome</div>
-            <div className="col-span-1">Serie</div>
-            <div className="col-span-1">Rip</div>
-            <div className="col-span-2">Carico</div>
-            <div className="col-span-1">Rec</div>
+            <div className="col-span-1 text-center">Serie</div>
+            <div className="col-span-1 text-center">Rip</div>
+            <div className="col-span-1 text-center">Carico</div>
+            <div className="col-span-1 text-center">Rec</div>
+            <div className="col-span-2">Obiettivo</div>
             <div className="col-span-2">Note</div>
-            <div className="col-span-1">🎯</div>
             <div className="col-span-1"></div>
           </div>
           
