@@ -1,10 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, CheckCircle, Loader2, Sparkles } from "lucide-react";
 import { usePlanStore } from "@/stores/usePlanStore";
 import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
 import { Objective } from "@/types/plan";
@@ -12,11 +12,14 @@ import { exportPlanToPDF } from "@/lib/pdfExport";
 import { toSentenceCase } from "@/lib/text";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import CopilotPanel from "@/components/CopilotPanel";
+import { FLAGS } from "@/flags";
 
 const PlanEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { 
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const {
     plan, 
     loadPlan, 
     setPlanName, 
@@ -120,6 +123,17 @@ const PlanEditor = () => {
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">PDF</span>
             </Button>
+            
+            {FLAGS.copilotEnabled && (
+              <Button
+                variant="outline"
+                onClick={() => setCopilotOpen(true)}
+                className="gap-2 h-11"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">Copilot</span>
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -232,6 +246,8 @@ const PlanEditor = () => {
           </div>
         </div>
       </div>
+
+      <CopilotPanel open={copilotOpen} onClose={() => setCopilotOpen(false)} />
     </div>
   );
 };
