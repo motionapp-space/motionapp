@@ -38,6 +38,19 @@ const Plans = () => {
 
   useEffect(() => {
     loadPlans();
+    
+    // Reload plans when page becomes visible (e.g., navigating back)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadPlans();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const loadPlans = async () => {

@@ -97,7 +97,7 @@ const PlanEditor = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-h4 font-semibold truncate">
-              {plan.name ? toSentenceCase(plan.name) : toSentenceCase("Nuovo piano")}
+              {plan.name || toSentenceCase("Nuovo piano")}
             </h1>
           </div>
           <div className="flex items-center gap-3 shrink-0">

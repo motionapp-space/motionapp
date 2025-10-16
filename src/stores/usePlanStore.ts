@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Plan, Week, Day, Exercise, PhaseType, Objective, makeWeek, makeDay, makeExercise, makePlan } from '@/types/plan';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEY = 'planpal.currentPlan';
 let saveTimeout: NodeJS.Timeout | null = null;
@@ -356,15 +357,47 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
   },
 
   loadPlan: async (planId) => {
-    // Try localStorage first
-    const stored = localStorage.getItem(`${STORAGE_KEY}.${planId}`);
-    if (stored) {
-      try {
-        const plan = JSON.parse(stored);
+    try {
+      // Load from Supabase database
+      const { data, error } = await supabase
+        .from("plans")
+        .select("*")
+        .eq("id", planId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Convert database format to internal Plan format
+        const contentJson = data.content_json as any;
+        const plan: Plan = {
+          id: data.id,
+          name: data.name,
+          objective: data.goal as Objective || "Strength",
+          durationWeeks: data.duration_weeks || 4,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          weeks: contentJson?.weeks || [makeWeek(1)],
+        };
         set({ plan });
+        
+        // Also cache in localStorage for offline access
+        localStorage.setItem(`${STORAGE_KEY}.${planId}`, JSON.stringify(plan));
         return;
-      } catch (e) {
-        console.error('Failed to parse stored plan:', e);
+      }
+    } catch (e) {
+      console.error('Failed to load plan from database:', e);
+      
+      // Try localStorage as fallback
+      const stored = localStorage.getItem(`${STORAGE_KEY}.${planId}`);
+      if (stored) {
+        try {
+          const plan = JSON.parse(stored);
+          set({ plan });
+          return;
+        } catch (parseError) {
+          console.error('Failed to parse stored plan:', parseError);
+        }
       }
     }
     
@@ -385,13 +418,28 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     }
     
     // Don't set isSaving immediately to avoid flickering
-    saveTimeout = setTimeout(() => {
+    saveTimeout = setTimeout(async () => {
       if (isSaving) return; // Prevent concurrent saves
       
       set({ isSaving: true });
       
       try {
+        // Save to localStorage for offline access
         localStorage.setItem(`${STORAGE_KEY}.${plan.id}`, JSON.stringify(plan));
+        
+        // Save to Supabase database
+        const { error } = await supabase
+          .from("plans")
+          .update({
+            name: plan.name, // Preserve exact casing
+            goal: plan.objective,
+            duration_weeks: plan.durationWeeks,
+            content_json: { weeks: plan.weeks } as any,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", plan.id);
+
+        if (error) throw error;
         
         // Show saved state for a moment
         setTimeout(() => {
