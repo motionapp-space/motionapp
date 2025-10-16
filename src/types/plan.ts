@@ -70,7 +70,7 @@ export function makePhase(type: PhaseType): Phase {
 export function makeDay(order: number, title?: string): Day {
   return {
     id: crypto.randomUUID(),
-    title: title ?? `Giorno ${order} – Full Body`,
+    title: title ?? `Giorno ${order}`,
     phases: DEFAULT_PHASES.map(makePhase),
     order,
   };

@@ -2,13 +2,8 @@ import { Exercise } from "@/types/plan";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Copy, Trash2 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Copy, Trash2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 interface ExerciseRowCompactProps {
   exercise: Exercise;
@@ -19,7 +14,7 @@ interface ExerciseRowCompactProps {
 
 export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete }: ExerciseRowCompactProps) => {
   return (
-    <div className="grid grid-cols-12 gap-2 items-start p-3 rounded-lg hover:bg-muted/30 transition-colors border border-transparent hover:border-muted">
+    <div className="grid grid-cols-12 gap-3 items-start p-3 rounded-lg hover:bg-muted/30 transition-colors border border-transparent hover:border-muted">
       {/* Name */}
       <div className="col-span-3">
         <Input
@@ -72,8 +67,24 @@ export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete }
         />
       </div>
       
-      {/* Notes */}
+      {/* Goal */}
       <div className="col-span-2">
+        <div className="space-y-1">
+          <Label htmlFor={`goal-${exercise.id}`} className="text-xs font-medium">
+            Obiettivo
+          </Label>
+          <Input
+            id={`goal-${exercise.id}`}
+            value={exercise.goal || ""}
+            onChange={(e) => onUpdate({ goal: e.target.value })}
+            placeholder="Es. aumentare carico"
+            className="h-11"
+          />
+        </div>
+      </div>
+      
+      {/* Notes */}
+      <div className="col-span-1">
         <Textarea
           value={exercise.notes || ""}
           onChange={(e) => onUpdate({ notes: e.target.value })}
@@ -83,40 +94,26 @@ export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete }
         />
       </div>
       
-      {/* Goal */}
-      <div className="col-span-1">
-        <Input
-          value={exercise.goal || ""}
-          onChange={(e) => onUpdate({ goal: e.target.value })}
-          placeholder="🎯"
-          title="Obiettivo"
-          className="h-11"
-        />
-      </div>
-      
       {/* Actions */}
-      <div className="col-span-1 flex justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onDuplicate}>
-              <Copy className="h-4 w-4 mr-2" />
-              Duplica
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDelete} className="text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Elimina
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div className="col-span-1 flex items-center justify-end gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onDuplicate}
+          title="Duplica esercizio"
+          className="h-11 w-11 hover:bg-muted/40 transition-colors"
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onDelete}
+          title="Elimina esercizio"
+          className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );

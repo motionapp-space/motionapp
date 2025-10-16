@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { Plan, Week, Day, Exercise, PhaseType, Objective, makeWeek, makeDay, makeExercise, makePlan } from '@/types/plan';
+import { toast } from 'sonner';
 
 const STORAGE_KEY = 'planpal.currentPlan';
+let saveTimeout: NodeJS.Timeout | null = null;
 
 interface PlanStore {
   plan: Plan | null;
@@ -122,9 +124,12 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     const plan = get().plan;
     if (!plan) return;
     
+    // Count total days across all weeks
+    const totalDays = plan.weeks.reduce((sum, week) => sum + week.days.length, 0);
+    
     const newWeeks = plan.weeks.map(week => {
       if (week.id === weekId) {
-        const newDay = makeDay(week.days.length + 1);
+        const newDay = makeDay(totalDays + 1);
         return { ...week, days: [...week.days, newDay] };
       }
       return week;
@@ -158,6 +163,9 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     const plan = get().plan;
     if (!plan) return;
     
+    // Count total days across all weeks for next number
+    const totalDays = plan.weeks.reduce((sum, week) => sum + week.days.length, 0);
+    
     const newWeeks = plan.weeks.map(week => {
       if (week.id === weekId) {
         const dayIndex = week.days.findIndex(d => d.id === dayId);
@@ -166,7 +174,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
         const originalDay = week.days[dayIndex];
         const newDay: Day = {
           id: crypto.randomUUID(),
-          title: `${originalDay.title} (copia)`,
+          title: `Giorno ${totalDays + 1}`,
           order: week.days.length + 1,
           phases: originalDay.phases.map(phase => ({
             ...phase,
@@ -188,8 +196,17 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     const plan = get().plan;
     if (!plan) return;
     
+    // Count total days across all weeks
+    const totalDays = plan.weeks.reduce((sum, week) => sum + week.days.length, 0);
+    
+    // Prevent deletion if it's the last day
+    if (totalDays <= 1) {
+      toast.error("Non puoi eliminare l'unico giorno del piano.");
+      return;
+    }
+    
     const newWeeks = plan.weeks.map(week => {
-      if (week.id === weekId && week.days.length > 1) {
+      if (week.id === weekId) {
         const newDays = week.days.filter(d => d.id !== dayId).map((d, i) => ({ ...d, order: i + 1 }));
         return { ...week, days: newDays };
       }
@@ -360,19 +377,32 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
 
   save: () => {
     const { plan, isSaving } = get();
-    if (!plan || isSaving) return;
+    if (!plan) return;
     
-    set({ isSaving: true });
+    // Clear any existing timeout
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
     
-    setTimeout(() => {
+    // Don't set isSaving immediately to avoid flickering
+    saveTimeout = setTimeout(() => {
+      if (isSaving) return; // Prevent concurrent saves
+      
+      set({ isSaving: true });
+      
       try {
         localStorage.setItem(`${STORAGE_KEY}.${plan.id}`, JSON.stringify(plan));
-        set({ isSaving: false });
+        
+        // Show saved state for a moment
+        setTimeout(() => {
+          set({ isSaving: false });
+        }, 300);
       } catch (e) {
         console.error('Failed to save plan:', e);
         set({ isSaving: false });
+        toast.error("Errore nel salvataggio del piano");
       }
-    }, 500);
+    }, 1000); // 1 second debounce
   },
 
   reset: () => {
