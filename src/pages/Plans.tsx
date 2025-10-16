@@ -222,9 +222,9 @@ const Plans = () => {
               </Button>
             </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-stretch">
               {myPlans.map((plan) => (
-                <Card key={plan.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/plans/${plan.id}/edit`)}>
+                <Card key={plan.id} className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col h-full" onClick={() => navigate(`/plans/${plan.id}/edit`)}>
                   <CardHeader>
                     <CardTitle className="line-clamp-1 preserve-case" style={{ textTransform: 'none' }}>{plan.name}</CardTitle>
                     {plan.goal && (
@@ -234,18 +234,20 @@ const Plans = () => {
                       </CardDescription>
                     )}
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {plan.duration_weeks && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {plan.duration_weeks} settimane
+                  <CardContent className="flex flex-col flex-1 space-y-3">
+                    <div className="flex-1 space-y-3">
+                      {plan.duration_weeks && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          {plan.duration_weeks} settimane
+                        </div>
+                      )}
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <div>{toSentenceCase("creato il")}: {formatDate(plan.created_at)}</div>
+                        <div>{toSentenceCase("ultima modifica")}: {formatDate(plan.updated_at)}</div>
                       </div>
-                    )}
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      <div>{toSentenceCase("creato il")}: {formatDate(plan.created_at)}</div>
-                      <div>{toSentenceCase("ultima modifica")}: {formatDate(plan.updated_at)}</div>
                     </div>
-                    <div className="flex items-center gap-2 pt-2">
+                    <div className="flex items-center gap-2 pt-2 mt-auto">
                       <Button
                         size="sm"
                         variant="outline"
