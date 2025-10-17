@@ -127,3 +127,23 @@ export async function archiveClient(id: string): Promise<void> {
 
   if (error) throw error;
 }
+
+export async function unarchiveClient(id: string): Promise<Client> {
+  const { data, error } = await supabase
+    .from("clients")
+    .update({ status: "ATTIVO" })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  
+  // Log activity
+  await supabase.from("client_activities").insert({
+    client_id: id,
+    type: "UPDATED",
+    message: "Cliente ripristinato (status=ATTIVO)",
+  });
+
+  return data;
+}

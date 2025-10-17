@@ -12,6 +12,7 @@ import { toSentenceCase } from "@/lib/text";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useCreateClient } from "@/features/clients/hooks/useCreateClient";
 import { useArchiveClient } from "@/features/clients/hooks/useArchiveClient";
+import { useUnarchiveClient } from "@/features/clients/hooks/useUnarchiveClient";
 import { getDefaultFilters, filtersToSearchParams } from "@/features/clients/utils/filters";
 import { ClientsTable } from "@/features/clients/components/ClientsTable";
 import { getClientById } from "@/features/clients/api/clients.api";
@@ -28,6 +29,7 @@ const Clients = () => {
   const { data, isLoading } = useClientsQuery(filters);
   const createMutation = useCreateClient();
   const archiveMutation = useArchiveClient();
+  const unarchiveMutation = useUnarchiveClient();
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -93,6 +95,12 @@ const Clients = () => {
   const handleArchive = (id: string, name: string) => {
     if (confirm(`Archiviare il cliente ${name}?`)) {
       archiveMutation.mutate(id);
+    }
+  };
+
+  const handleUnarchive = (id: string, name: string) => {
+    if (confirm(`Ripristinare il cliente ${name}?`)) {
+      unarchiveMutation.mutate(id);
     }
   };
 
@@ -203,6 +211,7 @@ const Clients = () => {
             rows={data.items} 
             highlightId={highlight || undefined}
             onArchive={handleArchive}
+            onUnarchive={handleUnarchive}
           />
         )}
       </div>

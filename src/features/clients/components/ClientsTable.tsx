@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Eye, Archive } from "lucide-react";
+import { Eye, Archive, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,6 +10,7 @@ interface ClientsTableProps {
   rows: ClientWithTags[];
   highlightId?: string;
   onArchive: (id: string, name: string) => void;
+  onUnarchive: (id: string, name: string) => void;
 }
 
 const getStatusColor = (status: ClientStatus) => {
@@ -22,7 +23,7 @@ const getStatusColor = (status: ClientStatus) => {
   }
 };
 
-export function ClientsTable({ rows, highlightId, onArchive }: ClientsTableProps) {
+export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: ClientsTableProps) {
   const navigate = useNavigate();
 
   return (
@@ -76,15 +77,25 @@ export function ClientsTable({ rows, highlightId, onArchive }: ClientsTableProps
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onArchive(client.id, `${client.first_name} ${client.last_name}`)}
-                    disabled={client.status === "ARCHIVIATO"}
-                    aria-label={`Archivia cliente ${client.first_name} ${client.last_name}`}
-                  >
-                    <Archive className="h-4 w-4" />
-                  </Button>
+                  {client.status === "ARCHIVIATO" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onUnarchive(client.id, `${client.first_name} ${client.last_name}`)}
+                      aria-label={`Ripristina cliente ${client.first_name} ${client.last_name}`}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onArchive(client.id, `${client.first_name} ${client.last_name}`)}
+                      aria-label={`Archivia cliente ${client.first_name} ${client.last_name}`}
+                    >
+                      <Archive className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>
