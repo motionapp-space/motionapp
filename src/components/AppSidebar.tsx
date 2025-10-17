@@ -1,4 +1,4 @@
-import { FileText, Settings, LogOut } from "lucide-react";
+import { FileText, Users, Settings, LogOut } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ import {
 
 const menuItems = [
   { title: "Piani", url: "/plans", icon: FileText },
+  { title: "Clienti", url: "/clients", icon: Users },
 ];
 
 export function AppSidebar() {

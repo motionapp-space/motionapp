@@ -3,4 +3,5 @@ export const FLAGS = {
   copilotAutosaveOnApply: true,
   copilotMaxRequestTokens: 3000,
   copilotRateLimitPerMin: 20,
+  clientsModule: true,
 };

@@ -14,6 +14,195 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_activities: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          message: string
+          type: Database["public"]["Enums"]["activity_type"]
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          message: string
+          type: Database["public"]["Enums"]["activity_type"]
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          type?: Database["public"]["Enums"]["activity_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_activities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_plan_assignments: {
+        Row: {
+          assigned_at: string
+          client_id: string
+          id: string
+          note: string | null
+          plan_id: string
+          status: Database["public"]["Enums"]["plan_status"]
+        }
+        Insert: {
+          assigned_at?: string
+          client_id: string
+          id?: string
+          note?: string | null
+          plan_id: string
+          status?: Database["public"]["Enums"]["plan_status"]
+        }
+        Update: {
+          assigned_at?: string
+          client_id?: string
+          id?: string
+          note?: string | null
+          plan_id?: string
+          status?: Database["public"]["Enums"]["plan_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_plan_assignments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_plan_assignments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_tag_on_client: {
+        Row: {
+          client_id: string
+          tag_id: string
+        }
+        Insert: {
+          client_id: string
+          tag_id: string
+        }
+        Update: {
+          client_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_tag_on_client_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_tag_on_client_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "client_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_tags: {
+        Row: {
+          coach_id: string
+          color: string | null
+          created_at: string
+          id: string
+          label: string
+        }
+        Insert: {
+          coach_id: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          label: string
+        }
+        Update: {
+          coach_id?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_tags_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          birth_date: string | null
+          coach_id: string
+          created_at: string
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          sex: Database["public"]["Enums"]["sex"] | null
+          status: Database["public"]["Enums"]["client_status"]
+          updated_at: string
+        }
+        Insert: {
+          birth_date?: string | null
+          coach_id: string
+          created_at?: string
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          sex?: Database["public"]["Enums"]["sex"] | null
+          status?: Database["public"]["Enums"]["client_status"]
+          updated_at?: string
+        }
+        Update: {
+          birth_date?: string | null
+          coach_id?: string
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          sex?: Database["public"]["Enums"]["sex"] | null
+          status?: Database["public"]["Enums"]["client_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coaches: {
         Row: {
           avatar_url: string | null
@@ -40,6 +229,62 @@ export type Database = {
           name?: string | null
         }
         Relationships: []
+      }
+      measurements: {
+        Row: {
+          arm_cm: number | null
+          bmi: number | null
+          body_fat_pct: number | null
+          chest_cm: number | null
+          client_id: string
+          date: string
+          height_cm: number | null
+          hip_cm: number | null
+          id: string
+          lean_mass_kg: number | null
+          thigh_cm: number | null
+          waist_cm: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          arm_cm?: number | null
+          bmi?: number | null
+          body_fat_pct?: number | null
+          chest_cm?: number | null
+          client_id: string
+          date?: string
+          height_cm?: number | null
+          hip_cm?: number | null
+          id?: string
+          lean_mass_kg?: number | null
+          thigh_cm?: number | null
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          arm_cm?: number | null
+          bmi?: number | null
+          body_fat_pct?: number | null
+          chest_cm?: number | null
+          client_id?: string
+          date?: string
+          height_cm?: number | null
+          hip_cm?: number | null
+          id?: string
+          lean_mass_kg?: number | null
+          thigh_cm?: number | null
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "measurements_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       plan_shares: {
         Row: {
@@ -134,7 +379,16 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      activity_type:
+        | "CREATED"
+        | "UPDATED"
+        | "TAGGED"
+        | "ASSIGNED_PLAN"
+        | "COMPLETED_PLAN"
+        | "ARCHIVED"
+      client_status: "POTENZIALE" | "ATTIVO" | "SOSPESO" | "ARCHIVIATO"
+      plan_status: "ATTIVA" | "COMPLETATA" | "SCADUTA"
+      sex: "M" | "F" | "ALTRO"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -261,6 +515,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      activity_type: [
+        "CREATED",
+        "UPDATED",
+        "TAGGED",
+        "ASSIGNED_PLAN",
+        "COMPLETED_PLAN",
+        "ARCHIVED",
+      ],
+      client_status: ["POTENZIALE", "ATTIVO", "SOSPESO", "ARCHIVIATO"],
+      plan_status: ["ATTIVA", "COMPLETATA", "SCADUTA"],
+      sex: ["M", "F", "ALTRO"],
+    },
   },
 } as const

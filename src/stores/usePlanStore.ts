@@ -8,6 +8,7 @@ let saveTimeout: NodeJS.Timeout | null = null;
 
 interface PlanStore {
   plan: Plan | null;
+  plans: Plan[];
   isSaving: boolean;
   
   // Meta
@@ -29,12 +30,14 @@ interface PlanStore {
   
   // System
   loadPlan: (planId: string) => Promise<void>;
+  loadPlans: () => Promise<void>;
   save: () => void;
   reset: () => void;
 }
 
 export const usePlanStore = create<PlanStore>((set, get) => ({
   plan: null,
+  plans: [],
   isSaving: false,
 
   setPlanName: (name) => {
@@ -293,6 +296,37 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     newPlan.id = planId;
     set({ plan: newPlan });
     get().save();
+  },
+
+  loadPlans: async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("plans")
+        .select("*")
+        .eq("coach_id", user.id)
+        .eq("is_template", false)
+        .order("updated_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Transform content_json to match Plan interface
+      const plans: Plan[] = (data || []).map(row => ({
+        id: row.id,
+        name: row.name,
+        objective: row.goal as Objective,
+        durationWeeks: row.duration_weeks,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        days: (row.content_json as any)?.days || [],
+      }));
+
+      set({ plans });
+    } catch (error) {
+      console.error('Error loading plans:', error);
+    }
   },
 
   save: () => {

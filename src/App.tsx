@@ -7,6 +7,8 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import Auth from "./pages/Auth";
 import Plans from "./pages/Plans";
 import PlanEditor from "./pages/PlanEditor";
+import Clients from "./pages/Clients";
+import ClientDetail from "./pages/ClientDetail";
 import Settings from "./pages/Settings";
 import SharedPlan from "./pages/SharedPlan";
 import NotFound from "./pages/NotFound";
@@ -62,6 +64,8 @@ const App = () => {
                     <Route path="/" element={<Plans />} />
                     <Route path="/plans" element={<Plans />} />
                     <Route path="/plans/:id/edit" element={<PlanEditor />} />
+                    <Route path="/clients" element={<Clients />} />
+                    <Route path="/clients/:id" element={<ClientDetail />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
