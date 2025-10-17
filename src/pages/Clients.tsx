@@ -1,31 +1,33 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useClientStore } from "@/stores/useClientStore";
+import { useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Eye, Edit, Archive, UserPlus } from "lucide-react";
+import { Plus, Search, UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toSentenceCase } from "@/lib/text";
-import { toast } from "sonner";
-import type { ClientStatus } from "@/types/client";
+import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
+import { useCreateClient } from "@/features/clients/hooks/useCreateClient";
+import { useArchiveClient } from "@/features/clients/hooks/useArchiveClient";
+import { getDefaultFilters, filtersToSearchParams } from "@/features/clients/utils/filters";
+import { ClientsTable } from "@/features/clients/components/ClientsTable";
+import { getClientById } from "@/features/clients/api/clients.api";
+import type { ClientStatus, ClientsFilters } from "@/features/clients/types";
 
 const Clients = () => {
-  const navigate = useNavigate();
-  const {
-    clients,
-    filters,
-    isLoading,
-    isSaving,
-    loadClients,
-    setFilters,
-    createClient,
-    archiveClient,
-  } = useClientStore();
+  const [sp, setSp] = useSearchParams();
+  const qc = useQueryClient();
+  
+  const highlight = sp.get("highlight");
+  const from = sp.get("from");
+  
+  const [filters, setFiltersState] = useState<ClientsFilters>(getDefaultFilters(sp));
+  const { data, isLoading } = useClientsQuery(filters);
+  const createMutation = useCreateClient();
+  const archiveMutation = useArchiveClient();
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,31 +38,65 @@ const Clients = () => {
     notes: "",
   });
 
+  // Handle return from create flow
   useEffect(() => {
-    loadClients();
-  }, [loadClients]);
+    if (from === "create") {
+      const newSp = new URLSearchParams(sp);
+      newSp.set("page", "1");
+      newSp.delete("from");
+      setSp(newSp, { replace: true });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+    }
+  }, [from, sp, setSp, qc]);
 
-  const handleCreateClient = async () => {
+  // Prepend highlighted client if not in current page
+  useEffect(() => {
+    if (!highlight || !data?.items) return;
+    const exists = data.items.some((r) => r.id === highlight);
+    if (!exists) {
+      getClientById(highlight).then((client) => {
+        qc.setQueryData(["clients", { ...filters }], (prev: any) => {
+          if (!prev) return prev;
+          return { ...prev, items: [client, ...prev.items] };
+        });
+      }).catch(() => {
+        // Client not found, ignore
+      });
+    }
+  }, [highlight, data?.items?.length, filters, qc]);
+
+  // Update URL when filters change
+  const setFilters = (newFilters: Partial<ClientsFilters>) => {
+    const updated = { ...filters, ...newFilters };
+    // Reset to page 1 when filters change (except page itself)
+    if (newFilters.q !== undefined || newFilters.status !== undefined || 
+        newFilters.tag !== undefined || newFilters.sort !== undefined) {
+      updated.page = 1;
+    }
+    setFiltersState(updated);
+    setSp(filtersToSearchParams(updated));
+  };
+
+  const handleCreateClient = () => {
     if (!formData.first_name || !formData.last_name) {
-      toast.error("Nome e cognome sono obbligatori");
       return;
     }
 
-    const clientId = await createClient(formData);
-    if (clientId) {
-      setCreateDialogOpen(false);
-      setFormData({ first_name: "", last_name: "", email: "", phone: "", notes: "" });
-      navigate(`/clients/${clientId}`);
-    }
+    createMutation.mutate(formData, {
+      onSuccess: () => {
+        setCreateDialogOpen(false);
+        setFormData({ first_name: "", last_name: "", email: "", phone: "", notes: "" });
+      },
+    });
   };
 
-  const handleArchive = async (id: string, name: string) => {
+  const handleArchive = (id: string, name: string) => {
     if (confirm(`Archiviare il cliente ${name}?`)) {
-      await archiveClient(id);
+      archiveMutation.mutate(id);
     }
   };
 
-  const statusOptions: { value: ClientStatus | "ALL"; label: string }[] = [
+  const statusOptions: { value: string; label: string }[] = [
     { value: "ALL", label: "Tutti gli stati" },
     { value: "POTENZIALE", label: "Potenziale" },
     { value: "ATTIVO", label: "Attivo" },
@@ -77,15 +113,6 @@ const Clients = () => {
     { value: "created_asc", label: "Creato meno recente" },
   ];
 
-  const getStatusColor = (status: ClientStatus) => {
-    switch (status) {
-      case "ATTIVO": return "bg-green-100 text-green-800";
-      case "POTENZIALE": return "bg-blue-100 text-blue-800";
-      case "SOSPESO": return "bg-yellow-100 text-yellow-800";
-      case "ARCHIVIATO": return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -110,14 +137,20 @@ const Clients = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={toSentenceCase("Cerca clienti...")}
-                value={filters.search}
-                onChange={(e) => setFilters({ search: e.target.value })}
+                value={filters.q}
+                onChange={(e) => setFilters({ q: e.target.value })}
                 className="pl-10 h-11"
               />
             </div>
             <Select
-              value={filters.status || "ALL"}
-              onValueChange={(value) => setFilters({ status: value === "ALL" ? undefined : value as ClientStatus })}
+              value={filters.status?.join(",") || "ALL"}
+              onValueChange={(value) => {
+                if (value === "ALL") {
+                  setFilters({ status: ["ATTIVO", "POTENZIALE", "SOSPESO"] });
+                } else {
+                  setFilters({ status: [value as ClientStatus] });
+                }
+              }}
             >
               <SelectTrigger className="w-full md:w-[200px] h-11">
                 <SelectValue />
@@ -130,7 +163,7 @@ const Clients = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={filters.sortBy} onValueChange={(value: any) => setFilters({ sortBy: value })}>
+            <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
               <SelectTrigger className="w-full md:w-[200px] h-11">
                 <SelectValue />
               </SelectTrigger>
@@ -152,11 +185,11 @@ const Clients = () => {
           <div className="flex justify-center py-12">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
           </div>
-        ) : clients.length === 0 ? (
+        ) : !data || data.items.length === 0 ? (
           <div className="text-center py-16 border border-dashed rounded-lg">
             <UserPlus className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-muted-foreground mb-4">
-              {filters.search || filters.status
+              {filters.q || (filters.status && filters.status.length < 3)
                 ? toSentenceCase("Nessun cliente trovato con questi filtri")
                 : toSentenceCase("Nessun cliente ancora")}
             </p>
@@ -166,67 +199,11 @@ const Clients = () => {
             </Button>
           </div>
         ) : (
-          <div className="rounded-lg border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{toSentenceCase("Nome")}</TableHead>
-                  <TableHead>{toSentenceCase("Email")}</TableHead>
-                  <TableHead>{toSentenceCase("Telefono")}</TableHead>
-                  <TableHead>{toSentenceCase("Stato")}</TableHead>
-                  <TableHead>{toSentenceCase("Tags")}</TableHead>
-                  <TableHead className="text-right">{toSentenceCase("Azioni")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {clients.map((client) => (
-                  <TableRow key={client.id}>
-                    <TableCell className="font-medium">
-                      {client.last_name} {client.first_name}
-                    </TableCell>
-                    <TableCell>{client.email || "-"}</TableCell>
-                    <TableCell>{client.phone || "-"}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(client.status)} variant="secondary">
-                        {client.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1 flex-wrap">
-                        {client.tags?.slice(0, 2).map((tag) => (
-                          <Badge key={tag.id} variant="outline" style={{ borderColor: tag.color }}>
-                            {tag.label}
-                          </Badge>
-                        ))}
-                        {(client.tags?.length || 0) > 2 && (
-                          <Badge variant="outline">+{(client.tags?.length || 0) - 2}</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/clients/${client.id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleArchive(client.id, `${client.first_name} ${client.last_name}`)}
-                          disabled={client.status === "ARCHIVIATO"}
-                        >
-                          <Archive className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <ClientsTable 
+            rows={data.items} 
+            highlightId={highlight || undefined}
+            onArchive={handleArchive}
+          />
         )}
       </div>
 
@@ -289,7 +266,7 @@ const Clients = () => {
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
               {toSentenceCase("Annulla")}
             </Button>
-            <Button onClick={handleCreateClient} disabled={isSaving}>
+            <Button onClick={handleCreateClient} disabled={createMutation.isPending}>
               {toSentenceCase("Crea cliente")}
             </Button>
           </div>
