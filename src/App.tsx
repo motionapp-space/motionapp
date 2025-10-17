@@ -2,8 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Auth from "./pages/Auth";
 import Plans from "./pages/Plans";
 import PlanEditor from "./pages/PlanEditor";
@@ -56,22 +55,20 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           {user ? (
-            <SidebarProvider>
-              <div className="flex min-h-screen w-full">
-                <AppSidebar />
-                <main className="flex-1">
-                  <Routes>
-                    <Route path="/" element={<Plans />} />
-                    <Route path="/plans" element={<Plans />} />
-                    <Route path="/plans/:id/edit" element={<PlanEditor />} />
-                    <Route path="/clients" element={<Clients />} />
-                    <Route path="/clients/:id" element={<ClientDetail />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-              </div>
-            </SidebarProvider>
+            <div className="flex min-h-screen w-full">
+              <AppSidebar />
+              <main className="flex-1 overflow-y-auto bg-background">
+                <Routes>
+                  <Route path="/" element={<Navigate to="/clients" replace />} />
+                  <Route path="/plans" element={<Plans />} />
+                  <Route path="/plans/:id/edit" element={<PlanEditor />} />
+                  <Route path="/clients" element={<Clients />} />
+                  <Route path="/clients/:id" element={<ClientDetail />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
           ) : (
             <Routes>
               <Route path="/" element={<Auth />} />

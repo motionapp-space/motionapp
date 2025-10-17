@@ -1,29 +1,20 @@
-import { FileText, Users, Settings, LogOut } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { Users, FileText, Settings, LogOut } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { toSentenceCase } from "@/lib/text";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
+import React from "react";
 
-const menuItems = [
-  { title: "Piani", url: "/plans", icon: FileText },
-  { title: "Clienti", url: "/clients", icon: Users },
+type NavItem = { label: string; to: string; icon: React.ElementType };
+
+const NAV_ITEMS: NavItem[] = [
+  { label: "Clienti", to: "/clients", icon: Users },
+  { label: "Piani", to: "/plans", icon: FileText },
+  { label: "Impostazioni", to: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
+  const { pathname } = useLocation();
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -33,92 +24,61 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border flex flex-col h-full">
-      <SidebarContent className="flex flex-col h-full">
-        <SidebarGroup>
-          <div className="flex items-center justify-between px-4 py-6">
-            {!collapsed && (
-              <h2 className="text-xl font-bold text-primary">PlanPal</h2>
-            )}
-            <SidebarTrigger className="ml-auto" />
-          </div>
+    <aside className="h-screen w-64 shrink-0 border-r bg-background px-3 py-4">
+      <div className="px-2">
+        <div className="text-2xl font-semibold tracking-tight">PlanPal</div>
+      </div>
 
-          <SidebarGroupLabel>{toSentenceCase("Menu")}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className={({ isActive }) =>
-                        isActive
-                          ? "bg-primary/10 text-primary font-semibold border-l-4 border-primary"
-                          : "text-muted-foreground hover:bg-muted/40"
-                      }
-                      aria-current={undefined}
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <item.icon className="h-4 w-4" />
-                          {!collapsed && <span>{toSentenceCase(item.title)}</span>}
-                          {isActive && <span className="sr-only">(current page)</span>}
-                        </>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <div className="mt-6 px-2">
+        <div className="mb-2 text-sm font-medium text-muted-foreground">Menu</div>
+        <nav className="flex flex-col gap-1">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = pathname.startsWith(item.to);
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={cn(
+                  "group flex items-center gap-3 rounded-xl px-3 py-3 text-base leading-6 transition-colors duration-200",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                  active
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-muted"
+                )}
+                aria-current={active ? "page" : undefined}
+                aria-label={item.label}
+              >
+                <Icon
+                  className={cn(
+                    "h-5 w-5 flex-none transition-colors",
+                    active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                  )}
+                />
+                <span className={cn(active ? "font-semibold" : "font-medium")}>
+                  {item.label}
+                </span>
+              </NavLink>
+            );
+          })}
+        </nav>
+      </div>
 
-        {/* Spacer to push settings and logout to bottom */}
-        <div className="flex-1" />
-
-        {/* Settings section at bottom */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/settings"
-                    className={({ isActive }) =>
-                      isActive
-                        ? "bg-primary/10 text-primary font-semibold border-l-4 border-primary"
-                        : "text-muted-foreground hover:bg-muted/40"
-                    }
-                    aria-current={undefined}
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <Settings className="h-4 w-4" />
-                        {!collapsed && <span>{toSentenceCase("Impostazioni")}</span>}
-                        {isActive && <span className="sr-only">(current page)</span>}
-                      </>
-                    )}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Logout section */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleLogout}>
-                  <LogOut className="h-4 w-4" />
-                  {!collapsed && <span>{toSentenceCase("Esci")}</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+      <div className="mt-auto px-2">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className={cn(
+            "mt-6 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-base leading-6",
+            "text-foreground hover:bg-muted transition-colors duration-200",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          )}
+          aria-label="Esci"
+        >
+          <LogOut className="h-5 w-5 text-muted-foreground" />
+          <span className="font-medium">Esci</span>
+        </button>
+      </div>
+    </aside>
   );
 }
