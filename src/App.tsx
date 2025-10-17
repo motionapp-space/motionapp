@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Auth from "./pages/Auth";
 import Plans from "./pages/Plans";
-import PlanEditor from "./pages/PlanEditor";
+import TemplateEditor from "./pages/TemplateEditor";
+import ClientPlanEditor from "./pages/ClientPlanEditor";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Settings from "./pages/Settings";
@@ -60,8 +61,10 @@ const App = () => {
               <main className="flex-1 overflow-y-auto bg-background">
                 <Routes>
                   <Route path="/" element={<Navigate to="/clients" replace />} />
-                  <Route path="/plans" element={<Plans />} />
-                  <Route path="/plans/:id/edit" element={<PlanEditor />} />
+                  <Route path="/templates" element={<Plans />} />
+                  <Route path="/templates/:id/edit" element={<TemplateEditor />} />
+                  <Route path="/client-plans/new" element={<ClientPlanEditor />} />
+                  <Route path="/client-plans/:id/edit" element={<ClientPlanEditor />} />
                   <Route path="/clients" element={<Clients />} />
                   <Route path="/clients/:id" element={<ClientDetail />} />
                   <Route path="/settings" element={<Settings />} />

@@ -26,6 +26,7 @@ interface DayCardCompactProps {
   onUpdateExercise: (phaseType: PhaseType, exerciseId: string, patch: Partial<Exercise>) => void;
   onDuplicateExercise: (phaseType: PhaseType, exerciseId: string) => void;
   onDeleteExercise: (phaseType: PhaseType, exerciseId: string) => void;
+  readonly?: boolean;
 }
 
 export const DayCardCompact = ({
@@ -37,6 +38,7 @@ export const DayCardCompact = ({
   onUpdateExercise,
   onDuplicateExercise,
   onDeleteExercise,
+  readonly = false,
 }: DayCardCompactProps) => {
   return (
     <Card className="overflow-hidden">

@@ -1,0 +1,411 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, Download, CheckCircle, Loader2, Save, FileText } from "lucide-react";
+import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
+import { exportPlanToPDF } from "@/lib/pdfExport";
+import { toSentenceCase } from "@/lib/text";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
+import { getClientPlan } from "@/features/client-plans/api/client-plans.api";
+import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClientPlan";
+import { useSaveAsTemplate } from "@/features/client-plans/hooks/useSaveAsTemplate";
+import { useAssignTemplate } from "@/features/client-plans/hooks/useAssignTemplate";
+import type { ClientPlan } from "@/types/template";
+import { makeDay, type Day, type PhaseType } from "@/types/plan";
+
+const ClientPlanEditor = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const [loading, setLoading] = useState(true);
+  const [plan, setPlan] = useState<ClientPlan | null>(null);
+  const [days, setDays] = useState<Day[]>([]);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
+  const [alsoAssign, setAlsoAssign] = useState(false);
+
+  const updateMutation = useUpdateClientPlan();
+  const saveAsTemplateMutation = useSaveAsTemplate();
+  const assignMutation = useAssignTemplate();
+
+  const clientId = searchParams.get("clientId");
+  const templateId = searchParams.get("templateId");
+  const template = location.state?.template;
+  const isNewFromTemplate = !id && templateId && template;
+
+  useEffect(() => {
+    if (id) {
+      loadClientPlan(id);
+    } else if (isNewFromTemplate) {
+      // New plan from template (personalize flow)
+      setName(template.name);
+      setDescription(template.description || "");
+      setDays(template.data?.days || []);
+      setLoading(false);
+    }
+  }, [id, isNewFromTemplate]);
+
+  const loadClientPlan = async (planId: string) => {
+    try {
+      const data = await getClientPlan(planId);
+      setPlan(data);
+      setName(data.name);
+      setDescription(data.description || "");
+      setDays(data.data?.days || []);
+    } catch (error) {
+      toast.error("Errore nel caricamento del piano");
+      navigate("/clients");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (id) {
+      // Update existing client plan
+      try {
+        await updateMutation.mutateAsync({
+          id,
+          updates: {
+            name,
+            description,
+            data: { days },
+          },
+        });
+        toast.success("Piano salvato");
+      } catch (error) {
+        toast.error("Errore nel salvataggio");
+      }
+    } else if (isNewFromTemplate && clientId && templateId) {
+      // Save new personalized plan for client
+      try {
+        await assignMutation.mutateAsync({
+          clientId,
+          input: {
+            template_id: templateId,
+            personalize: true,
+            name_override: name,
+            description,
+            data_override: { days },
+          },
+        });
+        toast.success("Piano assegnato");
+        const sp = new URLSearchParams();
+        sp.set("tab", "plans");
+        navigate(`/clients/${clientId}?${sp.toString()}`, { replace: true });
+      } catch (error) {
+        toast.error("Errore nell'assegnazione");
+      }
+    }
+  };
+
+  const handleSaveAsTemplate = async () => {
+    if (!id) return;
+
+    try {
+      await saveAsTemplateMutation.mutateAsync({
+        planId: id,
+        input: {
+          name: templateName,
+          description: templateDescription,
+          also_assign: alsoAssign,
+        },
+      });
+      toast.success("Template creato");
+      setSaveAsTemplateOpen(false);
+    } catch (error) {
+      toast.error("Errore nella creazione del template");
+    }
+  };
+
+  const handleExportPDF = () => {
+    if (plan || isNewFromTemplate) {
+      exportPlanToPDF({ name, days } as any);
+    }
+  };
+
+  const handleAddDay = () => {
+    const newDay = makeDay(days.length + 1);
+    setDays([...days, newDay]);
+  };
+
+  const handleUpdateDayTitle = (dayId: string, title: string) => {
+    setDays(days.map(d => d.id === dayId ? { ...d, title } : d));
+  };
+
+  const handleDuplicateDay = (dayId: string) => {
+    const dayToDup = days.find(d => d.id === dayId);
+    if (!dayToDup) return;
+    const newDay = { ...dayToDup, id: crypto.randomUUID(), order: days.length + 1 };
+    setDays([...days, newDay]);
+  };
+
+  const handleDeleteDay = (dayId: string) => {
+    setDays(days.filter(d => d.id !== dayId));
+  };
+
+  const handleAddExercise = (dayId: string) => (phaseType: PhaseType) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const newExercise = {
+                id: crypto.randomUUID(),
+                name: "",
+                sets: 3,
+                reps: "10",
+                load: "",
+                rest: "01:00",
+                notes: "",
+                order: phase.exercises.length + 1,
+              };
+              return { ...phase, exercises: [...phase.exercises, newExercise] };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  const handleUpdateExercise = (dayId: string) => (phaseType: PhaseType, exerciseId: string, updates: any) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              return {
+                ...phase,
+                exercises: phase.exercises.map(ex =>
+                  ex.id === exerciseId ? { ...ex, ...updates } : ex
+                ),
+              };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  const handleDuplicateExercise = (dayId: string) => (phaseType: PhaseType, exerciseId: string) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const exToDup = phase.exercises.find(ex => ex.id === exerciseId);
+              if (!exToDup) return phase;
+              const newEx = { ...exToDup, id: crypto.randomUUID(), order: phase.exercises.length + 1 };
+              return { ...phase, exercises: [...phase.exercises, newEx] };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  const handleDeleteExercise = (dayId: string) => (phaseType: PhaseType, exerciseId: string) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              return { ...phase, exercises: phase.exercises.filter(ex => ex.id !== exerciseId) };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  const clientName = plan?.client_id ? "Cliente" : "Cliente";
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(clientId ? `/clients/${clientId}?tab=plans` : "/clients")}
+                className="shrink-0"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h1 className="text-h4 font-semibold truncate">{name || "Piano Cliente"}</h1>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              {updateMutation.isPending || assignMutation.isPending ? (
+                <Button disabled size="sm">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {toSentenceCase("Salvataggio...")}
+                </Button>
+              ) : (
+                <Button onClick={handleSave} size="sm" className="gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  {id ? toSentenceCase("Salva") : toSentenceCase("Assegna")}
+                </Button>
+              )}
+              {id && (
+                <Button
+                  onClick={() => setSaveAsTemplateOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  {toSentenceCase("Salva come template")}
+                </Button>
+              )}
+              <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" />
+                PDF
+              </Button>
+            </div>
+          </div>
+          {isNewFromTemplate && (
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm">
+              <p className="text-blue-900 dark:text-blue-100">
+                Stai personalizzando un piano per {clientName} basato sul template "{template.name}"
+              </p>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{toSentenceCase("Nome piano")}</Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Es: Piano Forza Personalizzato"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{toSentenceCase("Descrizione")}</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Note specifiche per questo cliente..."
+                rows={1}
+              />
+            </div>
+          </div>
+
+          <div className="border-t pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">{toSentenceCase("Giorni di allenamento")}</h2>
+              <Button onClick={handleAddDay} variant="outline" size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                {toSentenceCase("Aggiungi giorno")}
+              </Button>
+            </div>
+
+            {days.length === 0 ? (
+              <div className="text-center py-12 border rounded-lg bg-muted/20">
+                <p className="text-muted-foreground mb-4">
+                  {toSentenceCase("Nessun giorno ancora")}
+                </p>
+                <Button onClick={handleAddDay} variant="outline" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  {toSentenceCase("Aggiungi primo giorno")}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {days.map((day) => (
+                  <DayCardCompact
+                    key={day.id}
+                    day={day}
+                    onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
+                    onDuplicate={() => handleDuplicateDay(day.id)}
+                    onDelete={() => handleDeleteDay(day.id)}
+                    onAddExercise={handleAddExercise(day.id)}
+                    onUpdateExercise={handleUpdateExercise(day.id)}
+                    onDuplicateExercise={handleDuplicateExercise(day.id)}
+                    onDeleteExercise={handleDeleteExercise(day.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Save as Template Dialog */}
+      <Dialog open={saveAsTemplateOpen} onOpenChange={setSaveAsTemplateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{toSentenceCase("Salva come template")}</DialogTitle>
+            <DialogDescription>
+              {toSentenceCase("Crea un nuovo template riutilizzabile da questo piano")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{toSentenceCase("Nome template")}</Label>
+              <Input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="Es: Piano Forza Avanzato"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{toSentenceCase("Descrizione")}</Label>
+              <Textarea
+                value={templateDescription}
+                onChange={(e) => setTemplateDescription(e.target.value)}
+                placeholder="Descrizione del template..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveAsTemplateOpen(false)}>
+              {toSentenceCase("Annulla")}
+            </Button>
+            <Button onClick={handleSaveAsTemplate} disabled={!templateName.trim()}>
+              {toSentenceCase("Crea template")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default ClientPlanEditor;

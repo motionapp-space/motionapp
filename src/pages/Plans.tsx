@@ -107,7 +107,7 @@ const Plans = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-stretch">
           {templates.map((template) => (
-            <Card key={template.id} className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col h-full" onClick={() => navigate(`/templates/${template.id}/edit`)}>
+            <Card key={template.id} className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col h-full" onClick={() => navigate(`/templates/${template.id}/edit`)} data-testid={`template-card-${template.id}`}>
               <CardHeader>
                 <CardTitle className="line-clamp-1">{template.name}</CardTitle>
                 {template.category && (
