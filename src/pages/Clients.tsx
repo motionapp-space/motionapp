@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { PageHeading } from "@/components/ui/page-heading";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -128,7 +129,7 @@ const Clients = () => {
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
-            <h1 className="text-h4 font-semibold">{toSentenceCase("Clienti")}</h1>
+            <PageHeading>{toSentenceCase("Clienti")}</PageHeading>
             <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 h-11">
               <Plus className="h-4 w-4" />
               {toSentenceCase("Nuovo cliente")}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { PageHeading } from "@/components/ui/page-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,7 +82,7 @@ const Settings = () => {
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Impostazioni</h1>
+        <PageHeading className="mb-2">Impostazioni</PageHeading>
         <p className="text-muted-foreground">Gestisci il tuo account e le preferenze</p>
       </div>
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { PageHeading } from "@/components/ui/page-heading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -185,7 +186,7 @@ const Plans = () => {
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">{toSentenceCase("I tuoi piani")}</h1>
+        <PageHeading className="mb-2">{toSentenceCase("I tuoi piani")}</PageHeading>
         <p className="text-muted-foreground">{toSentenceCase("Crea, modifica e gestisci i tuoi piani di allenamento")}</p>
       </div>
 

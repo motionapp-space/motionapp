@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useClientStore } from "@/stores/useClientStore";
+import { PageHeading } from "@/components/ui/page-heading";
 import { usePlanStore } from "@/stores/usePlanStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import type { ClientStatus, PlanStatus } from "@/types/client";
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     currentClient,
     isLoading,
@@ -88,6 +90,10 @@ const ClientDetail = () => {
     setAssignDialogOpen(false);
     setSelectedPlanId("");
     setAssignNote("");
+    // Mantieni la tab "plans" attiva dopo l'assegnazione
+    const sp = new URLSearchParams(searchParams);
+    sp.set("tab", "plans");
+    setSearchParams(sp, { replace: true });
   };
 
   const handleUpdateAssignmentStatus = async (assignmentId: string, status: PlanStatus) => {
@@ -127,9 +133,9 @@ const ClientDetail = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-h4 font-semibold">
+              <PageHeading>
                 {currentClient.last_name} {currentClient.first_name}
-              </h1>
+              </PageHeading>
               <Badge className="mt-1">{currentClient.status}</Badge>
             </div>
           </div>
@@ -142,7 +148,15 @@ const ClientDetail = () => {
 
       {/* Content */}
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
-        <Tabs defaultValue="profile" className="space-y-6">
+        <Tabs 
+          value={searchParams.get("tab") || "profile"} 
+          onValueChange={(value) => {
+            const sp = new URLSearchParams(searchParams);
+            sp.set("tab", value);
+            setSearchParams(sp, { replace: true });
+          }}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="profile">{toSentenceCase("Profilo")}</TabsTrigger>
             <TabsTrigger value="plans">{toSentenceCase("Piani")}</TabsTrigger>
@@ -312,7 +326,7 @@ const ClientDetail = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => navigate(`/plans/${assignment.plan_id}`)}
+                              onClick={() => navigate(`/plans/${assignment.plan_id}/edit`)}
                             >
                               <ExternalLink className="h-4 w-4" />
                             </Button>

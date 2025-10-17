@@ -25,8 +25,6 @@ const getStatusColor = (status: ClientStatus) => {
 
 export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: ClientsTableProps) {
   const navigate = useNavigate();
-  
-  console.log("rows:", rows.length, "unique:", new Set(rows.map(r=>r.id)).size, "ids:", rows.map(r=>r.id));
 
   return (
     <div className="rounded-lg border bg-card">
