@@ -88,6 +88,60 @@ export type Database = {
           },
         ]
       }
+      client_plans: {
+        Row: {
+          client_id: string
+          coach_id: string
+          created_at: string
+          data: Json
+          derived_from_template_id: string | null
+          description: string | null
+          id: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          coach_id: string
+          created_at?: string
+          data?: Json
+          derived_from_template_id?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          coach_id?: string
+          created_at?: string
+          data?: Json
+          derived_from_template_id?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_plans_derived_from_template_id_fkey"
+            columns: ["derived_from_template_id"]
+            isOneToOne: false
+            referencedRelation: "plan_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_tag_on_client: {
         Row: {
           client_id: string
@@ -317,6 +371,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plan_template_tag_on_template: {
+        Row: {
+          tag_id: string
+          template_id: string
+        }
+        Insert: {
+          tag_id: string
+          template_id: string
+        }
+        Update: {
+          tag_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_template_tag_on_template_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "plan_template_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_template_tag_on_template_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "plan_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_template_tags: {
+        Row: {
+          coach_id: string
+          color: string | null
+          created_at: string
+          id: string
+          label: string
+        }
+        Insert: {
+          coach_id: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          label: string
+        }
+        Update: {
+          coach_id?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+        }
+        Relationships: []
+      }
+      plan_templates: {
+        Row: {
+          category: string | null
+          coach_id: string
+          created_at: string
+          created_by_id: string | null
+          data: Json
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          coach_id: string
+          created_at?: string
+          created_by_id?: string | null
+          data?: Json
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          coach_id?: string
+          created_at?: string
+          created_by_id?: string | null
+          data?: Json
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       plans: {
         Row: {

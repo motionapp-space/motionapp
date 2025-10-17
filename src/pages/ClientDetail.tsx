@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useClientStore } from "@/stores/useClientStore";
 import { PageHeading } from "@/components/ui/page-heading";
-import { usePlanStore } from "@/stores/usePlanStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,12 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Edit, Plus, X, ExternalLink } from "lucide-react";
+import { ArrowLeft, Edit, Plus, X } from "lucide-react";
 import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
-import type { ClientStatus, PlanStatus } from "@/types/client";
+import type { ClientStatus } from "@/types/client";
+import { useClientPlansQuery } from "@/features/client-plans/hooks/useClientPlansQuery";
+import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClientPlan";
+import { AssignPlanDialog } from "@/features/client-plans/components/AssignPlanDialog";
+import { ClientPlanCard } from "@/features/client-plans/components/ClientPlanCard";
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,8 +38,6 @@ const ClientDetail = () => {
   const [editMode, setEditMode] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
-  const [selectedPlanId, setSelectedPlanId] = useState("");
-  const [assignNote, setAssignNote] = useState("");
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -47,12 +47,12 @@ const ClientDetail = () => {
     notes: "",
   });
 
-  const { plans, loadPlans } = usePlanStore();
+  const { data: clientPlans = [], isLoading: plansLoading } = useClientPlansQuery(id || "");
+  const updatePlanMutation = useUpdateClientPlan();
 
   useEffect(() => {
     if (id) {
       loadClient(id);
-      loadPlans();
     }
   }, [id, loadClient]);
 
@@ -81,24 +81,13 @@ const ClientDetail = () => {
     setTagInput("");
   };
 
-  const handleAssignPlan = async () => {
-    if (!id || !selectedPlanId) {
-      toast.error("Seleziona un piano");
-      return;
+  const handleUpdatePlanStatus = async (planId: string, status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED') => {
+    try {
+      await updatePlanMutation.mutateAsync({ id: planId, updates: { status } });
+      toast.success("Stato aggiornato");
+    } catch (error) {
+      toast.error("Errore nell'aggiornamento");
     }
-    await assignPlan(id, selectedPlanId, assignNote);
-    setAssignDialogOpen(false);
-    setSelectedPlanId("");
-    setAssignNote("");
-    // Mantieni la tab "plans" attiva dopo l'assegnazione
-    const sp = new URLSearchParams(searchParams);
-    sp.set("tab", "plans");
-    setSearchParams(sp, { replace: true });
-  };
-
-  const handleUpdateAssignmentStatus = async (assignmentId: string, status: PlanStatus) => {
-    await updateAssignment(assignmentId, status);
-    if (id) await loadClient(id);
   };
 
   if (isLoading) {
@@ -299,80 +288,57 @@ const ClientDetail = () => {
 
           {/* Plans Tab */}
           <TabsContent value="plans" className="space-y-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{toSentenceCase("Piani attivi")}</CardTitle>
-                <Button onClick={() => setAssignDialogOpen(true)} size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  {toSentenceCase("Assegna piano")}
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {activePlans.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{toSentenceCase("Nessun piano attivo")}</p>
-                ) : (
-                  <div className="space-y-3">
-                    {activePlans.map((assignment) => (
-                      <div key={assignment.id} className="border rounded-lg p-4 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-medium">{assignment.plan?.name}</h4>
-                            <p className="text-sm text-muted-foreground">{assignment.plan?.goal}</p>
-                            {assignment.note && (
-                              <p className="text-sm text-muted-foreground mt-1">{assignment.note}</p>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => navigate(`/plans/${assignment.plan_id}/edit`)}
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                            <Select
-                              value={assignment.status}
-                              onValueChange={(value) => handleUpdateAssignmentStatus(assignment.id, value as PlanStatus)}
-                            >
-                              <SelectTrigger className="w-[140px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="ATTIVA">Attiva</SelectItem>
-                                <SelectItem value="COMPLETATA">Completata</SelectItem>
-                                <SelectItem value="SCADUTA">Scaduta</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">{toSentenceCase("Piani assegnati")}</h3>
+              <Button onClick={() => setAssignDialogOpen(true)} size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                {toSentenceCase("Assegna piano")}
+              </Button>
+            </div>
 
-            {pastPlans.length > 0 && (
+            {plansLoading ? (
+              <div className="text-center py-12">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
+              </div>
+            ) : clientPlans.length === 0 ? (
               <Card>
-                <CardHeader>
-                  <CardTitle>{toSentenceCase("Storico piani")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {pastPlans.map((assignment) => (
-                      <div key={assignment.id} className="border rounded-lg p-4 opacity-60">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-medium">{assignment.plan?.name}</h4>
-                            <p className="text-sm text-muted-foreground">{assignment.plan?.goal}</p>
-                          </div>
-                          <Badge variant="secondary">{assignment.status}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">{toSentenceCase("Nessun piano assegnato")}</p>
+                  <Button onClick={() => setAssignDialogOpen(true)} className="mt-4 gap-2">
+                    <Plus className="h-4 w-4" />
+                    {toSentenceCase("Assegna piano")}
+                  </Button>
                 </CardContent>
               </Card>
+            ) : (
+              <div className="grid gap-4">
+                {clientPlans
+                  .filter((p) => p.status === 'ACTIVE')
+                  .map((plan) => (
+                    <ClientPlanCard
+                      key={plan.id}
+                      plan={plan}
+                      onEdit={() => navigate(`/client-plans/${plan.id}/edit`)}
+                      onUpdateStatus={(status) => handleUpdatePlanStatus(plan.id, status)}
+                    />
+                  ))}
+
+                {clientPlans.filter((p) => p.status !== 'ACTIVE').length > 0 && (
+                  <>
+                    <h4 className="text-md font-semibold mt-4">{toSentenceCase("Storico")}</h4>
+                    {clientPlans
+                      .filter((p) => p.status !== 'ACTIVE')
+                      .map((plan) => (
+                        <ClientPlanCard
+                          key={plan.id}
+                          plan={plan}
+                          onEdit={() => navigate(`/client-plans/${plan.id}/edit`)}
+                          onUpdateStatus={(status) => handleUpdatePlanStatus(plan.id, status)}
+                        />
+                      ))}
+                  </>
+                )}
+              </div>
             )}
           </TabsContent>
 
@@ -424,45 +390,11 @@ const ClientDetail = () => {
       </div>
 
       {/* Assign Plan Dialog */}
-      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{toSentenceCase("Assegna piano")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>{toSentenceCase("Piano")}</Label>
-              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={toSentenceCase("Seleziona un piano...")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {plans.map((plan) => (
-                    <SelectItem key={plan.id} value={plan.id}>
-                      {plan.name} ({plan.objective})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{toSentenceCase("Note")}</Label>
-              <Textarea
-                value={assignNote}
-                onChange={(e) => setAssignNote(e.target.value)}
-                placeholder={toSentenceCase("Note aggiuntive...")}
-                rows={3}
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setAssignDialogOpen(false)}>
-              {toSentenceCase("Annulla")}
-            </Button>
-            <Button onClick={handleAssignPlan}>{toSentenceCase("Assegna")}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AssignPlanDialog
+        clientId={id || ""}
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+      />
     </div>
   );
 };
