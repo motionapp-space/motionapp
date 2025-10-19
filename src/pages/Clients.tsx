@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeading } from "@/components/ui/page-heading";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import { useCreateClient } from "@/features/clients/hooks/useCreateClient";
 import { useArchiveClient } from "@/features/clients/hooks/useArchiveClient";
 import { useUnarchiveClient } from "@/features/clients/hooks/useUnarchiveClient";
 import { getDefaultFilters, filtersToSearchParams } from "@/features/clients/utils/filters";
+import { statusLabel, encodeStatus, decodeStatus } from "@/features/clients/utils/status-utils";
 import { ClientsTable } from "@/features/clients/components/ClientsTable";
 import { getClientById } from "@/features/clients/api/clients.api";
 import type { ClientStatus, ClientsFilters } from "@/features/clients/types";
@@ -105,12 +106,17 @@ const Clients = () => {
     }
   };
 
+  const currentStatusLabel = useMemo(() => 
+    statusLabel(filters.status || ["ATTIVO", "POTENZIALE", "SOSPESO"]), 
+    [filters.status]
+  );
+
   const statusOptions: { value: string; label: string }[] = [
-    { value: "ALL", label: "Tutti gli stati" },
-    { value: "POTENZIALE", label: "Potenziale" },
-    { value: "ATTIVO", label: "Attivo" },
-    { value: "SOSPESO", label: "Sospeso" },
-    { value: "ARCHIVIATO", label: "Archiviato" },
+    { value: encodeStatus(["ATTIVO", "POTENZIALE", "SOSPESO"]), label: "Tutti (non archiviati)" },
+    { value: encodeStatus(["ATTIVO"]), label: "Solo Attivi" },
+    { value: encodeStatus(["POTENZIALE"]), label: "Solo Potenziali" },
+    { value: encodeStatus(["SOSPESO"]), label: "Solo Sospesi" },
+    { value: encodeStatus(["ARCHIVIATO"]), label: "Solo Archiviati" },
   ];
 
   const sortOptions = [
@@ -152,17 +158,14 @@ const Clients = () => {
               />
             </div>
             <Select
-              value={filters.status?.join(",") || "ALL"}
+              value={encodeStatus(filters.status || ["ATTIVO", "POTENZIALE", "SOSPESO"])}
               onValueChange={(value) => {
-                if (value === "ALL") {
-                  setFilters({ status: ["ATTIVO", "POTENZIALE", "SOSPESO"] });
-                } else {
-                  setFilters({ status: [value as ClientStatus] });
-                }
+                const decoded = decodeStatus(value);
+                setFilters({ status: decoded });
               }}
             >
               <SelectTrigger className="w-full md:w-[200px] h-11">
-                <SelectValue />
+                <span className="truncate">{currentStatusLabel}</span>
               </SelectTrigger>
               <SelectContent>
                 {statusOptions.map((opt) => (

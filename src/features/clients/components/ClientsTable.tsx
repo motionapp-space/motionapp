@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Eye, Archive, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 import { toSentenceCase } from "@/lib/text";
 import type { ClientWithTags, ClientStatus } from "../types";
 
@@ -69,32 +69,29 @@ export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: Clie
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <IconTooltipButton
+                    label={`Visualizza cliente ${client.first_name} ${client.last_name}`}
                     onClick={() => navigate(`/clients/${client.id}`)}
-                    aria-label={`Visualizza cliente ${client.first_name} ${client.last_name}`}
+                    data-testid={`view-${client.id}`}
                   >
                     <Eye className="h-4 w-4" />
-                  </Button>
+                  </IconTooltipButton>
                   {client.status === "ARCHIVIATO" ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <IconTooltipButton
+                      label={`Ripristina cliente ${client.first_name} ${client.last_name}`}
                       onClick={() => onUnarchive(client.id, `${client.first_name} ${client.last_name}`)}
-                      aria-label={`Ripristina cliente ${client.first_name} ${client.last_name}`}
+                      data-testid={`unarchive-${client.id}`}
                     >
                       <RotateCcw className="h-4 w-4" />
-                    </Button>
+                    </IconTooltipButton>
                   ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <IconTooltipButton
+                      label={`Archivia cliente ${client.first_name} ${client.last_name}`}
                       onClick={() => onArchive(client.id, `${client.first_name} ${client.last_name}`)}
-                      aria-label={`Archivia cliente ${client.first_name} ${client.last_name}`}
+                      data-testid={`archive-${client.id}`}
                     >
                       <Archive className="h-4 w-4" />
-                    </Button>
+                    </IconTooltipButton>
                   )}
                 </div>
               </TableCell>
