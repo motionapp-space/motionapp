@@ -37,8 +37,8 @@ export function ClientPlanCard({ plan, onEdit, onUpdateStatus }: ClientPlanCardP
         state: { planId: plan.id } 
       });
     } else {
-      // Navigate to readonly view
-      navigate(`/templates/${templateId}?readonly=1`);
+      // Navigate to read mode
+      navigate(`/templates/${templateId}?mode=read`);
     }
   };
 

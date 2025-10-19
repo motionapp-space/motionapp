@@ -33,7 +33,7 @@ const Plans = () => {
         data: { days: newPlan.days },
       });
       toast.success("Template creato");
-      navigate(`/templates/${template.id}/edit`);
+      navigate(`/templates/${template.id}?mode=edit`);
     } catch (error: any) {
       toast.error("Errore nella creazione del template");
     }
@@ -107,7 +107,7 @@ const Plans = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-stretch">
           {templates.map((template) => (
-            <Card key={template.id} className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col h-full" onClick={() => navigate(`/templates/${template.id}/edit`)} data-testid={`template-card-${template.id}`}>
+            <Card key={template.id} className="hover:shadow-lg transition-shadow flex flex-col h-full" data-testid={`template-card-${template.id}`}>
               <CardHeader>
                 <CardTitle className="line-clamp-1">{template.name}</CardTitle>
                 {template.category && (
@@ -127,25 +127,47 @@ const Plans = () => {
                     <div>{toSentenceCase("ultima modifica")}: {formatDate(template.updated_at)}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 pt-2 mt-auto">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => duplicateTemplate(template.id, e)}
-                    className="flex-1 gap-2"
-                  >
-                    <Copy className="h-4 w-4" />
-                    {toSentenceCase("duplica")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={(e) => handleDeleteClick(template.id, e)}
-                    className="flex-1 gap-2 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    {toSentenceCase("elimina")}
-                  </Button>
+                <div className="flex flex-col gap-2 pt-2 mt-auto">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => navigate(`/templates/${template.id}?mode=read`)}
+                      className="flex-1"
+                      data-testid={`template-open-${template.id}`}
+                    >
+                      {toSentenceCase("Apri")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => navigate(`/templates/${template.id}?mode=edit`)}
+                      className="flex-1"
+                      data-testid={`template-edit-${template.id}`}
+                    >
+                      {toSentenceCase("Modifica")}
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => duplicateTemplate(template.id, e)}
+                      className="flex-1 gap-2"
+                    >
+                      <Copy className="h-4 w-4" />
+                      {toSentenceCase("duplica")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => handleDeleteClick(template.id, e)}
+                      className="flex-1 gap-2 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {toSentenceCase("elimina")}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

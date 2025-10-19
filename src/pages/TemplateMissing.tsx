@@ -25,7 +25,7 @@ export default function TemplateMissing() {
       });
       
       toast.success(toSentenceCase("Nuovo template creato"));
-      nav(`/templates/${result.id}?readonly=1`, { replace: true });
+      nav(`/templates/${result.id}?mode=read`, { replace: true });
     } catch (error) {
       toast.error(toSentenceCase("Errore nel recupero"));
     }
@@ -38,7 +38,7 @@ export default function TemplateMissing() {
           <Info className="h-4 w-4" />
           <AlertTitle>{toSentenceCase("Template non trovato")}</AlertTitle>
           <AlertDescription>
-            {toSentenceCase("Il template")} ({id}) {toSentenceCase("potrebbe essere stato eliminato. I tuoi piani cliente non sono stati modificati.")}
+            <strong>{toSentenceCase("Il template originale è stato eliminato. Il piano del tuo cliente rimane intatto.")}</strong>
           </AlertDescription>
         </Alert>
         

@@ -1,4 +1,4 @@
-import { useParams, useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useTemplate } from "@/features/templates/hooks/useTemplate";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeading } from "@/components/ui/page-heading";
@@ -8,10 +8,13 @@ import { toSentenceCase } from "@/lib/text";
 
 export default function TemplateDetail() {
   const { id } = useParams<{ id: string }>();
-  const [sp] = useSearchParams();
+  const [sp, setSp] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const readonly = sp.get("readonly") === "1" || sp.get("readonly") === "true" || location.state?.readonly === true;
+  
+  // Support both mode=read/edit and backward compatibility with readonly=1
+  const readonly = sp.get("readonly") === "1" || sp.get("readonly") === "true";
+  const modeParam = sp.get("mode");
+  const mode = (readonly ? "read" : (modeParam ?? "read")) as "read" | "edit";
   
   const { data, isError, error, isLoading } = useTemplate(id);
 
@@ -25,32 +28,21 @@ export default function TemplateDetail() {
 
   if (isError && (error as any)?.code === "PGRST116") {
     // Template not found - redirect to missing page
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-2xl mx-auto">
-          <Alert variant="destructive" role="alert" data-testid="template-404">
-            <Info className="h-4 w-4" />
-            <AlertTitle>{toSentenceCase("Template non trovato")}</AlertTitle>
-            <AlertDescription>
-              {toSentenceCase("Questo template potrebbe essere stato eliminato.")}
-            </AlertDescription>
-          </Alert>
-          <div className="mt-4 flex gap-3">
-            <Button onClick={() => navigate(-1)} variant="outline">
-              {toSentenceCase("Torna indietro")}
-            </Button>
-            <Button onClick={() => navigate("/templates")}>
-              {toSentenceCase("Vai ai template")}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+    navigate(`/templates/${id}/missing`, { replace: true });
+    return null;
   }
 
   if (!data) {
     return null;
   }
+
+  const toEdit = () => {
+    setSp({ mode: "edit" }, { replace: true });
+  };
+
+  const toRead = () => {
+    setSp({ mode: "read" }, { replace: true });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,16 +54,20 @@ export default function TemplateDetail() {
             </Button>
             <div>
               <PageHeading className="text-2xl">{data.name}</PageHeading>
-              {readonly && (
+              {mode === "read" && (
                 <p className="text-sm text-muted-foreground mt-1">
                   {toSentenceCase("Visualizzazione in sola lettura")}
                 </p>
               )}
             </div>
           </div>
-          {!readonly && (
-            <Button onClick={() => navigate(`/templates/${id}/edit`)}>
+          {mode === "read" ? (
+            <Button onClick={toEdit} data-testid="btn-edit-template">
               {toSentenceCase("Modifica")}
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={toRead} data-testid="btn-cancel-edit">
+              {toSentenceCase("Chiudi")}
             </Button>
           )}
         </div>
