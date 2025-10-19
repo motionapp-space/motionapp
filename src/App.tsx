@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Auth from "./pages/Auth";
 import Plans from "./pages/Plans";
 import TemplateEditor from "./pages/TemplateEditor";
+import TemplateDetail from "./pages/TemplateDetail";
+import TemplateMissing from "./pages/TemplateMissing";
 import ClientPlanEditor from "./pages/ClientPlanEditor";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
@@ -56,13 +58,15 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           {user ? (
-            <div className="flex min-h-screen w-full">
+            <div className="flex h-screen w-full overflow-hidden">
               <AppSidebar />
-              <main className="flex-1 overflow-y-auto bg-background">
+              <main className="flex-1 h-full overflow-y-auto bg-background">
                 <Routes>
                   <Route path="/" element={<Navigate to="/clients" replace />} />
                   <Route path="/templates" element={<Plans />} />
+                  <Route path="/templates/:id" element={<TemplateDetail />} />
                   <Route path="/templates/:id/edit" element={<TemplateEditor />} />
+                  <Route path="/templates/:id/missing" element={<TemplateMissing />} />
                   <Route path="/client-plans/new" element={<ClientPlanEditor />} />
                   <Route path="/client-plans/:id/edit" element={<ClientPlanEditor />} />
                   <Route path="/clients" element={<Clients />} />

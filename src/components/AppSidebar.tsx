@@ -24,13 +24,16 @@ export function AppSidebar() {
   };
 
   return (
-    <aside className="h-screen w-64 shrink-0 border-r bg-background px-3 py-4">
-      <div className="px-2">
+    <aside 
+      className="h-full w-64 shrink-0 border-r bg-background flex flex-col" 
+      data-testid="sidebar"
+    >
+      <div className="px-5 py-4">
         <div className="text-2xl font-semibold tracking-tight">PlanPal</div>
       </div>
 
-      <div className="mt-6 px-2">
-        <div className="mb-2 text-sm font-medium text-muted-foreground">Menu</div>
+      <div className="flex-1 overflow-y-auto px-3">
+        <div className="px-2 mb-2 text-sm font-medium text-muted-foreground">Menu</div>
         <nav className="flex flex-col gap-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -64,12 +67,12 @@ export function AppSidebar() {
         </nav>
       </div>
 
-      <div className="mt-auto px-2">
+      <div className="px-5 py-4">
         <button
           type="button"
           onClick={handleLogout}
           className={cn(
-            "mt-6 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-base leading-6",
+            "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-base leading-6",
             "text-foreground hover:bg-muted transition-colors duration-200",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           )}

@@ -1,12 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
-import { ExternalLink, Edit, CheckCircle, XCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ExternalLink, Edit, CheckCircle, XCircle, Info } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import type { ClientPlanWithTemplate } from "@/types/template";
 import { toSentenceCase } from "@/lib/text";
+import { useTemplate } from "@/features/templates/hooks/useTemplate";
 
 interface ClientPlanCardProps {
   plan: ClientPlanWithTemplate;
@@ -15,11 +16,29 @@ interface ClientPlanCardProps {
 }
 
 export function ClientPlanCard({ plan, onEdit, onUpdateStatus }: ClientPlanCardProps) {
+  const navigate = useNavigate();
+  const templateId = plan.derived_from_template_id ?? null;
+  const { data: template, isError, error } = useTemplate(templateId ?? undefined);
+
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "dd/MM/yyyy", { locale: it });
     } catch {
       return dateString;
+    }
+  };
+
+  const openTemplate = () => {
+    if (!templateId) return;
+    
+    // If template is missing (404), navigate to missing page
+    if (isError && (error as any)?.code === "PGRST116") {
+      navigate(`/templates/${templateId}/missing`, { 
+        state: { planId: plan.id } 
+      });
+    } else {
+      // Navigate to readonly view
+      navigate(`/templates/${templateId}?readonly=1`);
     }
   };
 
@@ -45,17 +64,36 @@ export function ClientPlanCard({ plan, onEdit, onUpdateStatus }: ClientPlanCardP
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {plan.derived_from_template_id && plan.template && (
-          <div className="text-sm text-muted-foreground">
-            <span>{toSentenceCase("derivato da template")}: </span>
-            <Link
-              to={`/templates/${plan.derived_from_template_id}`}
-              className="text-primary underline underline-offset-2 hover:opacity-90 inline-flex items-center gap-1"
-              state={{ readonly: true }}
-            >
-              {plan.template.name}
-              <ExternalLink className="h-3 w-3" />
-            </Link>
+        {templateId && (
+          <div className="text-sm text-muted-foreground flex items-center gap-2">
+            {isError && (error as any)?.code === "PGRST116" ? (
+              <>
+                <Info className="h-4 w-4 text-destructive" />
+                <span>{toSentenceCase("Template eliminato")}</span>
+                <Button
+                  variant="link"
+                  className="px-0 h-auto text-primary"
+                  onClick={() => navigate(`/templates/${templateId}/missing`, { state: { planId: plan.id } })}
+                  data-testid={`missing-template-${templateId}`}
+                >
+                  {toSentenceCase("Recupera: salva come nuovo template")}
+                </Button>
+              </>
+            ) : (
+              <>
+                <span>{toSentenceCase("derivato da template")}: </span>
+                <button
+                  type="button"
+                  onClick={openTemplate}
+                  className="text-primary underline underline-offset-2 hover:opacity-90 inline-flex items-center gap-1"
+                  data-testid={`derived-template-${templateId}`}
+                  aria-label={toSentenceCase("Apri template derivato (sola lettura)")}
+                >
+                  {template?.name || toSentenceCase("Caricamento...")}
+                  <ExternalLink className="h-3 w-3" />
+                </button>
+              </>
+            )}
           </div>
         )}
 
