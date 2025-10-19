@@ -3,7 +3,9 @@ import { PageHeading } from "@/components/ui/page-heading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, FileText, Clock, Tag, Copy, Trash2 } from "lucide-react";
+import { Plus, FileText, Clock, Tag, Copy, Trash2, Eye, Pencil } from "lucide-react";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { toSentenceCase } from "@/lib/text";
@@ -78,8 +80,9 @@ const Plans = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-8 flex justify-between items-center">
+    <TooltipProvider>
+      <div className="container mx-auto p-6 max-w-7xl">
+        <div className="mb-8 flex justify-between items-center">
         <div>
           <PageHeading className="mb-2">{toSentenceCase("Template di Allenamento")}</PageHeading>
           <p className="text-muted-foreground">{toSentenceCase("Repository dei tuoi template riutilizzabili")}</p>
@@ -127,47 +130,39 @@ const Plans = () => {
                     <div>{toSentenceCase("ultima modifica")}: {formatDate(template.updated_at)}</div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 pt-2 mt-auto">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => navigate(`/templates/${template.id}?mode=read`)}
-                      className="flex-1"
-                      data-testid={`template-open-${template.id}`}
-                    >
-                      {toSentenceCase("Apri")}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => navigate(`/templates/${template.id}?mode=edit`)}
-                      className="flex-1"
-                      data-testid={`template-edit-${template.id}`}
-                    >
-                      {toSentenceCase("Modifica")}
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => duplicateTemplate(template.id, e)}
-                      className="flex-1 gap-2"
-                    >
-                      <Copy className="h-4 w-4" />
-                      {toSentenceCase("duplica")}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => handleDeleteClick(template.id, e)}
-                      className="flex-1 gap-2 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      {toSentenceCase("elimina")}
-                    </Button>
-                  </div>
+                <div className="flex items-center justify-end gap-1 pt-2 mt-auto">
+                  <IconTooltipButton
+                    label={toSentenceCase("Apri")}
+                    onClick={() => navigate(`/templates/${template.id}?mode=read`)}
+                    data-testid={`template-open-${template.id}`}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </IconTooltipButton>
+                  
+                  <IconTooltipButton
+                    label={toSentenceCase("Modifica")}
+                    onClick={() => navigate(`/templates/${template.id}?mode=edit`)}
+                    data-testid={`template-edit-${template.id}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </IconTooltipButton>
+                  
+                  <IconTooltipButton
+                    label={toSentenceCase("Duplica")}
+                    onClick={(e) => duplicateTemplate(template.id, e)}
+                    data-testid={`template-duplicate-${template.id}`}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </IconTooltipButton>
+                  
+                  <IconTooltipButton
+                    label={toSentenceCase("Elimina")}
+                    onClick={(e) => handleDeleteClick(template.id, e)}
+                    className="text-destructive hover:bg-destructive/10"
+                    data-testid={`template-delete-${template.id}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </IconTooltipButton>
                 </div>
               </CardContent>
             </Card>
@@ -191,7 +186,8 @@ const Plans = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };
 

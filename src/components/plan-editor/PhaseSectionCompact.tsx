@@ -9,6 +9,7 @@ interface PhaseSectionCompactProps {
   onUpdateExercise: (exerciseId: string, patch: Partial<Exercise>) => void;
   onDuplicateExercise: (exerciseId: string) => void;
   onDeleteExercise: (exerciseId: string) => void;
+  readonly?: boolean;
 }
 
 const phaseLabels: Record<string, string> = {
@@ -23,6 +24,7 @@ export const PhaseSectionCompact = ({
   onUpdateExercise,
   onDuplicateExercise,
   onDeleteExercise,
+  readonly = false,
 }: PhaseSectionCompactProps) => {
   return (
     <div className="space-y-3">
@@ -35,15 +37,17 @@ export const PhaseSectionCompact = ({
             {phase.exercises.length} {phase.exercises.length === 1 ? 'esercizio' : 'esercizi'}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onAddExercise}
-          className="gap-2 h-11"
-        >
-          <Plus className="h-4 w-4" />
-          Aggiungi esercizio
-        </Button>
+        {!readonly && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAddExercise}
+            className="gap-2 h-11"
+          >
+            <Plus className="h-4 w-4" />
+            Aggiungi esercizio
+          </Button>
+        )}
       </div>
 
       {phase.exercises.length === 0 ? (
@@ -61,7 +65,7 @@ export const PhaseSectionCompact = ({
             <div className="col-span-1 text-center">Rec</div>
             <div className="col-span-2">Obiettivo</div>
             <div className="col-span-2">Note</div>
-            <div className="col-span-1"></div>
+            {!readonly && <div className="col-span-1"></div>}
           </div>
           
           {/* Exercise Rows */}
@@ -74,6 +78,7 @@ export const PhaseSectionCompact = ({
                 onUpdate={(patch) => onUpdateExercise(exercise.id, patch)}
                 onDuplicate={() => onDuplicateExercise(exercise.id)}
                 onDelete={() => onDeleteExercise(exercise.id)}
+                readonly={readonly}
               />
             ))}
         </div>

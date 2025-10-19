@@ -48,40 +48,46 @@ export const DayCardCompact = ({
             value={day.title}
             onChange={(e) => onUpdateTitle(e.target.value)}
             className="flex-1 text-lg font-semibold h-11"
+            disabled={readonly}
+            readOnly={readonly}
           />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onDuplicate}
-            title="Duplica giorno"
-            className="h-11 w-11"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+          {!readonly && (
+            <>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-11 w-11 text-destructive hover:text-destructive"
-                title="Elimina giorno"
+                onClick={onDuplicate}
+                title="Duplica giorno"
+                className="h-11 w-11"
               >
-                <Trash2 className="h-4 w-4" />
+                <Copy className="h-4 w-4" />
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Eliminare questo giorno?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Questa azione non può essere annullata. Tutti gli esercizi verranno eliminati.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annulla</AlertDialogCancel>
-                <AlertDialogAction onClick={onDelete}>Elimina</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 text-destructive hover:text-destructive"
+                    title="Elimina giorno"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Eliminare questo giorno?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Questa azione non può essere annullata. Tutti gli esercizi verranno eliminati.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annulla</AlertDialogCancel>
+                    <AlertDialogAction onClick={onDelete}>Elimina</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
         </div>
       </CardHeader>
       
@@ -94,6 +100,7 @@ export const DayCardCompact = ({
             onUpdateExercise={(exerciseId, patch) => onUpdateExercise(phase.type, exerciseId, patch)}
             onDuplicateExercise={(exerciseId) => onDuplicateExercise(phase.type, exerciseId)}
             onDeleteExercise={(exerciseId) => onDeleteExercise(phase.type, exerciseId)}
+            readonly={readonly}
           />
         ))}
       </CardContent>

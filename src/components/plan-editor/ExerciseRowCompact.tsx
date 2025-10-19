@@ -8,11 +8,12 @@ interface ExerciseRowCompactProps {
   onUpdate: (patch: Partial<Exercise>) => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  readonly?: boolean;
 }
 
-export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete }: ExerciseRowCompactProps) => {
+export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete, readonly = false }: ExerciseRowCompactProps) => {
   return (
-    <div className="grid grid-cols-12 gap-3 items-center p-3 rounded-lg hover:bg-muted/30 transition-colors border border-transparent hover:border-muted">
+    <div className={`grid ${readonly ? 'grid-cols-11' : 'grid-cols-12'} gap-3 items-center p-3 rounded-lg ${readonly ? '' : 'hover:bg-muted/30'} transition-colors border border-transparent ${readonly ? '' : 'hover:border-muted'}`}>
       {/* Name */}
       <div className="col-span-3">
         <Input
@@ -20,6 +21,8 @@ export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete }
           onChange={(e) => onUpdate({ name: e.target.value })}
           placeholder="Nome esercizio"
           className="h-11"
+          disabled={readonly}
+          readOnly={readonly}
         />
       </div>
       
@@ -32,6 +35,8 @@ export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete }
           placeholder="Serie"
           className="h-11 text-center"
           min={0}
+          disabled={readonly}
+          readOnly={readonly}
         />
       </div>
       
@@ -42,6 +47,8 @@ export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete }
           onChange={(e) => onUpdate({ reps: e.target.value })}
           placeholder="Rip"
           className="h-11 text-center"
+          disabled={readonly}
+          readOnly={readonly}
         />
       </div>
       
@@ -52,6 +59,8 @@ export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete }
           onChange={(e) => onUpdate({ load: e.target.value })}
           placeholder="Carico"
           className="h-11 text-center"
+          disabled={readonly}
+          readOnly={readonly}
         />
       </div>
       
@@ -62,6 +71,8 @@ export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete }
           onChange={(e) => onUpdate({ rest: e.target.value })}
           placeholder="Rec"
           className="h-11 text-center"
+          disabled={readonly}
+          readOnly={readonly}
         />
       </div>
       
@@ -73,6 +84,8 @@ export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete }
           placeholder="Obiettivo"
           className="h-11"
           aria-label="Obiettivo"
+          disabled={readonly}
+          readOnly={readonly}
         />
       </div>
       
@@ -83,32 +96,36 @@ export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete }
           onChange={(e) => onUpdate({ notes: e.target.value })}
           placeholder="Note"
           className="h-11"
+          disabled={readonly}
+          readOnly={readonly}
         />
       </div>
       
       {/* Actions */}
-      <div className="col-span-1 flex items-center justify-end gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={onDuplicate}
-          title="Duplica esercizio"
-          className="h-9 w-9 hover:bg-muted/40 transition-colors"
-        >
-          <Copy className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={onDelete}
-          title="Elimina esercizio"
-          className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
+      {!readonly && (
+        <div className="col-span-1 flex items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onDuplicate}
+            title="Duplica esercizio"
+            className="h-9 w-9 hover:bg-muted/40 transition-colors"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onDelete}
+            title="Elimina esercizio"
+            className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
