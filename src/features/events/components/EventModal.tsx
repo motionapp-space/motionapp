@@ -261,17 +261,6 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
             </Select>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="all-day"
-              checked={formData.is_all_day}
-              onCheckedChange={handleAllDayToggle}
-            />
-            <Label htmlFor="all-day" className="cursor-pointer">
-              Tutto il giorno
-            </Label>
-          </div>
-
           {!formData.is_all_day ? (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -319,6 +308,17 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
               </div>
             </div>
           )}
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="all-day"
+              checked={formData.is_all_day}
+              onCheckedChange={handleAllDayToggle}
+            />
+            <Label htmlFor="all-day" className="cursor-pointer">
+              Tutto il giorno
+            </Label>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="location">Luogo</Label>
