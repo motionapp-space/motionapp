@@ -210,14 +210,14 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle>
             {isEdit ? "Modifica appuntamento" : "Nuovo appuntamento"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4 flex-1 overflow-y-auto">
+        <div className="space-y-4 px-6 flex-1 overflow-y-auto">
           {errors.length > 0 && (
             <Alert variant={errors.some(e => !e.includes("⚠️")) ? "destructive" : "default"}>
               <AlertCircle className="h-4 w-4" />
@@ -361,28 +361,30 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
           </div>
         </div>
 
-        <div className="flex justify-between gap-3 pt-4 border-t sticky bottom-0 bg-background">
-          {isEdit && (
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Elimina
-            </Button>
-          )}
-          <div className="flex gap-3 ml-auto">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Annulla
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={createMutation.isPending || updateMutation.isPending}
-            >
-              {isEdit ? "Salva" : "Crea"}
-            </Button>
+        <div className="sticky bottom-0 bg-background border-t border-border mt-auto">
+          <div className="flex justify-between items-center gap-3 px-6 py-4">
+            {isEdit && (
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Elimina
+              </Button>
+            )}
+            <div className={`flex gap-3 ${!isEdit ? 'ml-auto' : ''}`}>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Annulla
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {isEdit ? "Salva" : "Crea"}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
