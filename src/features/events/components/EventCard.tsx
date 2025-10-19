@@ -1,4 +1,5 @@
 import { formatTimeRange } from "../utils/calendar-utils";
+import { getClientColor, getClientColorWithOpacity } from "../utils/client-colors";
 import { cn } from "@/lib/utils";
 import type { EventWithClient } from "../types";
 
@@ -9,12 +10,19 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, onClick, compact = false }: EventCardProps) {
+  const bgColor = getClientColorWithOpacity(event.client_id, 0.15);
+  const borderColor = getClientColor(event.client_id);
+
   return (
     <div
       onClick={onClick}
+      style={{ 
+        backgroundColor: bgColor,
+        borderColor: borderColor,
+      }}
       className={cn(
-        "rounded-md border border-primary/20 bg-primary/10 p-2 cursor-pointer",
-        "hover:bg-primary/20 transition-colors",
+        "rounded-md border-2 p-2 cursor-pointer transition-all",
+        "hover:shadow-md hover:scale-[1.02]",
         compact && "text-xs py-1 px-2"
       )}
     >

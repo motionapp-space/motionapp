@@ -1,8 +1,9 @@
 import { useMemo } from "react";
-import { format, isSameMonth } from "date-fns";
+import { format, isSameMonth, isSameDay, parseISO, startOfDay, endOfDay } from "date-fns";
 import { it } from "date-fns/locale";
 import { getMonthDays, getEventsForDay } from "../utils/calendar-utils";
 import { EventCard } from "./EventCard";
+import { getClientColor } from "../utils/client-colors";
 import { cn } from "@/lib/utils";
 import type { EventWithClient } from "../types";
 
@@ -15,6 +16,16 @@ interface MonthViewProps {
 export function MonthView({ date, events, onEventClick }: MonthViewProps) {
   const monthDays = useMemo(() => getMonthDays(date), [date]);
   const weekDays = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
+
+  // Group multi-day events
+  const getMultiDayEvents = (day: Date) => {
+    return events.filter(event => {
+      const eventStart = startOfDay(parseISO(event.start_at));
+      const eventEnd = endOfDay(parseISO(event.end_at));
+      const currentDay = startOfDay(day);
+      return currentDay >= eventStart && currentDay <= eventEnd;
+    });
+  };
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -30,9 +41,9 @@ export function MonthView({ date, events, onEventClick }: MonthViewProps) {
       {/* Calendar grid */}
       <div className="flex-1 grid grid-cols-7 auto-rows-fr overflow-auto">
         {monthDays.map((day) => {
-          const dayEvents = getEventsForDay(events, day);
+          const dayEvents = getMultiDayEvents(day);
           const isCurrentMonth = isSameMonth(day, date);
-          const isToday = format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+          const isToday = isSameDay(day, new Date());
 
           return (
             <div
@@ -51,14 +62,31 @@ export function MonthView({ date, events, onEventClick }: MonthViewProps) {
                 {format(day, "d")}
               </div>
               <div className="space-y-1">
-                {dayEvents.slice(0, 3).map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    onClick={() => onEventClick(event)}
-                    compact
-                  />
-                ))}
+                {dayEvents.slice(0, 3).map((event) => {
+                  const eventStart = startOfDay(parseISO(event.start_at));
+                  const isEventStart = isSameDay(eventStart, day);
+                  
+                  return (
+                    <div key={event.id} className="relative">
+                      {isEventStart ? (
+                        <EventCard
+                          event={event}
+                          onClick={() => onEventClick(event)}
+                          compact
+                        />
+                      ) : (
+                        <div
+                          onClick={() => onEventClick(event)}
+                          className="h-6 rounded cursor-pointer hover:opacity-80 transition-opacity"
+                          style={{ 
+                            backgroundColor: getClientColor(event.client_id),
+                            opacity: 0.6
+                          }}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
                 {dayEvents.length > 3 && (
                   <div className="text-xs text-muted-foreground text-center py-1">
                     +{dayEvents.length - 3} altri

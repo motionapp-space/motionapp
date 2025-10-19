@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addHours } from "date-fns";
 import { it } from "date-fns/locale";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useCreateEvent } from "../hooks/useCreateEvent";
@@ -25,9 +25,10 @@ interface EventModalProps {
     end: Date;
     clientId?: string;
   };
+  lockedClientId?: string;
 }
 
-export function EventModal({ open, onOpenChange, event, prefillData }: EventModalProps) {
+export function EventModal({ open, onOpenChange, event, prefillData, lockedClientId }: EventModalProps) {
   const isEdit = !!event;
   const { data: clientsData } = useClientsQuery({ limit: 1000 });
   const createMutation = useCreateEvent();
@@ -45,35 +46,42 @@ export function EventModal({ open, onOpenChange, event, prefillData }: EventModa
     reminder_offset_minutes: 0,
   });
 
+  const [savedTimeValues, setSavedTimeValues] = useState({ start: "", end: "" });
   const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
     if (event) {
+      const startFormatted = format(parseISO(event.start_at), "yyyy-MM-dd'T'HH:mm");
+      const endFormatted = format(parseISO(event.end_at), "yyyy-MM-dd'T'HH:mm");
       setFormData({
         title: event.title,
         client_id: event.client_id,
         location: event.location || "",
-        start_at: format(parseISO(event.start_at), "yyyy-MM-dd'T'HH:mm"),
-        end_at: format(parseISO(event.end_at), "yyyy-MM-dd'T'HH:mm"),
+        start_at: startFormatted,
+        end_at: endFormatted,
         notes: event.notes || "",
         is_all_day: event.is_all_day || false,
         reminder_offset_minutes: event.reminder_offset_minutes || 0,
       });
+      setSavedTimeValues({ start: startFormatted, end: endFormatted });
     } else if (prefillData) {
+      const startFormatted = format(prefillData.start, "yyyy-MM-dd'T'HH:mm");
+      const endFormatted = format(prefillData.end, "yyyy-MM-dd'T'HH:mm");
       setFormData({
         title: "",
-        client_id: prefillData.clientId || "",
+        client_id: lockedClientId || prefillData.clientId || "",
         location: "",
-        start_at: format(prefillData.start, "yyyy-MM-dd'T'HH:mm"),
-        end_at: format(prefillData.end, "yyyy-MM-dd'T'HH:mm"),
+        start_at: startFormatted,
+        end_at: endFormatted,
         notes: "",
         is_all_day: false,
         reminder_offset_minutes: 0,
       });
+      setSavedTimeValues({ start: startFormatted, end: endFormatted });
     } else {
       setFormData({
         title: "",
-        client_id: "",
+        client_id: lockedClientId || "",
         location: "",
         start_at: "",
         end_at: "",
@@ -81,9 +89,63 @@ export function EventModal({ open, onOpenChange, event, prefillData }: EventModa
         is_all_day: false,
         reminder_offset_minutes: 0,
       });
+      setSavedTimeValues({ start: "", end: "" });
     }
     setErrors([]);
-  }, [event, prefillData, open]);
+  }, [event, prefillData, lockedClientId, open]);
+
+  const roundToNearest5Minutes = (dateStr: string): string => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    const minutes = date.getMinutes();
+    const roundedMinutes = Math.round(minutes / 5) * 5;
+    date.setMinutes(roundedMinutes);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+    return format(date, "yyyy-MM-dd'T'HH:mm");
+  };
+
+  const handleStartChange = (value: string) => {
+    const rounded = roundToNearest5Minutes(value);
+    setSavedTimeValues((prev) => ({ ...prev, start: rounded }));
+    
+    if (!formData.is_all_day) {
+      setFormData({ ...formData, start_at: rounded });
+      
+      // Auto-set end time to +1 hour if not editing
+      if (!isEdit && rounded) {
+        const endDate = addHours(new Date(rounded), 1);
+        const endRounded = roundToNearest5Minutes(format(endDate, "yyyy-MM-dd'T'HH:mm"));
+        setSavedTimeValues((prev) => ({ ...prev, end: endRounded }));
+        setFormData((prev) => ({ ...prev, start_at: rounded, end_at: endRounded }));
+      }
+    } else {
+      // All-day mode: just update the date part
+      const dateOnly = rounded.split('T')[0];
+      setFormData({ ...formData, start_at: dateOnly, end_at: dateOnly });
+    }
+  };
+
+  const handleEndChange = (value: string) => {
+    const rounded = roundToNearest5Minutes(value);
+    setSavedTimeValues((prev) => ({ ...prev, end: rounded }));
+    if (!formData.is_all_day) {
+      setFormData({ ...formData, end_at: rounded });
+    }
+  };
+
+  const handleAllDayToggle = (checked: boolean) => {
+    if (checked) {
+      // Switch to all-day: keep date only
+      const dateOnly = formData.start_at ? formData.start_at.split('T')[0] : "";
+      setFormData({ ...formData, is_all_day: true, start_at: dateOnly, end_at: dateOnly });
+    } else {
+      // Switch back to timed: restore saved times or use defaults
+      const start = savedTimeValues.start || format(new Date(), "yyyy-MM-dd'T'HH:mm");
+      const end = savedTimeValues.end || format(addHours(new Date(start), 1), "yyyy-MM-dd'T'HH:mm");
+      setFormData({ ...formData, is_all_day: false, start_at: start, end_at: end });
+    }
+  };
 
   const validate = (): boolean => {
     const newErrors: string[] = [];
@@ -148,14 +210,14 @@ export function EventModal({ open, onOpenChange, event, prefillData }: EventModa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? "Modifica appuntamento" : "Nuovo appuntamento"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 flex-1 overflow-y-auto">
           {errors.length > 0 && (
             <Alert variant={errors.some(e => !e.includes("⚠️")) ? "destructive" : "default"}>
               <AlertCircle className="h-4 w-4" />
@@ -184,6 +246,7 @@ export function EventModal({ open, onOpenChange, event, prefillData }: EventModa
             <Select
               value={formData.client_id}
               onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+              disabled={!!lockedClientId}
             >
               <SelectTrigger id="client">
                 <SelectValue placeholder="Seleziona cliente" />
@@ -198,38 +261,64 @@ export function EventModal({ open, onOpenChange, event, prefillData }: EventModa
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="start">Inizio *</Label>
-              <Input
-                id="start"
-                type="datetime-local"
-                value={formData.start_at}
-                onChange={(e) => setFormData({ ...formData, start_at: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="end">Fine *</Label>
-              <Input
-                id="end"
-                type="datetime-local"
-                value={formData.end_at}
-                onChange={(e) => setFormData({ ...formData, end_at: e.target.value })}
-              />
-            </div>
-          </div>
-
           <div className="flex items-center space-x-2">
             <Switch
               id="all-day"
               checked={formData.is_all_day}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_all_day: checked })}
+              onCheckedChange={handleAllDayToggle}
             />
             <Label htmlFor="all-day" className="cursor-pointer">
               Tutto il giorno
             </Label>
           </div>
+
+          {!formData.is_all_day ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start">Inizio *</Label>
+                <Input
+                  id="start"
+                  type="datetime-local"
+                  value={formData.start_at}
+                  onChange={(e) => handleStartChange(e.target.value)}
+                  step={300}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="end">Fine *</Label>
+                <Input
+                  id="end"
+                  type="datetime-local"
+                  value={formData.end_at}
+                  onChange={(e) => handleEndChange(e.target.value)}
+                  step={300}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start-date">Data Inizio *</Label>
+                <Input
+                  id="start-date"
+                  type="date"
+                  value={formData.start_at}
+                  onChange={(e) => setFormData({ ...formData, start_at: e.target.value, end_at: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="end-date">Data Fine *</Label>
+                <Input
+                  id="end-date"
+                  type="date"
+                  value={formData.end_at}
+                  onChange={(e) => setFormData({ ...formData, end_at: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="location">Luogo</Label>
@@ -272,7 +361,7 @@ export function EventModal({ open, onOpenChange, event, prefillData }: EventModa
           </div>
         </div>
 
-        <div className="flex justify-between gap-3">
+        <div className="flex justify-between gap-3 pt-4 border-t sticky bottom-0 bg-background">
           {isEdit && (
             <Button
               variant="destructive"

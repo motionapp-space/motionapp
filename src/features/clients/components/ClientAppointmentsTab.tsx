@@ -4,7 +4,7 @@ import { EventModal } from "@/features/events/components/EventModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Calendar, MapPin, Clock } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addHours } from "date-fns";
 import { it } from "date-fns/locale";
 import { formatTimeRange, isEventInPast } from "@/features/events/utils/calendar-utils";
 import { cn } from "@/lib/utils";
@@ -148,11 +148,12 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
           !selectedEvent
             ? {
                 start: new Date(),
-                end: new Date(new Date().getTime() + 60 * 60 * 1000),
+                end: addHours(new Date(), 1),
                 clientId,
               }
             : undefined
         }
+        lockedClientId={clientId}
       />
     </div>
   );
