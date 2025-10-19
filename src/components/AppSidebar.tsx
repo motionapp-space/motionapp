@@ -1,4 +1,4 @@
-import { Users, FileText, Settings, LogOut } from "lucide-react";
+import { Users, FileText, Calendar, Settings, LogOut } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ type NavItem = { label: string; to: string; icon: React.ElementType };
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Clienti", to: "/clients", icon: Users },
+  { label: "Calendario", to: "/calendar", icon: Calendar },
   { label: "Template", to: "/templates", icon: FileText },
   { label: "Impostazioni", to: "/settings", icon: Settings },
 ];

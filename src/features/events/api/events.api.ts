@@ -31,12 +31,15 @@ export async function listEvents(filters: EventsFilters = {}): Promise<EventWith
 
   if (error) throw error;
 
-  return (data || []).map((event: any) => ({
-    ...event,
-    client_name: event.clients 
-      ? `${event.clients.first_name} ${event.clients.last_name}`
-      : "Unknown",
-  }));
+  return (data || []).map((event: any) => {
+    const clients = event.clients as any;
+    return {
+      ...event,
+      client_name: clients 
+        ? `${clients.first_name} ${clients.last_name}`
+        : "Unknown",
+    };
+  });
 }
 
 export async function getEventById(id: string): Promise<EventWithClient> {
@@ -59,12 +62,13 @@ export async function getEventById(id: string): Promise<EventWithClient> {
   if (error) throw error;
   if (!data) throw new Error("Event not found");
 
+  const clients = (data as any).clients;
   return {
     ...data,
-    client_name: data.clients 
-      ? `${data.clients.first_name} ${data.clients.last_name}`
+    client_name: clients 
+      ? `${clients.first_name} ${clients.last_name}`
       : "Unknown",
-  };
+  } as EventWithClient;
 }
 
 export async function createEvent(input: CreateEventInput): Promise<Event> {
@@ -124,12 +128,15 @@ export async function getClientEvents(clientId: string): Promise<EventWithClient
 
   if (error) throw error;
 
-  return (data || []).map((event: any) => ({
-    ...event,
-    client_name: event.clients 
-      ? `${event.clients.first_name} ${event.clients.last_name}`
-      : "Unknown",
-  }));
+  return (data || []).map((event: any) => {
+    const clients = event.clients as any;
+    return {
+      ...event,
+      client_name: clients 
+        ? `${clients.first_name} ${clients.last_name}`
+        : "Unknown",
+    };
+  });
 }
 
 export async function getNextAppointment(clientId: string): Promise<EventWithClient | null> {
@@ -190,10 +197,11 @@ export async function getLastAppointment(clientId: string): Promise<EventWithCli
   if (error && error.code !== "PGRST116") throw error;
   if (!data) return null;
 
+  const clients = (data as any).clients;
   return {
     ...data,
-    client_name: data.clients 
-      ? `${data.clients.first_name} ${data.clients.last_name}`
+    client_name: clients 
+      ? `${clients.first_name} ${clients.last_name}`
       : "Unknown",
-  };
+  } as EventWithClient;
 }

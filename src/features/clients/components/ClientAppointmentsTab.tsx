@@ -1,0 +1,159 @@
+import { useState } from "react";
+import { useClientEvents } from "@/features/events/hooks/useClientEvents";
+import { EventModal } from "@/features/events/components/EventModal";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Plus, Calendar, MapPin, Clock } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { it } from "date-fns/locale";
+import { formatTimeRange, isEventInPast } from "@/features/events/utils/calendar-utils";
+import { cn } from "@/lib/utils";
+import type { EventWithClient } from "@/features/events/types";
+
+interface ClientAppointmentsTabProps {
+  clientId: string;
+}
+
+export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) {
+  const { data: events = [], isLoading } = useClientEvents(clientId);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventWithClient | undefined>();
+
+  const now = new Date();
+  const upcomingEvents = events.filter(e => parseISO(e.start_at) >= now);
+  const pastEvents = events.filter(e => parseISO(e.start_at) < now);
+
+  const handleNewEvent = () => {
+    setSelectedEvent(undefined);
+    setModalOpen(true);
+  };
+
+  const handleEventClick = (event: EventWithClient) => {
+    setSelectedEvent(event);
+    setModalOpen(true);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Appuntamenti</h3>
+        <Button onClick={handleNewEvent} className="gap-2 h-10">
+          <Plus className="h-4 w-4" />
+          Nuovo appuntamento
+        </Button>
+      </div>
+
+      {upcomingEvents.length === 0 && pastEvents.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground mb-4">Nessun appuntamento</p>
+            <Button onClick={handleNewEvent} variant="outline" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Crea primo appuntamento
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {upcomingEvents.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-muted-foreground">Prossimi</h4>
+              {upcomingEvents.map((event) => (
+                <Card
+                  key={event.id}
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => handleEventClick(event)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <h4 className="font-semibold">{event.title}</h4>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          <span>
+                            {format(parseISO(event.start_at), "EEEE, d MMMM yyyy", { locale: it })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <span>{formatTimeRange(event.start_at, event.end_at, event.is_all_day)}</span>
+                        </div>
+                        {event.location && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="h-4 w-4" />
+                            <span>{event.location}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {pastEvents.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-muted-foreground">Passati</h4>
+              {pastEvents.map((event) => (
+                <Card
+                  key={event.id}
+                  className="cursor-pointer hover:shadow-md transition-shadow opacity-75"
+                  onClick={() => handleEventClick(event)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <h4 className="font-semibold">{event.title}</h4>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          <span>
+                            {format(parseISO(event.start_at), "EEEE, d MMMM yyyy", { locale: it })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <span>{formatTimeRange(event.start_at, event.end_at, event.is_all_day)}</span>
+                        </div>
+                        {event.location && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="h-4 w-4" />
+                            <span>{event.location}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      <EventModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        event={selectedEvent}
+        prefillData={
+          !selectedEvent
+            ? {
+                start: new Date(),
+                end: new Date(new Date().getTime() + 60 * 60 * 1000),
+                clientId,
+              }
+            : undefined
+        }
+      />
+    </div>
+  );
+}
