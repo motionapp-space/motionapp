@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { DateTimePicker } from "@/components/ui/datetime-picker";
+import { DatePicker } from "@/components/ui/date-picker";
 import { format, parseISO, addHours } from "date-fns";
 import { it } from "date-fns/locale";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
@@ -94,43 +96,34 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
     setErrors([]);
   }, [event, prefillData, lockedClientId, open]);
 
-  const roundToNearest5Minutes = (dateStr: string): string => {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
-    const minutes = date.getMinutes();
-    const roundedMinutes = Math.round(minutes / 5) * 5;
-    date.setMinutes(roundedMinutes);
-    date.setSeconds(0);
-    date.setMilliseconds(0);
-    return format(date, "yyyy-MM-dd'T'HH:mm");
-  };
-
   const handleStartChange = (value: string) => {
-    const rounded = roundToNearest5Minutes(value);
-    setSavedTimeValues((prev) => ({ ...prev, start: rounded }));
+    if (!value) return;
+    
+    const startDate = new Date(value);
+    setSavedTimeValues((prev) => ({ ...prev, start: value }));
     
     if (!formData.is_all_day) {
-      setFormData({ ...formData, start_at: rounded });
+      setFormData({ ...formData, start_at: value });
       
       // Auto-set end time to +1 hour if not editing
-      if (!isEdit && rounded) {
-        const endDate = addHours(new Date(rounded), 1);
-        const endRounded = roundToNearest5Minutes(format(endDate, "yyyy-MM-dd'T'HH:mm"));
-        setSavedTimeValues((prev) => ({ ...prev, end: endRounded }));
-        setFormData((prev) => ({ ...prev, start_at: rounded, end_at: endRounded }));
+      if (!isEdit) {
+        const endDate = addHours(startDate, 1);
+        const endValue = endDate.toISOString();
+        setSavedTimeValues((prev) => ({ ...prev, end: endValue }));
+        setFormData((prev) => ({ ...prev, start_at: value, end_at: endValue }));
       }
     } else {
-      // All-day mode: just update the date part
-      const dateOnly = rounded.split('T')[0];
+      const dateOnly = format(startDate, "yyyy-MM-dd");
       setFormData({ ...formData, start_at: dateOnly, end_at: dateOnly });
     }
   };
 
   const handleEndChange = (value: string) => {
-    const rounded = roundToNearest5Minutes(value);
-    setSavedTimeValues((prev) => ({ ...prev, end: rounded }));
+    if (!value) return;
+    
+    setSavedTimeValues((prev) => ({ ...prev, end: value }));
     if (!formData.is_all_day) {
-      setFormData({ ...formData, end_at: rounded });
+      setFormData({ ...formData, end_at: value });
     }
   };
 
@@ -265,23 +258,19 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start">Inizio *</Label>
-                <Input
-                  id="start"
-                  type="datetime-local"
+                <DateTimePicker
                   value={formData.start_at}
-                  onChange={(e) => handleStartChange(e.target.value)}
-                  step={300}
+                  onChange={(value) => handleStartChange(value)}
+                  placeholder="Seleziona data e ora"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="end">Fine *</Label>
-                <Input
-                  id="end"
-                  type="datetime-local"
+                <DateTimePicker
                   value={formData.end_at}
-                  onChange={(e) => handleEndChange(e.target.value)}
-                  step={300}
+                  onChange={(value) => handleEndChange(value)}
+                  placeholder="Seleziona data e ora"
                 />
               </div>
             </div>
@@ -289,21 +278,19 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start-date">Data Inizio *</Label>
-                <Input
-                  id="start-date"
-                  type="date"
+                <DatePicker
                   value={formData.start_at}
-                  onChange={(e) => setFormData({ ...formData, start_at: e.target.value, end_at: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, start_at: value, end_at: value })}
+                  placeholder="Seleziona data"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="end-date">Data Fine *</Label>
-                <Input
-                  id="end-date"
-                  type="date"
+                <DatePicker
                   value={formData.end_at}
-                  onChange={(e) => setFormData({ ...formData, end_at: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, end_at: value })}
+                  placeholder="Seleziona data"
                 />
               </div>
             </div>
