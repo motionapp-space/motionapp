@@ -284,6 +284,57 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          client_id: string
+          coach_id: string
+          color: string | null
+          created_at: string
+          end_at: string
+          id: string
+          is_all_day: boolean | null
+          location: string | null
+          notes: string | null
+          recurrence_rule: string | null
+          reminder_offset_minutes: number | null
+          start_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          coach_id: string
+          color?: string | null
+          created_at?: string
+          end_at: string
+          id?: string
+          is_all_day?: boolean | null
+          location?: string | null
+          notes?: string | null
+          recurrence_rule?: string | null
+          reminder_offset_minutes?: number | null
+          start_at: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          coach_id?: string
+          color?: string | null
+          created_at?: string
+          end_at?: string
+          id?: string
+          is_all_day?: boolean | null
+          location?: string | null
+          notes?: string | null
+          recurrence_rule?: string | null
+          reminder_offset_minutes?: number | null
+          start_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       measurements: {
         Row: {
           arm_cm: number | null
