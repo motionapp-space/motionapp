@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -217,7 +217,7 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 px-6 flex-1 overflow-y-auto">
+        <div className="space-y-4 px-6 flex-1 overflow-y-auto pb-4">
           {errors.length > 0 && (
             <Alert variant={errors.some(e => !e.includes("⚠️")) ? "destructive" : "default"}>
               <AlertCircle className="h-4 w-4" />
@@ -361,8 +361,8 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-background border-t border-border mt-auto">
-          <div className="flex justify-between items-center gap-3 px-6 py-4">
+        <DialogFooter className="px-6 py-4 border-t">
+          <div className="flex justify-between items-center w-full gap-3">
             {isEdit && (
               <Button
                 variant="destructive"
@@ -374,7 +374,7 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
                 Elimina
               </Button>
             )}
-            <div className={`flex gap-3 ${!isEdit ? 'ml-auto' : ''}`}>
+            <div className={`flex gap-3 ${!isEdit ? 'ml-auto' : 'ml-auto'}`}>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Annulla
               </Button>
@@ -386,7 +386,7 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
               </Button>
             </div>
           </div>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
