@@ -15,9 +15,18 @@ interface DateTimePickerProps {
   disabled?: boolean;
 }
 
-// Separate hour and minute columns
-const HOURS = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0'));
-const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
+// Generate time options in 5-minute intervals
+const generateTimeOptions = () => {
+  const options: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 5) {
+      options.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    }
+  }
+  return options;
+};
+
+const TIME_OPTIONS = generateTimeOptions();
 
 export function DateTimePicker({ value, onChange, placeholder = "Seleziona data e ora", disabled }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
@@ -67,16 +76,6 @@ const handleTimeSelect = (selectedTime: string) => {
     newDate.setHours(hours, minutes, 0, 0);
     onChange(newDate.toISOString());
   }
-};
-
-const selectHour = (h: string) => {
-  const [, mm] = time.split(':');
-  handleTimeSelect(`${h}:${mm}`);
-};
-
-const selectMinute = (m: string) => {
-  const [hh] = time.split(':');
-  handleTimeSelect(`${hh}:${m}`);
 };
 
 const handleToday = () => {
@@ -145,41 +144,20 @@ const handleToday = () => {
       </div>
     </div>
 
-    {/* Time section: hours : minutes */}
-    <div className="flex items-stretch">
-      <ScrollArea hoverScrollbars className="h-[340px] w-16 group">
+    {/* Time section */}
+    <div className="w-28">
+      <ScrollArea hoverScrollbars className="h-[340px]">
         <div className="p-2 space-y-1">
-          {HOURS.map((h) => (
+          {TIME_OPTIONS.map((timeOption) => (
             <button
-              key={h}
-              aria-label={`Ora ${h}`}
-              onClick={() => selectHour(h)}
+              key={timeOption}
+              onClick={() => handleTimeSelect(timeOption)}
               className={cn(
                 "w-full text-center py-2 rounded text-sm hover:bg-muted transition-colors",
-                time.startsWith(h + ":") && "bg-primary text-primary-foreground font-semibold"
+                time === timeOption && "bg-primary text-primary-foreground font-semibold"
               )}
             >
-              {h}
-            </button>
-          ))}
-        </div>
-      </ScrollArea>
-      <div className="flex w-6 items-center justify-center text-sm text-muted-foreground select-none">
-        :
-      </div>
-      <ScrollArea hoverScrollbars className="h-[340px] w-16 group">
-        <div className="p-2 space-y-1">
-          {MINUTES.map((m) => (
-            <button
-              key={m}
-              aria-label={`Minuti ${m}`}
-              onClick={() => selectMinute(m)}
-              className={cn(
-                "w-full text-center py-2 rounded text-sm hover:bg-muted transition-colors",
-                time.endsWith(":" + m) && "bg-primary text-primary-foreground font-semibold"
-              )}
-            >
-              {m}
+              {timeOption}
             </button>
           ))}
         </div>
