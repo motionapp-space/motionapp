@@ -128,7 +128,7 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
           </div>
 
           {/* Time grid */}
-          <div className="relative flex" style={{ height: gridHeight + headerHeight }}>
+          <div className="relative flex" style={{ height: gridHeight }}>
             {weekDays.map((day, dayIndex) => {
               const dayStart = new Date(day);
               dayStart.setHours(DAY_START_H, 0, 0, 0);
@@ -145,7 +145,7 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
                     <div 
                       key={i} 
                       className="absolute left-0 right-0 border-t border-border/40" 
-                      style={{ top: headerHeight + i * 60 * MINUTE_HEIGHT }} 
+                      style={{ top: i * 60 * MINUTE_HEIGHT }} 
                     />
                   ))}
 
@@ -153,7 +153,7 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
                   {isDayToday && currentHour >= DAY_START_H && currentHour <= DAY_END_H && (
                     <div 
                       className="absolute left-0 right-0 h-0.5 bg-destructive z-10 pointer-events-none"
-                      style={{ top: headerHeight + minutesFromDayStart(new Date()) * MINUTE_HEIGHT }}
+                      style={{ top: minutesFromDayStart(new Date()) * MINUTE_HEIGHT }}
                     >
                       <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-destructive" />
                     </div>
@@ -171,7 +171,7 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
                     const startClamped = start < dayStart ? dayStart : start;
                     const endClamped = end > dayEnd ? dayEnd : end;
 
-                    const top = headerHeight + minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
+                    const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
                     const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;
                     const widthPercent = 1 / p.columns;
                     const leftPercent = p.column * widthPercent;
