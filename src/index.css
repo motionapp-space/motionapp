@@ -102,6 +102,16 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 220 15% 20%;
     --sidebar-border: 220 15% 90%;
     --sidebar-ring: 220 70% 45%;
+
+    /* Client colors for calendar events */
+    --client-1: 226 80% 52%;
+    --client-2: 171 65% 38%;
+    --client-3: 16 78% 50%;
+    --client-4: 280 60% 55%;
+    --client-5: 197 70% 42%;
+    --client-6: 340 65% 50%;
+    --client-7: 40 85% 50%;
+    --client-8: 120 45% 40%;
   }
 
   .dark {
@@ -143,6 +153,16 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 220 20% 20%;
     --sidebar-ring: 220 70% 50%;
+
+    /* Client colors for calendar events (dark mode) */
+    --client-1: 226 75% 60%;
+    --client-2: 171 60% 45%;
+    --client-3: 16 75% 58%;
+    --client-4: 280 55% 62%;
+    --client-5: 197 65% 50%;
+    --client-6: 340 60% 58%;
+    --client-7: 40 80% 58%;
+    --client-8: 120 40% 48%;
   }
 
   /* Responsive type tweaks */

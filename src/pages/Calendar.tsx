@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { parseISO, format, startOfMonth } from "date-fns";
-import { PageHeading } from "@/components/ui/page-heading";
 import { Input } from "@/components/ui/input";
 import { Search, Calendar as CalendarIcon } from "lucide-react";
 import { useEventsQuery } from "@/features/events/hooks/useEventsQuery";
@@ -85,12 +84,12 @@ const Calendar = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
+    <div className="h-screen flex flex-col bg-background w-full">
+      {/* Header with search */}
       <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <PageHeading>Calendario</PageHeading>
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
+          <div className="flex items-center justify-between gap-4 py-4">
+            <h1 className="text-2xl font-semibold">Calendario</h1>
             <div className="relative w-full max-w-xs">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -104,60 +103,64 @@ const Calendar = () => {
         </div>
       </header>
 
-      {/* Toolbar */}
-      <CalendarToolbar
-        view={view}
-        currentDate={currentDate}
-        onViewChange={handleViewChange}
-        onDateChange={handleDateChange}
-        onToday={handleToday}
-        onNewEvent={handleNewEvent}
-      />
+      {/* Toolbar with lateral padding */}
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
+        <CalendarToolbar
+          view={view}
+          currentDate={currentDate}
+          onViewChange={handleViewChange}
+          onDateChange={handleDateChange}
+          onToday={handleToday}
+          onNewEvent={handleNewEvent}
+        />
+      </div>
 
-      {/* Calendar Views */}
-      {isLoading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-        </div>
-      ) : filteredEvents.length === 0 && searchQuery ? (
-        <div className="flex-1 flex items-center justify-center text-center py-16">
-          <div>
-            <CalendarIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">Nessun appuntamento trovato</p>
+      {/* Calendar Views with lateral padding */}
+      <div className="flex-1 overflow-hidden mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
+        {isLoading ? (
+          <div className="flex h-full items-center justify-center">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
           </div>
-        </div>
-      ) : (
-        <>
-          {view === "day" && (
-            <DayView
-              date={currentDate}
-              events={filteredEvents}
-              onEventClick={handleEventClick}
-            />
-          )}
-          {view === "week" && (
-            <WeekView
-              date={currentDate}
-              events={filteredEvents}
-              onEventClick={handleEventClick}
-            />
-          )}
-          {view === "month" && (
-            <MonthView
-              date={currentDate}
-              events={filteredEvents}
-              onEventClick={handleEventClick}
-            />
-          )}
-          {view === "year" && (
-            <YearView
-              date={currentDate}
-              events={filteredEvents}
-              onMonthClick={handleMonthClick}
-            />
-          )}
-        </>
-      )}
+        ) : filteredEvents.length === 0 && searchQuery ? (
+          <div className="flex h-full items-center justify-center text-center py-16">
+            <div>
+              <CalendarIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">Nessun appuntamento trovato</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {view === "day" && (
+              <DayView
+                date={currentDate}
+                events={filteredEvents}
+                onEventClick={handleEventClick}
+              />
+            )}
+            {view === "week" && (
+              <WeekView
+                date={currentDate}
+                events={filteredEvents}
+                onEventClick={handleEventClick}
+              />
+            )}
+            {view === "month" && (
+              <MonthView
+                date={currentDate}
+                events={filteredEvents}
+                onEventClick={handleEventClick}
+              />
+            )}
+            {view === "year" && (
+              <YearView
+                date={currentDate}
+                events={filteredEvents}
+                onMonthClick={handleMonthClick}
+              />
+            )}
+          </>
+        )}
+      </div>
 
       {/* Event Modal */}
       <EventModal
