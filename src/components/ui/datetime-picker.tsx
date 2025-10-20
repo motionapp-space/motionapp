@@ -1,12 +1,12 @@
 import * as React from "react";
-import { format, addMonths, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, ChevronUp, ChevronDown } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 
 interface DateTimePickerProps {
   value?: string;
@@ -15,18 +15,9 @@ interface DateTimePickerProps {
   disabled?: boolean;
 }
 
-// Generate time options in 5-minute intervals
-const generateTimeOptions = () => {
-  const options: string[] = [];
-  for (let h = 0; h < 24; h++) {
-    for (let m = 0; m < 60; m += 5) {
-      options.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
-    }
-  }
-  return options;
-};
-
-const TIME_OPTIONS = generateTimeOptions();
+// Separate hour and minute columns
+const HOURS = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0'));
+const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
 
 export function DateTimePicker({ value, onChange, placeholder = "Seleziona data e ora", disabled }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
@@ -50,47 +41,51 @@ export function DateTimePicker({ value, onChange, placeholder = "Seleziona data 
   const initialValue = parseValue(value);
   const [date, setDate] = React.useState<Date | undefined>(initialValue.date);
   const [time, setTime] = React.useState<string>(initialValue.time);
-  const [displayMonth, setDisplayMonth] = React.useState<Date>(date || new Date());
 
   // Update internal state when value prop changes
-  React.useEffect(() => {
-    const parsed = parseValue(value);
-    setDate(parsed.date);
-    setTime(parsed.time);
-    if (parsed.date) setDisplayMonth(parsed.date);
-  }, [value]);
+React.useEffect(() => {
+  const parsed = parseValue(value);
+  setDate(parsed.date);
+  setTime(parsed.time);
+}, [value]);
 
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    if (!selectedDate) return;
-    setDate(selectedDate);
-    setDisplayMonth(selectedDate);
-    
-    // Combine date and time
-    const [hours, minutes] = time.split(':').map(Number);
-    const combined = new Date(selectedDate);
-    combined.setHours(hours, minutes, 0, 0);
-    onChange(combined.toISOString());
-  };
+const handleDateSelect = (selectedDate: Date | undefined) => {
+  if (!selectedDate) return;
+  setDate(selectedDate);
+  // Combine date and time
+  const [hours, minutes] = time.split(':').map(Number);
+  const combined = new Date(selectedDate);
+  combined.setHours(hours, minutes, 0, 0);
+  onChange(combined.toISOString());
+};
 
-  const handleTimeSelect = (selectedTime: string) => {
-    setTime(selectedTime);
-    
-    if (date) {
-      const [hours, minutes] = selectedTime.split(':').map(Number);
-      const newDate = new Date(date);
-      newDate.setHours(hours, minutes, 0, 0);
-      onChange(newDate.toISOString());
-    }
-  };
+const handleTimeSelect = (selectedTime: string) => {
+  setTime(selectedTime);
+  if (date) {
+    const [hours, minutes] = selectedTime.split(':').map(Number);
+    const newDate = new Date(date);
+    newDate.setHours(hours, minutes, 0, 0);
+    onChange(newDate.toISOString());
+  }
+};
 
-  const handleToday = () => {
-    const now = new Date();
-    setDate(now);
-    setDisplayMonth(now);
-    const currentTime = format(now, "HH:mm");
-    setTime(currentTime);
-    onChange(now.toISOString());
-  };
+const selectHour = (h: string) => {
+  const [, mm] = time.split(':');
+  handleTimeSelect(`${h}:${mm}`);
+};
+
+const selectMinute = (m: string) => {
+  const [hh] = time.split(':');
+  handleTimeSelect(`${hh}:${m}`);
+};
+
+const handleToday = () => {
+  const now = new Date();
+  setDate(now);
+  const currentTime = format(now, "HH:mm");
+  setTime(currentTime);
+  onChange(now.toISOString());
+};
 
   const handleClear = () => {
     setDate(undefined);
@@ -118,78 +113,80 @@ export function DateTimePicker({ value, onChange, placeholder = "Seleziona data 
           {displayValue}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <div className="flex">
-          {/* Calendar section */}
-          <div className="border-r">
-            <div className="flex items-center justify-between px-4 py-3 border-b">
-              <button
-                onClick={() => setDisplayMonth(subMonths(displayMonth, 1))}
-                className="p-1 hover:bg-muted rounded"
-              >
-                <ChevronUp className="h-4 w-4" />
-              </button>
-              <span className="font-medium">
-                {format(displayMonth, "MMMM yyyy", { locale: it })}
-              </span>
-              <button
-                onClick={() => setDisplayMonth(addMonths(displayMonth, 1))}
-                className="p-1 hover:bg-muted rounded"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </button>
-            </div>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={handleDateSelect}
-              month={displayMonth}
-              onMonthChange={setDisplayMonth}
-              initialFocus
-              locale={it}
-              className={cn("p-3 pointer-events-auto")}
-            />
-            <div className="flex gap-2 px-3 pb-3 border-t pt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClear}
-                className="flex-1 text-primary"
-              >
-                Cancella
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleToday}
-                className="flex-1 text-primary"
-              >
-                Oggi
-              </Button>
-            </div>
-          </div>
+<PopoverContent className="w-auto p-0 z-[60]" align="start">
+  <div className="flex">
+    {/* Calendar section */}
+    <div className="border-r">
+      <Calendar
+        mode="single"
+        selected={date}
+        onSelect={handleDateSelect}
+        initialFocus
+        locale={it}
+        className={cn("p-3 pointer-events-auto")}
+      />
+      <div className="flex gap-2 px-3 pb-3 border-t pt-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleClear}
+          className="flex-1 text-primary"
+        >
+          Cancella
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleToday}
+          className="flex-1 text-primary"
+        >
+          Oggi
+        </Button>
+      </div>
+    </div>
 
-          {/* Time section */}
-          <div className="w-28">
-            <ScrollArea className="h-[340px]">
-              <div className="p-2 space-y-1">
-                {TIME_OPTIONS.map((timeOption) => (
-                  <button
-                    key={timeOption}
-                    onClick={() => handleTimeSelect(timeOption)}
-                    className={cn(
-                      "w-full text-center py-2 rounded text-sm hover:bg-muted transition-colors",
-                      time === timeOption && "bg-primary text-primary-foreground font-semibold"
-                    )}
-                  >
-                    {timeOption}
-                  </button>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
+    {/* Time section: hours : minutes */}
+    <div className="flex items-stretch">
+      <ScrollArea hoverScrollbars className="h-[340px] w-16 group">
+        <div className="p-2 space-y-1">
+          {HOURS.map((h) => (
+            <button
+              key={h}
+              aria-label={`Ora ${h}`}
+              onClick={() => selectHour(h)}
+              className={cn(
+                "w-full text-center py-2 rounded text-sm hover:bg-muted transition-colors",
+                time.startsWith(h + ":") && "bg-primary text-primary-foreground font-semibold"
+              )}
+            >
+              {h}
+            </button>
+          ))}
         </div>
-      </PopoverContent>
+      </ScrollArea>
+      <div className="flex w-6 items-center justify-center text-sm text-muted-foreground select-none">
+        :
+      </div>
+      <ScrollArea hoverScrollbars className="h-[340px] w-16 group">
+        <div className="p-2 space-y-1">
+          {MINUTES.map((m) => (
+            <button
+              key={m}
+              aria-label={`Minuti ${m}`}
+              onClick={() => selectMinute(m)}
+              className={cn(
+                "w-full text-center py-2 rounded text-sm hover:bg-muted transition-colors",
+                time.endsWith(":" + m) && "bg-primary text-primary-foreground font-semibold"
+              )}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
+  </div>
+</PopoverContent>
     </Popover>
   );
 }
