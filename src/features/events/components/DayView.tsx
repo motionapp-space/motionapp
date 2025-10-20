@@ -49,7 +49,7 @@ export function DayView({ date, events, onEventClick }: DayViewProps) {
             {hours.map((hour, i) => (
               <div 
                 key={hour} 
-                className="absolute w-full text-right pr-4 -translate-y-2" 
+                className="absolute w-full flex items-center justify-end pr-3" 
                 style={{ top: i * 60 * MINUTE_HEIGHT }}
               >
                 {format(new Date().setHours(hour, 0), "HH:mm")}

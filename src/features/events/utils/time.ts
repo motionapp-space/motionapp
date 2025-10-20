@@ -15,3 +15,9 @@ export const minutesFromDayStart = (date: Date) => {
 };
 
 export const minutesVisible = () => (DAY_END_H - DAY_START_H) * 60; // 18h -> 1080m
+
+export const hoursArray = () => {
+  const out: number[] = [];
+  for (let h = DAY_START_H; h <= DAY_END_H; h++) out.push(h);
+  return out;
+};
