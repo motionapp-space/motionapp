@@ -3,7 +3,7 @@ import { format, isSameDay, startOfDay, endOfDay } from "date-fns";
 import { it } from "date-fns/locale";
 import { getWeekDays, getEventsForDay } from "../utils/calendar-utils";
 import { layoutOverlaps } from "../utils/layout";
-import { minutesFromDayStart, toMinutes, MINUTE_HEIGHT, DAY_START_H, DAY_END_H, minutesVisible } from "../utils/time";
+import { minutesFromDayStart, toMinutes, MINUTE_HEIGHT, DAY_START_H, DAY_END_H, minutesVisible, hoursArray } from "../utils/time";
 import { EventCard } from "./EventCard";
 import type { EventWithClient } from "../types";
 
@@ -15,7 +15,7 @@ interface WeekViewProps {
 
 export function WeekView({ date, events, onEventClick }: WeekViewProps) {
   const weekDays = useMemo(() => getWeekDays(date), [date]);
-  const hours = useMemo(() => Array.from({ length: DAY_END_H - DAY_START_H + 1 }, (_, i) => i + DAY_START_H), []);
+  const hours = useMemo(() => hoursArray(), []);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const currentHour = new Date().getHours();
   const currentMinutes = new Date().getMinutes();
@@ -71,111 +71,114 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
 
   return (
     <div className="flex h-full">
-      {/* Left hour column 05:00–23:00 */}
-      <div className="w-20 flex-shrink-0 border-r border-border/50 text-xs text-muted-foreground">
-        <div className="h-14" /> {/* Spacer for header */}
-        <div className="relative" style={{ height: gridHeight }}>
-          {hours.map((hour, i) => (
-            <div 
-              key={hour} 
-              className="absolute w-full flex items-center justify-end pr-3" 
-              style={{ top: i * 60 * MINUTE_HEIGHT }}
-            >
-              {format(new Date().setHours(hour, 0), "HH:mm")}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Right scrollable grid */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
-        {/* Day headers with counts */}
-        <div className="flex border-b sticky top-0 bg-card z-10">
-          {dailyCounts.map(({ day, count }) => {
-            const isToday = isSameDay(day, new Date());
-            return (
-              <div
-                key={day.toISOString()}
-                className="flex-1 text-center py-3 border-r last:border-r-0"
+      {/* Scrollable container for both hour column and grid */}
+      <div ref={scrollContainerRef} className="flex flex-1 overflow-y-auto">
+        {/* Left hour column 05:00–23:00 */}
+        <div className="w-20 flex-shrink-0 border-r border-border/50 text-xs text-muted-foreground">
+          <div className="h-14 sticky top-0 bg-card z-10" /> {/* Spacer for header */}
+          <div className="relative" style={{ height: gridHeight }}>
+            {hours.map((hour, i) => (
+              <div 
+                key={hour} 
+                className="absolute w-full flex items-center justify-end pr-3" 
+                style={{ top: i * 60 * MINUTE_HEIGHT }}
               >
-                <div className="text-xs text-muted-foreground uppercase">
-                  {format(day, "EEE", { locale: it })}
-                </div>
-                <div className={`text-lg font-semibold ${isToday ? 'text-primary' : ''}`}>
-                  {format(day, "d")}
-                </div>
-                {count > 0 && (
-                  <div className="text-xs font-semibold inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary mt-1">
-                    <span>{count}</span>
-                  </div>
-                )}
+                {format(new Date().setHours(hour, 0), "HH:mm")}
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
 
-        {/* Time grid */}
-        <div className="relative flex" style={{ height: gridHeight }}>
-          {weekDays.map((day, dayIndex) => {
-            const dayStart = new Date(day);
-            dayStart.setHours(DAY_START_H, 0, 0, 0);
-            const dayEnd = new Date(day);
-            dayEnd.setHours(DAY_END_H, 0, 0, 0);
-            
-            const positioned = positionedByDay[dayIndex] || [];
-            const isDayToday = isSameDay(day, new Date());
-
-            return (
-              <div key={day.toISOString()} className="flex-1 relative border-r last:border-r-0 border-border/20">
-                {/* Hour lines */}
-                {hours.map((_, i) => (
-                  <div 
-                    key={i} 
-                    className="absolute left-0 right-0 border-t border-border/40" 
-                    style={{ top: i * 60 * MINUTE_HEIGHT }} 
-                  />
-                ))}
-
-                {/* Current time line */}
-                {isDayToday && currentHour >= DAY_START_H && currentHour <= DAY_END_H && (
-                  <div 
-                    className="absolute left-0 right-0 h-0.5 bg-destructive z-10 pointer-events-none"
-                    style={{ top: minutesFromDayStart(new Date()) * MINUTE_HEIGHT }}
-                  >
-                    <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-destructive" />
+        {/* Right grid */}
+        <div className="flex-1">
+          {/* Day headers with counts */}
+          <div className="flex border-b sticky top-0 bg-card z-10">
+            {dailyCounts.map(({ day, count }) => {
+              const isToday = isSameDay(day, new Date());
+              return (
+                <div
+                  key={day.toISOString()}
+                  className="flex-1 text-center py-3 border-r last:border-r-0"
+                >
+                  <div className="text-xs text-muted-foreground uppercase">
+                    {format(day, "EEE", { locale: it })}
                   </div>
-                )}
+                  <div className={`text-lg font-semibold ${isToday ? 'text-primary' : ''}`}>
+                    {format(day, "d")}
+                  </div>
+                  {count > 0 && (
+                    <div className="text-xs font-semibold inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary mt-1">
+                      <span>{count}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-                {/* Event cards with positioning */}
-                {positioned.map((p) => {
-                  const ev = events.find((e) => e.id === p.id)!;
-                  if (!ev) return null;
-                  
-                  const start = new Date(ev.start_at);
-                  const end = new Date(ev.end_at);
-                  
-                  // Clamp to visible window
-                  const startClamped = start < dayStart ? dayStart : start;
-                  const endClamped = end > dayEnd ? dayEnd : end;
+          {/* Time grid */}
+          <div className="relative flex" style={{ height: gridHeight }}>
+            {weekDays.map((day, dayIndex) => {
+              const dayStart = new Date(day);
+              dayStart.setHours(DAY_START_H, 0, 0, 0);
+              const dayEnd = new Date(day);
+              dayEnd.setHours(DAY_END_H, 0, 0, 0);
+              
+              const positioned = positionedByDay[dayIndex] || [];
+              const isDayToday = isSameDay(day, new Date());
 
-                  const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
-                  const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;
-                  const widthPercent = 1 / p.columns;
-                  const leftPercent = p.column * widthPercent;
-
-                  return (
-                    <EventCard
-                      key={p.id}
-                      event={ev}
-                      onClick={() => onEventClick(ev)}
-                      compact
-                      positioning={{ top, height, leftPercent, widthPercent }}
+              return (
+                <div key={day.toISOString()} className="flex-1 relative border-r last:border-r-0 border-border/20">
+                  {/* Hour lines */}
+                  {hours.map((_, i) => (
+                    <div 
+                      key={i} 
+                      className="absolute left-0 right-0 border-t border-border/40" 
+                      style={{ top: i * 60 * MINUTE_HEIGHT }} 
                     />
-                  );
-                })}
-              </div>
-            );
-          })}
+                  ))}
+
+                  {/* Current time line */}
+                  {isDayToday && currentHour >= DAY_START_H && currentHour <= DAY_END_H && (
+                    <div 
+                      className="absolute left-0 right-0 h-0.5 bg-destructive z-10 pointer-events-none"
+                      style={{ top: minutesFromDayStart(new Date()) * MINUTE_HEIGHT }}
+                    >
+                      <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-destructive" />
+                    </div>
+                  )}
+
+                  {/* Event cards with positioning */}
+                  {positioned.map((p) => {
+                    const ev = events.find((e) => e.id === p.id)!;
+                    if (!ev) return null;
+                    
+                    const start = new Date(ev.start_at);
+                    const end = new Date(ev.end_at);
+                    
+                    // Clamp to visible window
+                    const startClamped = start < dayStart ? dayStart : start;
+                    const endClamped = end > dayEnd ? dayEnd : end;
+
+                    const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
+                    const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;
+                    const widthPercent = 1 / p.columns;
+                    const leftPercent = p.column * widthPercent;
+
+                    return (
+                      <EventCard
+                        key={p.id}
+                        event={ev}
+                        onClick={() => onEventClick(ev)}
+                        compact
+                        positioning={{ top, height, leftPercent, widthPercent }}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { layoutOverlaps } from "../utils/layout";
-import { minutesFromDayStart, toMinutes, MINUTE_HEIGHT, DAY_START_H, DAY_END_H, minutesVisible } from "../utils/time";
+import { minutesFromDayStart, toMinutes, MINUTE_HEIGHT, DAY_START_H, DAY_END_H, minutesVisible, hoursArray } from "../utils/time";
 import { EventCard } from "./EventCard";
 import type { EventWithClient } from "../types";
 
@@ -12,7 +12,7 @@ interface DayViewProps {
 }
 
 export function DayView({ date, events, onEventClick }: DayViewProps) {
-  const hours = useMemo(() => Array.from({ length: DAY_END_H - DAY_START_H + 1 }, (_, i) => i + DAY_START_H), []);
+  const hours = useMemo(() => hoursArray(), []);
   const currentHour = new Date().getHours();
   const currentMinutes = new Date().getMinutes();
   const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
