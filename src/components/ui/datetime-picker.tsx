@@ -170,9 +170,9 @@ export function DateTimePicker({ value, onChange, placeholder = "Seleziona data 
           </div>
 
           {/* Time section */}
-          <div className="w-24">
+          <div className="w-28">
             <ScrollArea className="h-[340px]">
-              <div className="p-2">
+              <div className="p-2 space-y-1">
                 {TIME_OPTIONS.map((timeOption) => (
                   <button
                     key={timeOption}
@@ -182,7 +182,7 @@ export function DateTimePicker({ value, onChange, placeholder = "Seleziona data 
                       time === timeOption && "bg-primary text-primary-foreground font-semibold"
                     )}
                   >
-                    {timeOption.replace(':', '')}
+                    {timeOption}
                   </button>
                 ))}
               </div>
