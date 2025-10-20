@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { format, startOfDay, endOfDay } from "date-fns";
 import { layoutOverlaps } from "../utils/layout";
 import { minutesFromDayStart, toMinutes, MINUTE_HEIGHT, DAY_START_H, DAY_END_H, minutesVisible, hoursArray } from "../utils/time";
@@ -13,9 +13,21 @@ interface DayViewProps {
 
 export function DayView({ date, events, onEventClick }: DayViewProps) {
   const hours = useMemo(() => hoursArray(), []);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
   const currentHour = new Date().getHours();
   const currentMinutes = new Date().getMinutes();
   const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+
+  // Measure header height for grid offset
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setHeaderHeight(el.offsetHeight));
+    ro.observe(el);
+    setHeaderHeight(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
 
   // Position events with overlap layout
   const positioned = useMemo(() => {
@@ -42,73 +54,78 @@ export function DayView({ date, events, onEventClick }: DayViewProps) {
 
   return (
     <div className="flex h-full overflow-auto">
-      <div className="min-w-[600px] flex">
-        {/* Hour labels */}
-        <div className="w-20 flex-shrink-0 border-r border-border/50 text-xs text-muted-foreground">
-          <div className="relative" style={{ height: gridHeight }}>
-            {hours.map((hour, i) => (
-              <div 
-                key={hour} 
-                className="absolute w-full flex items-center justify-end pr-3" 
-                style={{ top: i * 60 * MINUTE_HEIGHT }}
-              >
-                {format(new Date().setHours(hour, 0), "HH:mm")}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Event grid */}
-        <div className="flex-1 relative" style={{ height: gridHeight }}>
-          {/* Hour lines */}
-          {hours.map((_, i) => (
-            <div 
-              key={i} 
-              className="absolute left-0 right-0 border-t border-border/40" 
-              style={{ top: i * 60 * MINUTE_HEIGHT }} 
-            />
-          ))}
-
-          {/* Current time line */}
-          {isToday && currentHour >= DAY_START_H && currentHour <= DAY_END_H && (
-            <div 
-              className="absolute left-0 right-0 h-0.5 bg-destructive z-10 pointer-events-none"
-              style={{ top: minutesFromDayStart(new Date()) * MINUTE_HEIGHT }}
-            >
-              <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-destructive" />
+      <div className="min-w-[600px] flex flex-col">
+        {/* Header spacer */}
+        <div ref={headerRef} className="h-14 border-b border-border/50" />
+        
+        <div className="flex">
+          {/* Hour labels */}
+          <div className="w-20 flex-shrink-0 border-r border-border/50 text-xs text-muted-foreground">
+            <div className="relative" style={{ height: gridHeight }}>
+              {hours.map((hour, i) => (
+                <div 
+                  key={hour} 
+                  className="absolute w-full flex items-center justify-end pr-3" 
+                  style={{ top: i * 60 * MINUTE_HEIGHT }}
+                >
+                  {format(new Date().setHours(hour, 0), "HH:mm")}
+                </div>
+              ))}
             </div>
-          )}
+          </div>
 
-          {/* Events with positioning */}
-          {positioned.map((p) => {
-            const ev = events.find((e) => e.id === p.id)!;
-            if (!ev) return null;
-            
-            const start = new Date(ev.start_at);
-            const end = new Date(ev.end_at);
-            
-            const dayStart = new Date(date);
-            dayStart.setHours(DAY_START_H, 0, 0, 0);
-            const dayEnd = new Date(date);
-            dayEnd.setHours(DAY_END_H, 0, 0, 0);
-            
-            const startClamped = start < dayStart ? dayStart : start;
-            const endClamped = end > dayEnd ? dayEnd : end;
-
-            const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
-            const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;
-            const widthPercent = 1 / p.columns;
-            const leftPercent = p.column * widthPercent;
-
-            return (
-              <EventCard
-                key={p.id}
-                event={ev}
-                onClick={() => onEventClick(ev)}
-                positioning={{ top, height, leftPercent, widthPercent }}
+          {/* Event grid */}
+          <div className="flex-1 relative" style={{ height: gridHeight }}>
+            {/* Hour lines */}
+            {hours.map((_, i) => (
+              <div 
+                key={i} 
+                className="absolute left-0 right-0 border-t border-border/40" 
+                style={{ top: i * 60 * MINUTE_HEIGHT }} 
               />
-            );
-          })}
+            ))}
+
+            {/* Current time line */}
+            {isToday && currentHour >= DAY_START_H && currentHour <= DAY_END_H && (
+              <div 
+                className="absolute left-0 right-0 h-0.5 bg-destructive z-10 pointer-events-none"
+                style={{ top: minutesFromDayStart(new Date()) * MINUTE_HEIGHT }}
+              >
+                <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-destructive" />
+              </div>
+            )}
+
+            {/* Events with positioning */}
+            {positioned.map((p) => {
+              const ev = events.find((e) => e.id === p.id)!;
+              if (!ev) return null;
+              
+              const start = new Date(ev.start_at);
+              const end = new Date(ev.end_at);
+              
+              const dayStart = new Date(date);
+              dayStart.setHours(DAY_START_H, 0, 0, 0);
+              const dayEnd = new Date(date);
+              dayEnd.setHours(DAY_END_H, 0, 0, 0);
+              
+              const startClamped = start < dayStart ? dayStart : start;
+              const endClamped = end > dayEnd ? dayEnd : end;
+
+              const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
+              const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;
+              const widthPercent = 1 / p.columns;
+              const leftPercent = p.column * widthPercent;
+
+              return (
+                <EventCard
+                  key={p.id}
+                  event={ev}
+                  onClick={() => onEventClick(ev)}
+                  positioning={{ top, height, leftPercent, widthPercent }}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

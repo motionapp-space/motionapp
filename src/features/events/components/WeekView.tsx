@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { format, isSameDay, startOfDay, endOfDay } from "date-fns";
 import { it } from "date-fns/locale";
 import { getWeekDays, getEventsForDay } from "../utils/calendar-utils";
@@ -17,8 +17,20 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
   const weekDays = useMemo(() => getWeekDays(date), [date]);
   const hours = useMemo(() => hoursArray(), []);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
   const currentHour = new Date().getHours();
   const currentMinutes = new Date().getMinutes();
+
+  // Measure header height for grid offset
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setHeaderHeight(el.offsetHeight));
+    ro.observe(el);
+    setHeaderHeight(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
   
   // Position events per day with overlap layout
   const positionedByDay = useMemo(() => {
@@ -75,13 +87,12 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
       <div ref={scrollContainerRef} className="flex flex-1 overflow-y-auto">
         {/* Left hour column 05:00–23:00 */}
         <div className="w-20 flex-shrink-0 border-r border-border/50 text-xs text-muted-foreground">
-          <div className="h-14 sticky top-0 bg-card z-10" /> {/* Spacer for header */}
-          <div className="relative" style={{ height: gridHeight }}>
+          <div className="relative" style={{ height: gridHeight + headerHeight }}>
             {hours.map((hour, i) => (
               <div 
                 key={hour} 
                 className="absolute w-full flex items-center justify-end pr-3" 
-                style={{ top: i * 60 * MINUTE_HEIGHT }}
+                style={{ top: headerHeight + i * 60 * MINUTE_HEIGHT }}
               >
                 {format(new Date().setHours(hour, 0), "HH:mm")}
               </div>
@@ -92,7 +103,7 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
         {/* Right grid */}
         <div className="flex-1">
           {/* Day headers with counts */}
-          <div className="flex border-b sticky top-0 bg-card z-10">
+          <div ref={headerRef} className="flex border-b sticky top-0 bg-card z-10">
             {dailyCounts.map(({ day, count }) => {
               const isToday = isSameDay(day, new Date());
               return (
@@ -117,7 +128,7 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
           </div>
 
           {/* Time grid */}
-          <div className="relative flex" style={{ height: gridHeight }}>
+          <div className="relative flex" style={{ height: gridHeight + headerHeight }}>
             {weekDays.map((day, dayIndex) => {
               const dayStart = new Date(day);
               dayStart.setHours(DAY_START_H, 0, 0, 0);
@@ -134,7 +145,7 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
                     <div 
                       key={i} 
                       className="absolute left-0 right-0 border-t border-border/40" 
-                      style={{ top: i * 60 * MINUTE_HEIGHT }} 
+                      style={{ top: headerHeight + i * 60 * MINUTE_HEIGHT }} 
                     />
                   ))}
 
@@ -142,7 +153,7 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
                   {isDayToday && currentHour >= DAY_START_H && currentHour <= DAY_END_H && (
                     <div 
                       className="absolute left-0 right-0 h-0.5 bg-destructive z-10 pointer-events-none"
-                      style={{ top: minutesFromDayStart(new Date()) * MINUTE_HEIGHT }}
+                      style={{ top: headerHeight + minutesFromDayStart(new Date()) * MINUTE_HEIGHT }}
                     >
                       <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-destructive" />
                     </div>
@@ -160,7 +171,7 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
                     const startClamped = start < dayStart ? dayStart : start;
                     const endClamped = end > dayEnd ? dayEnd : end;
 
-                    const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
+                    const top = headerHeight + minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
                     const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;
                     const widthPercent = 1 / p.columns;
                     const leftPercent = p.column * widthPercent;
