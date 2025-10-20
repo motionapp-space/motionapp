@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,10 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
 
   const [savedTimeValues, setSavedTimeValues] = useState({ start: "", end: "" });
   const [errors, setErrors] = useState<string[]>([]);
+  
+  // Dirty flags to track manual end time/date overrides
+  const endTimeDirtyRef = useRef(false);
+  const endDateDirtyRef = useRef(false);
 
   useEffect(() => {
     if (event) {
@@ -94,6 +98,9 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
       setSavedTimeValues({ start: "", end: "" });
     }
     setErrors([]);
+    // Reset dirty flags when modal opens/changes
+    endTimeDirtyRef.current = false;
+    endDateDirtyRef.current = false;
   }, [event, prefillData, lockedClientId, open]);
 
   const handleStartChange = (value: string) => {
@@ -103,37 +110,57 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
     setSavedTimeValues((prev) => ({ ...prev, start: value }));
     
     if (!formData.is_all_day) {
-      setFormData({ ...formData, start_at: value });
-      
-      // Auto-set end time to +1 hour if not editing
-      if (!isEdit) {
+      // Auto-set end time to +1 hour if not manually overridden
+      if (!endTimeDirtyRef.current) {
         const endDate = addHours(startDate, 1);
-        const endValue = endDate.toISOString();
+        const endValue = format(endDate, "yyyy-MM-dd'T'HH:mm");
         setSavedTimeValues((prev) => ({ ...prev, end: endValue }));
-        setFormData((prev) => ({ ...prev, start_at: value, end_at: endValue }));
+        setFormData({ ...formData, start_at: value, end_at: endValue });
+      } else {
+        setFormData({ ...formData, start_at: value });
       }
     } else {
       const dateOnly = format(startDate, "yyyy-MM-dd");
-      setFormData({ ...formData, start_at: dateOnly, end_at: dateOnly });
+      // Auto-set end date to +1 day if not manually overridden
+      if (!endDateDirtyRef.current) {
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 1);
+        const endDateOnly = format(endDate, "yyyy-MM-dd");
+        setFormData({ ...formData, start_at: dateOnly, end_at: endDateOnly });
+      } else {
+        setFormData({ ...formData, start_at: dateOnly });
+      }
     }
   };
 
   const handleEndChange = (value: string) => {
     if (!value) return;
     
-    setSavedTimeValues((prev) => ({ ...prev, end: value }));
+    // Mark as manually overridden
     if (!formData.is_all_day) {
-      setFormData({ ...formData, end_at: value });
+      endTimeDirtyRef.current = true;
+    } else {
+      endDateDirtyRef.current = true;
     }
+    
+    setSavedTimeValues((prev) => ({ ...prev, end: value }));
+    setFormData({ ...formData, end_at: value });
   };
 
   const handleAllDayToggle = (checked: boolean) => {
+    // Reset dirty flags when switching modes
+    endTimeDirtyRef.current = false;
+    endDateDirtyRef.current = false;
+    
     if (checked) {
-      // Switch to all-day: keep date only
-      const dateOnly = formData.start_at ? formData.start_at.split('T')[0] : "";
-      setFormData({ ...formData, is_all_day: true, start_at: dateOnly, end_at: dateOnly });
+      // Switch to all-day: keep date only, set end to +1 day
+      const dateOnly = formData.start_at ? formData.start_at.split('T')[0] : format(new Date(), "yyyy-MM-dd");
+      const endDate = new Date(dateOnly);
+      endDate.setDate(endDate.getDate() + 1);
+      const endDateOnly = format(endDate, "yyyy-MM-dd");
+      setFormData({ ...formData, is_all_day: true, start_at: dateOnly, end_at: endDateOnly });
     } else {
-      // Switch back to timed: restore saved times or use defaults
+      // Switch back to timed: restore saved times or use defaults with +1h
       const start = savedTimeValues.start || format(new Date(), "yyyy-MM-dd'T'HH:mm");
       const end = savedTimeValues.end || format(addHours(new Date(start), 1), "yyyy-MM-dd'T'HH:mm");
       setFormData({ ...formData, is_all_day: false, start_at: start, end_at: end });
@@ -280,7 +307,7 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
                 <Label htmlFor="start-date">Data Inizio *</Label>
                 <DatePicker
                   value={formData.start_at}
-                  onChange={(value) => setFormData({ ...formData, start_at: value, end_at: value })}
+                  onChange={(value) => handleStartChange(value)}
                   placeholder="Seleziona data"
                 />
               </div>
@@ -289,7 +316,7 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
                 <Label htmlFor="end-date">Data Fine *</Label>
                 <DatePicker
                   value={formData.end_at}
-                  onChange={(value) => setFormData({ ...formData, end_at: value })}
+                  onChange={(value) => handleEndChange(value)}
                   placeholder="Seleziona data"
                 />
               </div>
