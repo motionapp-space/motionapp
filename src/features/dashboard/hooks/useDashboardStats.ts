@@ -75,9 +75,9 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
     ? ((totalClients - prevTotalClients) / prevTotalClients) * 100 
     : (totalClients > 0 ? 100 : 0);
 
-  // Generate trend data for the last 30 days
-  const thirtyDaysAgo = subMonths(now, 1);
-  const days = eachDayOfInterval({ start: thirtyDaysAgo, end: now });
+  // Generate trend data for the last 12 months
+  const twelveMonthsAgo = subMonths(now, 12);
+  const days = eachDayOfInterval({ start: twelveMonthsAgo, end: now });
   
   const trendData = days.map(day => {
     const dayEnd = startOfDay(day);
@@ -86,7 +86,7 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
     const count = clients.filter(c => new Date(c.created_at) <= dayEnd).length;
     
     return {
-      date: format(day, "dd/MM"),
+      date: day.toISOString(),
       count
     };
   });
