@@ -43,10 +43,10 @@ function ClientRow({ client, highlightId, onArchive, onUnarchive }: {
       </TableCell>
       <TableCell>{client.email || "-"}</TableCell>
       <TableCell>{client.phone || "-"}</TableCell>
-      <TableCell className="text-xs">
+      <TableCell>
         {nextAppt ? format(parseISO(nextAppt.start_at), "dd/MM/yy HH:mm", { locale: it }) : "-"}
       </TableCell>
-      <TableCell className="text-xs">
+      <TableCell>
         {lastAppt ? format(parseISO(lastAppt.start_at), "dd/MM/yy HH:mm", { locale: it }) : "-"}
       </TableCell>
       <TableCell>
