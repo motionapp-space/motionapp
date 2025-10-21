@@ -81,10 +81,9 @@ const App = () => {
             </div>
           ) : (
             <Routes>
-              <Route path="/" element={<Auth />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/share/:token" element={<SharedPlan />} />
-              <Route path="*" element={<Auth />} />
+              <Route path="*" element={<Navigate to="/auth" replace />} />
             </Routes>
           )}
         </BrowserRouter>

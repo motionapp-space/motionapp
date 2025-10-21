@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { Dumbbell, Eye, EyeOff, Check, X } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,10 +25,11 @@ const Auth = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/plans");
+        const next = searchParams.get("next");
+        navigate(next || "/", { replace: true });
       }
     });
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   // Password validation rules
   const passwordValidation = useMemo(() => {
@@ -95,7 +97,8 @@ const Auth = () => {
       });
 
       if (error) throw error;
-      navigate("/plans");
+      const next = searchParams.get("next");
+      navigate(next || "/", { replace: true });
     } catch (error: any) {
       toast.error(error.message || "Errore durante l'accesso");
     } finally {
