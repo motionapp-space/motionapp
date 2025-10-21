@@ -1,23 +1,47 @@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Card } from "@/components/ui/card";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { subDays, subMonths, startOfDay } from "date-fns";
 
 interface ClientTrendChartProps {
   data: { date: string; count: number }[];
 }
 
 type TimeRange = "7d" | "30d" | "12m";
+type Point = { ts: number; value: number };
+
+function getStart(range: TimeRange) {
+  const now = new Date();
+  if (range === "7d") return subDays(now, 7);
+  if (range === "30d") return subDays(now, 30);
+  return subMonths(now, 12);
+}
 
 export function ClientTrendChart({ data }: ClientTrendChartProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
 
-  // For now, we're showing the 30-day data passed from the hook
-  // In a real implementation, you'd filter based on timeRange
-  const displayData = data;
+  // Normalize to numeric timestamps
+  const normalized: Point[] = useMemo(
+    () =>
+      data
+        .map(d => {
+          const dt = new Date(d.date);
+          return { ts: startOfDay(dt).getTime(), value: d.count };
+        })
+        .sort((a, b) => a.ts - b.ts),
+    [data]
+  );
 
-  const latestCount = displayData[displayData.length - 1]?.count || 0;
-  const firstCount = displayData[0]?.count || 0;
+  const { filtered, domain } = useMemo(() => {
+    const now = startOfDay(new Date()).getTime();
+    const start = startOfDay(getStart(timeRange)).getTime();
+    const f = normalized.filter(p => p.ts >= start && p.ts <= now);
+    const safe = f.length ? f : [{ ts: now, value: 0 }];
+    return { filtered: safe, domain: [start, now] as [number, number] };
+  }, [normalized, timeRange]);
+
+  const latestCount = filtered[filtered.length - 1]?.value || 0;
+  const firstCount = filtered[0]?.value || 0;
   const totalChange = firstCount > 0 
     ? ((latestCount - firstCount) / firstCount) * 100 
     : 0;
@@ -61,24 +85,36 @@ export function ClientTrendChart({ data }: ClientTrendChartProps) {
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
-        <AreaChart data={displayData}>
+        <AreaChart 
+          data={filtered}
+          key={timeRange}
+          margin={{ left: 8, right: 8, top: 8, bottom: 8 }}
+        >
           <defs>
             <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
               <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
           <XAxis 
-            dataKey="date" 
+            dataKey="ts"
+            type="number"
+            scale="time"
+            domain={domain}
+            tickFormatter={(ts) => new Date(ts).toLocaleDateString()}
             className="text-xs"
             tick={{ fill: "hsl(var(--muted-foreground))" }}
+            tickMargin={8}
           />
           <YAxis 
+            allowDecimals={false}
             className="text-xs"
             tick={{ fill: "hsl(var(--muted-foreground))" }}
           />
           <Tooltip
+            labelFormatter={(ts) => new Date(Number(ts)).toLocaleDateString()}
+            formatter={(v: number) => [v, "Clienti"]}
             contentStyle={{
               backgroundColor: "hsl(var(--card))",
               border: "1px solid hsl(var(--border))",
@@ -88,7 +124,7 @@ export function ClientTrendChart({ data }: ClientTrendChartProps) {
           />
           <Area
             type="monotone"
-            dataKey="count"
+            dataKey="value"
             stroke="hsl(var(--primary))"
             strokeWidth={2}
             fill="url(#colorCount)"
