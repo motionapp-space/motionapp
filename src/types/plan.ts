@@ -1,5 +1,6 @@
 export type Objective = "Strength" | "Hypertrophy" | "Endurance" | "Mobility" | "HIIT" | "Functional";
 export type PhaseType = "Warm-up" | "Main Workout" | "Stretching";
+export type GroupType = "single" | "superset" | "circuit";
 export type ID = string;
 
 export interface Exercise {
@@ -14,10 +15,26 @@ export interface Exercise {
   order: number;
 }
 
+export interface ExerciseGroup {
+  id: ID;
+  type: GroupType;
+  name?: string;
+  // Superset fields
+  sharedSets?: number;
+  sharedRestBetweenExercises?: string;
+  // Circuit fields
+  rounds?: number;
+  restBetweenRounds?: string;
+  exercises: Exercise[];
+  order: number;
+}
+
 export interface Phase {
   id: ID;
   type: PhaseType;
-  exercises: Exercise[];
+  groups: ExerciseGroup[];
+  // Legacy: for backward compatibility
+  exercises?: Exercise[];
 }
 
 export interface Day {
@@ -63,8 +80,51 @@ export function makeExercise(order: number): Exercise {
   };
 }
 
+export function makeGroup(type: GroupType, order: number): ExerciseGroup {
+  const group: ExerciseGroup = {
+    id: crypto.randomUUID(),
+    type,
+    order,
+    exercises: [],
+  };
+
+  if (type === "superset") {
+    group.name = `Superset ${String.fromCharCode(65 + order)}`;
+    group.exercises = [makeExercise(1), makeExercise(2)];
+  } else if (type === "circuit") {
+    group.name = `Circuito ${order + 1}`;
+    group.rounds = 3;
+    group.restBetweenRounds = "90s";
+    group.exercises = [makeExercise(1), makeExercise(2), makeExercise(3)];
+  } else {
+    group.exercises = [makeExercise(1)];
+  }
+
+  return group;
+}
+
 export function makePhase(type: PhaseType): Phase {
-  return { id: crypto.randomUUID(), type, exercises: [] };
+  return { id: crypto.randomUUID(), type, groups: [] };
+}
+
+// Migration helper: convert legacy exercises[] to groups[]
+export function migratePhaseToGroups(phase: Phase): Phase {
+  if (phase.groups && phase.groups.length > 0) {
+    return phase; // Already migrated
+  }
+  
+  if (phase.exercises && phase.exercises.length > 0) {
+    // Convert each exercise to a single group
+    const groups = phase.exercises.map((exercise, index) => ({
+      id: crypto.randomUUID(),
+      type: "single" as GroupType,
+      exercises: [exercise],
+      order: index + 1,
+    }));
+    return { ...phase, groups, exercises: undefined };
+  }
+  
+  return { ...phase, groups: [], exercises: undefined };
 }
 
 export function makeDay(order: number, title?: string): Day {

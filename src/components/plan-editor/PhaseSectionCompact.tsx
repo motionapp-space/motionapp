@@ -1,14 +1,24 @@
-import { Phase, Exercise } from "@/types/plan";
+import { Phase, Exercise, ExerciseGroup, GroupType, migratePhaseToGroups } from "@/types/plan";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { ExerciseRowCompact } from "./ExerciseRowCompact";
+import { Plus, ChevronDown } from "lucide-react";
+import { GroupCard } from "./GroupCard";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PhaseSectionCompactProps {
   phase: Phase;
-  onAddExercise: () => void;
-  onUpdateExercise: (exerciseId: string, patch: Partial<Exercise>) => void;
-  onDuplicateExercise: (exerciseId: string) => void;
-  onDeleteExercise: (exerciseId: string) => void;
+  onAddGroup: (type: GroupType) => void;
+  onUpdateGroup: (groupId: string, updates: Partial<ExerciseGroup>) => void;
+  onDuplicateGroup: (groupId: string) => void;
+  onDeleteGroup: (groupId: string) => void;
+  onAddExerciseToGroup: (groupId: string) => void;
+  onUpdateExercise: (groupId: string, exerciseId: string, patch: Partial<Exercise>) => void;
+  onDuplicateExercise: (groupId: string, exerciseId: string) => void;
+  onDeleteExercise: (groupId: string, exerciseId: string) => void;
   readonly?: boolean;
 }
 
@@ -20,64 +30,85 @@ const phaseLabels: Record<string, string> = {
 
 export const PhaseSectionCompact = ({
   phase,
-  onAddExercise,
+  onAddGroup,
+  onUpdateGroup,
+  onDuplicateGroup,
+  onDeleteGroup,
+  onAddExerciseToGroup,
   onUpdateExercise,
   onDuplicateExercise,
   onDeleteExercise,
   readonly = false,
 }: PhaseSectionCompactProps) => {
+  // Migrate legacy exercises to groups
+  const migratedPhase = migratePhaseToGroups(phase);
+  const groups = migratedPhase.groups;
+
+  const totalExercises = groups.reduce((sum, g) => sum + g.exercises.length, 0);
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">
             {phaseLabels[phase.type] || phase.type}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {phase.exercises.length} {phase.exercises.length === 1 ? 'esercizio' : 'esercizi'}
+            {totalExercises} {totalExercises === 1 ? 'esercizio' : 'esercizi'}
           </p>
         </div>
         {!readonly && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onAddExercise}
-            className="gap-2 h-11"
-          >
-            <Plus className="h-4 w-4" />
-            Aggiungi esercizio
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onAddGroup("single")}
+              className="gap-2 h-11"
+            >
+              <Plus className="h-4 w-4" />
+              Aggiungi esercizio
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 h-11">
+                  <Plus className="h-4 w-4" />
+                  Aggiungi gruppo
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onAddGroup("superset")}>
+                  Superset (2–3 esercizi)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onAddGroup("circuit")}>
+                  Circuit (3+ esercizi)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
       </div>
 
-      {phase.exercises.length === 0 ? (
+      {groups.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
           Nessun esercizio ancora
         </div>
       ) : (
-        <div className="space-y-2">
-          {/* Header Row */}
-          <div className="grid grid-cols-12 gap-3 px-3 pb-2 text-xs font-medium text-muted-foreground border-b">
-            <div className="col-span-3">Nome</div>
-            <div className="col-span-1 text-center">Serie</div>
-            <div className="col-span-1 text-center">Rip</div>
-            <div className="col-span-1 text-center">Carico</div>
-            <div className="col-span-1 text-center">Rec</div>
-            <div className="col-span-2">Obiettivo</div>
-            <div className="col-span-2">Note</div>
-            {!readonly && <div className="col-span-1"></div>}
-          </div>
-          
-          {/* Exercise Rows */}
-          {phase.exercises
+        <div className="space-y-4">
+          {groups
             .sort((a, b) => a.order - b.order)
-            .map((exercise) => (
-              <ExerciseRowCompact
-                key={exercise.id}
-                exercise={exercise}
-                onUpdate={(patch) => onUpdateExercise(exercise.id, patch)}
-                onDuplicate={() => onDuplicateExercise(exercise.id)}
-                onDelete={() => onDeleteExercise(exercise.id)}
+            .map((group) => (
+              <GroupCard
+                key={group.id}
+                group={group}
+                phaseType={phase.type}
+                onUpdateGroup={(updates) => onUpdateGroup(group.id, updates)}
+                onDuplicateGroup={() => onDuplicateGroup(group.id)}
+                onDeleteGroup={() => onDeleteGroup(group.id)}
+                onAddExercise={() => onAddExerciseToGroup(group.id)}
+                onUpdateExercise={(exerciseId, patch) => onUpdateExercise(group.id, exerciseId, patch)}
+                onDuplicateExercise={(exerciseId) => onDuplicateExercise(group.id, exerciseId)}
+                onDeleteExercise={(exerciseId) => onDeleteExercise(group.id, exerciseId)}
                 readonly={readonly}
               />
             ))}

@@ -1,10 +1,9 @@
-import { Day, PhaseType } from "@/types/plan";
+import { Day, PhaseType, Exercise, ExerciseGroup, GroupType } from "@/types/plan";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Copy, Trash2, Plus } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 import { PhaseSectionCompact } from "./PhaseSectionCompact";
-import { Exercise } from "@/types/plan";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +21,14 @@ interface DayCardCompactProps {
   onUpdateTitle: (title: string) => void;
   onDuplicate: () => void;
   onDelete: () => void;
-  onAddExercise: (phaseType: PhaseType) => void;
-  onUpdateExercise: (phaseType: PhaseType, exerciseId: string, patch: Partial<Exercise>) => void;
-  onDuplicateExercise: (phaseType: PhaseType, exerciseId: string) => void;
-  onDeleteExercise: (phaseType: PhaseType, exerciseId: string) => void;
+  onAddGroup: (phaseType: PhaseType, groupType: GroupType) => void;
+  onUpdateGroup: (phaseType: PhaseType, groupId: string, updates: Partial<ExerciseGroup>) => void;
+  onDuplicateGroup: (phaseType: PhaseType, groupId: string) => void;
+  onDeleteGroup: (phaseType: PhaseType, groupId: string) => void;
+  onAddExerciseToGroup: (phaseType: PhaseType, groupId: string) => void;
+  onUpdateExercise: (phaseType: PhaseType, groupId: string, exerciseId: string, patch: Partial<Exercise>) => void;
+  onDuplicateExercise: (phaseType: PhaseType, groupId: string, exerciseId: string) => void;
+  onDeleteExercise: (phaseType: PhaseType, groupId: string, exerciseId: string) => void;
   readonly?: boolean;
 }
 
@@ -34,7 +37,11 @@ export const DayCardCompact = ({
   onUpdateTitle,
   onDuplicate,
   onDelete,
-  onAddExercise,
+  onAddGroup,
+  onUpdateGroup,
+  onDuplicateGroup,
+  onDeleteGroup,
+  onAddExerciseToGroup,
   onUpdateExercise,
   onDuplicateExercise,
   onDeleteExercise,
@@ -96,10 +103,14 @@ export const DayCardCompact = ({
           <PhaseSectionCompact
             key={phase.id}
             phase={phase}
-            onAddExercise={() => onAddExercise(phase.type)}
-            onUpdateExercise={(exerciseId, patch) => onUpdateExercise(phase.type, exerciseId, patch)}
-            onDuplicateExercise={(exerciseId) => onDuplicateExercise(phase.type, exerciseId)}
-            onDeleteExercise={(exerciseId) => onDeleteExercise(phase.type, exerciseId)}
+            onAddGroup={(groupType) => onAddGroup(phase.type, groupType)}
+            onUpdateGroup={(groupId, updates) => onUpdateGroup(phase.type, groupId, updates)}
+            onDuplicateGroup={(groupId) => onDuplicateGroup(phase.type, groupId)}
+            onDeleteGroup={(groupId) => onDeleteGroup(phase.type, groupId)}
+            onAddExerciseToGroup={(groupId) => onAddExerciseToGroup(phase.type, groupId)}
+            onUpdateExercise={(groupId, exerciseId, patch) => onUpdateExercise(phase.type, groupId, exerciseId, patch)}
+            onDuplicateExercise={(groupId, exerciseId) => onDuplicateExercise(phase.type, groupId, exerciseId)}
+            onDeleteExercise={(groupId, exerciseId) => onDeleteExercise(phase.type, groupId, exerciseId)}
             readonly={readonly}
           />
         ))}
