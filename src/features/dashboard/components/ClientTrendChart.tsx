@@ -1,33 +1,44 @@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { subDays, subMonths, format } from "date-fns";
+import { endOfTodayUTC, startWindow7dUTC, startWindow30dUTC, startWindow12mUTC } from "../utils/time";
 
 interface ClientTrendChartProps {
-  data: { date: string; count: number }[];
+  data: { date: number; count: number }[];
 }
 
 type TimeRange = "7d" | "30d" | "12m";
 
+type ChartPoint = { ts: number; value: number };
+
 export function ClientTrendChart({ data }: ClientTrendChartProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
 
-  // Calculate start date based on range
-  const getStartDate = (range: TimeRange) => {
-    const now = new Date();
-    if (range === "7d") return subDays(now, 7);
-    if (range === "30d") return subDays(now, 30);
-    return subMonths(now, 12);
-  };
+  // Normalize data to UTC timestamps
+  const normalized: ChartPoint[] = useMemo(() => 
+    data
+      .map(d => ({ ts: d.date, value: d.count }))
+      .sort((a, b) => a.ts - b.ts)
+  , [data]);
 
-  // Filter data based on selected range
+  // Calculate domain based on range (UTC, inclusive)
+  const domainX: [number, number] = useMemo(() => {
+    const end = endOfTodayUTC();
+    if (timeRange === "7d") return [startWindow7dUTC(), end];
+    if (timeRange === "12m") return [startWindow12mUTC(), end];
+    return [startWindow30dUTC(), end]; // 30d
+  }, [timeRange]);
+
+  // Filter data for current range
   const filteredData = useMemo(() => {
-    const start = getStartDate(timeRange);
-    return data.filter((d) => new Date(d.date) >= start);
-  }, [data, timeRange]);
+    const [minX, maxX] = domainX;
+    const f = normalized.filter(p => p.ts >= minX && p.ts <= maxX);
+    // Show empty chart with sentinel points if no data
+    return f.length ? f : [{ ts: minX, value: 0 }, { ts: maxX, value: 0 }];
+  }, [normalized, domainX]);
 
-  const latestCount = filteredData[filteredData.length - 1]?.count || 0;
-  const firstCount = filteredData[0]?.count || 0;
+  const latestCount = filteredData[filteredData.length - 1]?.value || 0;
+  const firstCount = filteredData[0]?.value || 0;
   const totalChange = firstCount > 0 
     ? ((latestCount - firstCount) / firstCount) * 100 
     : 0;
@@ -85,8 +96,15 @@ export function ClientTrendChart({ data }: ClientTrendChartProps) {
             </defs>
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
             <XAxis 
-              dataKey="date"
-              tickFormatter={(value) => format(new Date(value), "dd/MM")}
+              dataKey="ts"
+              type="number"
+              scale="time"
+              domain={domainX}
+              tickCount={6}
+              tickFormatter={(ts) => {
+                const d = new Date(ts);
+                return d.toLocaleDateString(undefined, { day: "2-digit", month: "2-digit" });
+              }}
               className="text-xs"
               tick={{ fill: "hsl(var(--muted-foreground))" }}
               tickMargin={8}
@@ -97,7 +115,10 @@ export function ClientTrendChart({ data }: ClientTrendChartProps) {
               tick={{ fill: "hsl(var(--muted-foreground))" }}
             />
             <Tooltip
-              labelFormatter={(value) => format(new Date(value), "dd MMM yyyy")}
+              labelFormatter={(ts) => {
+                const d = new Date(Number(ts));
+                return d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+              }}
               formatter={(v: number) => [v, "Clienti"]}
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
@@ -108,7 +129,7 @@ export function ClientTrendChart({ data }: ClientTrendChartProps) {
             />
             <Area
               type="monotone"
-              dataKey="count"
+              dataKey="value"
               stroke="hsl(var(--primary))"
               strokeWidth={2}
               fill="url(#colorCount)"

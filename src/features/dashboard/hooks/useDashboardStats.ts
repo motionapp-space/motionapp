@@ -11,7 +11,7 @@ interface DashboardStats {
   terminatedClientsChange: number;
   totalClients: number;
   totalClientsChange: number;
-  trendData: { date: string; count: number }[];
+  trendData: { date: number; count: number }[];
 }
 
 async function fetchDashboardStats(): Promise<DashboardStats> {
@@ -75,7 +75,7 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
     ? ((totalClients - prevTotalClients) / prevTotalClients) * 100 
     : (totalClients > 0 ? 100 : 0);
 
-  // Generate trend data for the last 12 months
+  // Generate trend data for the last 12 months (UTC normalized)
   const twelveMonthsAgo = subMonths(now, 12);
   const days = eachDayOfInterval({ start: twelveMonthsAgo, end: now });
   
@@ -85,8 +85,11 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
     
     const count = clients.filter(c => new Date(c.created_at) <= dayEnd).length;
     
+    // Store as UTC timestamp for consistent domain calculation
+    const ts = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 23, 59, 59, 999);
+    
     return {
-      date: day.toISOString(),
+      date: ts,
       count
     };
   });
