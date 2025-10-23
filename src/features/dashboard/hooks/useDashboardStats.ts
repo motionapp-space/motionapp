@@ -85,8 +85,8 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
     
     const count = clients.filter(c => new Date(c.created_at) <= dayEnd).length;
     
-    // Store as UTC timestamp for consistent domain calculation
-    const ts = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 23, 59, 59, 999);
+    // Store as UTC timestamp - use getFullYear/getMonth/getDate (not UTC versions) since day is in local time
+    const ts = Date.UTC(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59, 999);
     
     return {
       date: ts,
