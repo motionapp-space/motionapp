@@ -147,7 +147,7 @@ const Dashboard = () => {
               <Skeleton className="h-5 w-64" />
             ) : (
               <p className="text-sm text-muted-foreground">
-                📅 Hai {eventsData?.count || 0} appuntamenti nei prossimi 7 giorni
+                Hai {eventsData?.count || 0} appuntamenti nei prossimi 7 giorni
                 {eventsData?.change !== undefined && eventsData.change !== 0 && (
                   <span className={cn(
                     "ml-2 font-medium",
@@ -177,7 +177,7 @@ const Dashboard = () => {
               <div className="text-center py-12">
                 <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">
-                  🎉 Nessun appuntamento nei prossimi giorni. Pianifica le tue prossime sessioni!
+                  Nessun appuntamento nei prossimi giorni. Pianifica le tue prossime sessioni!
                 </p>
                 <Link to="/calendar">
                   <Button>Apri calendario</Button>

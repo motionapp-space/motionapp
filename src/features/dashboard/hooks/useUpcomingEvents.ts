@@ -82,6 +82,7 @@ export function useUpcomingEvents() {
   return useQuery({
     queryKey: ["upcomingEvents"],
     queryFn: fetchUpcomingEvents,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnMount: 'always',
+    staleTime: 0,
   });
 }
