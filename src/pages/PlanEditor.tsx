@@ -5,45 +5,324 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Download, CheckCircle, Loader2, Sparkles } from "lucide-react";
-import { usePlanStore } from "@/stores/usePlanStore";
 import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
-import { Objective } from "@/types/plan";
+import { Objective, makeDay, makeGroup, type Day, type GroupType, type Exercise, type ExerciseGroup, migratePhaseToGroups } from "@/types/plan";
 import { exportPlanToPDF } from "@/lib/pdfExport";
 import { toSentenceCase } from "@/lib/text";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import CopilotPanel from "@/components/CopilotPanel";
 import { FLAGS } from "@/flags";
+import { supabase } from "@/integrations/supabase/client";
 
 const PlanEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [copilotOpen, setCopilotOpen] = useState(false);
-  const {
-    plan, 
-    loadPlan, 
-    setPlanName, 
-    setObjective, 
-    setDurationWeeks, 
-    isSaving,
-    save,
-    addDay,
-    updateDayTitle,
-    duplicateDay,
-    deleteDay,
-    addExercise,
-    updateExercise,
-    duplicateExercise,
-    deleteExercise,
-  } = usePlanStore();
+  const [plan, setPlan] = useState<any>(null);
+  const [days, setDays] = useState<Day[]>([]);
+  const [name, setName] = useState("");
+  const [objective, setObjective] = useState<Objective>("Strength");
+  const [durationWeeks, setDurationWeeks] = useState(4);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadPlan(id);
+    } else {
+      setLoading(false);
     }
-  }, [id, loadPlan]);
+  }, [id]);
 
-  if (!plan) {
+  const loadPlan = async (planId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('id', planId)
+        .single();
+
+      if (error) throw error;
+      
+      setPlan(data);
+      setName(data.name);
+      setObjective(data.goal as Objective || "Strength");
+      setDurationWeeks(data.duration_weeks || 4);
+      
+      // Migrate loaded data
+      const contentJson = data.content_json as any;
+      const loadedDays = ((contentJson?.days || []) as Day[]).map((day: Day) => ({
+        ...day,
+        phases: day.phases.map(migratePhaseToGroups),
+      }));
+      setDays(loadedDays);
+    } catch (error) {
+      toast.error("Errore nel caricamento del piano");
+      navigate("/plans");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!id) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('plans')
+        .update({
+          name,
+          goal: objective,
+          duration_weeks: durationWeeks,
+          content_json: { days } as any,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success("Piano salvato con successo");
+    } catch (error) {
+      toast.error("Errore nel salvataggio");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleExportPDF = () => {
+    if (plan) {
+      exportPlanToPDF({ ...plan, name, objective, durationWeeks, days } as any);
+    }
+  };
+
+  const handleAddDay = () => {
+    const newDay = makeDay(days.length + 1);
+    setDays([...days, newDay]);
+  };
+
+  const handleUpdateDayTitle = (dayId: string, title: string) => {
+    setDays(days.map(d => d.id === dayId ? { ...d, title } : d));
+  };
+
+  const handleDuplicateDay = (dayId: string) => {
+    const dayToDup = days.find(d => d.id === dayId);
+    if (!dayToDup) return;
+    const newDay = { ...dayToDup, id: crypto.randomUUID(), order: days.length + 1 };
+    setDays([...days, newDay]);
+  };
+
+  const handleDeleteDay = (dayId: string) => {
+    setDays(days.filter(d => d.id !== dayId));
+  };
+
+  const handleAddGroup = (dayId: string, phaseType: string, groupType: GroupType) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const migratedPhase = migratePhaseToGroups(phase);
+              const newGroup = makeGroup(groupType, migratedPhase.groups.length + 1);
+              return { ...phase, groups: [...migratedPhase.groups, newGroup] };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  const handleUpdateGroup = (dayId: string, phaseType: string, groupId: string, updates: Partial<ExerciseGroup>) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const migratedPhase = migratePhaseToGroups(phase);
+              return {
+                ...phase,
+                groups: migratedPhase.groups.map(g => g.id === groupId ? { ...g, ...updates } : g),
+              };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  const handleDuplicateGroup = (dayId: string, phaseType: string, groupId: string) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const migratedPhase = migratePhaseToGroups(phase);
+              const groupToDup = migratedPhase.groups.find(g => g.id === groupId);
+              if (!groupToDup) return phase;
+              const newGroup = {
+                ...groupToDup,
+                id: crypto.randomUUID(),
+                exercises: groupToDup.exercises.map(ex => ({ ...ex, id: crypto.randomUUID() })),
+                order: migratedPhase.groups.length + 1,
+              };
+              return { ...phase, groups: [...migratedPhase.groups, newGroup] };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  const handleDeleteGroup = (dayId: string, phaseType: string, groupId: string) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const migratedPhase = migratePhaseToGroups(phase);
+              return { ...phase, groups: migratedPhase.groups.filter(g => g.id !== groupId) };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  const handleAddExerciseToGroup = (dayId: string, phaseType: string, groupId: string) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const migratedPhase = migratePhaseToGroups(phase);
+              return {
+                ...phase,
+                groups: migratedPhase.groups.map(group => {
+                  if (group.id === groupId) {
+                    const newExercise = {
+                      id: crypto.randomUUID(),
+                      name: "",
+                      sets: 3,
+                      reps: "10",
+                      load: "",
+                      rest: "01:00",
+                      notes: "",
+                      order: group.exercises.length + 1,
+                    };
+                    return { ...group, exercises: [...group.exercises, newExercise] };
+                  }
+                  return group;
+                }),
+              };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  const handleUpdateExercise = (dayId: string, phaseType: string, groupId: string, exerciseId: string, updates: Partial<Exercise>) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const migratedPhase = migratePhaseToGroups(phase);
+              return {
+                ...phase,
+                groups: migratedPhase.groups.map(group => {
+                  if (group.id === groupId) {
+                    return {
+                      ...group,
+                      exercises: group.exercises.map(ex =>
+                        ex.id === exerciseId ? { ...ex, ...updates } : ex
+                      ),
+                    };
+                  }
+                  return group;
+                }),
+              };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  const handleDuplicateExercise = (dayId: string, phaseType: string, groupId: string, exerciseId: string) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const migratedPhase = migratePhaseToGroups(phase);
+              return {
+                ...phase,
+                groups: migratedPhase.groups.map(group => {
+                  if (group.id === groupId) {
+                    const exToDup = group.exercises.find(ex => ex.id === exerciseId);
+                    if (!exToDup) return group;
+                    const newEx = { ...exToDup, id: crypto.randomUUID(), order: group.exercises.length + 1 };
+                    return { ...group, exercises: [...group.exercises, newEx] };
+                  }
+                  return group;
+                }),
+              };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  const handleDeleteExercise = (dayId: string, phaseType: string, groupId: string, exerciseId: string) => {
+    setDays(days.map(day => {
+      if (day.id === dayId) {
+        return {
+          ...day,
+          phases: day.phases.map(phase => {
+            if (phase.type === phaseType) {
+              const migratedPhase = migratePhaseToGroups(phase);
+              return {
+                ...phase,
+                groups: migratedPhase.groups.map(group => {
+                  if (group.id === groupId) {
+                    return { ...group, exercises: group.exercises.filter(ex => ex.id !== exerciseId) };
+                  }
+                  return group;
+                }),
+              };
+            }
+            return phase;
+          }),
+        };
+      }
+      return day;
+    }));
+  };
+
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -60,27 +339,8 @@ const PlanEditor = () => {
     { value: "Functional", label: toSentenceCase("Funzionale") },
   ];
 
-  const handleSave = () => {
-    save();
-    toast.success("Piano salvato con successo");
-  };
-
-  const handleExportPDF = () => {
-    if (plan) {
-      exportPlanToPDF(plan);
-    }
-  };
-
-  // Days are now directly on the plan
-  const allDays = plan?.days || [];
-  
-  const handleAddDay = () => {
-    addDay();
-  };
-
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -93,7 +353,7 @@ const PlanEditor = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-h4 font-semibold truncate preserve-case" style={{ textTransform: 'none' }}>
-              {plan.name || toSentenceCase("Nuovo piano")}
+              {name || toSentenceCase("Nuovo piano")}
             </h1>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -138,10 +398,8 @@ const PlanEditor = () => {
         </div>
       </header>
 
-      {/* Editor Content */}
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-7xl">
         <div className="space-y-6">
-          {/* Plan Context Bar */}
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="plan-name" className="text-sm font-medium">
@@ -149,8 +407,8 @@ const PlanEditor = () => {
               </Label>
               <Input
                 id="plan-name"
-                value={plan.name}
-                onChange={(e) => setPlanName(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder={toSentenceCase("Inserisci nome")}
                 className="h-11 preserve-case"
                 style={{ textTransform: 'none' }}
@@ -161,7 +419,7 @@ const PlanEditor = () => {
                 {toSentenceCase("Obiettivo")}
               </Label>
               <Select
-                value={plan.objective}
+                value={objective}
                 onValueChange={(value) => setObjective(value as Objective)}
               >
                 <SelectTrigger id="goal" className="h-11">
@@ -181,7 +439,7 @@ const PlanEditor = () => {
                 {toSentenceCase("Durata (settimane)")}
               </Label>
               <Select
-                value={plan.durationWeeks.toString()}
+                value={durationWeeks.toString()}
                 onValueChange={(value) => setDurationWeeks(parseInt(value))}
               >
                 <SelectTrigger id="duration" className="h-11">
@@ -198,9 +456,8 @@ const PlanEditor = () => {
             </div>
           </div>
 
-          {/* Days List (Days-First View) */}
           <div className="space-y-4 md:space-y-6">
-            {allDays.length === 0 ? (
+            {days.length === 0 ? (
               <div className="text-center py-16 border border-dashed rounded-lg">
                 <p className="text-muted-foreground mb-4">
                   {toSentenceCase("Nessun giorno ancora")}
@@ -212,23 +469,21 @@ const PlanEditor = () => {
               </div>
             ) : (
               <>
-                {allDays.map((day) => (
+                {days.map((day) => (
                   <DayCardCompact
                     key={day.id}
                     day={day}
-                    onUpdateTitle={(title) => updateDayTitle(day.id, title)}
-                    onDuplicate={() => duplicateDay(day.id)}
-                    onDelete={() => deleteDay(day.id)}
-                    onAddExercise={(phaseType) => addExercise(day.id, phaseType)}
-                    onUpdateExercise={(phaseType, exerciseId, patch) => 
-                      updateExercise(day.id, phaseType, exerciseId, patch)
-                    }
-                    onDuplicateExercise={(phaseType, exerciseId) => 
-                      duplicateExercise(day.id, phaseType, exerciseId)
-                    }
-                    onDeleteExercise={(phaseType, exerciseId) => 
-                      deleteExercise(day.id, phaseType, exerciseId)
-                    }
+                    onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
+                    onDuplicate={() => handleDuplicateDay(day.id)}
+                    onDelete={() => handleDeleteDay(day.id)}
+                    onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
+                    onUpdateGroup={(phaseType, groupId, updates) => handleUpdateGroup(day.id, phaseType, groupId, updates)}
+                    onDuplicateGroup={(phaseType, groupId) => handleDuplicateGroup(day.id, phaseType, groupId)}
+                    onDeleteGroup={(phaseType, groupId) => handleDeleteGroup(day.id, phaseType, groupId)}
+                    onAddExerciseToGroup={(phaseType, groupId) => handleAddExerciseToGroup(day.id, phaseType, groupId)}
+                    onUpdateExercise={(phaseType, groupId, exerciseId, patch) => handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)}
+                    onDuplicateExercise={(phaseType, groupId, exerciseId) => handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)}
+                    onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
                   />
                 ))}
                 
