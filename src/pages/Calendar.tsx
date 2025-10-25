@@ -116,7 +116,7 @@ const Calendar = () => {
       </div>
 
       {/* Calendar Views with lateral padding */}
-      <div className="flex-1 overflow-hidden mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
+      <div className="flex-1 overflow-auto mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
