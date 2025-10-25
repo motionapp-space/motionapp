@@ -30,7 +30,7 @@ export function YearView({ date, events, onMonthClick }: YearViewProps) {
             <div
               key={month.toISOString()}
               onClick={() => onMonthClick(month)}
-              className="border rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow"
+              className="border rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow flex flex-col"
             >
               <h3 className="text-center font-semibold mb-3 capitalize">
                 {format(month, "MMMM", { locale: it })}
@@ -66,7 +66,7 @@ export function YearView({ date, events, onMonthClick }: YearViewProps) {
                 })}
               </div>
 
-              <div className="mt-3 text-center text-sm text-muted-foreground">
+              <div className="mt-auto pt-3 text-center text-sm text-muted-foreground">
                 {monthEvents.length} {monthEvents.length === 1 ? "appuntamento" : "appuntamenti"}
               </div>
             </div>
