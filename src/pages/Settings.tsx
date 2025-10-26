@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { User, Lock, Shield, Globe } from "lucide-react";
+import { User, Lock, Shield, Globe, Calendar } from "lucide-react";
+import { BookingSettingsTab } from "@/features/bookings/components/BookingSettingsTab";
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
@@ -87,7 +88,7 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
             Profilo
@@ -95,6 +96,10 @@ const Settings = () => {
           <TabsTrigger value="credentials" className="gap-2">
             <Lock className="h-4 w-4" />
             Credenziali
+          </TabsTrigger>
+          <TabsTrigger value="booking" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            Prenotazioni
           </TabsTrigger>
           <TabsTrigger value="privacy" className="gap-2">
             <Shield className="h-4 w-4" />
@@ -172,6 +177,10 @@ const Settings = () => {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="booking">
+          <BookingSettingsTab />
         </TabsContent>
 
         <TabsContent value="privacy">
