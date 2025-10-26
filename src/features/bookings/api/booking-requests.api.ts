@@ -4,13 +4,16 @@ import type {
   BookingRequestWithClient,
   CreateBookingRequestInput,
   UpdateBookingRequestInput,
+  BookingRequestStatus,
 } from "../types";
 
-export async function listBookingRequests(): Promise<BookingRequestWithClient[]> {
+export async function listBookingRequests(
+  filters: { status?: BookingRequestStatus } = {}
+): Promise<BookingRequestWithClient[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("booking_requests")
     .select(`
       *,
@@ -19,6 +22,11 @@ export async function listBookingRequests(): Promise<BookingRequestWithClient[]>
     .eq("coach_id", user.id)
     .order("requested_start_at", { ascending: true });
 
+  if (filters.status) {
+    query = query.eq("status", filters.status);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
 
   return data.map((req: any) => ({
