@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Dumbbell, Eye, EyeOff, Check, X } from "lucide-react";
+import { validatePassword, isPasswordValid } from "@/utils/passwordValidator";
+import { PasswordValidationChecklist } from "@/components/auth/PasswordValidationChecklist";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -32,19 +34,8 @@ const Auth = () => {
   }, [navigate, searchParams]);
 
   // Password validation rules
-  const passwordValidation = useMemo(() => {
-    return {
-      minLength: password.length >= 8,
-      hasUppercase: /[A-Z]/.test(password),
-      hasLowercase: /[a-z]/.test(password),
-      hasNumber: /\d/.test(password),
-      hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-    };
-  }, [password]);
-
-  const isPasswordValid = useMemo(() => {
-    return Object.values(passwordValidation).every(Boolean);
-  }, [passwordValidation]);
+  const passwordValidation = useMemo(() => validatePassword(password), [password]);
+  const passwordIsValid = useMemo(() => isPasswordValid(passwordValidation), [passwordValidation]);
 
   const passwordsMatch = useMemo(() => {
     return password === confirmPassword && confirmPassword.length > 0;
@@ -53,10 +44,10 @@ const Auth = () => {
   const canRegister = useMemo(() => {
     return name.trim() !== "" && 
            email.trim() !== "" && 
-           isPasswordValid && 
+           passwordIsValid && 
            passwordsMatch && 
            acceptedTerms;
-  }, [name, email, isPasswordValid, passwordsMatch, acceptedTerms]);
+  }, [name, email, passwordIsValid, passwordsMatch, acceptedTerms]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,6 +150,14 @@ const Auth = () => {
                     </button>
                   </div>
                 </div>
+                <div className="flex justify-end">
+                  <Link 
+                    to="/forgot-password" 
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Hai dimenticato la password?
+                  </Link>
+                </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Accesso in corso..." : "Accedi"}
                 </Button>
@@ -210,62 +209,7 @@ const Auth = () => {
                     </button>
                   </div>
                   
-                  {/* Password validation checklist */}
-                  <div className="mt-3 space-y-1.5 text-sm">
-                    <p className="font-medium text-muted-foreground mb-2">La password deve contenere:</p>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        {passwordValidation.minLength ? (
-                          <Check className="h-3.5 w-3.5 text-green-600" />
-                        ) : (
-                          <X className="h-3.5 w-3.5 text-destructive" />
-                        )}
-                        <span className={passwordValidation.minLength ? "text-green-600" : "text-muted-foreground"}>
-                          Almeno 8 caratteri
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {passwordValidation.hasUppercase ? (
-                          <Check className="h-3.5 w-3.5 text-green-600" />
-                        ) : (
-                          <X className="h-3.5 w-3.5 text-destructive" />
-                        )}
-                        <span className={passwordValidation.hasUppercase ? "text-green-600" : "text-muted-foreground"}>
-                          Almeno una lettera maiuscola
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {passwordValidation.hasLowercase ? (
-                          <Check className="h-3.5 w-3.5 text-green-600" />
-                        ) : (
-                          <X className="h-3.5 w-3.5 text-destructive" />
-                        )}
-                        <span className={passwordValidation.hasLowercase ? "text-green-600" : "text-muted-foreground"}>
-                          Almeno una lettera minuscola
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {passwordValidation.hasNumber ? (
-                          <Check className="h-3.5 w-3.5 text-green-600" />
-                        ) : (
-                          <X className="h-3.5 w-3.5 text-destructive" />
-                        )}
-                        <span className={passwordValidation.hasNumber ? "text-green-600" : "text-muted-foreground"}>
-                          Almeno un numero
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {passwordValidation.hasSpecial ? (
-                          <Check className="h-3.5 w-3.5 text-green-600" />
-                        ) : (
-                          <X className="h-3.5 w-3.5 text-destructive" />
-                        )}
-                        <span className={passwordValidation.hasSpecial ? "text-green-600" : "text-muted-foreground"}>
-                          Almeno un carattere speciale (!@#$%^&*...)
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <PasswordValidationChecklist validation={passwordValidation} />
                 </div>
 
                 <div className="space-y-2">
