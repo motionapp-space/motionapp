@@ -14,6 +14,139 @@ export type Database = {
   }
   public: {
     Tables: {
+      availability_windows: {
+        Row: {
+          coach_id: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          start_time: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          start_time: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_windows_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_requests: {
+        Row: {
+          client_id: string
+          coach_id: string
+          counter_proposal_end_at: string | null
+          counter_proposal_start_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          requested_end_at: string
+          requested_start_at: string
+          status: Database["public"]["Enums"]["booking_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          coach_id: string
+          counter_proposal_end_at?: string | null
+          counter_proposal_start_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          requested_end_at: string
+          requested_start_at: string
+          status?: Database["public"]["Enums"]["booking_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          coach_id?: string
+          counter_proposal_end_at?: string | null
+          counter_proposal_start_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          requested_end_at?: string
+          requested_start_at?: string
+          status?: Database["public"]["Enums"]["booking_request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_requests_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_settings: {
+        Row: {
+          approval_mode: Database["public"]["Enums"]["approval_mode"]
+          coach_id: string
+          created_at: string
+          enabled: boolean
+          id: string
+          min_advance_notice_hours: number
+          slot_duration_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          approval_mode?: Database["public"]["Enums"]["approval_mode"]
+          coach_id: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          min_advance_notice_hours?: number
+          slot_duration_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          approval_mode?: Database["public"]["Enums"]["approval_mode"]
+          coach_id?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          min_advance_notice_hours?: number
+          slot_duration_minutes?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_settings_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: true
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_activities: {
         Row: {
           client_id: string
@@ -399,6 +532,47 @@ export type Database = {
           },
         ]
       }
+      out_of_office_blocks: {
+        Row: {
+          coach_id: string
+          created_at: string
+          end_at: string
+          id: string
+          is_recurring: boolean
+          reason: string | null
+          recurrence_rule: string | null
+          start_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          end_at: string
+          id?: string
+          is_recurring?: boolean
+          reason?: string | null
+          recurrence_rule?: string | null
+          start_at: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          end_at?: string
+          id?: string
+          is_recurring?: boolean
+          reason?: string | null
+          recurrence_rule?: string | null
+          start_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "out_of_office_blocks_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_shares: {
         Row: {
           created_at: string
@@ -589,6 +763,12 @@ export type Database = {
         | "ASSIGNED_PLAN"
         | "COMPLETED_PLAN"
         | "ARCHIVED"
+      approval_mode: "AUTO" | "MANUAL"
+      booking_request_status:
+        | "PENDING"
+        | "APPROVED"
+        | "DECLINED"
+        | "COUNTER_PROPOSED"
       client_status: "POTENZIALE" | "ATTIVO" | "SOSPESO" | "ARCHIVIATO"
       plan_status: "ATTIVA" | "COMPLETATA" | "SCADUTA"
       sex: "M" | "F" | "ALTRO"
@@ -726,6 +906,13 @@ export const Constants = {
         "ASSIGNED_PLAN",
         "COMPLETED_PLAN",
         "ARCHIVED",
+      ],
+      approval_mode: ["AUTO", "MANUAL"],
+      booking_request_status: [
+        "PENDING",
+        "APPROVED",
+        "DECLINED",
+        "COUNTER_PROPOSED",
       ],
       client_status: ["POTENZIALE", "ATTIVO", "SOSPESO", "ARCHIVIATO"],
       plan_status: ["ATTIVA", "COMPLETATA", "SCADUTA"],
