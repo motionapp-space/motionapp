@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { parseISO, format, startOfMonth } from "date-fns";
 import { Input } from "@/components/ui/input";
-import { Search, Calendar as CalendarIcon } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Plus } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { useEventsQuery } from "@/features/events/hooks/useEventsQuery";
 import { CalendarToolbar } from "@/features/events/components/CalendarToolbar";
 import { DayView } from "@/features/events/components/DayView";
@@ -84,24 +85,28 @@ const Calendar = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background w-full">
-      {/* Header with search */}
-      <header className="border-b bg-card shadow-sm">
-        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
-          <div className="flex items-center justify-between gap-4 py-4">
-            <h1 className="text-2xl font-semibold">Calendario</h1>
-            <div className="relative w-full max-w-xs">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Cerca appuntamenti..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10"
-              />
-            </div>
+    <div className="min-h-screen flex flex-col bg-background w-full">
+      <PageHeader
+        title="Calendario"
+        subtitle="Organizza appuntamenti e sessioni con i tuoi clienti"
+        primaryCta={{
+          label: "Nuovo appuntamento",
+          onClick: handleNewEvent,
+          icon: <Plus className="h-4 w-4" />,
+          testId: "calendar-new-event-btn"
+        }}
+        toolbarLeft={
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cerca appuntamenti..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-11"
+            />
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* Toolbar with lateral padding */}
       <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">

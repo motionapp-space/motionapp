@@ -1,4 +1,4 @@
-import { PageHeading } from "@/components/ui/page-heading";
+import PageHeader from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -77,14 +77,12 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
-          <PageHeading>Dashboard</PageHeading>
-        </div>
-      </header>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Panoramica della tua attività"
+      />
 
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 space-y-8">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 pb-6 md:pb-8 space-y-8">
         {/* KPI Cards */}
         <section>
           <h2 className="text-lg font-semibold mb-4">Panoramica clienti</h2>

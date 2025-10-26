@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PageHeading } from "@/components/ui/page-heading";
+import PageHeader from "@/components/PageHeader";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,32 +131,28 @@ const Clients = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <PageHeading>{toSentenceCase("Clienti")}</PageHeading>
-            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 h-11">
-              <Plus className="h-4 w-4" />
-              {toSentenceCase("Nuovo cliente")}
-            </Button>
+      <PageHeader
+        title={toSentenceCase("Clienti")}
+        subtitle={toSentenceCase("Gestisci tutti i tuoi clienti in un unico posto")}
+        primaryCta={{
+          label: toSentenceCase("Nuovo cliente"),
+          onClick: () => setCreateDialogOpen(true),
+          icon: <Plus className="h-4 w-4" />,
+          testId: "clients-new-btn"
+        }}
+        toolbarLeft={
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={toSentenceCase("Cerca clienti...")}
+              value={filters.q}
+              onChange={(e) => setFilters({ q: e.target.value })}
+              className="pl-10 h-11"
+            />
           </div>
-        </div>
-      </header>
-
-      {/* Toolbar */}
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={toSentenceCase("Cerca clienti...")}
-                value={filters.q}
-                onChange={(e) => setFilters({ q: e.target.value })}
-                className="pl-10 h-11"
-              />
-            </div>
+        }
+        toolbarRight={
+          <>
             <Select
               value={encodeStatus(filters.status || ["ATTIVO", "POTENZIALE", "SOSPESO"])}
               onValueChange={(value) => {
@@ -187,12 +183,12 @@ const Clients = () => {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Content */}
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 pb-6 md:pb-8">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
