@@ -13,6 +13,7 @@ import { YearView } from "@/features/events/components/YearView";
 import { EventModal } from "@/features/events/components/EventModal";
 import { useDebounce } from "@/hooks/use-debounce";
 import { CalendarLayerFilters, CalendarLayers } from "@/features/bookings/components/CalendarLayerFilters";
+import { BookingRequestDrawer } from "@/features/bookings/components/BookingRequestDrawer";
 import { useBookingRequestsQuery } from "@/features/bookings/hooks/useBookingRequests";
 import { useAvailabilityWindowsQuery } from "@/features/bookings/hooks/useAvailability";
 import { useOutOfOfficeBlocksQuery } from "@/features/bookings/hooks/useOutOfOffice";
@@ -29,6 +30,7 @@ const Calendar = () => {
   const [view, setView] = useState<CalendarView>((sp.get("view") as CalendarView) || "week");
   const [searchQuery, setSearchQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithClient | undefined>();
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [prefillData, setPrefillData] = useState<any>();
@@ -91,8 +93,7 @@ const Calendar = () => {
     setSelectedRequest(request);
     setSelectedEvent(undefined);
     setPrefillData(undefined);
-    // TODO: Open booking request drawer in Phase 4
-    console.log("Booking request clicked:", request);
+    setDrawerOpen(true);
   };
 
   const handleNewEvent = () => {
@@ -221,6 +222,13 @@ const Calendar = () => {
         onOpenChange={setModalOpen}
         event={selectedEvent}
         prefillData={prefillData}
+      />
+
+      {/* Booking Request Drawer */}
+      <BookingRequestDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        request={selectedRequest}
       />
     </div>
   );
