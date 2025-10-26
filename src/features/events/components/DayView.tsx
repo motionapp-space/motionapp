@@ -3,15 +3,31 @@ import { format, startOfDay, endOfDay } from "date-fns";
 import { layoutOverlaps } from "../utils/layout";
 import { minutesFromDayStart, toMinutes, MINUTE_HEIGHT, DAY_START_H, DAY_END_H, minutesVisible, hoursArray } from "../utils/time";
 import { EventCard } from "./EventCard";
+import { BookingRequestCard } from "@/features/bookings/components/BookingRequestCard";
+import { OutOfOfficeOverlay } from "@/features/bookings/components/OutOfOfficeOverlay";
+import { AvailabilityOverlay } from "@/features/bookings/components/AvailabilityOverlay";
 import type { EventWithClient } from "../types";
+import type { BookingRequestWithClient, AvailabilityWindow, OutOfOfficeBlock } from "@/features/bookings/types";
 
 interface DayViewProps {
   date: Date;
   events: EventWithClient[];
+  bookingRequests?: BookingRequestWithClient[];
+  availabilityWindows?: AvailabilityWindow[];
+  oooBlocks?: OutOfOfficeBlock[];
   onEventClick: (event: EventWithClient) => void;
+  onRequestClick?: (request: BookingRequestWithClient) => void;
 }
 
-export function DayView({ date, events, onEventClick }: DayViewProps) {
+export function DayView({
+  date,
+  events,
+  bookingRequests = [],
+  availabilityWindows = [],
+  oooBlocks = [],
+  onEventClick,
+  onRequestClick,
+}: DayViewProps) {
   const hours = useMemo(() => hoursArray(), []);
   const headerRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -50,6 +66,27 @@ export function DayView({ date, events, onEventClick }: DayViewProps) {
     );
   }, [events, date]);
 
+  // Position booking requests with overlap layout
+  const positionedRequests = useMemo(() => {
+    const dayStart = startOfDay(date);
+    const dayEnd = endOfDay(date);
+    
+    const dayRequests = bookingRequests.filter((r) => {
+      const reqStart = new Date(r.requested_start_at);
+      const reqEnd = new Date(r.requested_end_at);
+      return reqStart < dayEnd && reqEnd > dayStart;
+    });
+    
+    return layoutOverlaps(
+      dayRequests.map((r) => ({
+        id: r.id,
+        start_at: r.requested_start_at,
+        end_at: r.requested_end_at,
+        client_id: r.client_id,
+      }))
+    );
+  }, [bookingRequests, date]);
+
   const gridHeight = minutesVisible() * MINUTE_HEIGHT;
 
   return (
@@ -84,6 +121,10 @@ export function DayView({ date, events, onEventClick }: DayViewProps) {
                 style={{ top: i * 60 * MINUTE_HEIGHT }} 
               />
             ))}
+
+            {/* Overlays */}
+            <AvailabilityOverlay date={date} windows={availabilityWindows} />
+            <OutOfOfficeOverlay date={date} blocks={oooBlocks} />
 
             {/* Current time line */}
             {isToday && currentHour >= DAY_START_H && currentHour <= DAY_END_H && (
@@ -121,6 +162,37 @@ export function DayView({ date, events, onEventClick }: DayViewProps) {
                   key={p.id}
                   event={ev}
                   onClick={() => onEventClick(ev)}
+                  positioning={{ top, height, leftPercent, widthPercent }}
+                />
+              );
+            })}
+
+            {/* Booking Requests */}
+            {positionedRequests.map((p) => {
+              const req = bookingRequests.find((r) => r.id === p.id)!;
+              if (!req) return null;
+              
+              const start = new Date(req.requested_start_at);
+              const end = new Date(req.requested_end_at);
+              
+              const dayStart = new Date(date);
+              dayStart.setHours(DAY_START_H, 0, 0, 0);
+              const dayEnd = new Date(date);
+              dayEnd.setHours(DAY_END_H, 0, 0, 0);
+              
+              const startClamped = start < dayStart ? dayStart : start;
+              const endClamped = end > dayEnd ? dayEnd : end;
+
+              const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
+              const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;
+              const widthPercent = 1 / p.columns;
+              const leftPercent = p.column * widthPercent;
+
+              return (
+                <BookingRequestCard
+                  key={p.id}
+                  request={req}
+                  onClick={() => onRequestClick?.(req)}
                   positioning={{ top, height, leftPercent, widthPercent }}
                 />
               );

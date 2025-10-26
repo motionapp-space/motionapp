@@ -5,15 +5,31 @@ import { getWeekDays, getEventsForDay } from "../utils/calendar-utils";
 import { layoutOverlaps } from "../utils/layout";
 import { minutesFromDayStart, toMinutes, MINUTE_HEIGHT, DAY_START_H, DAY_END_H, minutesVisible, hoursArray } from "../utils/time";
 import { EventCard } from "./EventCard";
+import { BookingRequestCard } from "@/features/bookings/components/BookingRequestCard";
+import { OutOfOfficeOverlay } from "@/features/bookings/components/OutOfOfficeOverlay";
+import { AvailabilityOverlay } from "@/features/bookings/components/AvailabilityOverlay";
 import type { EventWithClient } from "../types";
+import type { BookingRequestWithClient, AvailabilityWindow, OutOfOfficeBlock } from "@/features/bookings/types";
 
 interface WeekViewProps {
   date: Date;
   events: EventWithClient[];
+  bookingRequests?: BookingRequestWithClient[];
+  availabilityWindows?: AvailabilityWindow[];
+  oooBlocks?: OutOfOfficeBlock[];
   onEventClick: (event: EventWithClient) => void;
+  onRequestClick?: (request: BookingRequestWithClient) => void;
 }
 
-export function WeekView({ date, events, onEventClick }: WeekViewProps) {
+export function WeekView({
+  date,
+  events,
+  bookingRequests = [],
+  availabilityWindows = [],
+  oooBlocks = [],
+  onEventClick,
+  onRequestClick,
+}: WeekViewProps) {
   const weekDays = useMemo(() => getWeekDays(date), [date]);
   const hours = useMemo(() => hoursArray(), []);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -58,6 +74,33 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
     
     return dayMap;
   }, [events, weekDays]);
+
+  // Position booking requests per day
+  const positionedRequestsByDay = useMemo(() => {
+    const dayMap: Record<number, ReturnType<typeof layoutOverlaps>> = {};
+    
+    weekDays.forEach((day, index) => {
+      const dayStart = startOfDay(day);
+      const dayEnd = endOfDay(day);
+      
+      const dayRequests = bookingRequests.filter((r) => {
+        const reqStart = new Date(r.requested_start_at);
+        const reqEnd = new Date(r.requested_end_at);
+        return reqStart < dayEnd && reqEnd > dayStart;
+      });
+      
+      dayMap[index] = layoutOverlaps(
+        dayRequests.map((r) => ({
+          id: r.id,
+          start_at: r.requested_start_at,
+          end_at: r.requested_end_at,
+          client_id: r.client_id,
+        }))
+      );
+    });
+    
+    return dayMap;
+  }, [bookingRequests, weekDays]);
 
   const dailyCounts = useMemo(() => {
     return weekDays.map((day, index) => ({
@@ -149,6 +192,10 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
                     />
                   ))}
 
+                  {/* Overlays */}
+                  <AvailabilityOverlay date={day} windows={availabilityWindows} />
+                  <OutOfOfficeOverlay date={day} blocks={oooBlocks} />
+
                   {/* Current time line */}
                   {isDayToday && currentHour >= DAY_START_H && currentHour <= DAY_END_H && (
                     <div 
@@ -182,6 +229,30 @@ export function WeekView({ date, events, onEventClick }: WeekViewProps) {
                         event={ev}
                         onClick={() => onEventClick(ev)}
                         compact
+                        positioning={{ top, height, leftPercent, widthPercent }}
+                      />
+                    );
+                  })}
+
+                  {/* Booking Requests */}
+                  {(positionedRequestsByDay[dayIndex] || []).map((p) => {
+                    const req = bookingRequests.find((r) => r.id === p.id);
+                    if (!req) return null;
+                    
+                    const start = new Date(req.requested_start_at);
+                    const end = new Date(req.requested_end_at);
+                    const startClamped = start < dayStart ? dayStart : start;
+                    const endClamped = end > dayEnd ? dayEnd : end;
+                    const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
+                    const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;
+                    const widthPercent = 1 / p.columns;
+                    const leftPercent = p.column * widthPercent;
+
+                    return (
+                      <BookingRequestCard
+                        key={p.id}
+                        request={req}
+                        onClick={() => onRequestClick?.(req)}
                         positioning={{ top, height, leftPercent, widthPercent }}
                       />
                     );
