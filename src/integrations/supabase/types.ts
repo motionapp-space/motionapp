@@ -186,7 +186,6 @@ export type Database = {
           id: string
           note: string | null
           plan_id: string
-          status: Database["public"]["Enums"]["plan_status"]
         }
         Insert: {
           assigned_at?: string
@@ -194,7 +193,6 @@ export type Database = {
           id?: string
           note?: string | null
           plan_id: string
-          status?: Database["public"]["Enums"]["plan_status"]
         }
         Update: {
           assigned_at?: string
@@ -202,7 +200,6 @@ export type Database = {
           id?: string
           note?: string | null
           plan_id?: string
-          status?: Database["public"]["Enums"]["plan_status"]
         }
         Relationships: [
           {
@@ -225,38 +222,53 @@ export type Database = {
         Row: {
           client_id: string
           coach_id: string
+          completed_at: string | null
           created_at: string
           data: Json
+          deleted_at: string | null
           derived_from_template_id: string | null
           description: string | null
           id: string
+          is_visible: boolean
+          locked_at: string | null
           name: string
-          status: string
+          status: Database["public"]["Enums"]["plan_status"]
           updated_at: string
+          version: number
         }
         Insert: {
           client_id: string
           coach_id: string
+          completed_at?: string | null
           created_at?: string
           data?: Json
+          deleted_at?: string | null
           derived_from_template_id?: string | null
           description?: string | null
           id?: string
+          is_visible?: boolean
+          locked_at?: string | null
           name: string
-          status?: string
+          status?: Database["public"]["Enums"]["plan_status"]
           updated_at?: string
+          version?: number
         }
         Update: {
           client_id?: string
           coach_id?: string
+          completed_at?: string | null
           created_at?: string
           data?: Json
+          deleted_at?: string | null
           derived_from_template_id?: string | null
           description?: string | null
           id?: string
+          is_visible?: boolean
+          locked_at?: string | null
           name?: string
-          status?: string
+          status?: Database["public"]["Enums"]["plan_status"]
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -271,6 +283,47 @@ export type Database = {
             columns: ["derived_from_template_id"]
             isOneToOne: false
             referencedRelation: "plan_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_state_logs: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          cause: string
+          client_id: string
+          created_at: string
+          from_status: Database["public"]["Enums"]["client_status"] | null
+          id: string
+          to_status: Database["public"]["Enums"]["client_status"]
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type: string
+          cause: string
+          client_id: string
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["client_status"] | null
+          id?: string
+          to_status: Database["public"]["Enums"]["client_status"]
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          cause?: string
+          client_id?: string
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["client_status"] | null
+          id?: string
+          to_status?: Database["public"]["Enums"]["client_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_state_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -339,46 +392,58 @@ export type Database = {
       }
       clients: {
         Row: {
+          active_plan_id: string | null
+          archived_at: string | null
           birth_date: string | null
           coach_id: string
           created_at: string
           email: string | null
           first_name: string
           id: string
+          last_access_at: string | null
           last_name: string
           notes: string | null
           phone: string | null
           sex: Database["public"]["Enums"]["sex"] | null
           status: Database["public"]["Enums"]["client_status"]
           updated_at: string
+          version: number
         }
         Insert: {
+          active_plan_id?: string | null
+          archived_at?: string | null
           birth_date?: string | null
           coach_id: string
           created_at?: string
           email?: string | null
           first_name: string
           id?: string
+          last_access_at?: string | null
           last_name: string
           notes?: string | null
           phone?: string | null
           sex?: Database["public"]["Enums"]["sex"] | null
           status?: Database["public"]["Enums"]["client_status"]
           updated_at?: string
+          version?: number
         }
         Update: {
+          active_plan_id?: string | null
+          archived_at?: string | null
           birth_date?: string | null
           coach_id?: string
           created_at?: string
           email?: string | null
           first_name?: string
           id?: string
+          last_access_at?: string | null
           last_name?: string
           notes?: string | null
           phone?: string | null
           sex?: Database["public"]["Enums"]["sex"] | null
           status?: Database["public"]["Enums"]["client_status"]
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -386,6 +451,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_clients_active_plan"
+            columns: ["active_plan_id"]
+            isOneToOne: false
+            referencedRelation: "client_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -605,6 +677,57 @@ export type Database = {
           },
         ]
       }
+      plan_state_logs: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          cause: string
+          client_id: string
+          created_at: string
+          from_status: Database["public"]["Enums"]["plan_status"] | null
+          id: string
+          plan_id: string
+          to_status: Database["public"]["Enums"]["plan_status"]
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type: string
+          cause: string
+          client_id: string
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["plan_status"] | null
+          id?: string
+          plan_id: string
+          to_status: Database["public"]["Enums"]["plan_status"]
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          cause?: string
+          client_id?: string
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["plan_status"] | null
+          id?: string
+          plan_id?: string
+          to_status?: Database["public"]["Enums"]["plan_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_state_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_state_logs_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "client_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_template_tag_on_template: {
         Row: {
           tag_id: string
@@ -769,8 +892,8 @@ export type Database = {
         | "APPROVED"
         | "DECLINED"
         | "COUNTER_PROPOSED"
-      client_status: "POTENZIALE" | "ATTIVO" | "SOSPESO" | "ARCHIVIATO"
-      plan_status: "ATTIVA" | "COMPLETATA" | "SCADUTA"
+      client_status: "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO"
+      plan_status: "IN_CORSO" | "COMPLETATO" | "ELIMINATO"
       sex: "M" | "F" | "ALTRO"
     }
     CompositeTypes: {
@@ -914,8 +1037,8 @@ export const Constants = {
         "DECLINED",
         "COUNTER_PROPOSED",
       ],
-      client_status: ["POTENZIALE", "ATTIVO", "SOSPESO", "ARCHIVIATO"],
-      plan_status: ["ATTIVA", "COMPLETATA", "SCADUTA"],
+      client_status: ["POTENZIALE", "ATTIVO", "INATTIVO", "ARCHIVIATO"],
+      plan_status: ["IN_CORSO", "COMPLETATO", "ELIMINATO"],
       sex: ["M", "F", "ALTRO"],
     },
   },

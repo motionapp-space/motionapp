@@ -1,5 +1,7 @@
 export type Sex = "M" | "F" | "ALTRO";
-export type ClientStatus = "POTENZIALE" | "ATTIVO" | "SOSPESO" | "ARCHIVIATO";
+export type ClientStatus = "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO";
+export type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
+export type ActorType = "SYSTEM" | "PT";
 
 export interface Client {
   id: string;
@@ -14,6 +16,10 @@ export interface Client {
   sex?: Sex;
   status: ClientStatus;
   notes?: string;
+  active_plan_id?: string;
+  last_access_at?: string;
+  archived_at?: string;
+  version: number;
 }
 
 export interface ClientTag {
@@ -61,4 +67,27 @@ export interface ClientsPageResult {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface ClientStateLog {
+  id: string;
+  client_id: string;
+  from_status: ClientStatus | null;
+  to_status: ClientStatus;
+  cause: string;
+  actor_type: ActorType;
+  actor_id: string;
+  created_at: string;
+}
+
+export interface PlanStateLog {
+  id: string;
+  plan_id: string;
+  client_id: string;
+  from_status: PlanStatus | null;
+  to_status: PlanStatus;
+  cause: string;
+  actor_type: ActorType;
+  actor_id: string;
+  created_at: string;
 }
