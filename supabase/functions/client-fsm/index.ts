@@ -41,20 +41,25 @@ serve(async (req) => {
     const request: TransitionRequest = await req.json();
     const { action, clientId, planId, version, metadata } = request;
 
-    // Fetch current client state
+    console.log(`FSM Action: ${action} for client ${clientId}`);
+
+    // Fetch current client state (without inner join to avoid issues with clients without plans)
     const { data: client, error: clientError } = await supabaseClient
       .from('clients')
-      .select('*, client_plans!inner(*)')
+      .select('*')
       .eq('id', clientId)
       .eq('coach_id', user.id)
       .single();
 
     if (clientError || !client) {
-      return new Response(JSON.stringify({ error: 'Client not found' }), {
+      console.error('Client fetch error:', clientError);
+      return new Response(JSON.stringify({ error: 'Client not found', details: clientError?.message }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log(`Client status: ${client.status}, active_plan_id: ${client.active_plan_id}`);
 
     // Optimistic concurrency check
     if (version !== undefined && client.version !== version) {
@@ -100,7 +105,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('FSM Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Error stack:', errorStack);
+    return new Response(JSON.stringify({ error: errorMessage, stack: errorStack }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -213,11 +220,14 @@ async function assignPlan(supabase: any, client: any, userId: string, metadata: 
 }
 
 async function archiveClient(supabase: any, client: any, userId: string) {
+  console.log(`Archiving client ${client.id}, current status: ${client.status}, active_plan_id: ${client.active_plan_id}`);
+  
   if (client.status === 'ARCHIVIATO') {
     return { success: true, message: 'Already archived' };
   }
 
   if (client.active_plan_id) {
+    console.log(`Cannot archive: client has active plan ${client.active_plan_id}`);
     throw new Error('Cannot archive client with active plan. Complete or delete the plan first.');
   }
 
@@ -231,10 +241,14 @@ async function archiveClient(supabase: any, client: any, userId: string) {
     })
     .eq('id', client.id);
 
-  if (error) throw error;
+  if (error) {
+    console.error('Archive update error:', error);
+    throw error;
+  }
 
   await logClientTransition(supabase, client.id, fromStatus, 'ARCHIVIATO', 'ARCHIVE_CLIENT', userId);
 
+  console.log(`Client ${client.id} archived successfully`);
   return { success: true };
 }
 
