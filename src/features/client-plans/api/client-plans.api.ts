@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { ClientPlan, ClientPlanWithTemplate, AssignTemplateInput, SaveAsTemplateInput } from "@/types/template";
+import type { ClientPlanWithTemplate, AssignTemplateInput, SaveAsTemplateInput } from "@/types/template";
+import type { ClientPlan } from "@/features/client-plans/types";
 import { getTemplate } from "@/features/templates/api/templates.api";
 
 export async function getClientPlans(clientId: string) {
@@ -61,7 +62,7 @@ export async function assignTemplateToClient(clientId: string, input: AssignTemp
       name: input.name_override || template.name,
       description: input.description || template.description,
       data: finalData,
-      status: 'ACTIVE',
+      status: 'IN_CORSO',
       derived_from_template_id: input.template_id,
     })
     .select()
@@ -83,7 +84,7 @@ export async function updateClientPlan(id: string, updates: Partial<ClientPlan>)
   return data as ClientPlan;
 }
 
-export async function updateClientPlanStatus(id: string, status: ClientPlan['status']) {
+export async function updateClientPlanStatus(id: string, status: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO') {
   return updateClientPlan(id, { status });
 }
 
@@ -117,7 +118,7 @@ export async function saveClientPlanAsTemplate(planId: string, input: SaveAsTemp
         name: input.name,
         description: input.description,
         data: plan.data,
-        status: 'ACTIVE',
+        status: 'IN_CORSO',
         derived_from_template_id: newTemplate.id,
       });
 

@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Client, ClientWithTags, CreateClientInput, UpdateClientInput, ClientsFilters, ClientsPageResult } from "../types";
 
 export async function listClients(filters: ClientsFilters): Promise<ClientsPageResult> {
-  const { q = "", status = ["ATTIVO", "POTENZIALE", "SOSPESO"], tag = "", sort = "updated_desc", page = 1, limit = 25 } = filters;
+  const { q = "", status = ["ATTIVO", "POTENZIALE", "INATTIVO"], tag = "", sort = "updated_desc", page = 1, limit = 25 } = filters;
   
   let query = supabase
     .from("clients")

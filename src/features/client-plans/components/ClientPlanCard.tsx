@@ -12,7 +12,7 @@ import { useTemplate } from "@/features/templates/hooks/useTemplate";
 interface ClientPlanCardProps {
   plan: ClientPlanWithTemplate;
   onEdit?: () => void;
-  onUpdateStatus?: (status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED') => void;
+  onUpdateStatus?: (status: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO') => void;
 }
 
 export function ClientPlanCard({ plan, onEdit, onUpdateStatus }: ClientPlanCardProps) {
@@ -42,10 +42,10 @@ export function ClientPlanCard({ plan, onEdit, onUpdateStatus }: ClientPlanCardP
     }
   };
 
-  const statusColors = {
-    ACTIVE: "bg-green-500/10 text-green-700 dark:text-green-400",
-    COMPLETED: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
-    EXPIRED: "bg-gray-500/10 text-gray-700 dark:text-gray-400",
+  const statusColors: Record<string, string> = {
+    IN_CORSO: "bg-green-500/10 text-green-700 dark:text-green-400",
+    COMPLETATO: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+    ELIMINATO: "bg-gray-500/10 text-gray-700 dark:text-gray-400",
   };
 
   return (
@@ -108,11 +108,11 @@ export function ClientPlanCard({ plan, onEdit, onUpdateStatus }: ClientPlanCardP
             {toSentenceCase("modifica")}
           </Button>
           
-          {plan.status === 'ACTIVE' && onUpdateStatus && (
+          {plan.status === 'IN_CORSO' && onUpdateStatus && (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onUpdateStatus('COMPLETED')}
+              onClick={() => onUpdateStatus('COMPLETATO')}
               className="gap-2"
             >
               <CheckCircle className="h-4 w-4" />
@@ -120,15 +120,15 @@ export function ClientPlanCard({ plan, onEdit, onUpdateStatus }: ClientPlanCardP
             </Button>
           )}
           
-          {plan.status !== 'EXPIRED' && onUpdateStatus && (
+          {plan.status !== 'ELIMINATO' && onUpdateStatus && (
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUpdateStatus('EXPIRED')}
+              onClick={() => onUpdateStatus('ELIMINATO')}
               className="gap-2 text-muted-foreground"
             >
               <XCircle className="h-4 w-4" />
-              {toSentenceCase("scaduto")}
+              {toSentenceCase("elimina")}
             </Button>
           )}
         </div>

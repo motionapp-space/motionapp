@@ -4,7 +4,7 @@ export function getDefaultFilters(sp: URLSearchParams): ClientsFilters {
   const statusParam = sp.getAll("status");
   const defaultStatus: ClientStatus[] = statusParam.length > 0 
     ? statusParam as ClientStatus[]
-    : ["ATTIVO", "POTENZIALE", "SOSPESO"];
+    : ["ATTIVO", "POTENZIALE", "INATTIVO"];
 
   return {
     q: sp.get("q") || "",

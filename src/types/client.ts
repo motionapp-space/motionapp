@@ -1,6 +1,6 @@
 export type Sex = "M" | "F" | "ALTRO";
-export type ClientStatus = "POTENZIALE" | "ATTIVO" | "SOSPESO" | "ARCHIVIATO";
-export type PlanStatus = "ATTIVA" | "COMPLETATA" | "SCADUTA";
+export type ClientStatus = "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO";
+export type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
 export type ActivityType = "CREATED" | "UPDATED" | "TAGGED" | "ASSIGNED_PLAN" | "COMPLETED_PLAN" | "ARCHIVED";
 
 export interface Client {
@@ -64,7 +64,6 @@ export interface ClientWithTags extends Client {
 }
 
 export interface ClientWithDetails extends ClientWithTags {
-  assignments?: (ClientPlanAssignment & { plan?: { name: string; goal: string } })[];
   measurements?: Measurement[];
   activities?: ClientActivity[];
 }

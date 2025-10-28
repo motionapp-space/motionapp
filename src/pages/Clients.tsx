@@ -107,15 +107,15 @@ const Clients = () => {
   };
 
   const currentStatusLabel = useMemo(() => 
-    statusLabel(filters.status || ["ATTIVO", "POTENZIALE", "SOSPESO"]), 
+    statusLabel(filters.status || ["ATTIVO", "POTENZIALE", "INATTIVO"]), 
     [filters.status]
   );
 
   const statusOptions: { value: string; label: string }[] = [
-    { value: encodeStatus(["ATTIVO", "POTENZIALE", "SOSPESO"]), label: "Tutti (non archiviati)" },
+    { value: encodeStatus(["ATTIVO", "POTENZIALE", "INATTIVO"]), label: "Tutti (non archiviati)" },
     { value: encodeStatus(["ATTIVO"]), label: "Solo Attivi" },
     { value: encodeStatus(["POTENZIALE"]), label: "Solo Potenziali" },
-    { value: encodeStatus(["SOSPESO"]), label: "Solo Sospesi" },
+    { value: encodeStatus(["INATTIVO"]), label: "Solo Inattivi" },
     { value: encodeStatus(["ARCHIVIATO"]), label: "Solo Archiviati" },
   ];
 
@@ -154,7 +154,7 @@ const Clients = () => {
         toolbarRight={
           <>
             <Select
-              value={encodeStatus(filters.status || ["ATTIVO", "POTENZIALE", "SOSPESO"])}
+              value={encodeStatus(filters.status || ["ATTIVO", "POTENZIALE", "INATTIVO"])}
               onValueChange={(value) => {
                 const decoded = decodeStatus(value);
                 setFilters({ status: decoded });

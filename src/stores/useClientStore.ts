@@ -137,17 +137,12 @@ export const useClientStore = create<ClientStore>((set, get) => ({
     set({ isLoading: true });
     try {
       // Load client with all related data
-      const [clientRes, tagsRes, assignmentsRes, measurementsRes, activitiesRes] = await Promise.all([
+      const [clientRes, tagsRes, measurementsRes, activitiesRes] = await Promise.all([
         supabase.from("clients").select("*").eq("id", id).single(),
         supabase
           .from("client_tag_on_client")
           .select("tag:client_tags(*)")
           .eq("client_id", id),
-        supabase
-          .from("client_plan_assignments")
-          .select("*, plan:plans(name, goal)")
-          .eq("client_id", id)
-          .order("assigned_at", { ascending: false }),
         supabase
           .from("measurements")
           .select("*")
@@ -167,7 +162,6 @@ export const useClientStore = create<ClientStore>((set, get) => ({
       const client: ClientWithDetails = {
         ...clientRes.data,
         tags: tagsRes.data?.map((ctc: any) => ctc.tag).filter(Boolean) || [],
-        assignments: assignmentsRes.data || [],
         measurements: measurementsRes.data || [],
         activities: activitiesRes.data || [],
       };
@@ -347,22 +341,8 @@ export const useClientStore = create<ClientStore>((set, get) => ({
 
   assignPlan: async (clientId, planId, note) => {
     try {
-      const { error } = await supabase
-        .from("client_plan_assignments")
-        .insert({
-          client_id: clientId,
-          plan_id: planId,
-          note,
-          status: "ATTIVA",
-        });
-
-      if (error) throw error;
-
-      // Log activity
-      await get().logActivity(clientId, "ASSIGNED_PLAN", "Piano di allenamento assegnato");
-
-      toast.success("Piano assegnato con successo");
-      await get().loadClient(clientId);
+      // This method is deprecated - use FSM API instead
+      toast.error("Usare FSM API per assegnare piani");
     } catch (error: any) {
       console.error("Error assigning plan:", error);
       toast.error("Errore nell'assegnazione del piano");
@@ -371,14 +351,8 @@ export const useClientStore = create<ClientStore>((set, get) => ({
 
   updateAssignment: async (assignmentId, status) => {
     try {
-      const { error } = await supabase
-        .from("client_plan_assignments")
-        .update({ status: status as PlanStatus })
-        .eq("id", assignmentId);
-
-      if (error) throw error;
-
-      toast.success("Stato piano aggiornato");
+      // This method is deprecated - use FSM API instead
+      toast.error("Usare FSM API per aggiornare lo stato");
     } catch (error: any) {
       console.error("Error updating assignment:", error);
       toast.error("Errore nell'aggiornamento");

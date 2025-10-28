@@ -38,20 +38,25 @@ export interface UpdateTemplateInput {
   tags?: string[];
 }
 
-export interface ClientPlan {
+// Re-export ClientPlan from the features module to avoid duplication
+export type { ClientPlan } from '@/features/client-plans/types';
+
+export interface ClientPlanWithTemplate {
   id: string;
   client_id: string;
   coach_id: string;
-  created_at: string;
-  updated_at: string;
   name: string;
   description?: string;
-  data: any; // Plan editor JSON schema
-  status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED';
+  data: any;
+  status: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO';
+  is_visible: boolean;
+  locked_at?: string;
+  completed_at?: string;
+  deleted_at?: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
   derived_from_template_id?: string;
-}
-
-export interface ClientPlanWithTemplate extends ClientPlan {
   template?: PlanTemplate;
 }
 

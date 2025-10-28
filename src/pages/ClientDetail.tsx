@@ -82,7 +82,7 @@ const ClientDetail = () => {
     setTagInput("");
   };
 
-  const handleUpdatePlanStatus = async (planId: string, status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED') => {
+  const handleUpdatePlanStatus = async (planId: string, status: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO') => {
     try {
       await updatePlanMutation.mutateAsync({ id: planId, updates: { status } });
       toast.success("Stato aggiornato");
@@ -110,8 +110,7 @@ const ClientDetail = () => {
     );
   }
 
-  const activePlans = currentClient.assignments?.filter((a) => a.status === "ATTIVA") || [];
-  const pastPlans = currentClient.assignments?.filter((a) => a.status !== "ATTIVA") || [];
+  // Plans are now loaded via useClientPlansQuery hook
 
   return (
     <div className="min-h-screen bg-background">
@@ -221,7 +220,7 @@ const ClientDetail = () => {
                         <SelectContent>
                           <SelectItem value="POTENZIALE">Potenziale</SelectItem>
                           <SelectItem value="ATTIVO">Attivo</SelectItem>
-                          <SelectItem value="SOSPESO">Sospeso</SelectItem>
+                          <SelectItem value="INATTIVO">Inattivo</SelectItem>
                           <SelectItem value="ARCHIVIATO">Archiviato</SelectItem>
                         </SelectContent>
                       </Select>
@@ -315,7 +314,7 @@ const ClientDetail = () => {
             ) : (
               <div className="grid gap-4">
                 {clientPlans
-                  .filter((p) => p.status === 'ACTIVE')
+                  .filter((p) => p.status === 'IN_CORSO')
                   .map((plan) => (
                     <ClientPlanCard
                       key={plan.id}
@@ -325,11 +324,11 @@ const ClientDetail = () => {
                     />
                   ))}
 
-                {clientPlans.filter((p) => p.status !== 'ACTIVE').length > 0 && (
+                {clientPlans.filter((p) => p.status !== 'IN_CORSO').length > 0 && (
                   <>
                     <h4 className="text-md font-semibold mt-4">{toSentenceCase("Storico")}</h4>
                     {clientPlans
-                      .filter((p) => p.status !== 'ACTIVE')
+                      .filter((p) => p.status !== 'IN_CORSO')
                       .map((plan) => (
                         <ClientPlanCard
                           key={plan.id}

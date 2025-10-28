@@ -35,7 +35,7 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
 
   // Current month stats
   const activeClients = clients.filter(c => c.status === "ATTIVO").length;
-  const terminatedClients = clients.filter(c => c.status === "SOSPESO" || c.status === "ARCHIVIATO").length;
+  const terminatedClients = clients.filter(c => c.status === "INATTIVO" || c.status === "ARCHIVIATO").length;
   const totalClients = clients.length;
   const newClients = clients.filter(c => new Date(c.created_at) >= currentMonthStart).length;
 
@@ -50,7 +50,7 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
 
   const prevClients = prevMonthClients || [];
   const prevActiveClients = prevClients.filter(c => c.status === "ATTIVO").length;
-  const prevTerminatedClients = prevClients.filter(c => c.status === "SOSPESO" || c.status === "ARCHIVIATO").length;
+  const prevTerminatedClients = prevClients.filter(c => c.status === "INATTIVO" || c.status === "ARCHIVIATO").length;
   const prevTotalClients = prevClients.length;
   
   const prevNewClients = prevClients.filter(c => {

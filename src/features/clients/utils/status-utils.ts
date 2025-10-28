@@ -1,7 +1,7 @@
-export const STATUS = ["ATTIVO", "POTENZIALE", "SOSPESO", "ARCHIVIATO"] as const;
+export const STATUS = ["ATTIVO", "POTENZIALE", "INATTIVO", "ARCHIVIATO"] as const;
 export type Status = typeof STATUS[number];
 
-export const DEFAULT_STATUS: Status[] = ["ATTIVO", "POTENZIALE", "SOSPESO"];
+export const DEFAULT_STATUS: Status[] = ["ATTIVO", "POTENZIALE", "INATTIVO"];
 
 export function parseStatusFromSearch(sp: URLSearchParams): Status[] | null {
   const vals = sp.getAll("status") as Status[];
@@ -20,7 +20,7 @@ function labelFor(s: Status): string {
   switch (s) {
     case "ATTIVO": return "Attivo";
     case "POTENZIALE": return "Potenziale";
-    case "SOSPESO": return "Sospeso";
+    case "INATTIVO": return "Inattivo";
     case "ARCHIVIATO": return "Archiviato";
   }
 }
