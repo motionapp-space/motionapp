@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ClientPlanWithTemplate, AssignTemplateInput, SaveAsTemplateInput } from "@/types/template";
 import type { ClientPlan } from "@/features/client-plans/types";
 import { getTemplate } from "@/features/templates/api/templates.api";
+import { assignPlanToClient } from "@/features/clients/api/client-fsm.api";
 
 export async function getClientPlans(clientId: string) {
   const { data, error } = await supabase
@@ -42,9 +43,6 @@ export async function getClientPlan(id: string) {
 }
 
 export async function assignTemplateToClient(clientId: string, input: AssignTemplateInput) {
-  const { data: coach } = await supabase.auth.getUser();
-  if (!coach.user) throw new Error("Not authenticated");
-
   // Fetch template
   const template = await getTemplate(input.template_id);
 
@@ -54,22 +52,31 @@ export async function assignTemplateToClient(clientId: string, input: AssignTemp
     finalData = { ...template.data, ...input.data_override };
   }
 
-  const { data, error } = await supabase
-    .from("client_plans")
-    .insert({
-      client_id: clientId,
-      coach_id: coach.user.id,
-      name: input.name_override || template.name,
-      description: input.description || template.description,
-      data: finalData,
-      status: 'IN_CORSO',
-      derived_from_template_id: input.template_id,
-    })
-    .select()
-    .single();
+  // Use FSM to assign plan - this will:
+  // 1. Set client status to ATTIVO
+  // 2. Set active_plan_id
+  // 3. Create plan with IN_CORSO status
+  // 4. Handle one-active-plan invariant
+  // 5. Log all transitions
+  const result = await assignPlanToClient(clientId, {
+    name: input.name_override || template.name,
+    description: input.description || template.description,
+    data: finalData,
+  });
 
-  if (error) throw error;
-  return data as ClientPlan;
+  // Update the plan to link it to the template
+  if (result.plan) {
+    const { error: updateError } = await supabase
+      .from("client_plans")
+      .update({ derived_from_template_id: input.template_id })
+      .eq("id", result.plan.id);
+
+    if (updateError) throw updateError;
+    
+    return { ...result.plan, derived_from_template_id: input.template_id } as ClientPlan;
+  }
+
+  throw new Error("Failed to assign plan");
 }
 
 export async function updateClientPlan(id: string, updates: Partial<ClientPlan>) {
@@ -110,19 +117,27 @@ export async function saveClientPlanAsTemplate(planId: string, input: SaveAsTemp
 
   // Optionally assign this new template to the client
   if (input.also_assign) {
-    const { error: assignError } = await supabase
-      .from("client_plans")
-      .insert({
-        client_id: plan.client_id,
-        coach_id: coach.user.id,
-        name: input.name,
-        description: input.description,
-        data: plan.data,
-        status: 'IN_CORSO',
-        derived_from_template_id: newTemplate.id,
-      });
+    // Use FSM to assign plan properly
+    await assignPlanToClient(plan.client_id, {
+      name: input.name,
+      description: input.description,
+      data: plan.data,
+    });
 
-    if (assignError) throw assignError;
+    // Update the newly created plan to link it to the template
+    const { data: clientPlan } = await supabase
+      .from("client_plans")
+      .select("*")
+      .eq("client_id", plan.client_id)
+      .eq("status", "IN_CORSO")
+      .single();
+
+    if (clientPlan) {
+      await supabase
+        .from("client_plans")
+        .update({ derived_from_template_id: newTemplate.id })
+        .eq("id", clientPlan.id);
+    }
   }
 
   return newTemplate;
