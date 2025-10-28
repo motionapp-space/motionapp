@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { archiveClient } from "../api/clients.api";
+import { archiveClient } from "../api/client-fsm.api";
 import { toast } from "sonner";
 
 export function useArchiveClient() {
   const qc = useQueryClient();
 
   return useMutation<void, Error, string>({
-    mutationFn: archiveClient,
+    mutationFn: (clientId: string) => archiveClient(clientId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
       toast.success("Cliente archiviato con successo");

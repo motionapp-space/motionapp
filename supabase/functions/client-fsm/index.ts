@@ -240,7 +240,7 @@ async function archiveClient(supabase: any, client: any, userId: string) {
 
 async function unarchiveClient(supabase: any, client: any, userId: string) {
   if (client.status !== 'ARCHIVIATO') {
-    return { success: true, message: 'Not archived' };
+    throw new Error('Client is not archived');
   }
 
   const { error } = await supabase
@@ -248,6 +248,7 @@ async function unarchiveClient(supabase: any, client: any, userId: string) {
     .update({
       status: 'POTENZIALE',
       archived_at: null,
+      active_plan_id: null,
     })
     .eq('id', client.id);
 

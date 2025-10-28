@@ -1,13 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { unarchiveClient } from "../api/clients.api";
+import { unarchiveClient } from "../api/client-fsm.api";
 import { toast } from "sonner";
-import type { Client } from "../types";
 
 export function useUnarchiveClient() {
   const qc = useQueryClient();
 
-  return useMutation<Client, Error, string>({
-    mutationFn: unarchiveClient,
+  return useMutation<any, Error, string>({
+    mutationFn: (clientId: string) => unarchiveClient(clientId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
       toast.success("Cliente ripristinato con successo");
