@@ -11,7 +11,6 @@ interface CalendarToolbarProps {
   onViewChange: (view: CalendarView) => void;
   onDateChange: (date: Date) => void;
   onToday: () => void;
-  onNewEvent: () => void;
 }
 
 export function CalendarToolbar({
@@ -20,7 +19,6 @@ export function CalendarToolbar({
   onViewChange,
   onDateChange,
   onToday,
-  onNewEvent,
 }: CalendarToolbarProps) {
   const handlePrev = () => {
     const newDate = new Date(currentDate);
@@ -50,26 +48,26 @@ export function CalendarToolbar({
 
   return (
     <div className="border-b bg-card">
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+      <div className="py-3">
+        <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={onToday} className="h-10">
+            <Button variant="outline" onClick={onToday} className="h-9 px-3">
               Oggi
             </Button>
-            <Button variant="outline" size="icon" onClick={handlePrev} className="h-10 w-10">
+            <Button variant="outline" size="icon" onClick={handlePrev} className="h-9 w-9">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={handleNext} className="h-10 w-10">
+            <Button variant="outline" size="icon" onClick={handleNext} className="h-9 w-9">
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <h2 className="text-lg font-semibold ml-2 capitalize">
+            <h2 className="text-base font-semibold ml-2 capitalize">
               {getDateLabel()}
             </h2>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Select value={view} onValueChange={(v) => onViewChange(v as CalendarView)}>
-              <SelectTrigger className="w-[130px] h-10">
+              <SelectTrigger className="w-[130px] h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -79,11 +77,6 @@ export function CalendarToolbar({
                 <SelectItem value="year">Anno</SelectItem>
               </SelectContent>
             </Select>
-
-            <Button onClick={onNewEvent} className="gap-2 h-10">
-              <Plus className="h-4 w-4" />
-              Nuovo
-            </Button>
           </div>
         </div>
       </div>

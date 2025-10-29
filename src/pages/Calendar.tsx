@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
-import { useSearchParams, useNavigate, Routes, Route } from "react-router-dom";
-import { parseISO, format, startOfMonth } from "date-fns";
+import { useSearchParams } from "react-router-dom";
+import { parseISO, format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Search, Calendar as CalendarIcon, Plus, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "@/components/PageHeader";
 import { useEventsQuery } from "@/features/events/hooks/useEventsQuery";
 import { CalendarToolbar } from "@/features/events/components/CalendarToolbar";
@@ -12,19 +13,21 @@ import { DayView } from "@/features/events/components/DayView";
 import { WeekView } from "@/features/events/components/WeekView";
 import { MonthView } from "@/features/events/components/MonthView";
 import { YearView } from "@/features/events/components/YearView";
-import { EventModal } from "@/features/events/components/EventModal";
-import { useDebounce } from "@/hooks/use-debounce";
-import { CalendarLayerFilters, CalendarLayers } from "@/features/bookings/components/CalendarLayerFilters";
+import { AppointmentWizard } from "@/features/events/components/AppointmentWizard";
+import { BookingManagementDrawer } from "@/features/bookings/components/BookingManagementDrawer";
 import { BookingRequestDrawer } from "@/features/bookings/components/BookingRequestDrawer";
+import { useDebounce } from "@/hooks/use-debounce";
 import { useBookingRequestsQuery } from "@/features/bookings/hooks/useBookingRequests";
 import { useAvailabilityWindowsQuery } from "@/features/bookings/hooks/useAvailability";
 import { useOutOfOfficeBlocksQuery } from "@/features/bookings/hooks/useOutOfOffice";
 import { usePendingCount } from "@/features/bookings/hooks/usePendingCount";
 import type { CalendarView, EventWithClient } from "@/features/events/types";
 import type { BookingRequestWithClient } from "@/features/bookings/types";
+import { EventModal } from "@/features/events/components/EventModal";
+
+type FilterOption = "all" | "approved" | "pending" | "ooo" | "availability";
 
 const Calendar = () => {
-  const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
   const [currentDate, setCurrentDate] = useState(() => {
     const dateParam = sp.get("date");
@@ -32,17 +35,13 @@ const Calendar = () => {
   });
   const [view, setView] = useState<CalendarView>((sp.get("view") as CalendarView) || "week");
   const [searchQuery, setSearchQuery] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [bookingDrawerOpen, setBookingDrawerOpen] = useState(false);
+  const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithClient | undefined>();
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
-  const [prefillData, setPrefillData] = useState<any>();
-  const [layers, setLayers] = useState<CalendarLayers>({
-    approved: true,
-    pending: true,
-    ooo: false,
-    availability: false,
-  });
+  const [filterOption, setFilterOption] = useState<FilterOption>("all");
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -87,26 +86,16 @@ const Calendar = () => {
 
   const handleEventClick = (event: EventWithClient) => {
     setSelectedEvent(event);
-    setSelectedRequest(undefined);
-    setPrefillData(undefined);
-    setModalOpen(true);
+    setEditModalOpen(true);
   };
 
   const handleRequestClick = (request: BookingRequestWithClient) => {
     setSelectedRequest(request);
-    setSelectedEvent(undefined);
-    setPrefillData(undefined);
-    setDrawerOpen(true);
+    setRequestDrawerOpen(true);
   };
 
   const handleNewEvent = () => {
-    setSelectedEvent(undefined);
-    setSelectedRequest(undefined);
-    setPrefillData({
-      start: new Date(currentDate.setHours(9, 0)),
-      end: new Date(currentDate.setHours(10, 0)),
-    });
-    setModalOpen(true);
+    setWizardOpen(true);
   };
 
   const handleMonthClick = (month: Date) => {
@@ -117,15 +106,17 @@ const Calendar = () => {
     setSp(sp);
   };
 
-  const toggleLayer = (layer: keyof CalendarLayers) => {
-    setLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
-  };
+  // Determine which layers to show based on filter
+  const showApproved = filterOption === "all" || filterOption === "approved";
+  const showPending = filterOption === "all" || filterOption === "pending";
+  const showOoo = filterOption === "all" || filterOption === "ooo";
+  const showAvailability = filterOption === "all" || filterOption === "availability";
 
   return (
     <div className="min-h-screen flex flex-col bg-background w-full">
       <PageHeader
         title="Appuntamenti"
-        subtitle="Organizza appuntamenti e sessioni con i tuoi clienti"
+        subtitle="Organizza e gestisci le tue sessioni con i clienti"
         primaryCta={{
           label: "Nuovo appuntamento",
           onClick: handleNewEvent,
@@ -133,33 +124,49 @@ const Calendar = () => {
           testId: "calendar-new-event-btn"
         }}
         toolbarLeft={
-          <div className="flex items-center gap-4 w-full">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex items-center gap-3 w-full">
+            <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Cerca appuntamenti..."
+                placeholder="Cerca per cliente o tipo di sessione..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11"
+                className="pl-10 h-10"
               />
             </div>
-            <CalendarLayerFilters
-              layers={layers}
-              onToggle={toggleLayer}
-              pendingCount={pendingCount}
-            />
+            <Select value={filterOption} onValueChange={(v) => setFilterOption(v as FilterOption)}>
+              <SelectTrigger className="w-[140px] h-10">
+                <SelectValue placeholder="Mostra" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti</SelectItem>
+                <SelectItem value="approved">✅ Approvati</SelectItem>
+                <SelectItem value="pending">
+                  <span className="flex items-center gap-2">
+                    ⏳ In attesa
+                    {pendingCount > 0 && (
+                      <Badge variant="secondary" className="h-5 min-w-5 px-1.5">
+                        {pendingCount}
+                      </Badge>
+                    )}
+                  </span>
+                </SelectItem>
+                <SelectItem value="ooo">🚫 Fuori ufficio</SelectItem>
+                <SelectItem value="availability">🗓️ Disponibilità</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         }
         toolbarRight={
           <Button
             variant="outline"
-            onClick={() => navigate("/calendar/manage")}
-            className="gap-2"
+            onClick={() => setBookingDrawerOpen(true)}
+            className="gap-2 h-10"
           >
             <Settings className="h-4 w-4" />
-            Gestione prenotazioni
+            <span className="hidden sm:inline">Gestione</span>
             {pendingCount > 0 && (
-              <Badge variant="destructive" className="ml-1">
+              <Badge variant="destructive" className="h-5 min-w-5 px-1.5">
                 {pendingCount}
               </Badge>
             )}
@@ -175,7 +182,6 @@ const Calendar = () => {
           onViewChange={handleViewChange}
           onDateChange={handleDateChange}
           onToday={handleToday}
-          onNewEvent={handleNewEvent}
         />
       </div>
 
@@ -197,10 +203,10 @@ const Calendar = () => {
             {view === "day" && (
               <DayView
                 date={currentDate}
-                events={layers.approved ? filteredEvents : []}
-                bookingRequests={layers.pending ? bookingRequests : []}
-                availabilityWindows={layers.availability ? availabilityWindows : []}
-                oooBlocks={layers.ooo ? oooBlocks : []}
+                events={showApproved ? filteredEvents : []}
+                bookingRequests={showPending ? bookingRequests : []}
+                availabilityWindows={showAvailability ? availabilityWindows : []}
+                oooBlocks={showOoo ? oooBlocks : []}
                 onEventClick={handleEventClick}
                 onRequestClick={handleRequestClick}
               />
@@ -208,10 +214,10 @@ const Calendar = () => {
             {view === "week" && (
               <WeekView
                 date={currentDate}
-                events={layers.approved ? filteredEvents : []}
-                bookingRequests={layers.pending ? bookingRequests : []}
-                availabilityWindows={layers.availability ? availabilityWindows : []}
-                oooBlocks={layers.ooo ? oooBlocks : []}
+                events={showApproved ? filteredEvents : []}
+                bookingRequests={showPending ? bookingRequests : []}
+                availabilityWindows={showAvailability ? availabilityWindows : []}
+                oooBlocks={showOoo ? oooBlocks : []}
                 onEventClick={handleEventClick}
                 onRequestClick={handleRequestClick}
               />
@@ -234,18 +240,33 @@ const Calendar = () => {
         )}
       </div>
 
-      {/* Event Modal */}
+      {/* Appointment Wizard */}
+      <AppointmentWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        prefillData={{
+          start: new Date(currentDate.setHours(9, 0)),
+          end: new Date(currentDate.setHours(10, 0)),
+        }}
+      />
+
+      {/* Edit Event Modal */}
       <EventModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
         event={selectedEvent}
-        prefillData={prefillData}
+      />
+
+      {/* Booking Management Drawer */}
+      <BookingManagementDrawer
+        open={bookingDrawerOpen}
+        onOpenChange={setBookingDrawerOpen}
       />
 
       {/* Booking Request Drawer */}
       <BookingRequestDrawer
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
+        open={requestDrawerOpen}
+        onOpenChange={setRequestDrawerOpen}
         request={selectedRequest}
       />
     </div>
