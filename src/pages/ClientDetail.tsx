@@ -54,7 +54,6 @@ const ClientDetail = () => {
     last_name: "",
     email: "",
     phone: "",
-    status: "POTENZIALE" as ClientStatus,
     notes: "",
   });
 
@@ -74,7 +73,6 @@ const ClientDetail = () => {
         last_name: currentClient.last_name,
         email: currentClient.email || "",
         phone: currentClient.phone || "",
-        status: currentClient.status,
         notes: currentClient.notes || "",
       });
     }
@@ -221,24 +219,7 @@ const ClientDetail = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>{toSentenceCase("Stato")}</Label>
-                    {editMode ? (
-                      <Select
-                        value={formData.status}
-                        onValueChange={(value) => setFormData({ ...formData, status: value as ClientStatus })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="POTENZIALE">Potenziale</SelectItem>
-                          <SelectItem value="ATTIVO">Attivo</SelectItem>
-                          <SelectItem value="INATTIVO">Inattivo</SelectItem>
-                          <SelectItem value="ARCHIVIATO">Archiviato</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="text-sm">{currentClient.status}</p>
-                    )}
+                    <p className="text-sm">{currentClient.status}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
