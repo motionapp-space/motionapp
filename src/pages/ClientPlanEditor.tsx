@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, Download, CheckCircle, Loader2, Save, FileText } from "lucide-react";
 import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
+import { DayPicker } from "@/features/sessions/components/DayPicker";
+import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 import { exportPlanToPDF } from "@/lib/pdfExport";
 import { toSentenceCase } from "@/lib/text";
 import { Plus } from "lucide-react";
@@ -32,10 +34,12 @@ const ClientPlanEditor = () => {
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [alsoAssign, setAlsoAssign] = useState(false);
+  const [dayPickerOpen, setDayPickerOpen] = useState(false);
 
   const updateMutation = useUpdateClientPlan();
   const saveAsTemplateMutation = useSaveAsTemplate();
   const assignMutation = useAssignTemplate();
+  const createSession = useCreateSession();
 
   const clientId = searchParams.get("clientId");
   const templateId = searchParams.get("templateId");
@@ -419,7 +423,18 @@ const ClientPlanEditor = () => {
                   {toSentenceCase("Salva come template")}
                 </Button>
               )}
-              <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2">
+              {id && clientId && plan?.status === "IN_CORSO" && (
+                <Button
+                  onClick={() => setDayPickerOpen(true)}
+                  variant="secondary"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {toSentenceCase("Usa in sessione")}
+                </Button>
+              )}
+              <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2">{" "}
                 <Download className="h-4 w-4" />
                 PDF
               </Button>
@@ -539,6 +554,23 @@ const ClientPlanEditor = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Day Picker for Session */}
+      {id && clientId && (
+        <DayPicker
+          open={dayPickerOpen}
+          onOpenChange={setDayPickerOpen}
+          clientId={clientId}
+          onConfirm={async (planId, dayId) => {
+            const session = await createSession.mutateAsync({
+              client_id: clientId,
+              plan_id: planId,
+              day_id: dayId,
+            });
+            navigate(`/session/live?sessionId=${session.id}`);
+          }}
+        />
+      )}
     </div>
   );
 };

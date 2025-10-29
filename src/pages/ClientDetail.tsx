@@ -19,6 +19,7 @@ import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClie
 import { AssignPlanDialog } from "@/features/client-plans/components/AssignPlanDialog";
 import { ClientPlanCard } from "@/features/client-plans/components/ClientPlanCard";
 import { ClientAppointmentsTab } from "@/features/clients/components/ClientAppointmentsTab";
+import { SessionHistoryTab } from "@/features/sessions/components/SessionHistoryTab";
 
 const getStatusColor = (status: ClientStatus) => {
   switch (status) {
@@ -156,10 +157,11 @@ const ClientDetail = () => {
           }}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="profile">{toSentenceCase("Profilo")}</TabsTrigger>
             <TabsTrigger value="plans">{toSentenceCase("Piani")}</TabsTrigger>
             <TabsTrigger value="appointments">{toSentenceCase("Appuntamenti")}</TabsTrigger>
+            <TabsTrigger value="sessions">{toSentenceCase("Sessioni")}</TabsTrigger>
             <TabsTrigger value="measurements">{toSentenceCase("Misurazioni")}</TabsTrigger>
             <TabsTrigger value="activity">{toSentenceCase("Attività")}</TabsTrigger>
           </TabsList>
@@ -339,6 +341,11 @@ const ClientDetail = () => {
           {/* Appointments Tab */}
           <TabsContent value="appointments">
             <ClientAppointmentsTab clientId={id!} />
+          </TabsContent>
+
+          {/* Sessions Tab */}
+          <TabsContent value="sessions">
+            <SessionHistoryTab clientId={id!} />
           </TabsContent>
 
           {/* Measurements Tab */}

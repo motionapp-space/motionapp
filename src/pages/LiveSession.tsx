@@ -12,6 +12,7 @@ import { useCreateActual } from "@/features/sessions/hooks/useCreateActual";
 import { useDeleteActual } from "@/features/sessions/hooks/useDeleteActual";
 import { getClientPlan } from "@/features/client-plans/api/client-plans.api";
 import { updateEvent } from "@/features/events/api/events.api";
+import { ExerciseHistoryDrawer } from "@/features/sessions/components/ExerciseHistoryDrawer";
 import type { Day, Phase, ExerciseGroup, Exercise } from "@/types/plan";
 import type { ExerciseActual } from "@/features/sessions/types";
 import { migratePhaseToGroups } from "@/types/plan";
@@ -34,6 +35,8 @@ export default function LiveSession() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [sessionNotes, setSessionNotes] = useState("");
   const [restTimers, setRestTimers] = useState<Record<string, number>>({});
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
+  const [historyDrawerExercise, setHistoryDrawerExercise] = useState<{ id: string; name: string } | null>(null);
 
   // Load day data from plan
   useEffect(() => {
@@ -251,7 +254,7 @@ export default function LiveSession() {
 
                     return (
                       <div key={exercise.id} className="border-l-4 border-primary/20 pl-3 space-y-2">
-                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
                             <p className="font-medium">{exercise.name || "Esercizio senza nome"}</p>
                             <p className="text-sm text-muted-foreground">
@@ -266,6 +269,16 @@ export default function LiveSession() {
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setHistoryDrawerExercise({ id: exercise.id, name: exercise.name });
+                                setHistoryDrawerOpen(true);
+                              }}
+                            >
+                              Storico
+                            </Button>
                             <div className="text-sm font-medium">
                               {exerciseActuals.length}/{exercise.sets}
                             </div>
@@ -344,6 +357,17 @@ export default function LiveSession() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Exercise History Drawer */}
+      {historyDrawerExercise && session && (
+        <ExerciseHistoryDrawer
+          open={historyDrawerOpen}
+          onOpenChange={setHistoryDrawerOpen}
+          clientId={session.client_id}
+          exerciseId={historyDrawerExercise.id}
+          exerciseName={historyDrawerExercise.name}
+        />
+      )}
     </div>
   );
 }
