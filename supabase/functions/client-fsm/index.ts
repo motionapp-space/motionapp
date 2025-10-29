@@ -226,18 +226,62 @@ async function archiveClient(supabase: any, client: any, userId: string) {
     return { success: true, message: 'Already archived' };
   }
 
-  if (client.active_plan_id) {
-    console.log(`Cannot archive: client has active plan ${client.active_plan_id}`);
-    throw new Error('Cannot archive client with active plan. Complete or delete the plan first.');
-  }
-
   const fromStatus = client.status;
 
+  // CASO I: If there's an IN_CORSO plan, complete it automatically
+  if (client.active_plan_id) {
+    console.log(`Auto-completing active plan ${client.active_plan_id} before archiving`);
+    
+    const { data: activePlan, error: planFetchError } = await supabase
+      .from('client_plans')
+      .select('*')
+      .eq('id', client.active_plan_id)
+      .single();
+
+    if (planFetchError) {
+      console.error('Failed to fetch active plan:', planFetchError);
+      throw new Error('Failed to fetch active plan');
+    }
+
+    if (activePlan && activePlan.status === 'IN_CORSO') {
+      // Complete and lock the plan
+      const { error: planUpdateError } = await supabase
+        .from('client_plans')
+        .update({
+          status: 'COMPLETATO',
+          locked_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          is_visible: true, // Keep visible in history
+        })
+        .eq('id', activePlan.id);
+
+      if (planUpdateError) {
+        console.error('Failed to complete plan:', planUpdateError);
+        throw new Error('Failed to complete plan before archiving');
+      }
+
+      // Log plan transition
+      await logPlanTransition(
+        supabase,
+        activePlan.id,
+        client.id,
+        'IN_CORSO',
+        'COMPLETATO',
+        'AUTO_COMPLETE_ON_ARCHIVE',
+        userId
+      );
+
+      console.log(`Plan ${activePlan.id} auto-completed`);
+    }
+  }
+
+  // Update client: set to ARCHIVIATO and clear active_plan_id
   const { error } = await supabase
     .from('clients')
     .update({
       status: 'ARCHIVIATO',
       archived_at: new Date().toISOString(),
+      active_plan_id: null,
     })
     .eq('id', client.id);
 

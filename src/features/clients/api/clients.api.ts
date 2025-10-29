@@ -108,42 +108,18 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
 }
 
 export async function updateClient(id: string, input: UpdateClientInput): Promise<Client> {
-  const { data, error } = await supabase
-    .from("clients")
-    .update(input)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-export async function archiveClient(id: string): Promise<void> {
-  const { error } = await supabase
-    .from("clients")
-    .update({ status: "ARCHIVIATO" })
-    .eq("id", id);
-
-  if (error) throw error;
-}
-
-export async function unarchiveClient(id: string): Promise<Client> {
-  const { data, error } = await supabase
-    .from("clients")
-    .update({ status: "ATTIVO" })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw error;
+  // CASO II: Strip out FSM-controlled fields to prevent manual status changes
+  const { status, active_plan_id, archived_at, ...profileData } = input as any;
   
-  // Log activity
-  await supabase.from("client_activities").insert({
-    client_id: id,
-    type: "UPDATED",
-    message: "Cliente ripristinato (status=ATTIVO)",
-  });
+  const { data, error } = await supabase
+    .from("clients")
+    .update(profileData)
+    .eq("id", id)
+    .select()
+    .single();
 
+  if (error) throw error;
   return data;
 }
+
+// Removed: archiveClient and unarchiveClient now use FSM via client-fsm.api.ts
