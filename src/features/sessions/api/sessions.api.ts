@@ -15,7 +15,7 @@ export async function listSessions(filters: SessionsFilters = {}): Promise<Train
     .from("training_sessions")
     .select(`
       *,
-      clients!training_sessions_client_id_fkey (
+      clients (
         first_name,
         last_name
       )
@@ -58,7 +58,7 @@ export async function getSession(id: string): Promise<TrainingSessionWithClient>
     .from("training_sessions")
     .select(`
       *,
-      clients!training_sessions_client_id_fkey (
+      clients (
         first_name,
         last_name
       )

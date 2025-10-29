@@ -44,7 +44,7 @@ export async function getExerciseHistory(clientId: string, exerciseId: string, l
     .from("exercise_actuals")
     .select(`
       *,
-      training_sessions!exercise_actuals_session_id_fkey (
+      training_sessions (
         client_id,
         coach_id
       )
