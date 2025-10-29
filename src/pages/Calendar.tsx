@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { parseISO, format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Search, Calendar as CalendarIcon, Plus, Settings } from "lucide-react";
@@ -14,7 +14,6 @@ import { WeekView } from "@/features/events/components/WeekView";
 import { MonthView } from "@/features/events/components/MonthView";
 import { YearView } from "@/features/events/components/YearView";
 import { AppointmentWizard } from "@/features/events/components/AppointmentWizard";
-import { BookingManagementDrawer } from "@/features/bookings/components/BookingManagementDrawer";
 import { BookingRequestDrawer } from "@/features/bookings/components/BookingRequestDrawer";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useBookingRequestsQuery } from "@/features/bookings/hooks/useBookingRequests";
@@ -29,6 +28,7 @@ type FilterOption = "all" | "approved" | "pending" | "ooo" | "availability";
 
 const Calendar = () => {
   const [sp, setSp] = useSearchParams();
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(() => {
     const dateParam = sp.get("date");
     return dateParam ? parseISO(dateParam) : new Date();
@@ -37,7 +37,6 @@ const Calendar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [bookingDrawerOpen, setBookingDrawerOpen] = useState(false);
   const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithClient | undefined>();
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
@@ -135,24 +134,15 @@ const Calendar = () => {
               />
             </div>
             <Select value={filterOption} onValueChange={(v) => setFilterOption(v as FilterOption)}>
-              <SelectTrigger className="w-[140px] h-10">
+              <SelectTrigger className="w-[160px] h-10">
                 <SelectValue placeholder="Mostra" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tutti</SelectItem>
-                <SelectItem value="approved">✅ Approvati</SelectItem>
-                <SelectItem value="pending">
-                  <span className="flex items-center gap-2">
-                    ⏳ In attesa
-                    {pendingCount > 0 && (
-                      <Badge variant="secondary" className="h-5 min-w-5 px-1.5">
-                        {pendingCount}
-                      </Badge>
-                    )}
-                  </span>
-                </SelectItem>
-                <SelectItem value="ooo">🚫 Fuori ufficio</SelectItem>
-                <SelectItem value="availability">🗓️ Disponibilità</SelectItem>
+                <SelectItem value="approved">Approvati</SelectItem>
+                <SelectItem value="pending">In attesa</SelectItem>
+                <SelectItem value="ooo">Fuori ufficio</SelectItem>
+                <SelectItem value="availability">Disponibilità</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -160,13 +150,17 @@ const Calendar = () => {
         toolbarRight={
           <Button
             variant="outline"
-            onClick={() => setBookingDrawerOpen(true)}
-            className="gap-2 h-10"
+            onClick={() => navigate("/calendar/manage")}
+            className="gap-2 h-10 relative"
           >
             <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Gestione</span>
+            <span className="hidden sm:inline">⚙️ Gestione prenotazioni</span>
+            <span className="sm:hidden">⚙️ Gestione</span>
             {pendingCount > 0 && (
-              <Badge variant="destructive" className="h-5 min-w-5 px-1.5">
+              <Badge 
+                variant={pendingCount >= 10 ? "destructive" : "default"}
+                className={`h-5 min-w-5 px-1.5 ${pendingCount >= 10 ? 'animate-pulse' : ''}`}
+              >
                 {pendingCount}
               </Badge>
             )}
@@ -257,11 +251,6 @@ const Calendar = () => {
         event={selectedEvent}
       />
 
-      {/* Booking Management Drawer */}
-      <BookingManagementDrawer
-        open={bookingDrawerOpen}
-        onOpenChange={setBookingDrawerOpen}
-      />
 
       {/* Booking Request Drawer */}
       <BookingRequestDrawer
