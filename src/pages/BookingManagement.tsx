@@ -68,7 +68,7 @@ const BookingManagement = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background w-full">
       <PageHeader
-        title="⚙️ Gestione prenotazioni"
+        title="Gestione prenotazioni"
         subtitle="Organizza e approva le richieste dei tuoi clienti"
         toolbarLeft={
           <Button
