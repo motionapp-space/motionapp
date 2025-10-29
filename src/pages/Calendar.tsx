@@ -13,7 +13,6 @@ import { DayView } from "@/features/events/components/DayView";
 import { WeekView } from "@/features/events/components/WeekView";
 import { MonthView } from "@/features/events/components/MonthView";
 import { YearView } from "@/features/events/components/YearView";
-import { AppointmentWizard } from "@/features/events/components/AppointmentWizard";
 import { BookingRequestDrawer } from "@/features/bookings/components/BookingRequestDrawer";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useBookingRequestsQuery } from "@/features/bookings/hooks/useBookingRequests";
@@ -35,7 +34,7 @@ const Calendar = () => {
   });
   const [view, setView] = useState<CalendarView>((sp.get("view") as CalendarView) || "week");
   const [searchQuery, setSearchQuery] = useState("");
-  const [wizardOpen, setWizardOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithClient | undefined>();
@@ -94,7 +93,7 @@ const Calendar = () => {
   };
 
   const handleNewEvent = () => {
-    setWizardOpen(true);
+    setCreateModalOpen(true);
   };
 
   const handleMonthClick = (month: Date) => {
@@ -234,10 +233,10 @@ const Calendar = () => {
         )}
       </div>
 
-      {/* Appointment Wizard */}
-      <AppointmentWizard
-        open={wizardOpen}
-        onOpenChange={setWizardOpen}
+      {/* Create Appointment Modal */}
+      <EventModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
         prefillData={{
           start: new Date(currentDate.setHours(9, 0)),
           end: new Date(currentDate.setHours(10, 0)),
