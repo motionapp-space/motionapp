@@ -498,10 +498,13 @@ export type Database = {
           end_at: string
           id: string
           is_all_day: boolean | null
+          linked_day_id: string | null
+          linked_plan_id: string | null
           location: string | null
           notes: string | null
           recurrence_rule: string | null
           reminder_offset_minutes: number | null
+          session_status: string | null
           start_at: string
           title: string
           updated_at: string
@@ -514,10 +517,13 @@ export type Database = {
           end_at: string
           id?: string
           is_all_day?: boolean | null
+          linked_day_id?: string | null
+          linked_plan_id?: string | null
           location?: string | null
           notes?: string | null
           recurrence_rule?: string | null
           reminder_offset_minutes?: number | null
+          session_status?: string | null
           start_at: string
           title: string
           updated_at?: string
@@ -530,10 +536,13 @@ export type Database = {
           end_at?: string
           id?: string
           is_all_day?: boolean | null
+          linked_day_id?: string | null
+          linked_plan_id?: string | null
           location?: string | null
           notes?: string | null
           recurrence_rule?: string | null
           reminder_offset_minutes?: number | null
+          session_status?: string | null
           start_at?: string
           title?: string
           updated_at?: string
@@ -544,6 +553,65 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercise_actuals: {
+        Row: {
+          created_at: string
+          day_id: string
+          exercise_id: string
+          group_id: string | null
+          id: string
+          load: string | null
+          note: string | null
+          reps: string
+          rest: string | null
+          rpe: number | null
+          section_id: string
+          session_id: string
+          set_index: number
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          day_id: string
+          exercise_id: string
+          group_id?: string | null
+          id?: string
+          load?: string | null
+          note?: string | null
+          reps: string
+          rest?: string | null
+          rpe?: number | null
+          section_id: string
+          session_id: string
+          set_index: number
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string
+          day_id?: string
+          exercise_id?: string
+          group_id?: string | null
+          id?: string
+          load?: string | null
+          note?: string | null
+          reps?: string
+          rest?: string | null
+          rpe?: number | null
+          section_id?: string
+          session_id?: string
+          set_index?: number
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_actuals_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -861,6 +929,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      training_sessions: {
+        Row: {
+          client_id: string
+          coach_id: string
+          created_at: string
+          day_id: string | null
+          ended_at: string | null
+          event_id: string | null
+          id: string
+          notes: string | null
+          plan_id: string | null
+          scheduled_at: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          coach_id: string
+          created_at?: string
+          day_id?: string | null
+          ended_at?: string | null
+          event_id?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          scheduled_at?: string | null
+          started_at?: string | null
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          coach_id?: string
+          created_at?: string
+          day_id?: string | null
+          ended_at?: string | null
+          event_id?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          scheduled_at?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

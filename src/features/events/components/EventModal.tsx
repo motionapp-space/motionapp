@@ -28,9 +28,10 @@ interface EventModalProps {
     clientId?: string;
   };
   lockedClientId?: string;
+  onStartSession?: (clientId: string, eventId: string, linkedPlanId?: string, linkedDayId?: string) => void;
 }
 
-export function EventModal({ open, onOpenChange, event, prefillData, lockedClientId }: EventModalProps) {
+export function EventModal({ open, onOpenChange, event, prefillData, lockedClientId, onStartSession }: EventModalProps) {
   const isEdit = !!event;
   const { data: clientsData } = useClientsQuery({ limit: 1000 });
   const createMutation = useCreateEvent();

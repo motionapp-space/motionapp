@@ -85,7 +85,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
     .single();
 
   if (error) throw error;
-  return data;
+  return data as Event;
 }
 
 export async function updateEvent(id: string, input: UpdateEventInput): Promise<Event> {
@@ -97,7 +97,7 @@ export async function updateEvent(id: string, input: UpdateEventInput): Promise<
     .single();
 
   if (error) throw error;
-  return data;
+  return data as Event;
 }
 
 export async function deleteEvent(id: string): Promise<void> {
@@ -164,12 +164,13 @@ export async function getNextAppointment(clientId: string): Promise<EventWithCli
   if (error && error.code !== "PGRST116") throw error;
   if (!data) return null;
 
+  const clients = (data as any).clients;
   return {
     ...data,
-    client_name: data.clients 
-      ? `${data.clients.first_name} ${data.clients.last_name}`
+    client_name: clients 
+      ? `${clients.first_name} ${clients.last_name}`
       : "Unknown",
-  };
+  } as EventWithClient;
 }
 
 export async function getLastAppointment(clientId: string): Promise<EventWithClient | null> {

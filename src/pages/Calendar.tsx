@@ -22,6 +22,8 @@ import { usePendingCount } from "@/features/bookings/hooks/usePendingCount";
 import type { CalendarView, EventWithClient } from "@/features/events/types";
 import type { BookingRequestWithClient } from "@/features/bookings/types";
 import { EventModal } from "@/features/events/components/EventModal";
+import { DayPicker } from "@/features/sessions/components/DayPicker";
+import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 
 type FilterOption = "all" | "approved" | "pending" | "ooo" | "availability";
 
@@ -38,6 +40,10 @@ const Calendar = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithClient | undefined>();
+  const [dayPickerOpen, setDayPickerOpen] = useState(false);
+  const [sessionEventData, setSessionEventData] = useState<{ clientId: string; eventId: string; linkedPlanId?: string; linkedDayId?: string } | null>(null);
+  
+  const createSession = useCreateSession();
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
 
@@ -85,6 +91,24 @@ const Calendar = () => {
   const handleEventClick = (event: EventWithClient) => {
     setSelectedEvent(event);
     setEditModalOpen(true);
+  };
+
+  const handleStartSession = (clientId: string, eventId: string, linkedPlanId?: string, linkedDayId?: string) => {
+    setSessionEventData({ clientId, eventId, linkedPlanId, linkedDayId });
+    setDayPickerOpen(true);
+  };
+
+  const handleDayPickerConfirm = async (planId: string, dayId: string) => {
+    if (!sessionEventData) return;
+    
+    const session = await createSession.mutateAsync({
+      client_id: sessionEventData.clientId,
+      plan_id: planId,
+      day_id: dayId,
+      event_id: sessionEventData.eventId,
+    });
+    
+    navigate(`/session/live?sessionId=${session.id}`);
   };
 
   const handleRequestClick = (request: BookingRequestWithClient) => {
@@ -248,6 +272,7 @@ const Calendar = () => {
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
         event={selectedEvent}
+        onStartSession={handleStartSession}
       />
 
 
@@ -257,6 +282,18 @@ const Calendar = () => {
         onOpenChange={setRequestDrawerOpen}
         request={selectedRequest}
       />
+
+      {/* Day Picker for Session */}
+      {sessionEventData && (
+        <DayPicker
+          open={dayPickerOpen}
+          onOpenChange={setDayPickerOpen}
+          clientId={sessionEventData.clientId}
+          linkedPlanId={sessionEventData.linkedPlanId}
+          linkedDayId={sessionEventData.linkedDayId}
+          onConfirm={handleDayPickerConfirm}
+        />
+      )}
     </div>
   );
 };

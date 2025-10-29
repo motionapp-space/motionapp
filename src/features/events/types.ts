@@ -11,6 +11,9 @@ export interface Event {
   reminder_offset_minutes?: number;
   color?: string;
   recurrence_rule?: string;
+  linked_plan_id?: string;
+  linked_day_id?: string;
+  session_status?: "scheduled" | "done" | "canceled" | "no_show";
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +33,9 @@ export interface CreateEventInput {
   reminder_offset_minutes?: number;
   color?: string;
   recurrence_rule?: string;
+  linked_plan_id?: string;
+  linked_day_id?: string;
+  session_status?: "scheduled" | "done" | "canceled" | "no_show";
 }
 
 export interface UpdateEventInput {
@@ -43,6 +49,9 @@ export interface UpdateEventInput {
   reminder_offset_minutes?: number;
   color?: string;
   recurrence_rule?: string;
+  linked_plan_id?: string;
+  linked_day_id?: string;
+  session_status?: "scheduled" | "done" | "canceled" | "no_show";
 }
 
 export interface EventsFilters {

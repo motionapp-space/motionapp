@@ -16,6 +16,7 @@ import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Calendar from "./pages/Calendar";
 import BookingManagement from "./pages/BookingManagement";
+import LiveSession from "./pages/LiveSession";
 import Settings from "./pages/Settings";
 import SharedPlan from "./pages/SharedPlan";
 import NotFound from "./pages/NotFound";
@@ -78,6 +79,7 @@ const App = () => {
                   <Route path="/clients/:id" element={<ClientDetail />} />
                   <Route path="/calendar" element={<Calendar />} />
                   <Route path="/calendar/manage" element={<BookingManagement />} />
+                  <Route path="/session/live" element={<LiveSession />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
