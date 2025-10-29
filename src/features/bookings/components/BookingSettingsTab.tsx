@@ -1,19 +1,31 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useBookingSettingsQuery, useUpdateBookingSettings } from "../hooks/useBookingSettings";
+import { useBookingRequestsQuery } from "../hooks/useBookingRequests";
 import { AvailabilityEditor } from "./AvailabilityEditor";
 import { OutOfOfficeManager } from "./OutOfOfficeManager";
+import { BookingRequestCard } from "./BookingRequestCard";
+import { BookingRequestDrawer } from "./BookingRequestDrawer";
 import { Button } from "@/components/ui/button";
-import { Clock, Calendar as CalendarIcon, Settings2 } from "lucide-react";
+import { Clock, Calendar as CalendarIcon, Settings2, ArrowLeft, ClipboardList } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import type { UpdateBookingSettingsInput } from "../types";
+import type { BookingRequestWithClient } from "../types";
 
 export function BookingSettingsTab() {
+  const navigate = useNavigate();
   const { data: settings, isLoading } = useBookingSettingsQuery();
+  const { data: pendingRequests = [] } = useBookingRequestsQuery({ status: "PENDING" });
   const updateMutation = useUpdateBookingSettings();
+  
+  const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [formData, setFormData] = useState<UpdateBookingSettingsInput>({
     enabled: false,
@@ -54,7 +66,24 @@ export function BookingSettingsTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen flex flex-col bg-background w-full">
+      <PageHeader
+        title="Gestione prenotazioni"
+        subtitle="Imposta le tue regole di disponibilità, approvazione e orari prenotabili dai clienti"
+        toolbarRight={
+          <Button
+            variant="outline"
+            onClick={() => navigate("/calendar")}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Torna agli appuntamenti
+          </Button>
+        }
+      />
+      
+      <div className="flex-1 overflow-auto mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6">
+        <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -168,9 +197,17 @@ export function BookingSettingsTab() {
       </Card>
 
       <Tabs defaultValue="availability" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="availability">Disponibilità settimanale</TabsTrigger>
           <TabsTrigger value="out-of-office">Fuori ufficio</TabsTrigger>
+          <TabsTrigger value="pending" className="gap-2">
+            Richieste in attesa
+            {pendingRequests.length > 0 && (
+              <Badge variant="destructive" className="ml-1">
+                {pendingRequests.length}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="availability" className="space-y-4">
@@ -200,7 +237,50 @@ export function BookingSettingsTab() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="pending" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                Richieste in attesa
+              </CardTitle>
+              <CardDescription>
+                Gestisci le richieste di prenotazione dai tuoi clienti
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {pendingRequests.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nessuna richiesta in attesa
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingRequests.map((request) => (
+                    <BookingRequestCard
+                      key={request.id}
+                      request={request}
+                      onClick={() => {
+                        setSelectedRequest(request);
+                        setDrawerOpen(true);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+        </div>
+      </div>
+
+      {/* Booking Request Drawer */}
+      <BookingRequestDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        request={selectedRequest}
+      />
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import { useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate, Routes, Route } from "react-router-dom";
 import { parseISO, format, startOfMonth } from "date-fns";
 import { Input } from "@/components/ui/input";
-import { Search, Calendar as CalendarIcon, Plus } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Plus, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import PageHeader from "@/components/PageHeader";
 import { useEventsQuery } from "@/features/events/hooks/useEventsQuery";
 import { CalendarToolbar } from "@/features/events/components/CalendarToolbar";
@@ -22,6 +24,7 @@ import type { CalendarView, EventWithClient } from "@/features/events/types";
 import type { BookingRequestWithClient } from "@/features/bookings/types";
 
 const Calendar = () => {
+  const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
   const [currentDate, setCurrentDate] = useState(() => {
     const dateParam = sp.get("date");
@@ -121,7 +124,7 @@ const Calendar = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background w-full">
       <PageHeader
-        title="Calendario"
+        title="Appuntamenti"
         subtitle="Organizza appuntamenti e sessioni con i tuoi clienti"
         primaryCta={{
           label: "Nuovo appuntamento",
@@ -146,6 +149,21 @@ const Calendar = () => {
               pendingCount={pendingCount}
             />
           </div>
+        }
+        toolbarRight={
+          <Button
+            variant="outline"
+            onClick={() => navigate("/calendar/manage")}
+            className="gap-2"
+          >
+            <Settings className="h-4 w-4" />
+            Gestione prenotazioni
+            {pendingCount > 0 && (
+              <Badge variant="destructive" className="ml-1">
+                {pendingCount}
+              </Badge>
+            )}
+          </Button>
         }
       />
 
