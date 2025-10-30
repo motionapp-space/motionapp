@@ -80,6 +80,23 @@ export async function assignTemplateToClient(clientId: string, input: AssignTemp
 }
 
 export async function updateClientPlan(id: string, updates: Partial<ClientPlan>) {
+  // If status is being changed to IN_CORSO, auto-complete other active plans
+  let autoCompletedCount = 0;
+  if (updates.status === "IN_CORSO") {
+    // First get the plan to know the client_id
+    const { data: plan, error: planError } = await supabase
+      .from("client_plans")
+      .select("client_id")
+      .eq("id", id)
+      .single();
+
+    if (planError) throw planError;
+
+    // Auto-complete other IN_CORSO plans for this client
+    const { autoCompleteOtherActivePlans } = await import("./auto-complete-plans.api");
+    autoCompletedCount = await autoCompleteOtherActivePlans(plan.client_id, id);
+  }
+
   const { data, error } = await supabase
     .from("client_plans")
     .update(updates)
@@ -88,7 +105,11 @@ export async function updateClientPlan(id: string, updates: Partial<ClientPlan>)
     .single();
 
   if (error) throw error;
-  return data as ClientPlan;
+  
+  return { 
+    ...data as ClientPlan, 
+    _autoCompletedCount: autoCompletedCount 
+  };
 }
 
 export async function updateClientPlanStatus(id: string, status: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO') {

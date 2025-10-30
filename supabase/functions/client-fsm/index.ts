@@ -161,27 +161,30 @@ async function assignPlan(supabase: any, client: any, userId: string, metadata: 
 
   const fromClientStatus = client.status;
 
-  // Check if there's an existing IN_CORSO plan
-  const { data: existingPlan } = await supabase
+  // Check if there are any existing IN_CORSO plans (handle multiple)
+  const { data: existingPlans } = await supabase
     .from('client_plans')
     .select('*')
     .eq('client_id', client.id)
     .eq('status', 'IN_CORSO')
-    .eq('is_visible', true)
-    .single();
+    .eq('is_visible', true);
 
-  if (existingPlan) {
-    // Auto-complete the existing plan
-    await supabase
-      .from('client_plans')
-      .update({
-        status: 'COMPLETATO',
-        locked_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
-      })
-      .eq('id', existingPlan.id);
+  // Auto-complete all existing IN_CORSO plans
+  if (existingPlans && existingPlans.length > 0) {
+    const now = new Date().toISOString();
+    
+    for (const plan of existingPlans) {
+      await supabase
+        .from('client_plans')
+        .update({
+          status: 'COMPLETATO',
+          locked_at: now,
+          completed_at: now,
+        })
+        .eq('id', plan.id);
 
-    await logPlanTransition(supabase, existingPlan.id, client.id, 'IN_CORSO', 'COMPLETATO', 'ASSIGN_NEW_PLAN', userId);
+      await logPlanTransition(supabase, plan.id, client.id, 'IN_CORSO', 'COMPLETATO', 'AUTO_COMPLETE_ON_NEW_PLAN', userId);
+    }
   }
 
   // Create new plan
