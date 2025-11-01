@@ -25,15 +25,22 @@ export function getMonthDays(date: Date): Date[] {
 }
 
 export function getEventsForDay(events: EventWithClient[], day: Date): EventWithClient[] {
+  const dayStart = startOfDay(day);
+  const dayEnd = endOfDay(day);
+
   return events.filter(event => {
     const eventStart = parseISO(event.start_at);
     const eventEnd = parseISO(event.end_at);
-    const dayStart = startOfDay(day);
-    const dayEnd = endOfDay(day);
-    
-    return (eventStart >= dayStart && eventStart < dayEnd) ||
-           (eventEnd > dayStart && eventEnd <= dayEnd) ||
-           (eventStart < dayStart && eventEnd > dayEnd);
+
+    if (event.is_all_day) {
+      return isSameDay(eventStart, day);
+    }
+
+    return (
+      (eventStart >= dayStart && eventStart < dayEnd) ||
+      (eventEnd > dayStart && eventEnd <= dayEnd) ||
+      (eventStart < dayStart && eventEnd > dayEnd)
+    );
   });
 }
 
