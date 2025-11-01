@@ -220,6 +220,7 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
     }
     onOpenChange(false);
 
+    //modificato qui
     if (formData.is_all_day) {
       const start = new Date(formData.start_at);
       const end = new Date(formData.end_at);
