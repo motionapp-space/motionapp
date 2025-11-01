@@ -23,8 +23,8 @@ const Dashboard = () => {
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-50 dark:bg-blue-950/30",
-      link: "/clients?status=active",
-      tooltip: "Clienti con stato ATTIVO"
+      link: "/clients?status=ATTIVO",
+      tooltip: "Clienti con stato ATTIVO",
     },
     {
       label: "Nuovi clienti",
@@ -34,7 +34,7 @@ const Dashboard = () => {
       color: "text-green-600",
       bgColor: "bg-green-50 dark:bg-green-950/30",
       link: "/clients?sort=created_desc",
-      tooltip: "Clienti creati questo mese"
+      tooltip: "Clienti creati questo mese",
     },
     {
       label: "Clienti terminati",
@@ -44,7 +44,7 @@ const Dashboard = () => {
       color: "text-orange-600",
       bgColor: "bg-orange-50 dark:bg-orange-950/30",
       link: "/clients?status=terminated",
-      tooltip: "Clienti con stato SOSPESO o ARCHIVIATO"
+      tooltip: "Clienti con stato SOSPESO o ARCHIVIATO",
     },
     {
       label: "Totale clienti",
@@ -54,21 +54,20 @@ const Dashboard = () => {
       color: "text-purple-600",
       bgColor: "bg-purple-50 dark:bg-purple-950/30",
       link: "/clients",
-      tooltip: "Tutti i clienti"
-    }
+      tooltip: "Tutti i clienti",
+    },
   ];
 
   const renderChangeIndicator = (change: number) => {
     if (change === 0) return <span className="text-muted-foreground">0%</span>;
-    
+
     const isPositive = change > 0;
     const Icon = isPositive ? TrendingUp : TrendingDown;
-    
+
     return (
-      <span className={cn(
-        "flex items-center gap-1 text-sm font-medium",
-        isPositive ? "text-green-600" : "text-red-600"
-      )}>
+      <span
+        className={cn("flex items-center gap-1 text-sm font-medium", isPositive ? "text-green-600" : "text-red-600")}
+      >
         <Icon className="h-3 w-3" />
         {Math.abs(change).toFixed(1)}%
       </span>
@@ -77,46 +76,41 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <PageHeader
-        title="Dashboard"
-        subtitle="Panoramica della tua attività"
-      />
+      <PageHeader title="Dashboard" subtitle="Panoramica della tua attività" />
 
       <div className="container mx-auto px-4 md:px-6 lg:px-8 pb-6 md:pb-8 space-y-8">
         {/* KPI Cards */}
         <section>
           <h2 className="text-lg font-semibold mb-4">Panoramica clienti</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {statsLoading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="p-6">
-                  <Skeleton className="h-12 w-12 rounded-lg mb-4" />
-                  <Skeleton className="h-4 w-24 mb-2" />
-                  <Skeleton className="h-8 w-16 mb-2" />
-                  <Skeleton className="h-3 w-12" />
-                </Card>
-              ))
-            ) : (
-              kpiCards.map((kpi, index) => {
-                const Icon = kpi.icon;
-                return (
-                  <Link key={index} to={kpi.link}>
-                    <Card className="p-6 hover:shadow-lg transition-all duration-200 cursor-pointer h-full">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className={cn("p-3 rounded-lg", kpi.bgColor)}>
-                          <Icon className={cn("h-6 w-6", kpi.color)} />
+            {statsLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="p-6">
+                    <Skeleton className="h-12 w-12 rounded-lg mb-4" />
+                    <Skeleton className="h-4 w-24 mb-2" />
+                    <Skeleton className="h-8 w-16 mb-2" />
+                    <Skeleton className="h-3 w-12" />
+                  </Card>
+                ))
+              : kpiCards.map((kpi, index) => {
+                  const Icon = kpi.icon;
+                  return (
+                    <Link key={index} to={kpi.link}>
+                      <Card className="p-6 hover:shadow-lg transition-all duration-200 cursor-pointer h-full">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className={cn("p-3 rounded-lg", kpi.bgColor)}>
+                            <Icon className={cn("h-6 w-6", kpi.color)} />
+                          </div>
+                          {renderChangeIndicator(kpi.change)}
                         </div>
-                        {renderChangeIndicator(kpi.change)}
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">{kpi.label}</p>
-                        <p className="text-3xl font-bold">{kpi.value}</p>
-                      </div>
-                    </Card>
-                  </Link>
-                );
-              })
-            )}
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">{kpi.label}</p>
+                          <p className="text-3xl font-bold">{kpi.value}</p>
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                })}
           </div>
         </section>
 
@@ -125,7 +119,9 @@ const Dashboard = () => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Andamento clienti</h2>
             <Link to="/clients">
-              <Button variant="outline" size="sm">Analizza clienti</Button>
+              <Button variant="outline" size="sm">
+                Analizza clienti
+              </Button>
             </Link>
           </div>
           <Card className="p-6">
@@ -147,11 +143,9 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground">
                 Hai {eventsData?.count || 0} appuntamenti nei prossimi 7 giorni
                 {eventsData?.change !== undefined && eventsData.change !== 0 && (
-                  <span className={cn(
-                    "ml-2 font-medium",
-                    eventsData.change > 0 ? "text-green-600" : "text-red-600"
-                  )}>
-                    ({eventsData.change > 0 ? "+" : ""}{eventsData.change.toFixed(0)}% vs settimana scorsa)
+                  <span className={cn("ml-2 font-medium", eventsData.change > 0 ? "text-green-600" : "text-red-600")}>
+                    ({eventsData.change > 0 ? "+" : ""}
+                    {eventsData.change.toFixed(0)}% vs settimana scorsa)
                   </span>
                 )}
               </p>
@@ -184,8 +178,8 @@ const Dashboard = () => {
             ) : (
               <div className="space-y-4">
                 {eventsData.events.slice(0, 5).map((event) => (
-                  <Link 
-                    key={event.id} 
+                  <Link
+                    key={event.id}
                     to="/calendar"
                     className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
                   >
@@ -193,9 +187,7 @@ const Dashboard = () => {
                       <span className="text-xs font-medium text-primary">
                         {format(parseISO(event.start_at), "MMM", { locale: it }).toUpperCase()}
                       </span>
-                      <span className="text-lg font-bold text-primary">
-                        {format(parseISO(event.start_at), "dd")}
-                      </span>
+                      <span className="text-lg font-bold text-primary">{format(parseISO(event.start_at), "dd")}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{event.title}</p>
@@ -205,7 +197,7 @@ const Dashboard = () => {
                     </div>
                   </Link>
                 ))}
-                
+
                 {eventsData.count > 5 && (
                   <div className="text-center pt-2">
                     <Link to="/calendar">
