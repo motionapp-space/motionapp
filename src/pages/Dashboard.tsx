@@ -37,14 +37,14 @@ const Dashboard = () => {
       tooltip: "Clienti creati questo mese",
     },
     {
-      label: "Clienti terminati",
+      label: "Clienti inattivi",
       value: stats?.terminatedClients || 0,
       change: stats?.terminatedClientsChange || 0,
       icon: UserX,
       color: "text-orange-600",
       bgColor: "bg-orange-50 dark:bg-orange-950/30",
-      link: "/clients?status=terminated",
-      tooltip: "Clienti con stato SOSPESO o ARCHIVIATO",
+      link: "/clients?status=INATTIVO",
+      tooltip: "Clienti con stato INATTIVO",
     },
     {
       label: "Totale clienti",
