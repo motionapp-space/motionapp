@@ -55,12 +55,26 @@ export function WeekView({
     weekDays.forEach((day, index) => {
       const dayStart = startOfDay(day);
       const dayEnd = endOfDay(day);
-      
+
+      //modifica qui
       const dayEvents = events.filter((e) => {
-        const eventStart = new Date(e.start_at);
-        const eventEnd = new Date(e.end_at);
-        return eventStart < dayEnd && eventEnd > dayStart;
+      const eventStart = new Date(e.start_at);
+      const eventEnd = new Date(e.end_at);
+    
+      // Se è all-day → lo mostri solo se corrisponde allo stesso giorno
+      if (e.is_all_day) {
+        return isSameDay(eventStart, day);
+      }
+    
+      // Altrimenti mantieni la logica normale di overlapping
+      return eventStart < dayEnd && eventEnd > dayStart;
       });
+      
+      //const dayEvents = events.filter((e) => {
+        //const eventStart = new Date(e.start_at);
+        //const eventEnd = new Date(e.end_at);
+        //return eventStart < dayEnd && eventEnd > dayStart;
+      //});
       
       dayMap[index] = layoutOverlaps(
         dayEvents.map((e) => ({
