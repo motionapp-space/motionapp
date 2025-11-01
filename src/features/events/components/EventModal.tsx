@@ -219,6 +219,17 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
       await createMutation.mutateAsync(data);
     }
     onOpenChange(false);
+
+    if (formData.is_all_day) {
+      const start = new Date(formData.start_at);
+      const end = new Date(formData.end_at);
+    
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+    
+      data.start_at = start.toISOString();
+      data.end_at = end.toISOString();
+    }
   };
 
   const handleDelete = async () => {
