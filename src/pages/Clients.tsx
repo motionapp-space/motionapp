@@ -88,8 +88,14 @@ const Clients = () => {
     setSp(filtersToSearchParams(updated));
   };
 
+  const isFormValid = 
+    formData.first_name.trim() !== "" && 
+    formData.last_name.trim() !== "" && 
+    formData.email.trim() !== "" && 
+    formData.fiscal_code.trim() !== "";
+
   const handleCreateClient = () => {
-    if (!formData.first_name || !formData.last_name) {
+    if (!isFormValid) {
       return;
     }
 
@@ -290,7 +296,7 @@ const Clients = () => {
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
               {toSentenceCase("Annulla")}
             </Button>
-            <Button onClick={handleCreateClient} disabled={createMutation.isPending}>
+            <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
               {toSentenceCase("Crea cliente")}
             </Button>
           </div>
