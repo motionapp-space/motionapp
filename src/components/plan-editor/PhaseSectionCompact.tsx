@@ -1,13 +1,6 @@
 import { Phase, Exercise, ExerciseGroup, GroupType, migratePhaseToGroups } from "@/types/plan";
-import { Button } from "@/components/ui/button";
-import { Plus, ChevronDown } from "lucide-react";
 import { GroupCard } from "./GroupCard";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { AddMenu } from "./AddMenu";
 
 interface PhaseSectionCompactProps {
   phase: Phase;
@@ -50,7 +43,7 @@ export const PhaseSectionCompact = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">
+          <h3 className="text-lg font-semibold text-foreground">
             {phaseLabels[phase.type] || phase.type}
           </h3>
           <p className="text-sm text-muted-foreground">
@@ -58,34 +51,12 @@ export const PhaseSectionCompact = ({
           </p>
         </div>
         {!readonly && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onAddGroup("single")}
-              className="gap-2 h-11"
-            >
-              <Plus className="h-4 w-4" />
-              Aggiungi esercizio
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 h-11">
-                  <Plus className="h-4 w-4" />
-                  Aggiungi gruppo
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onAddGroup("superset")}>
-                  Superset (2–3 esercizi)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAddGroup("circuit")}>
-                  Circuit (3+ esercizi)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <AddMenu
+            context="day"
+            onAddExercise={() => onAddGroup("single")}
+            onAddSuperset={() => onAddGroup("superset")}
+            onAddCircuit={() => onAddGroup("circuit")}
+          />
         )}
       </div>
 

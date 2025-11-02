@@ -408,12 +408,21 @@ const TemplateEditor = () => {
 
           <div className="border-t pt-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">{toSentenceCase("Giorni di allenamento")}</h2>
-              {!readonly && (
-                <Button onClick={handleAddDay} variant="outline" size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  {toSentenceCase("Aggiungi giorno")}
-                </Button>
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-semibold">{toSentenceCase("Giorni di allenamento")}</h2>
+                {days.length > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    {days.length} {days.length === 1 ? 'giorno' : 'giorni'}
+                  </span>
+                )}
+              </div>
+              {!readonly && days.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Button onClick={handleAddDay} variant="outline" size="sm" className="gap-2 h-11">
+                    <Plus className="h-4 w-4" />
+                    {toSentenceCase("Aggiungi giorno")}
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -423,31 +432,32 @@ const TemplateEditor = () => {
                   {toSentenceCase("Nessun giorno ancora. Inizia ad aggiungerne uno!")}
                 </p>
                 {!readonly && (
-                  <Button onClick={handleAddDay} variant="outline" className="gap-2">
+                  <Button onClick={handleAddDay} variant="default" className="gap-2 h-11">
                     <Plus className="h-4 w-4" />
                     {toSentenceCase("Aggiungi primo giorno")}
                   </Button>
                 )}
               </div>
             ) : (
-              <div className="space-y-4">
-                {days.map((day) => (
-                  <DayCardCompact
-                    key={day.id}
-                    day={day}
-                    onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
-                    onDuplicate={() => handleDuplicateDay(day.id)}
-                    onDelete={() => handleDeleteDay(day.id)}
-                    onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
-                    onUpdateGroup={(phaseType, groupId, updates) => handleUpdateGroup(day.id, phaseType, groupId, updates)}
-                    onDuplicateGroup={(phaseType, groupId) => handleDuplicateGroup(day.id, phaseType, groupId)}
-                    onDeleteGroup={(phaseType, groupId) => handleDeleteGroup(day.id, phaseType, groupId)}
-                    onAddExerciseToGroup={(phaseType, groupId) => handleAddExerciseToGroup(day.id, phaseType, groupId)}
-                    onUpdateExercise={(phaseType, groupId, exerciseId, patch) => handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)}
-                    onDuplicateExercise={(phaseType, groupId, exerciseId) => handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)}
-                    onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
-                    readonly={readonly}
-                  />
+              <div className="space-y-6" role="list" aria-label="Giorni di allenamento">
+                {days.map((day, index) => (
+                  <div key={day.id} role="listitem" aria-label={`Giorno ${index + 1}`}>
+                    <DayCardCompact
+                      day={day}
+                      onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
+                      onDuplicate={() => handleDuplicateDay(day.id)}
+                      onDelete={() => handleDeleteDay(day.id)}
+                      onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
+                      onUpdateGroup={(phaseType, groupId, updates) => handleUpdateGroup(day.id, phaseType, groupId, updates)}
+                      onDuplicateGroup={(phaseType, groupId) => handleDuplicateGroup(day.id, phaseType, groupId)}
+                      onDeleteGroup={(phaseType, groupId) => handleDeleteGroup(day.id, phaseType, groupId)}
+                      onAddExerciseToGroup={(phaseType, groupId) => handleAddExerciseToGroup(day.id, phaseType, groupId)}
+                      onUpdateExercise={(phaseType, groupId, exerciseId, patch) => handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)}
+                      onDuplicateExercise={(phaseType, groupId, exerciseId) => handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)}
+                      onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
+                      readonly={readonly}
+                    />
+                  </div>
                 ))}
               </div>
             )}

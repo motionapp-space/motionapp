@@ -4,9 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2, Plus, GripVertical, Edit2 } from "lucide-react";
+import { Copy, Trash2, Plus, GripVertical, Edit2, ChevronDown, Info } from "lucide-react";
 import { ExerciseRowCompact } from "./ExerciseRowCompact";
 import { useState } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +51,7 @@ export const GroupCard = ({
   readonly = false,
 }: GroupCardProps) => {
   const [isEditingName, setIsEditingName] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const getGroupBadge = () => {
     if (group.type === "superset") {
@@ -83,7 +90,7 @@ export const GroupCard = ({
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden bg-muted/30 border-muted">
       <div className="p-4 space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
@@ -98,6 +105,7 @@ export const GroupCard = ({
                     onBlur={() => setIsEditingName(false)}
                     className="h-8 max-w-xs"
                     autoFocus
+                    aria-label="Modifica nome gruppo"
                   />
                 ) : (
                   <div className="flex items-center gap-2">
@@ -107,7 +115,8 @@ export const GroupCard = ({
                         variant="ghost"
                         size="icon"
                         onClick={() => setIsEditingName(true)}
-                        className="h-6 w-6"
+                        className="h-6 w-6 min-w-[44px] min-h-[44px]"
+                        aria-label="Modifica nome gruppo"
                       >
                         <Edit2 className="h-3 w-3" />
                       </Button>
@@ -119,143 +128,176 @@ export const GroupCard = ({
             <p className="text-sm text-muted-foreground">{getGroupMeta()}</p>
           </div>
 
-          {!readonly && (
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onDuplicateGroup}
-                title="Duplica gruppo"
-                className="h-9 w-9"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 text-destructive hover:text-destructive"
-                    title="Elimina gruppo"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Eliminare questo gruppo?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Tutti gli esercizi del gruppo verranno eliminati.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annulla</AlertDialogCancel>
-                    <AlertDialogAction onClick={onDeleteGroup}>Elimina</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="h-9 w-9 min-w-[44px] min-h-[44px]"
+              aria-expanded={isExpanded}
+              aria-label={isExpanded ? "Comprimi gruppo" : "Espandi gruppo"}
+            >
+              <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+            </Button>
+            {!readonly && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onDuplicateGroup}
+                  title="Duplica gruppo"
+                  className="h-9 w-9 min-w-[44px] min-h-[44px]"
+                  aria-label="Duplica gruppo"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 min-w-[44px] min-h-[44px] text-destructive hover:text-destructive"
+                      title="Elimina gruppo"
+                      aria-label="Elimina gruppo"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Eliminare questo gruppo?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tutti gli esercizi del gruppo verranno eliminati.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annulla</AlertDialogCancel>
+                      <AlertDialogAction onClick={onDeleteGroup}>Elimina</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Shared/Circuit Controls */}
-        {!readonly && group.type === "superset" && (
-          <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Label className="text-sm whitespace-nowrap">Serie condivise</Label>
+        {isExpanded && !readonly && group.type === "superset" && (
+          <div className="flex items-start gap-3 p-3 bg-background rounded-lg border border-border">
+            <div className="flex flex-col gap-1 flex-1">
+              <div className="flex items-center gap-2">
+                <Label className="text-xs font-medium text-muted-foreground">Serie condivise</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs max-w-xs">Serie eseguite per tutti gli esercizi del superset</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 type="number"
                 value={group.sharedSets || ""}
                 onChange={(e) => onUpdateGroup({ sharedSets: parseInt(e.target.value) || undefined })}
                 placeholder="4"
-                className="h-11 w-20"
+                className="h-11"
                 min={0}
+                aria-label="Serie condivise"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-sm whitespace-nowrap">Rec tra esercizi</Label>
+            <div className="flex flex-col gap-1 flex-1">
+              <div className="flex items-center gap-2">
+                <Label className="text-xs font-medium text-muted-foreground">Rec tra esercizi</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs max-w-xs">Tempo di recupero tra un esercizio e l'altro nel superset</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 value={group.sharedRestBetweenExercises || ""}
                 onChange={(e) => onUpdateGroup({ sharedRestBetweenExercises: e.target.value })}
-                placeholder="0s"
-                className="h-11 w-20"
+                placeholder="30s"
+                className="h-11"
+                aria-label="Recupero tra esercizi"
               />
             </div>
           </div>
         )}
 
-        {!readonly && group.type === "circuit" && (
-          <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Label className="text-sm whitespace-nowrap">Giri</Label>
+        {isExpanded && !readonly && group.type === "circuit" && (
+          <div className="flex items-start gap-3 p-3 bg-background rounded-lg border border-border">
+            <div className="flex flex-col gap-1 flex-1">
+              <Label className="text-xs font-medium text-muted-foreground">Giri</Label>
               <Input
                 type="number"
                 value={group.rounds || 1}
                 onChange={(e) => onUpdateGroup({ rounds: Math.max(1, parseInt(e.target.value) || 1) })}
-                className="h-11 w-20"
+                className="h-11"
                 min={1}
+                aria-label="Numero di giri"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-sm whitespace-nowrap">Rec tra giri</Label>
+            <div className="flex flex-col gap-1 flex-1">
+              <Label className="text-xs font-medium text-muted-foreground">Rec tra giri</Label>
               <Input
                 value={group.restBetweenRounds || ""}
                 onChange={(e) => onUpdateGroup({ restBetweenRounds: e.target.value })}
                 placeholder="90s"
-                className="h-11 w-24"
+                className="h-11"
+                aria-label="Recupero tra giri"
               />
             </div>
           </div>
         )}
 
         {/* Exercises Table */}
-        <div className="space-y-2">
-          {group.exercises.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
-              Nessun esercizio ancora
-            </div>
-          ) : (
-            <>
-              {/* Header Row */}
-              <div className="grid grid-cols-12 gap-3 px-3 pb-2 text-xs font-medium text-muted-foreground border-b">
-                <div className="col-span-3">Nome</div>
-                <div className="col-span-1 text-center">Serie</div>
-                <div className="col-span-1 text-center">Rip</div>
-                <div className="col-span-1 text-center">Carico</div>
-                <div className="col-span-1 text-center">Rec</div>
-                <div className="col-span-2">Obiettivo</div>
-                <div className="col-span-2">Note</div>
-                {!readonly && <div className="col-span-1"></div>}
+        {isExpanded && (
+          <div className="space-y-2" role="region" aria-label="Esercizi del gruppo">
+            {group.exercises.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
+                Nessun esercizio ancora
               </div>
-
-              {/* Exercise Rows */}
-              {group.exercises
-                .sort((a, b) => a.order - b.order)
-                .map((exercise) => (
-                  <ExerciseRowCompact
-                    key={exercise.id}
-                    exercise={exercise}
-                    onUpdate={(patch) => onUpdateExercise(exercise.id, patch)}
-                    onDuplicate={() => onDuplicateExercise(exercise.id)}
-                    onDelete={() => onDeleteExercise(exercise.id)}
-                    readonly={readonly}
-                  />
-                ))}
-            </>
-          )}
-        </div>
+            ) : (
+              <div className="space-y-2">
+                {/* Exercise Rows */}
+                {group.exercises
+                  .sort((a, b) => a.order - b.order)
+                  .map((exercise) => (
+                    <ExerciseRowCompact
+                      key={exercise.id}
+                      exercise={exercise}
+                      onUpdate={(patch) => onUpdateExercise(exercise.id, patch)}
+                      onDuplicate={() => onDuplicateExercise(exercise.id)}
+                      onDelete={() => onDeleteExercise(exercise.id)}
+                      readonly={readonly}
+                    />
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Footer Actions */}
-        {!readonly && (
-          <div className="flex items-center justify-between pt-2 border-t">
+        {isExpanded && !readonly && (
+          <div className="flex items-center justify-between pt-2 border-t border-border">
             <Button
               variant="outline"
               size="sm"
               onClick={handleAddExercise}
-              className="gap-2 h-11"
+              className="gap-2 h-11 min-w-[44px] min-h-[44px]"
+              aria-label="Aggiungi esercizio al gruppo"
             >
               <Plus className="h-4 w-4" />
-              Aggiungi esercizio al gruppo
+              Aggiungi esercizio
             </Button>
           </div>
         )}
