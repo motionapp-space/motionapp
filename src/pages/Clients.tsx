@@ -23,10 +23,10 @@ import type { ClientStatus, ClientsFilters } from "@/features/clients/types";
 const Clients = () => {
   const [sp, setSp] = useSearchParams();
   const qc = useQueryClient();
-  
+
   const highlight = sp.get("highlight");
   const from = sp.get("from");
-  
+
   const [filters, setFiltersState] = useState<ClientsFilters>(getDefaultFilters(sp));
   const { data, isLoading } = useClientsQuery(filters);
   const createMutation = useCreateClient();
@@ -39,6 +39,7 @@ const Clients = () => {
     last_name: "",
     email: "",
     phone: "",
+    fiscal_code: "",
     notes: "",
   });
 
@@ -58,14 +59,16 @@ const Clients = () => {
     if (!highlight || !data?.items) return;
     const exists = data.items.some((r) => r.id === highlight);
     if (!exists) {
-      getClientById(highlight).then((client) => {
-        qc.setQueryData(["clients", { ...filters }], (prev: any) => {
-          if (!prev) return prev;
-          return { ...prev, items: [client, ...prev.items] };
+      getClientById(highlight)
+        .then((client) => {
+          qc.setQueryData(["clients", { ...filters }], (prev: any) => {
+            if (!prev) return prev;
+            return { ...prev, items: [client, ...prev.items] };
+          });
+        })
+        .catch(() => {
+          // Client not found, ignore
         });
-      }).catch(() => {
-        // Client not found, ignore
-      });
     }
   }, [highlight, data?.items?.length, filters, qc]);
 
@@ -73,8 +76,12 @@ const Clients = () => {
   const setFilters = (newFilters: Partial<ClientsFilters>) => {
     const updated = { ...filters, ...newFilters };
     // Reset to page 1 when filters change (except page itself)
-    if (newFilters.q !== undefined || newFilters.status !== undefined || 
-        newFilters.tag !== undefined || newFilters.sort !== undefined) {
+    if (
+      newFilters.q !== undefined ||
+      newFilters.status !== undefined ||
+      newFilters.tag !== undefined ||
+      newFilters.sort !== undefined
+    ) {
       updated.page = 1;
     }
     setFiltersState(updated);
@@ -89,7 +96,7 @@ const Clients = () => {
     createMutation.mutate(formData, {
       onSuccess: () => {
         setCreateDialogOpen(false);
-        setFormData({ first_name: "", last_name: "", email: "", phone: "", notes: "" });
+        setFormData({ first_name: "", last_name: "", email: "", phone: "", fiscal_code: "", notes: "" });
       },
     });
   };
@@ -106,9 +113,9 @@ const Clients = () => {
     }
   };
 
-  const currentStatusLabel = useMemo(() => 
-    statusLabel(filters.status || ["ATTIVO", "POTENZIALE", "INATTIVO"]), 
-    [filters.status]
+  const currentStatusLabel = useMemo(
+    () => statusLabel(filters.status || ["ATTIVO", "POTENZIALE", "INATTIVO"]),
+    [filters.status],
   );
 
   const statusOptions: { value: string; label: string }[] = [
@@ -128,7 +135,6 @@ const Clients = () => {
     { value: "created_asc", label: "Creato meno recente" },
   ];
 
-
   return (
     <div className="min-h-screen bg-background">
       <PageHeader
@@ -138,7 +144,7 @@ const Clients = () => {
           label: toSentenceCase("Nuovo cliente"),
           onClick: () => setCreateDialogOpen(true),
           icon: <Plus className="h-4 w-4" />,
-          testId: "clients-new-btn"
+          testId: "clients-new-btn",
         }}
         toolbarLeft={
           <div className="relative w-full">
@@ -207,8 +213,8 @@ const Clients = () => {
             </Button>
           </div>
         ) : (
-          <ClientsTable 
-            rows={data.items} 
+          <ClientsTable
+            rows={data.items}
             highlightId={highlight || undefined}
             onArchive={handleArchive}
             onUnarchive={handleUnarchive}
@@ -258,6 +264,15 @@ const Clients = () => {
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder={toSentenceCase("Inserisci telefono")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fiscal_code">{toSentenceCase("Codice fiscale")} *</Label>
+              <Input
+                id="fiscal_code"
+                value={formData.fiscal_code}
+                onChange={(e) => setFormData({ ...formData, fiscal_code: e.target.value })}
+                placeholder={toSentenceCase("Inserisci codice fiscale")}
               />
             </div>
             <div className="space-y-2">
