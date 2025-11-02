@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 import { toSentenceCase } from "@/lib/text";
-import { useNextAppointment, useLastAppointment } from "@/features/events/hooks/useClientEvents";
+import { useNextAppointment } from "@/features/events/hooks/useClientEvents";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import type { ClientWithTags, ClientStatus } from "../types";
@@ -44,7 +44,6 @@ function ClientRow({
 }) {
   const navigate = useNavigate();
   const { data: nextAppt } = useNextAppointment(client.id);
-  const { data: lastAppt } = useLastAppointment(client.id);
 
   return (
     <TableRow className={client.id === highlightId ? "ring-2 ring-primary/60 bg-primary/5" : ""}>
@@ -52,9 +51,7 @@ function ClientRow({
         {client.first_name} {client.last_name}
       </TableCell>
       <TableCell>{client.email || "-"}</TableCell>
-      <TableCell>{client.phone || "-"}</TableCell>
       <TableCell>{nextAppt ? format(parseISO(nextAppt.start_at), "dd/MM/yy HH:mm", { locale: it }) : "-"}</TableCell>
-      <TableCell>{lastAppt ? format(parseISO(lastAppt.start_at), "dd/MM/yy HH:mm", { locale: it }) : "-"}</TableCell>
       <TableCell>
         <Badge className={getStatusColor(client.status)} variant="secondary">
           {client.status}
@@ -110,9 +107,7 @@ export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: Clie
           <TableRow>
             <TableHead>{toSentenceCase("Nome")}</TableHead>
             <TableHead>{toSentenceCase("Email")}</TableHead>
-            <TableHead>{toSentenceCase("Telefono")}</TableHead>
             <TableHead>{toSentenceCase("Prossimo")}</TableHead>
-            <TableHead>{toSentenceCase("Ultimo")}</TableHead>
             <TableHead>{toSentenceCase("Stato")}</TableHead>
             <TableHead>{toSentenceCase("Tags")}</TableHead>
             <TableHead className="text-right">{toSentenceCase("Azioni")}</TableHead>
