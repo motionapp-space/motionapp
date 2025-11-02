@@ -88,10 +88,10 @@ const Clients = () => {
     setSp(filtersToSearchParams(updated));
   };
 
-  const isFormValid = 
-    formData.first_name.trim() !== "" && 
-    formData.last_name.trim() !== "" && 
-    formData.email.trim() !== "" && 
+  const isFormValid =
+    formData.first_name.trim() !== "" &&
+    formData.last_name.trim() !== "" &&
+    formData.email.trim() !== "" &&
     formData.fiscal_code.trim() !== "";
 
   const handleCreateClient = () => {
@@ -264,7 +264,7 @@ const Clients = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">{toSentenceCase("Telefono")} *</Label>
+              <Label htmlFor="phone">{toSentenceCase("Telefono")}</Label>
               <Input
                 id="phone"
                 value={formData.phone}
@@ -273,7 +273,7 @@ const Clients = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="fiscal_code">{toSentenceCase("Codice fiscale")}</Label>
+              <Label htmlFor="fiscal_code">{toSentenceCase("Codice fiscale")} *</Label>
               <Input
                 id="fiscal_code"
                 value={formData.fiscal_code}
