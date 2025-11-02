@@ -18,16 +18,26 @@ interface ClientsTableProps {
 
 const getStatusColor = (status: ClientStatus) => {
   switch (status) {
-    case "ATTIVO": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
-    case "POTENZIALE": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
-    case "INATTIVO": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
-    case "ARCHIVIATO": return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
-    default: return "bg-gray-100 text-gray-800";
+    case "ATTIVO":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
+    case "POTENZIALE":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
+    case "INATTIVO":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
+    case "ARCHIVIATO":
+      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
+    default:
+      return "bg-gray-100 text-gray-800";
   }
 };
 
-function ClientRow({ client, highlightId, onArchive, onUnarchive }: { 
-  client: ClientWithTags; 
+function ClientRow({
+  client,
+  highlightId,
+  onArchive,
+  onUnarchive,
+}: {
+  client: ClientWithTags;
   highlightId?: string;
   onArchive: (id: string, name: string) => void;
   onUnarchive: (id: string, name: string) => void;
@@ -39,16 +49,12 @@ function ClientRow({ client, highlightId, onArchive, onUnarchive }: {
   return (
     <TableRow className={client.id === highlightId ? "ring-2 ring-primary/60 bg-primary/5" : ""}>
       <TableCell className="font-medium">
-        {client.last_name} {client.first_name}
+        {client.first_name} {client.last_name}
       </TableCell>
       <TableCell>{client.email || "-"}</TableCell>
       <TableCell>{client.phone || "-"}</TableCell>
-      <TableCell>
-        {nextAppt ? format(parseISO(nextAppt.start_at), "dd/MM/yy HH:mm", { locale: it }) : "-"}
-      </TableCell>
-      <TableCell>
-        {lastAppt ? format(parseISO(lastAppt.start_at), "dd/MM/yy HH:mm", { locale: it }) : "-"}
-      </TableCell>
+      <TableCell>{nextAppt ? format(parseISO(nextAppt.start_at), "dd/MM/yy HH:mm", { locale: it }) : "-"}</TableCell>
+      <TableCell>{lastAppt ? format(parseISO(lastAppt.start_at), "dd/MM/yy HH:mm", { locale: it }) : "-"}</TableCell>
       <TableCell>
         <Badge className={getStatusColor(client.status)} variant="secondary">
           {client.status}
@@ -61,9 +67,7 @@ function ClientRow({ client, highlightId, onArchive, onUnarchive }: {
               {tag.label}
             </Badge>
           ))}
-          {(client.tags?.length || 0) > 2 && (
-            <Badge variant="outline">+{(client.tags?.length || 0) - 2}</Badge>
-          )}
+          {(client.tags?.length || 0) > 2 && <Badge variant="outline">+{(client.tags?.length || 0) - 2}</Badge>}
         </div>
       </TableCell>
       <TableCell className="text-right">
