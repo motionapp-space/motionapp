@@ -39,6 +39,7 @@ const Clients = () => {
     last_name: "",
     email: "",
     phone: "",
+    fiscal_code: "",
     notes: "",
   });
 
@@ -95,7 +96,7 @@ const Clients = () => {
     createMutation.mutate(formData, {
       onSuccess: () => {
         setCreateDialogOpen(false);
-        setFormData({ first_name: "", last_name: "", email: "", phone: "", notes: "" });
+        setFormData({ first_name: "", last_name: "", email: "", phone: "", fiscal_code: "", notes: "" });
       },
     });
   };
@@ -263,6 +264,15 @@ const Clients = () => {
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder={toSentenceCase("Inserisci telefono")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fiscal_code">{toSentenceCase("Codice fiscale")}</Label>
+              <Input
+                id="fiscal_code"
+                value={formData.fiscal_code}
+                onChange={(e) => setFormData({ ...formData, fiscal_code: e.target.value })}
+                placeholder={toSentenceCase("Inserisci codice fiscale")}
               />
             </div>
             <div className="space-y-2">

@@ -12,6 +12,7 @@ export interface Client {
   last_name: string;
   email?: string;
   phone?: string;
+  fiscal_code?: string;
   birth_date?: string;
   sex?: Sex;
   status: ClientStatus;
