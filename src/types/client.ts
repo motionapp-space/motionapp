@@ -16,6 +16,7 @@ export interface Client {
   sex?: Sex;
   status: ClientStatus;
   notes?: string;
+  fiscal_code?: string;
 }
 
 export interface ClientTag {

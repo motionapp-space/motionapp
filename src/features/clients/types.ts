@@ -16,6 +16,7 @@ export interface Client {
   sex?: Sex;
   status: ClientStatus;
   notes?: string;
+  fiscal_code?: string;
   active_plan_id?: string;
   last_access_at?: string;
   archived_at?: string;
