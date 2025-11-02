@@ -16,28 +16,46 @@ export type Database = {
     Tables: {
       availability_windows: {
         Row: {
+          capacity: number | null
           coach_id: string
           created_at: string
           day_of_week: number
+          end_date: string | null
           end_time: string
           id: string
+          is_active: boolean | null
+          location: string | null
+          start_date: string | null
           start_time: string
+          type: string | null
         }
         Insert: {
+          capacity?: number | null
           coach_id: string
           created_at?: string
           day_of_week: number
+          end_date?: string | null
           end_time: string
           id?: string
+          is_active?: boolean | null
+          location?: string | null
+          start_date?: string | null
           start_time: string
+          type?: string | null
         }
         Update: {
+          capacity?: number | null
           coach_id?: string
           created_at?: string
           day_of_week?: number
+          end_date?: string | null
           end_time?: string
           id?: string
+          is_active?: boolean | null
+          location?: string | null
+          start_date?: string | null
           start_time?: string
+          type?: string | null
         }
         Relationships: [
           {
@@ -109,32 +127,47 @@ export type Database = {
       booking_settings: {
         Row: {
           approval_mode: Database["public"]["Enums"]["approval_mode"]
+          buffer_after_minutes: number | null
+          buffer_before_minutes: number | null
+          cancel_policy_hours: number | null
           coach_id: string
           created_at: string
           enabled: boolean
           id: string
+          max_future_days: number | null
           min_advance_notice_hours: number
           slot_duration_minutes: number
+          timezone: string | null
           updated_at: string
         }
         Insert: {
           approval_mode?: Database["public"]["Enums"]["approval_mode"]
+          buffer_after_minutes?: number | null
+          buffer_before_minutes?: number | null
+          cancel_policy_hours?: number | null
           coach_id: string
           created_at?: string
           enabled?: boolean
           id?: string
+          max_future_days?: number | null
           min_advance_notice_hours?: number
           slot_duration_minutes?: number
+          timezone?: string | null
           updated_at?: string
         }
         Update: {
           approval_mode?: Database["public"]["Enums"]["approval_mode"]
+          buffer_after_minutes?: number | null
+          buffer_before_minutes?: number | null
+          cancel_policy_hours?: number | null
           coach_id?: string
           created_at?: string
           enabled?: boolean
           id?: string
+          max_future_days?: number | null
           min_advance_notice_hours?: number
           slot_duration_minutes?: number
+          timezone?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -175,6 +208,60 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_packages: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          package_type_id: string
+          purchased_at: string
+          sessions_remaining: number
+          sessions_total: number
+          status: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          package_type_id: string
+          purchased_at?: string
+          sessions_remaining: number
+          sessions_total: number
+          status?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          package_type_id?: string
+          purchased_at?: string
+          sessions_remaining?: number
+          sessions_total?: number
+          status?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_packages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_packages_package_type_id_fkey"
+            columns: ["package_type_id"]
+            isOneToOne: false
+            referencedRelation: "package_types"
             referencedColumns: ["id"]
           },
         ]
@@ -228,10 +315,12 @@ export type Database = {
           deleted_at: string | null
           derived_from_template_id: string | null
           description: string | null
+          duration_weeks: number | null
           id: string
           is_visible: boolean
           locked_at: string | null
           name: string
+          objective: string | null
           status: Database["public"]["Enums"]["plan_status"]
           updated_at: string
           version: number
@@ -245,10 +334,12 @@ export type Database = {
           deleted_at?: string | null
           derived_from_template_id?: string | null
           description?: string | null
+          duration_weeks?: number | null
           id?: string
           is_visible?: boolean
           locked_at?: string | null
           name: string
+          objective?: string | null
           status?: Database["public"]["Enums"]["plan_status"]
           updated_at?: string
           version?: number
@@ -262,10 +353,12 @@ export type Database = {
           deleted_at?: string | null
           derived_from_template_id?: string | null
           description?: string | null
+          duration_weeks?: number | null
           id?: string
           is_visible?: boolean
           locked_at?: string | null
           name?: string
+          objective?: string | null
           status?: Database["public"]["Enums"]["plan_status"]
           updated_at?: string
           version?: number
@@ -399,6 +492,7 @@ export type Database = {
           created_at: string
           email: string | null
           first_name: string
+          fiscal_code: string | null
           id: string
           last_access_at: string | null
           last_name: string
@@ -417,6 +511,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name: string
+          fiscal_code?: string | null
           id?: string
           last_access_at?: string | null
           last_name: string
@@ -435,6 +530,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name?: string
+          fiscal_code?: string | null
           id?: string
           last_access_at?: string | null
           last_name?: string
@@ -458,6 +554,60 @@ export type Database = {
             columns: ["active_plan_id"]
             isOneToOne: false
             referencedRelation: "client_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_clients: {
+        Row: {
+          client_id: string
+          coach_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          notes: string | null
+          role: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          coach_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          role?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          coach_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          role?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_clients_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
             referencedColumns: ["id"]
           },
         ]
@@ -616,6 +766,45 @@ export type Database = {
           },
         ]
       }
+      measurement_types: {
+        Row: {
+          code: string
+          created_at: string
+          decimals: number | null
+          id: string
+          is_active: boolean | null
+          max_value: number | null
+          min_value: number | null
+          name: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          decimals?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_value?: number | null
+          min_value?: number | null
+          name: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          decimals?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_value?: number | null
+          min_value?: number | null
+          name?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       measurements: {
         Row: {
           arm_cm: number | null
@@ -706,6 +895,98 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "out_of_office_blocks_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      package_consumptions: {
+        Row: {
+          client_package_id: string
+          consumed_at: string
+          created_at: string
+          id: string
+          reason: string | null
+          session_id: string | null
+          units: number
+        }
+        Insert: {
+          client_package_id: string
+          consumed_at?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          session_id?: string | null
+          units?: number
+        }
+        Update: {
+          client_package_id?: string
+          consumed_at?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          session_id?: string | null
+          units?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_consumptions_client_package_id_fkey"
+            columns: ["client_package_id"]
+            isOneToOne: false
+            referencedRelation: "client_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_consumptions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      package_types: {
+        Row: {
+          coach_id: string
+          created_at: string
+          description: string | null
+          duration_days: number | null
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number
+          total_sessions: number
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          description?: string | null
+          duration_days?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents: number
+          total_sessions: number
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          description?: string | null
+          duration_days?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          total_sessions?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_types_coach_id_fkey"
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "coaches"
@@ -857,6 +1138,7 @@ export type Database = {
           created_at: string
           created_by_id: string | null
           data: Json
+          deleted_at: string | null
           description: string | null
           id: string
           name: string
@@ -868,6 +1150,7 @@ export type Database = {
           created_at?: string
           created_by_id?: string | null
           data?: Json
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name: string
@@ -879,6 +1162,7 @@ export type Database = {
           created_at?: string
           created_by_id?: string | null
           data?: Json
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
