@@ -23,11 +23,16 @@ import { SessionHistoryTab } from "@/features/sessions/components/SessionHistory
 
 const getStatusColor = (status: ClientStatus) => {
   switch (status) {
-    case "ATTIVO": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
-    case "POTENZIALE": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
-    case "INATTIVO": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
-    case "ARCHIVIATO": return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
-    default: return "bg-gray-100 text-gray-800";
+    case "ATTIVO":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
+    case "POTENZIALE":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
+    case "INATTIVO":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
+    case "ARCHIVIATO":
+      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
+    default:
+      return "bg-gray-100 text-gray-800";
   }
 };
 
@@ -55,6 +60,7 @@ const ClientDetail = () => {
     last_name: "",
     email: "",
     phone: "",
+    fiscal_code: "",
     notes: "",
   });
 
@@ -74,6 +80,7 @@ const ClientDetail = () => {
         last_name: currentClient.last_name,
         email: currentClient.email || "",
         phone: currentClient.phone || "",
+        fiscal_code: currentClient.fiscal_code || "",
         notes: currentClient.notes || "",
       });
     }
@@ -91,7 +98,7 @@ const ClientDetail = () => {
     setTagInput("");
   };
 
-  const handleUpdatePlanStatus = async (planId: string, status: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO') => {
+  const handleUpdatePlanStatus = async (planId: string, status: "IN_CORSO" | "COMPLETATO" | "ELIMINATO") => {
     try {
       await updatePlanMutation.mutateAsync({ id: planId, updates: { status } });
       toast.success("Stato aggiornato");
@@ -148,8 +155,8 @@ const ClientDetail = () => {
 
       {/* Content */}
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
-        <Tabs 
-          value={searchParams.get("tab") || "profile"} 
+        <Tabs
+          value={searchParams.get("tab") || "profile"}
           onValueChange={(value) => {
             const sp = new URLSearchParams(searchParams);
             sp.set("tab", value);
@@ -217,6 +224,17 @@ const ClientDetail = () => {
                       />
                     ) : (
                       <p className="text-sm">{currentClient.phone || "-"}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{toSentenceCase("Codice Fiscale")}</Label>
+                    {editMode ? (
+                      <Input
+                        value={formData.fiscal_code}
+                        onChange={(e) => setFormData({ ...formData, fiscal_code: e.target.value })}
+                      />
+                    ) : (
+                      <p className="text-sm">{currentClient.fiscal_code || "-"}</p>
                     )}
                   </div>
                   <div className="space-y-2">
@@ -309,7 +327,7 @@ const ClientDetail = () => {
             ) : (
               <div className="grid gap-4">
                 {clientPlans
-                  .filter((p) => p.status === 'IN_CORSO')
+                  .filter((p) => p.status === "IN_CORSO")
                   .map((plan) => (
                     <ClientPlanCard
                       key={plan.id}
@@ -319,11 +337,11 @@ const ClientDetail = () => {
                     />
                   ))}
 
-                {clientPlans.filter((p) => p.status !== 'IN_CORSO').length > 0 && (
+                {clientPlans.filter((p) => p.status !== "IN_CORSO").length > 0 && (
                   <>
                     <h4 className="text-md font-semibold mt-4">{toSentenceCase("Storico")}</h4>
                     {clientPlans
-                      .filter((p) => p.status !== 'IN_CORSO')
+                      .filter((p) => p.status !== "IN_CORSO")
                       .map((plan) => (
                         <ClientPlanCard
                           key={plan.id}
@@ -355,9 +373,7 @@ const ClientDetail = () => {
                 <CardTitle>{toSentenceCase("Misurazioni")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {toSentenceCase("Funzionalità in sviluppo")}
-                </p>
+                <p className="text-sm text-muted-foreground">{toSentenceCase("Funzionalità in sviluppo")}</p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -396,11 +412,7 @@ const ClientDetail = () => {
       </div>
 
       {/* Assign Plan Dialog */}
-      <AssignPlanDialog
-        clientId={id || ""}
-        open={assignDialogOpen}
-        onOpenChange={setAssignDialogOpen}
-      />
+      <AssignPlanDialog clientId={id || ""} open={assignDialogOpen} onOpenChange={setAssignDialogOpen} />
     </div>
   );
 };
