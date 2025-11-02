@@ -263,8 +263,8 @@ export const GroupCard = ({
         {isExpanded && (
           <div className="space-y-2" role="region" aria-label="Esercizi del gruppo">
             {group.exercises.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
-                Nessun esercizio ancora
+              <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg" role="status">
+                <p>Nessun esercizio ancora</p>
               </div>
             ) : (
               <div className="space-y-2">

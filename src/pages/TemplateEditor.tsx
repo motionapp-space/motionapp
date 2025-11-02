@@ -341,19 +341,35 @@ const TemplateEditor = () => {
             {!readonly && (
               <>
                 {updateMutation.isPending ? (
-                  <Button disabled size="sm">
+                  <Button disabled size="sm" className="min-w-[44px] min-h-[44px]">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {toSentenceCase("Salvataggio...")}
                   </Button>
                 ) : (
-                  <Button onClick={handleSave} size="sm" className="gap-2">
+                  <Button onClick={handleSave} size="sm" className="gap-2 min-w-[44px] min-h-[44px]">
                     <CheckCircle className="h-4 w-4" />
                     {toSentenceCase("Salva")}
                   </Button>
                 )}
+                <Button 
+                  onClick={() => navigate("/templates")} 
+                  variant="outline" 
+                  size="sm"
+                  className="min-w-[44px] min-h-[44px]"
+                  aria-label="Annulla modifiche"
+                >
+                  {toSentenceCase("Annulla")}
+                </Button>
+                <div className="h-6 w-px bg-border" aria-hidden="true" />
               </>
             )}
-            <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2">
+            <Button 
+              onClick={handleExportPDF} 
+              variant="outline" 
+              size="sm" 
+              className="gap-2 min-w-[44px] min-h-[44px]"
+              aria-label="Esporta in PDF"
+            >
               <Download className="h-4 w-4" />
               PDF
             </Button>
@@ -362,7 +378,9 @@ const TemplateEditor = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setCopilotOpen(!copilotOpen)}
-                className="gap-2"
+                className="gap-2 min-w-[44px] min-h-[44px]"
+                title="Genera o ottimizza il piano"
+                aria-label="Apri assistente AI"
               >
                 <Sparkles className="h-4 w-4" />
                 AI
@@ -427,14 +445,19 @@ const TemplateEditor = () => {
             </div>
 
             {days.length === 0 ? (
-              <div className="text-center py-12 border rounded-lg bg-muted/20">
+              <div className="text-center py-12 border border-dashed rounded-lg">
                 <p className="text-muted-foreground mb-4">
-                  {toSentenceCase("Nessun giorno ancora. Inizia ad aggiungerne uno!")}
+                  Nessun giorno ancora
                 </p>
                 {!readonly && (
-                  <Button onClick={handleAddDay} variant="default" className="gap-2 h-11">
+                  <Button 
+                    onClick={handleAddDay} 
+                    variant="default" 
+                    className="gap-2 min-w-[44px] min-h-[44px]"
+                    aria-label="Aggiungi primo giorno di allenamento"
+                  >
                     <Plus className="h-4 w-4" />
-                    {toSentenceCase("Aggiungi primo giorno")}
+                    {toSentenceCase("Aggiungi giorno")}
                   </Button>
                 )}
               </div>
