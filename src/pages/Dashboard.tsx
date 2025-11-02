@@ -38,10 +38,8 @@ const Dashboard = () => {
     },
     {
       label: "Clienti inattivi",
-      value: stats?.inactiveClients || 0,
-      change: stats?.inactiveClientsChange || 0,
-      //value: stats?.terminatedClients || 0,
-      //change: stats?.terminatedClientsChange || 0,
+      value: stats?.terminatedClients || 0,
+      change: stats?.terminatedClientsChange || 0,
       icon: UserX,
       color: "text-orange-600",
       bgColor: "bg-orange-50 dark:bg-orange-950/30",
