@@ -1,12 +1,26 @@
 // Drag & Drop utilities for Plan Editor
 
+export type DnDItemType = "exercise" | "group:superset" | "group:circuit";
+
 export interface DragData {
-  itemType: "exercise" | "group";
+  itemType: DnDItemType;
   itemId: string;
   source: {
     level: "block" | "group";
     containerId: string;
+    groupId?: string;
   };
+}
+
+/**
+ * Check if a drop is allowed based on item types
+ */
+export function isDropAllowed(activeType: DnDItemType, overType: DnDItemType): boolean {
+  // Same type is always allowed
+  if (activeType === overType) return true;
+  
+  // Block any cross-type moves
+  return false;
 }
 
 /**
@@ -43,19 +57,26 @@ export function moveAcross<T>(
 /**
  * Generate a unique drag ID for sorting
  */
-export function getDragId(itemType: "exercise" | "group", itemId: string): string {
+export function getDragId(itemType: DnDItemType, itemId: string): string {
   return `${itemType}-${itemId}`;
 }
 
 /**
  * Parse a drag ID back to its components
  */
-export function parseDragId(dragId: string): { itemType: "exercise" | "group"; itemId: string } | null {
+export function parseDragId(dragId: string): { itemType: DnDItemType; itemId: string } | null {
   const parts = dragId.split("-");
   if (parts.length < 2) return null;
   
-  const itemType = parts[0] as "exercise" | "group";
-  const itemId = parts.slice(1).join("-");
+  // Reconstruct itemType (might be "group:superset" or "group:circuit")
+  const itemType = parts[0] === "group" && parts.length > 2 && (parts[1] === "superset" || parts[1] === "circuit")
+    ? `${parts[0]}:${parts[1]}` as DnDItemType
+    : parts[0] as DnDItemType;
+  
+  // ItemId is everything after the itemType
+  const itemId = itemType.includes(":")
+    ? parts.slice(2).join("-")
+    : parts.slice(1).join("-");
   
   return { itemType, itemId };
 }

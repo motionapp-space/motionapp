@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
-import { getDragId, parseDragId, moveWithin } from "./dnd-utils";
+import { getDragId, parseDragId, moveWithin, isDropAllowed, DnDItemType } from "./dnd-utils";
 import { toast } from "sonner";
 
 interface PhaseSectionCompactProps {
@@ -82,6 +82,14 @@ export const PhaseSectionCompact = ({
     const overData = parseDragId(over.id as string);
 
     if (!activeData || !overData) return;
+
+    // Validate drop: only same-type items can be reordered
+    if (!isDropAllowed(activeData.itemType, overData.itemType)) {
+      toast.error("Impossibile spostare tra tipi diversi", {
+        description: "Puoi riordinare solo tra elementi dello stesso tipo (esercizio ↔ esercizio, superset ↔ superset, circuit ↔ circuit)",
+      });
+      return;
+    }
 
     // Find indices
     const oldIndex = groups.findIndex((g) => g.id === activeData.itemId);
@@ -173,11 +181,13 @@ export const PhaseSectionCompact = ({
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={groups.map((g) => 
-              g.type === "single" 
-                ? getDragId("exercise", g.id)
-                : getDragId("group", g.id)
-            )}
+            items={groups.map((g) => {
+              if (g.type === "single") {
+                return getDragId("exercise", g.id);
+              }
+              const itemType: DnDItemType = g.type === "superset" ? "group:superset" : "group:circuit";
+              return getDragId(itemType, g.id);
+            })}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-2">

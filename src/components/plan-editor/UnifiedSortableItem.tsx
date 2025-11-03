@@ -3,7 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { ExerciseRowCompact } from "./ExerciseRowCompact";
 import { GroupCard } from "./GroupCard";
 import { Exercise, ExerciseGroup, PhaseType } from "@/types/plan";
-import { getDragId } from "./dnd-utils";
+import { getDragId, DnDItemType } from "./dnd-utils";
 
 interface UnifiedSortableItemProps {
   // Either exercise (single) or group
@@ -39,9 +39,16 @@ export const UnifiedSortableItem = ({
   onDeleteGroupExercise,
   readonly = false,
 }: UnifiedSortableItemProps) => {
+  // Determine the specific DnD item type
+  const itemType: DnDItemType = item.type === "exercise" 
+    ? "exercise"
+    : item.group.type === "superset"
+      ? "group:superset"
+      : "group:circuit";
+
   const dragId = item.type === "exercise" 
     ? getDragId("exercise", item.groupId)
-    : getDragId("group", item.group.id);
+    : getDragId(itemType, item.group.id);
 
   const {
     attributes,
@@ -54,7 +61,7 @@ export const UnifiedSortableItem = ({
     id: dragId,
     disabled: readonly,
     data: {
-      itemType: item.type,
+      itemType,
       itemId: item.type === "exercise" ? item.groupId : item.group.id,
     },
   });
