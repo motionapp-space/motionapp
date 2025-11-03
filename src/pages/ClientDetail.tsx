@@ -168,7 +168,7 @@ const ClientDetail = () => {
           <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="profile">{toSentenceCase("Profilo")}</TabsTrigger>
             <TabsTrigger value="plans">{toSentenceCase("Piani")}</TabsTrigger>
-            <TabsTrigger value="packages">📦 Pacchetti</TabsTrigger>
+            <TabsTrigger value="packages">{toSentenceCase("Pacchetti")}</TabsTrigger>
             <TabsTrigger value="appointments">{toSentenceCase("Appuntamenti")}</TabsTrigger>
             <TabsTrigger value="sessions">{toSentenceCase("Sessioni")}</TabsTrigger>
             <TabsTrigger value="measurements">{toSentenceCase("Misurazioni")}</TabsTrigger>

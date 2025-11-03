@@ -71,7 +71,7 @@ export function PackageTab({ clientId }: PackageTabProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">📦 Pacchetti sessioni</h2>
+          <h2 className="text-2xl font-bold">Pacchetti sessioni</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Gestisci i pacchetti di sessioni del cliente
           </p>
