@@ -135,44 +135,42 @@ export const GroupCard = ({
 
   return (
     <Card className="overflow-hidden bg-muted/30 border-muted">
-      <div className="p-4 space-y-4">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0 space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              {getGroupBadge()}
-              {group.type !== "single" && (
-                isEditingName && !readonly ? (
-                  <Input
-                    value={group.name || ""}
-                    onChange={(e) => onUpdateGroup({ name: e.target.value })}
-                    onBlur={() => setIsEditingName(false)}
-                    className="h-8 max-w-xs"
-                    autoFocus
-                    aria-label="Modifica nome gruppo"
-                  />
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{group.name}</span>
-                    {!readonly && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setIsEditingName(true)}
-                        className="h-6 w-6 min-w-[44px] min-h-[44px]"
-                        aria-label="Modifica nome gruppo"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                )
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground">{getGroupMeta()}</p>
+      <div className="pt-4 px-4 pb-3">
+        {/* Header - Single line with title, meta, and actions */}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {getGroupBadge()}
+            {group.type !== "single" && (
+              isEditingName && !readonly ? (
+                <Input
+                  value={group.name || ""}
+                  onChange={(e) => onUpdateGroup({ name: e.target.value })}
+                  onBlur={() => setIsEditingName(false)}
+                  className="h-8 max-w-xs"
+                  autoFocus
+                  aria-label="Modifica nome gruppo"
+                />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">{group.name}</span>
+                  {!readonly && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsEditingName(true)}
+                      className="h-6 w-6 min-w-[44px] min-h-[44px]"
+                      aria-label="Modifica nome gruppo"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              )
+            )}
+            <span className="text-sm text-muted-foreground/60 ml-2">{getGroupMeta()}</span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <Button
               variant="ghost"
               size="icon"
@@ -225,52 +223,28 @@ export const GroupCard = ({
           </div>
         </div>
 
-        {/* Shared/Circuit Controls */}
+        {/* Superset/Circuit Parameters - Inline compact */}
         {isExpanded && !readonly && group.type === "superset" && (
-          <div className="flex items-start gap-3 p-3 bg-background rounded-lg border border-border">
-            <div className="flex flex-col gap-1 flex-1">
-              <div className="flex items-center gap-2">
-                <Label className="text-xs font-medium text-muted-foreground">Serie condivise</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-3 w-3 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs max-w-xs">Serie eseguite per tutti gli esercizi del superset</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+          <div className="flex items-end gap-3 mb-2">
+            <div className="flex-1">
+              <Label className="text-xs text-muted-foreground">Serie condivise</Label>
               <Input
                 type="number"
                 value={group.sharedSets || ""}
                 onChange={(e) => onUpdateGroup({ sharedSets: parseInt(e.target.value) || undefined })}
                 placeholder="4"
-                className="h-11"
+                className="h-9 mt-1"
                 min={0}
                 aria-label="Serie condivise"
               />
             </div>
-            <div className="flex flex-col gap-1 flex-1">
-              <div className="flex items-center gap-2">
-                <Label className="text-xs font-medium text-muted-foreground">Rec tra esercizi</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-3 w-3 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs max-w-xs">Tempo di recupero tra un esercizio e l'altro nel superset</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+            <div className="flex-1">
+              <Label className="text-xs text-muted-foreground">Rec tra esercizi</Label>
               <Input
                 value={group.sharedRestBetweenExercises || ""}
                 onChange={(e) => onUpdateGroup({ sharedRestBetweenExercises: e.target.value })}
                 placeholder="30s"
-                className="h-11"
+                className="h-9 mt-1"
                 aria-label="Recupero tra esercizi"
               />
             </div>
@@ -278,39 +252,35 @@ export const GroupCard = ({
         )}
 
         {isExpanded && !readonly && group.type === "circuit" && (
-          <div className="flex items-start gap-3 p-3 bg-background rounded-lg border border-border">
-            <div className="flex flex-col gap-1 flex-1">
-              <Label className="text-xs font-medium text-muted-foreground">Giri</Label>
+          <div className="flex items-end gap-3 mb-2">
+            <div className="flex-1">
+              <Label className="text-xs text-muted-foreground">Giri</Label>
               <Input
                 type="number"
                 value={group.rounds || 1}
                 onChange={(e) => onUpdateGroup({ rounds: Math.max(1, parseInt(e.target.value) || 1) })}
-                className="h-11"
+                className="h-9 mt-1"
                 min={1}
                 aria-label="Numero di giri"
               />
             </div>
-            <div className="flex flex-col gap-1 flex-1">
-              <Label className="text-xs font-medium text-muted-foreground">Rec tra giri</Label>
+            <div className="flex-1">
+              <Label className="text-xs text-muted-foreground">Rec tra giri</Label>
               <Input
                 value={group.restBetweenRounds || ""}
                 onChange={(e) => onUpdateGroup({ restBetweenRounds: e.target.value })}
                 placeholder="90s"
-                className="h-11"
+                className="h-9 mt-1"
                 aria-label="Recupero tra giri"
               />
             </div>
           </div>
         )}
 
-        {/* Exercises Table */}
+        {/* Exercises List - Compact spacing */}
         {isExpanded && (
-          <div className="space-y-2" role="region" aria-label="Esercizi del gruppo">
-            {exercises.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg" role="status">
-                <p>Nessun esercizio ancora</p>
-              </div>
-            ) : (
+          <div role="region" aria-label="Esercizi del gruppo">
+            {exercises.length > 0 ? (
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -336,23 +306,21 @@ export const GroupCard = ({
                   </div>
                 </SortableContext>
               </DndContext>
+            ) : null}
+            
+            {/* Single "Add Exercise" CTA */}
+            {!readonly && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAddExercise}
+                className="w-full mt-2 h-9 border border-dashed border-border hover:border-primary/50 hover:bg-accent"
+                aria-label="Aggiungi esercizio al gruppo"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Aggiungi esercizio
+              </Button>
             )}
-          </div>
-        )}
-
-        {/* Footer Actions */}
-        {isExpanded && !readonly && (
-          <div className="flex items-center justify-between pt-2 border-t border-border">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAddExercise}
-              className="gap-2 h-11 min-w-[44px] min-h-[44px]"
-              aria-label="Aggiungi esercizio al gruppo"
-            >
-              <Plus className="h-4 w-4" />
-              Aggiungi esercizio
-            </Button>
           </div>
         )}
       </div>
