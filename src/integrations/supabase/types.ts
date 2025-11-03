@@ -902,6 +902,84 @@ export type Database = {
           },
         ]
       }
+      package: {
+        Row: {
+          client_id: string
+          coach_id: string
+          consumed_sessions: number
+          created_at: string
+          currency_code: string
+          expires_at: string | null
+          is_single_technical: boolean
+          name: string
+          notes_internal: string | null
+          on_hold_sessions: number
+          package_id: string
+          payment_method: string | null
+          payment_status: Database["public"]["Enums"]["package_payment_status"]
+          price_source: string
+          price_total_cents: number | null
+          total_sessions: number
+          updated_at: string
+          usage_status: Database["public"]["Enums"]["package_usage_status"]
+        }
+        Insert: {
+          client_id: string
+          coach_id: string
+          consumed_sessions?: number
+          created_at?: string
+          currency_code?: string
+          expires_at?: string | null
+          is_single_technical?: boolean
+          name: string
+          notes_internal?: string | null
+          on_hold_sessions?: number
+          package_id?: string
+          payment_method?: string | null
+          payment_status?: Database["public"]["Enums"]["package_payment_status"]
+          price_source?: string
+          price_total_cents?: number | null
+          total_sessions: number
+          updated_at?: string
+          usage_status?: Database["public"]["Enums"]["package_usage_status"]
+        }
+        Update: {
+          client_id?: string
+          coach_id?: string
+          consumed_sessions?: number
+          created_at?: string
+          currency_code?: string
+          expires_at?: string | null
+          is_single_technical?: boolean
+          name?: string
+          notes_internal?: string | null
+          on_hold_sessions?: number
+          package_id?: string
+          payment_method?: string | null
+          payment_status?: Database["public"]["Enums"]["package_payment_status"]
+          price_source?: string
+          price_total_cents?: number | null
+          total_sessions?: number
+          updated_at?: string
+          usage_status?: Database["public"]["Enums"]["package_usage_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       package_consumptions: {
         Row: {
           client_package_id: string
@@ -943,6 +1021,114 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: true
             referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      package_ledger: {
+        Row: {
+          calendar_event_id: string | null
+          created_at: string
+          created_by: string | null
+          delta_consumed: number
+          delta_hold: number
+          ledger_id: string
+          note: string | null
+          package_id: string
+          reason: Database["public"]["Enums"]["ledger_reason"]
+          type: Database["public"]["Enums"]["ledger_type"]
+        }
+        Insert: {
+          calendar_event_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delta_consumed?: number
+          delta_hold?: number
+          ledger_id?: string
+          note?: string | null
+          package_id: string
+          reason: Database["public"]["Enums"]["ledger_reason"]
+          type: Database["public"]["Enums"]["ledger_type"]
+        }
+        Update: {
+          calendar_event_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delta_consumed?: number
+          delta_hold?: number
+          ledger_id?: string
+          note?: string | null
+          package_id?: string
+          reason?: Database["public"]["Enums"]["ledger_reason"]
+          type?: Database["public"]["Enums"]["ledger_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_ledger_calendar_event_id_fkey"
+            columns: ["calendar_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_ledger_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_ledger_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "package"
+            referencedColumns: ["package_id"]
+          },
+        ]
+      }
+      package_settings: {
+        Row: {
+          coach_id: string
+          created_at: string
+          currency_code: string
+          lock_window_hours: number
+          sessions_1_price: number
+          sessions_10_price: number
+          sessions_20_price: number
+          sessions_5_price: number
+          settings_id: string
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          currency_code?: string
+          lock_window_hours?: number
+          sessions_1_price?: number
+          sessions_10_price?: number
+          sessions_20_price?: number
+          sessions_5_price?: number
+          settings_id?: string
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          currency_code?: string
+          lock_window_hours?: number
+          sessions_1_price?: number
+          sessions_10_price?: number
+          sessions_20_price?: number
+          sessions_5_price?: number
+          settings_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_settings_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
             referencedColumns: ["id"]
           },
         ]
@@ -991,6 +1177,54 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "coaches"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          kind: string
+          note: string | null
+          package_id: string
+          payment_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          kind: string
+          note?: string | null
+          package_id: string
+          payment_id?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          kind?: string
+          note?: string | null
+          package_id?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "package"
+            referencedColumns: ["package_id"]
           },
         ]
       }
@@ -1301,6 +1535,16 @@ export type Database = {
         | "DECLINED"
         | "COUNTER_PROPOSED"
       client_status: "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO"
+      ledger_reason:
+        | "CONFIRM"
+        | "CANCEL_GT_24H"
+        | "CANCEL_LT_24H"
+        | "COMPLETE"
+        | "ADMIN_CORRECTION"
+        | "RECONCILE"
+      ledger_type: "HOLD_CREATE" | "HOLD_RELEASE" | "CONSUME" | "CORRECTION"
+      package_payment_status: "unpaid" | "partial" | "paid" | "refunded"
+      package_usage_status: "active" | "completed" | "suspended" | "archived"
       plan_status: "IN_CORSO" | "COMPLETATO" | "ELIMINATO"
       sex: "M" | "F" | "ALTRO"
     }
@@ -1446,6 +1690,17 @@ export const Constants = {
         "COUNTER_PROPOSED",
       ],
       client_status: ["POTENZIALE", "ATTIVO", "INATTIVO", "ARCHIVIATO"],
+      ledger_reason: [
+        "CONFIRM",
+        "CANCEL_GT_24H",
+        "CANCEL_LT_24H",
+        "COMPLETE",
+        "ADMIN_CORRECTION",
+        "RECONCILE",
+      ],
+      ledger_type: ["HOLD_CREATE", "HOLD_RELEASE", "CONSUME", "CORRECTION"],
+      package_payment_status: ["unpaid", "partial", "paid", "refunded"],
+      package_usage_status: ["active", "completed", "suspended", "archived"],
       plan_status: ["IN_CORSO", "COMPLETATO", "ELIMINATO"],
       sex: ["M", "F", "ALTRO"],
     },
