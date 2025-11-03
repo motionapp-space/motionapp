@@ -32,6 +32,7 @@ export interface ExerciseGroup {
 export interface Phase {
   id: ID;
   type: PhaseType;
+  objective?: string; // Block-level objective (max 120 chars)
   groups: ExerciseGroup[];
   // Legacy: for backward compatibility
   exercises?: Exercise[];
@@ -40,6 +41,7 @@ export interface Phase {
 export interface Day {
   id: ID;
   title: string;
+  objective?: string; // Day-level objective (max 120 chars)
   focusMuscle?: string;
   phases: Phase[];
   order: number;

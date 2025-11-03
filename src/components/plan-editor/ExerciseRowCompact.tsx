@@ -15,6 +15,8 @@ interface ExerciseRowCompactProps {
 
 export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete, readonly = false }: ExerciseRowCompactProps) => {
   const [showMore, setShowMore] = useState(false);
+  const hasNotes = Boolean(exercise.notes && exercise.notes.trim().length > 0);
+  const hasGoal = Boolean(exercise.goal && exercise.goal.trim().length > 0);
 
   return (
     <div className="rounded-lg border border-border hover:border-muted-foreground/20 transition-colors bg-card">
@@ -101,10 +103,13 @@ export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete, 
             variant="ghost"
             size="sm"
             onClick={() => setShowMore(!showMore)}
-            className="gap-1 h-9 text-muted-foreground hover:text-foreground"
+            className="gap-1 h-9 text-muted-foreground hover:text-foreground relative"
             aria-expanded={showMore}
             aria-controls={`exercise-${exercise.id}-more`}
           >
+            {(hasNotes || hasGoal) && (
+              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" aria-label="Ha note o obiettivi" />
+            )}
             {showMore ? (
               <>
                 <ChevronUp className="h-4 w-4" />

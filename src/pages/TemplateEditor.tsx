@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, CheckCircle, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Download, CheckCircle, Loader2, Sparkles, Clock } from "lucide-react";
 import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
 import { exportPlanToPDF } from "@/lib/pdfExport";
 import { toSentenceCase } from "@/lib/text";
@@ -29,9 +29,50 @@ const TemplateEditor = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
   const updateMutation = useUpdateTemplate();
   const readonly = location.state?.readonly === true;
+
+  // Track changes
+  useEffect(() => {
+    if (template) {
+      const hasChanges = 
+        name !== template.name ||
+        description !== (template.description || "") ||
+        category !== (template.category || "") ||
+        JSON.stringify(days) !== JSON.stringify(template.data?.days || []);
+      setHasUnsavedChanges(hasChanges);
+    }
+  }, [name, description, category, days, template]);
+
+  // Autosave every 30 seconds
+  const autoSave = useCallback(async () => {
+    if (!id || readonly || !hasUnsavedChanges || updateMutation.isPending) return;
+    
+    try {
+      await updateMutation.mutateAsync({
+        id,
+        input: {
+          name,
+          description,
+          category,
+          data: { days },
+        },
+      });
+      setLastSaved(new Date());
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      // Silent fail for autosave
+      console.error('Autosave failed:', error);
+    }
+  }, [id, readonly, hasUnsavedChanges, updateMutation, name, description, category, days]);
+
+  useEffect(() => {
+    const interval = setInterval(autoSave, 30000); // 30 seconds
+    return () => clearInterval(interval);
+  }, [autoSave]);
 
   useEffect(() => {
     if (id) {
@@ -62,17 +103,23 @@ const TemplateEditor = () => {
 
   const handleSave = async () => {
     if (!id) return;
+    if (!name.trim()) {
+      toast.error("Il nome del template è obbligatorio");
+      return;
+    }
     
     try {
       await updateMutation.mutateAsync({
         id,
         input: {
-          name,
+          name: name.trim(),
           description,
           category,
           data: { days },
         },
       });
+      setLastSaved(new Date());
+      setHasUnsavedChanges(false);
       toast.success("Template salvato");
     } catch (error) {
       toast.error("Errore nel salvataggio");
@@ -92,6 +139,23 @@ const TemplateEditor = () => {
 
   const handleUpdateDayTitle = (dayId: string, title: string) => {
     setDays(days.map(d => d.id === dayId ? { ...d, title } : d));
+  };
+
+  const handleUpdateDayObjective = (dayId: string, objective: string) => {
+    setDays(days.map(d => d.id === dayId ? { ...d, objective } : d));
+  };
+
+  const handleUpdatePhaseObjective = (dayId: string, phaseType: PhaseType, objective: string) => {
+    setDays(days.map(d => 
+      d.id === dayId 
+        ? {
+            ...d,
+            phases: d.phases.map(p => 
+              p.type === phaseType ? { ...p, objective } : p
+            )
+          }
+        : d
+    ));
   };
 
   const handleDuplicateDay = (dayId: string) => {
@@ -335,6 +399,17 @@ const TemplateEditor = () => {
             <div className="flex items-center gap-2">
               <h1 className="text-h4 font-semibold truncate">{name || "Template"}</h1>
               {readonly && <Badge variant="secondary">Sola lettura</Badge>}
+              {!readonly && hasUnsavedChanges && (
+                <Badge variant="outline" className="gap-1">
+                  <Clock className="h-3 w-3" />
+                  Non salvato
+                </Badge>
+              )}
+              {!readonly && !hasUnsavedChanges && lastSaved && (
+                <span className="text-xs text-muted-foreground">
+                  Salvato {Math.floor((Date.now() - lastSaved.getTime()) / 60000)} min fa
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -468,6 +543,8 @@ const TemplateEditor = () => {
                     <DayCardCompact
                       day={day}
                       onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
+                      onUpdateObjective={(objective) => handleUpdateDayObjective(day.id, objective)}
+                      onUpdatePhaseObjective={(phaseType, objective) => handleUpdatePhaseObjective(day.id, phaseType, objective)}
                       onDuplicate={() => handleDuplicateDay(day.id)}
                       onDelete={() => handleDeleteDay(day.id)}
                       onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
