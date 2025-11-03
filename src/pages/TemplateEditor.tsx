@@ -466,40 +466,48 @@ const TemplateEditor = () => {
       </header>
 
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
-        <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>{toSentenceCase("Nome template")}</Label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Es: Piano Forza 8 Settimane"
-                disabled={readonly}
-              />
+        <div className="space-y-4">
+          {/* Metadata Section - Compact Layout */}
+          <div className="space-y-4 pb-4 border-b border-border">
+            {/* Row 1: Name and Category */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label className="text-[13px] font-semibold text-[#4B5563]">Nome</Label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Es: Piano Forza 8 Settimane"
+                  disabled={readonly}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[13px] font-semibold text-[#4B5563]">Categoria</Label>
+                <Input
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="Es. Forza / Ipertrofia"
+                  disabled={readonly}
+                  className="h-9 text-sm"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>{toSentenceCase("Categoria")}</Label>
-              <Input
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="Es: Forza, Ipertrofia..."
+
+            {/* Row 2: Description */}
+            <div className="space-y-1">
+              <Label className="text-[13px] font-semibold text-[#4B5563]">Descrizione</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Descrizione del template..."
+                rows={2}
                 disabled={readonly}
+                className="min-h-[60px] max-h-[120px] resize-none text-sm py-2"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>{toSentenceCase("Descrizione")}</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descrizione del template..."
-              rows={3}
-              disabled={readonly}
-            />
-          </div>
-
-          <div className="border-t pt-6">
+          <div className="pt-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-semibold">{toSentenceCase("Giorni di allenamento")}</h2>
