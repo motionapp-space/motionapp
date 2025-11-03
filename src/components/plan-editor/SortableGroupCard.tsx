@@ -35,7 +35,10 @@ export const SortableGroupCard = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: group.id });
+  } = useSortable({ 
+    id: group.id,
+    disabled: readonly,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -43,8 +46,11 @@ export const SortableGroupCard = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Combine attributes and listeners for the drag handle only
+  const dragHandleProps = readonly ? undefined : { ...attributes, ...listeners };
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
+    <div ref={setNodeRef} style={style}>
       <GroupCard
         group={group}
         phaseType={phaseType}
@@ -56,7 +62,7 @@ export const SortableGroupCard = ({
         onDuplicateExercise={onDuplicateExercise}
         onDeleteExercise={onDeleteExercise}
         readonly={readonly}
-        dragHandleProps={readonly ? undefined : listeners}
+        dragHandleProps={dragHandleProps}
       />
     </div>
   );

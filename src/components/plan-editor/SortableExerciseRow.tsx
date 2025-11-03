@@ -27,7 +27,10 @@ export const SortableExerciseRow = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: groupId });
+  } = useSortable({ 
+    id: groupId,
+    disabled: readonly,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -35,15 +38,18 @@ export const SortableExerciseRow = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Combine attributes and listeners for the drag handle only
+  const dragHandleProps = readonly ? undefined : { ...attributes, ...listeners };
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
+    <div ref={setNodeRef} style={style}>
       <ExerciseRowCompact
         exercise={exercise}
         onUpdate={onUpdate}
         onDuplicate={onDuplicate}
         onDelete={onDelete}
         readonly={readonly}
-        dragHandleProps={readonly ? undefined : listeners}
+        dragHandleProps={dragHandleProps}
       />
     </div>
   );
