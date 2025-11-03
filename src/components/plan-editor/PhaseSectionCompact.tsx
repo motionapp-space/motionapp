@@ -1,6 +1,5 @@
 import { Phase, Exercise, ExerciseGroup, GroupType, migratePhaseToGroups } from "@/types/plan";
-import { SortableGroupCard } from "./SortableGroupCard";
-import { SortableExerciseRow } from "./SortableExerciseRow";
+import { UnifiedSortableItem } from "./UnifiedSortableItem";
 import { AddMenu } from "./AddMenu";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -14,12 +13,13 @@ import {
   DragEndEvent,
 } from "@dnd-kit/core";
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
+import { getDragId, parseDragId, moveWithin } from "./dnd-utils";
+import { toast } from "sonner";
 
 interface PhaseSectionCompactProps {
   phase: Phase;
@@ -76,17 +76,33 @@ export const PhaseSectionCompact = ({
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      const oldIndex = groups.findIndex((g) => g.id === active.id);
-      const newIndex = groups.findIndex((g) => g.id === over.id);
+    if (!over || active.id === over.id) return;
 
-      const newGroups = arrayMove(groups, oldIndex, newIndex);
+    const activeData = parseDragId(active.id as string);
+    const overData = parseDragId(over.id as string);
+
+    if (!activeData || !overData) return;
+
+    // Find indices
+    const oldIndex = groups.findIndex((g) => g.id === activeData.itemId);
+    const newIndex = groups.findIndex((g) => g.id === overData.itemId);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    try {
+      // Reorder groups
+      const newGroups = moveWithin(groups, oldIndex, newIndex);
       setGroups(newGroups);
 
       // Update order for all groups
       newGroups.forEach((group, index) => {
         onUpdateGroup(group.id, { order: index + 1 });
       });
+    } catch (error) {
+      console.error("Drag & drop error:", error);
+      toast.error("Errore durante il riordino");
+      // Rollback on error
+      setGroups([...groups]);
     }
   };
 
@@ -157,7 +173,11 @@ export const PhaseSectionCompact = ({
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={groups.map((g) => g.id)}
+            items={groups.map((g) => 
+              g.type === "single" 
+                ? getDragId("exercise", g.id)
+                : getDragId("group", g.id)
+            )}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-2">
@@ -168,13 +188,13 @@ export const PhaseSectionCompact = ({
                   if (group.type === "single" && group.exercises.length === 1) {
                     const exercise = group.exercises[0];
                     return (
-                      <SortableExerciseRow
+                      <UnifiedSortableItem
                         key={group.id}
-                        groupId={group.id}
-                        exercise={exercise}
-                        onUpdate={(patch) => onUpdateExercise(group.id, exercise.id, patch)}
-                        onDuplicate={() => onDuplicateExercise(group.id, exercise.id)}
-                        onDelete={() => onDeleteGroup(group.id)}
+                        item={{ type: "exercise", exercise, groupId: group.id }}
+                        phaseType={phase.type}
+                        onUpdateExercise={(patch) => onUpdateExercise(group.id, exercise.id, patch)}
+                        onDuplicateExercise={() => onDuplicateExercise(group.id, exercise.id)}
+                        onDeleteExercise={() => onDeleteGroup(group.id)}
                         readonly={readonly}
                       />
                     );
@@ -182,21 +202,21 @@ export const PhaseSectionCompact = ({
                   
                   // Render supersets and circuits as grouped cards
                   return (
-                    <SortableGroupCard
+                    <UnifiedSortableItem
                       key={group.id}
-                      group={group}
+                      item={{ type: "group", group }}
                       phaseType={phase.type}
                       onUpdateGroup={(updates) => onUpdateGroup(group.id, updates)}
                       onDuplicateGroup={() => onDuplicateGroup(group.id)}
                       onDeleteGroup={() => onDeleteGroup(group.id)}
                       onAddExercise={() => onAddExerciseToGroup(group.id)}
-                      onUpdateExercise={(exerciseId, patch) =>
+                      onUpdateGroupExercise={(exerciseId, patch) =>
                         onUpdateExercise(group.id, exerciseId, patch)
                       }
-                      onDuplicateExercise={(exerciseId) =>
+                      onDuplicateGroupExercise={(exerciseId) =>
                         onDuplicateExercise(group.id, exerciseId)
                       }
-                      onDeleteExercise={(exerciseId) =>
+                      onDeleteGroupExercise={(exerciseId) =>
                         onDeleteExercise(group.id, exerciseId)
                       }
                       readonly={readonly}
