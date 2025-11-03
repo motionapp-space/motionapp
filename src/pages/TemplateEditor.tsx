@@ -23,7 +23,8 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -34,6 +35,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 const TemplateEditor = () => {
   const { id } = useParams();
@@ -56,10 +58,17 @@ const TemplateEditor = () => {
   const readonly = location.state?.readonly === true;
 
   // Drag & drop sensors
+  // Sensors for drag & drop with proper activation constraints
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8, // Require 8px movement before drag starts
+        distance: 6, // Require 6px movement before drag starts
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 120,
+        tolerance: 6,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -72,34 +81,52 @@ const TemplateEditor = () => {
 
     if (!over || active.id === over.id) return;
 
+    // Debug assertions (verify stable IDs)
+    console.assert(days.every(d => !!d.id), 'Day without stable id detected');
+    console.log('Order before:', days.map(d => ({ id: d.id, title: d.title, order: d.order })));
+    console.log('Move:', active.id, '→', over.id);
+
     // Validate level
     const activeLevel = active.data.current?.level;
     const overLevel = over.data.current?.level;
 
-    console.log("Day drag:", { 
-      activeId: active.id, 
-      overId: over.id,
-      activeLevel, 
-      overLevel 
-    });
-
     if (activeLevel !== "day" || overLevel !== "day") {
-      console.warn("Cross-level drag attempt blocked at day level", { activeLevel, overLevel });
+      console.warn("Cross-level drag attempt blocked", { activeLevel, overLevel });
       return;
     }
 
-    const oldIndex = days.findIndex((d) => d.id === active.id);
-    const newIndex = days.findIndex((d) => d.id === over.id);
+    // Find indices using stable IDs
+    const oldIndex = days.findIndex((d) => d.id === String(active.id));
+    const newIndex = days.findIndex((d) => d.id === String(over.id));
 
     if (oldIndex === -1 || newIndex === -1) {
-      console.warn("Invalid indices for day drag", { oldIndex, newIndex, activeId: active.id, overId: over.id });
+      console.error("Invalid indices for day drag - IDs mismatch!", { 
+        oldIndex, 
+        newIndex, 
+        activeId: active.id, 
+        overId: over.id,
+        dayIds: days.map(d => d.id),
+        sortableItems: days.map(d => d.id),
+      });
       return;
     }
 
-    console.log("Reordering days:", { oldIndex, newIndex });
+    console.log("Reordering days:", { 
+      from: oldIndex, 
+      to: newIndex,
+      dayTitle: days[oldIndex].title,
+    });
 
+    // Immutable reorder using dnd-kit's arrayMove
     const newDays = arrayMove(days, oldIndex, newIndex);
+    
+    // Update state with new order values
     setDays(newDays.map((day, index) => ({ ...day, order: index + 1 })));
+    
+    console.log('Order after:', newDays.map(d => ({ id: d.id, title: d.title, order: d.order })));
+    
+    // TODO: Persist order (debounced) to prevent "snap back"
+    // debouncedSaveDaysOrder(newDays);
   };
 
   // Predefined categories for suggestions
@@ -790,16 +817,17 @@ const TemplateEditor = () => {
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                modifiers={[restrictToVerticalAxis]}
                 onDragEnd={handleDayDragEnd}
               >
                 <SortableContext
                   items={days.map((d) => d.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-6" role="list" aria-label="Giorni di allenamento" data-drop-level="day">
+                  <div className="space-y-6" role="list" aria-label="Giorni di allenamento" data-drop-level="day" style={{ overflow: 'visible' }}>
                     {days
                       .sort((a, b) => a.order - b.order)
-                      .map((day, index) => (
+                      .map((day) => (
                         <SortableDay
                           key={day.id}
                           day={day}

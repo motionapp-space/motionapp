@@ -11,6 +11,7 @@ interface DraggableHandleProps {
 /**
  * Unified draggable handle for all reorderable items
  * Ensures consistent touch-friendly sizing (≥32x32px) and DS-compliant styling
+ * IMPORTANT: Attach listeners ONLY to the handle, never to the entire row
  */
 export const DraggableHandle = ({
   level,
@@ -31,14 +32,19 @@ export const DraggableHandle = ({
         cursor-grab active:cursor-grabbing
         touch-none shrink-0
         flex items-center justify-center
-        min-w-[32px] min-h-[32px]
-        hover:bg-accent/50 rounded
+        min-w-[36px] min-h-[36px]
+        hover:bg-accent/50 rounded-lg
         transition-colors
+        border border-border/20
         ${className}
       `}
       role="button"
       tabIndex={0}
       aria-label="Trascina per riordinare"
+      style={{ 
+        pointerEvents: 'auto',
+        zIndex: 10, // Ensure handle is above other elements
+      }}
       onKeyDown={(e) => {
         // Support keyboard activation (Space/Enter to grab)
         if (e.key === " " || e.key === "Enter") {

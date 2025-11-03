@@ -48,7 +48,7 @@ export const SortableDay = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDragging ? undefined : transition, // Disable transition during drag to avoid rubber banding
     opacity: isDragging ? 0.8 : 1,
   };
 

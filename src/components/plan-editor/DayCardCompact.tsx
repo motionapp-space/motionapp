@@ -73,7 +73,7 @@ export const DayCardCompact = ({
 
   return (
     <Card
-      className="overflow-hidden border-2 transition-all"
+      className="overflow-visible border-2 transition-all"
     >
       <CardHeader className="p-4 bg-muted/30">
         <div className="flex items-center gap-3">
