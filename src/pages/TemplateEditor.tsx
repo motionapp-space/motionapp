@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download, CheckCircle, Loader2, Sparkles, Clock, X } from "lucide-react";
-import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
+import { SortableDay } from "@/components/plan-editor/SortableDay";
 import { exportPlanToPDF } from "@/lib/pdfExport";
 import { toSentenceCase } from "@/lib/text";
 import { Plus } from "lucide-react";
@@ -76,7 +76,12 @@ const TemplateEditor = () => {
     const activeLevel = active.data.current?.level;
     const overLevel = over.data.current?.level;
 
-    console.log("Day drag:", { activeLevel, overLevel });
+    console.log("Day drag:", { 
+      activeId: active.id, 
+      overId: over.id,
+      activeLevel, 
+      overLevel 
+    });
 
     if (activeLevel !== "day" || overLevel !== "day") {
       console.warn("Cross-level drag attempt blocked at day level", { activeLevel, overLevel });
@@ -86,7 +91,12 @@ const TemplateEditor = () => {
     const oldIndex = days.findIndex((d) => d.id === active.id);
     const newIndex = days.findIndex((d) => d.id === over.id);
 
-    if (oldIndex === -1 || newIndex === -1) return;
+    if (oldIndex === -1 || newIndex === -1) {
+      console.warn("Invalid indices for day drag", { oldIndex, newIndex, activeId: active.id, overId: over.id });
+      return;
+    }
+
+    console.log("Reordering days:", { oldIndex, newIndex });
 
     const newDays = arrayMove(days, oldIndex, newIndex);
     setDays(newDays.map((day, index) => ({ ...day, order: index + 1 })));
@@ -787,9 +797,11 @@ const TemplateEditor = () => {
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-6" role="list" aria-label="Giorni di allenamento" data-drop-level="day">
-                    {days.map((day, index) => (
-                      <div key={day.id} role="listitem" aria-label={`Giorno ${index + 1}`}>
-                        <DayCardCompact
+                    {days
+                      .sort((a, b) => a.order - b.order)
+                      .map((day, index) => (
+                        <SortableDay
+                          key={day.id}
                           day={day}
                           onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
                           onUpdateObjective={(objective) => handleUpdateDayObjective(day.id, objective)}
@@ -806,8 +818,7 @@ const TemplateEditor = () => {
                           onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
                           readonly={readonly}
                         />
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </SortableContext>
               </DndContext>

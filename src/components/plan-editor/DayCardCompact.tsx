@@ -20,8 +20,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 interface DayCardCompactProps {
   day: Day;
@@ -39,6 +37,7 @@ interface DayCardCompactProps {
   onDuplicateExercise: (phaseType: PhaseType, groupId: string, exerciseId: string) => void;
   onDeleteExercise: (phaseType: PhaseType, groupId: string, exerciseId: string) => void;
   readonly?: boolean;
+  dragHandleProps?: any;
 }
 
 export const DayCardCompact = ({
@@ -57,30 +56,9 @@ export const DayCardCompact = ({
   onDuplicateExercise,
   onDeleteExercise,
   readonly = false,
+  dragHandleProps,
 }: DayCardCompactProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ 
-    id: day.id, 
-    disabled: readonly,
-    data: {
-      level: "day" as const,
-      itemId: day.id,
-    },
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.8 : 1,
-  };
 
   // Calculate summary stats
   const summary = useMemo(() => {
@@ -95,17 +73,14 @@ export const DayCardCompact = ({
 
   return (
     <Card
-      ref={setNodeRef}
-      style={style}
       className="overflow-hidden border-2 transition-all"
     >
       <CardHeader className="p-4 bg-muted/30">
         <div className="flex items-center gap-3">
-          {/* Drag Handle */}
           <DraggableHandle
             level="day"
             disabled={readonly}
-            dragHandleProps={{ ...attributes, ...listeners }}
+            dragHandleProps={dragHandleProps}
           />
 
           {/* Day Title and Summary */}
