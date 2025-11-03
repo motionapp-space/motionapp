@@ -1,5 +1,6 @@
 import { Phase, Exercise, ExerciseGroup, GroupType, migratePhaseToGroups } from "@/types/plan";
-import { GroupCard } from "./GroupCard";
+import { SortableGroupCard } from "./SortableGroupCard";
+import { SortableExerciseRow } from "./SortableExerciseRow";
 import { AddMenu } from "./AddMenu";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -155,30 +156,49 @@ export const PhaseSectionCompact = ({
             items={groups.map((g) => g.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-4">
+            <div className="space-y-2">
               {groups
                 .sort((a, b) => a.order - b.order)
-                .map((group) => (
-                  <GroupCard
-                    key={group.id}
-                    group={group}
-                    phaseType={phase.type}
-                    onUpdateGroup={(updates) => onUpdateGroup(group.id, updates)}
-                    onDuplicateGroup={() => onDuplicateGroup(group.id)}
-                    onDeleteGroup={() => onDeleteGroup(group.id)}
-                    onAddExercise={() => onAddExerciseToGroup(group.id)}
-                    onUpdateExercise={(exerciseId, patch) =>
-                      onUpdateExercise(group.id, exerciseId, patch)
-                    }
-                    onDuplicateExercise={(exerciseId) =>
-                      onDuplicateExercise(group.id, exerciseId)
-                    }
-                    onDeleteExercise={(exerciseId) =>
-                      onDeleteExercise(group.id, exerciseId)
-                    }
-                    readonly={readonly}
-                  />
-                ))}
+                .map((group) => {
+                  // Render single exercises as flat rows
+                  if (group.type === "single" && group.exercises.length === 1) {
+                    const exercise = group.exercises[0];
+                    return (
+                      <SortableExerciseRow
+                        key={group.id}
+                        groupId={group.id}
+                        exercise={exercise}
+                        onUpdate={(patch) => onUpdateExercise(group.id, exercise.id, patch)}
+                        onDuplicate={() => onDuplicateExercise(group.id, exercise.id)}
+                        onDelete={() => onDeleteGroup(group.id)}
+                        readonly={readonly}
+                      />
+                    );
+                  }
+                  
+                  // Render supersets and circuits as grouped cards
+                  return (
+                    <SortableGroupCard
+                      key={group.id}
+                      group={group}
+                      phaseType={phase.type}
+                      onUpdateGroup={(updates) => onUpdateGroup(group.id, updates)}
+                      onDuplicateGroup={() => onDuplicateGroup(group.id)}
+                      onDeleteGroup={() => onDeleteGroup(group.id)}
+                      onAddExercise={() => onAddExerciseToGroup(group.id)}
+                      onUpdateExercise={(exerciseId, patch) =>
+                        onUpdateExercise(group.id, exerciseId, patch)
+                      }
+                      onDuplicateExercise={(exerciseId) =>
+                        onDuplicateExercise(group.id, exerciseId)
+                      }
+                      onDeleteExercise={(exerciseId) =>
+                        onDeleteExercise(group.id, exerciseId)
+                      }
+                      readonly={readonly}
+                    />
+                  );
+                })}
             </div>
           </SortableContext>
         </DndContext>

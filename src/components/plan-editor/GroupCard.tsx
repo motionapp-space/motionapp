@@ -51,6 +51,7 @@ interface GroupCardProps {
   onDuplicateExercise: (exerciseId: string) => void;
   onDeleteExercise: (exerciseId: string) => void;
   readonly?: boolean;
+  dragHandleProps?: any;
 }
 
 export const GroupCard = ({
@@ -64,6 +65,7 @@ export const GroupCard = ({
   onDuplicateExercise,
   onDeleteExercise,
   readonly = false,
+  dragHandleProps,
 }: GroupCardProps) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -139,6 +141,11 @@ export const GroupCard = ({
         {/* Header - Single line with title, meta, and actions */}
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2 flex-1 min-w-0">
+            {!readonly && (
+              <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing shrink-0">
+                <GripVertical className="h-4 w-4 text-muted-foreground/40 hover:text-muted-foreground" />
+              </div>
+            )}
             {getGroupBadge()}
             {group.type !== "single" && (
               isEditingName && !readonly ? (

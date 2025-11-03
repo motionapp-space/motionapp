@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GripVertical, Copy, Trash2, StickyNote, MoreVertical } from "lucide-react";
 import { useState } from "react";
+
 import {
   Popover,
   PopoverContent,
@@ -16,8 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 interface ExerciseRowCompactProps {
   exercise: Exercise;
@@ -25,6 +24,7 @@ interface ExerciseRowCompactProps {
   onDuplicate: () => void;
   onDelete: () => void;
   readonly?: boolean;
+  dragHandleProps?: any;
 }
 
 export const ExerciseRowCompact = ({
@@ -33,41 +33,18 @@ export const ExerciseRowCompact = ({
   onDuplicate,
   onDelete,
   readonly = false,
+  dragHandleProps,
 }: ExerciseRowCompactProps) => {
   const [notesOpen, setNotesOpen] = useState(false);
   
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: exercise.id, disabled: readonly });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
   const hasNotesOrGoals = Boolean((exercise.notes && exercise.notes.trim()) || (exercise.goal && exercise.goal.trim()));
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="group relative flex items-center gap-4 p-3 bg-background rounded-lg border border-border hover:border-primary/50 transition-colors"
-    >
+    <div className="flex items-center gap-2 p-3 bg-card rounded-lg border border-border hover:border-primary/30 transition-colors group">
       {/* Drag Handle */}
-      {!readonly && (
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing touch-none shrink-0"
-          aria-label="Trascina per riordinare"
-        >
-          <GripVertical className="h-5 w-5 text-muted-foreground" />
+      {!readonly && dragHandleProps && (
+        <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing shrink-0">
+          <GripVertical className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground" />
         </div>
       )}
 
