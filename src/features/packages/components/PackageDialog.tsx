@@ -76,7 +76,14 @@ export function PackageDialog({
   };
 
   const onSubmitForm = (data: CreatePackageInput) => {
-    onSubmit(data);
+    // Clean up empty strings to null for optional fields
+    const cleanedData = {
+      ...data,
+      expires_at: data.expires_at && data.expires_at.trim() !== '' ? data.expires_at : null,
+      payment_method: data.payment_method && data.payment_method.trim() !== '' ? data.payment_method : null,
+      notes_internal: data.notes_internal && data.notes_internal.trim() !== '' ? data.notes_internal : null,
+    };
+    onSubmit(cleanedData);
     reset();
     setCustomPrice(false);
   };
