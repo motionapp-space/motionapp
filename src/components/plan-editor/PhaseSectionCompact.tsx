@@ -83,10 +83,18 @@ export const PhaseSectionCompact = ({
 
     if (!activeData || !overData) return;
 
-    // Validate level - only allow same-level reordering
+    // Extract level data from drag payload
     const activeLevel = active.data.current?.level;
     const overLevel = over.data.current?.level;
 
+    console.log("Block-item drag:", {
+      activeLevel,
+      overLevel,
+      activeType: activeData.itemType,
+      overType: overData.itemType,
+    });
+
+    // Validate level - only allow same-level reordering
     if (activeLevel && overLevel && !canDrop(activeLevel, overLevel)) {
       toast.error("Spostamento non consentito", {
         description: "Puoi riordinare solo elementi dello stesso livello",
@@ -98,7 +106,10 @@ export const PhaseSectionCompact = ({
     const oldIndex = groups.findIndex((g) => g.id === activeData.itemId);
     const newIndex = groups.findIndex((g) => g.id === overData.itemId);
 
-    if (oldIndex === -1 || newIndex === -1) return;
+    if (oldIndex === -1 || newIndex === -1) {
+      console.warn("Invalid indices for drag", { oldIndex, newIndex });
+      return;
+    }
 
     try {
       // Reorder block-top items (heterogeneous: exercise, superset, circuit)
@@ -193,7 +204,7 @@ export const PhaseSectionCompact = ({
             })}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-2">
+            <div className="space-y-2" data-drop-level="block-item">
               {groups
                 .sort((a, b) => a.order - b.order)
                 .map((group) => {

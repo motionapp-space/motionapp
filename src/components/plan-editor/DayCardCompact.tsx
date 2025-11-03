@@ -5,8 +5,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { GripVertical, Copy, Trash2, ChevronDown, Clock } from "lucide-react";
+import { Copy, Trash2, ChevronDown, Clock } from "lucide-react";
 import { PhaseSectionCompact } from "./PhaseSectionCompact";
+import { DraggableHandle } from "./DraggableHandle";
 import { useState, useMemo } from "react";
 import {
   AlertDialog,
@@ -66,7 +67,14 @@ export const DayCardCompact = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: day.id, disabled: readonly });
+  } = useSortable({ 
+    id: day.id, 
+    disabled: readonly,
+    data: {
+      level: "day" as const,
+      itemId: day.id,
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -94,16 +102,11 @@ export const DayCardCompact = ({
       <CardHeader className="p-4 bg-muted/30">
         <div className="flex items-center gap-3">
           {/* Drag Handle */}
-          {!readonly && (
-            <div
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing touch-none shrink-0"
-              aria-label="Trascina per riordinare"
-            >
-              <GripVertical className="h-5 w-5 text-muted-foreground" />
-            </div>
-          )}
+          <DraggableHandle
+            level="day"
+            disabled={readonly}
+            dragHandleProps={{ ...attributes, ...listeners }}
+          />
 
           {/* Day Title and Summary */}
           <div className="flex-1 min-w-0 space-y-2">

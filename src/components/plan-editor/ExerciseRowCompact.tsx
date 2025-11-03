@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { GripVertical, Copy, Trash2, StickyNote, MoreVertical } from "lucide-react";
+import { Copy, Trash2, StickyNote, MoreVertical } from "lucide-react";
+import { DraggableHandle } from "./DraggableHandle";
 import { useState } from "react";
 
 import {
@@ -42,11 +43,11 @@ export const ExerciseRowCompact = ({
   return (
     <div className="flex items-center gap-2 p-3 bg-card rounded-lg border border-border hover:border-primary/30 transition-colors group">
       {/* Drag Handle */}
-      {!readonly && dragHandleProps && (
-        <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing shrink-0">
-          <GripVertical className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground" />
-        </div>
-      )}
+      <DraggableHandle
+        level="group-exercise"
+        disabled={readonly}
+        dragHandleProps={dragHandleProps}
+      />
 
       {/* Exercise Name - Wider */}
       <div className="flex-1 min-w-[200px]">

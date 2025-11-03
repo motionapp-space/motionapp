@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2, Plus, GripVertical, Edit2, ChevronDown, Info } from "lucide-react";
-import { ExerciseRowCompact } from "./ExerciseRowCompact";
+import { Copy, Trash2, Plus, Edit2, ChevronDown, Info } from "lucide-react";
+import { SortableExerciseInGroup } from "./SortableExerciseInGroup";
+import { DraggableHandle } from "./DraggableHandle";
 import { useState, useEffect } from "react";
 import {
   DndContext,
@@ -89,18 +90,29 @@ export const GroupCard = ({
   const handleExerciseDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      const oldIndex = exercises.findIndex((e) => e.id === active.id);
-      const newIndex = exercises.findIndex((e) => e.id === over.id);
+    if (!over || active.id === over.id) return;
 
-      const newExercises = arrayMove(exercises, oldIndex, newIndex);
-      setExercises(newExercises);
+    // Validate level
+    const activeLevel = active.data.current?.level;
+    const overLevel = over.data.current?.level;
 
-      // Update order for all exercises
-      newExercises.forEach((exercise, index) => {
-        onUpdateExercise(exercise.id, { order: index + 1 });
-      });
+    if (activeLevel !== "group-exercise" || overLevel !== "group-exercise") {
+      console.warn("Cross-level drag attempt blocked", { activeLevel, overLevel });
+      return;
     }
+
+    const oldIndex = exercises.findIndex((e) => e.id === active.id);
+    const newIndex = exercises.findIndex((e) => e.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newExercises = arrayMove(exercises, oldIndex, newIndex);
+    setExercises(newExercises);
+
+    // Update order for all exercises
+    newExercises.forEach((exercise, index) => {
+      onUpdateExercise(exercise.id, { order: index + 1 });
+    });
   };
 
   const getGroupBadge = () => {
@@ -145,11 +157,11 @@ export const GroupCard = ({
         {/* Header - Single line with title, meta, and actions */}
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            {!readonly && (
-              <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing shrink-0">
-                <GripVertical className="h-4 w-4 text-muted-foreground/40 hover:text-muted-foreground" />
-              </div>
-            )}
+            <DraggableHandle
+              level="block-item"
+              disabled={readonly}
+              dragHandleProps={dragHandleProps}
+            />
             {getGroupBadge()}
             {group.type !== "single" && (
               isEditingName && !readonly ? (
@@ -301,11 +313,11 @@ export const GroupCard = ({
                   items={exercises.map((e) => e.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-2" data-drop-level="group-exercise">
                     {exercises
                       .sort((a, b) => a.order - b.order)
                       .map((exercise) => (
-                        <ExerciseRowCompact
+                        <SortableExerciseInGroup
                           key={exercise.id}
                           exercise={exercise}
                           onUpdate={(patch) => onUpdateExercise(exercise.id, patch)}

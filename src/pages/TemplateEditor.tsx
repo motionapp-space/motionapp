@@ -70,13 +70,26 @@ const TemplateEditor = () => {
   const handleDayDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      const oldIndex = days.findIndex((d) => d.id === active.id);
-      const newIndex = days.findIndex((d) => d.id === over.id);
+    if (!over || active.id === over.id) return;
 
-      const newDays = arrayMove(days, oldIndex, newIndex);
-      setDays(newDays.map((day, index) => ({ ...day, order: index + 1 })));
+    // Validate level
+    const activeLevel = active.data.current?.level;
+    const overLevel = over.data.current?.level;
+
+    console.log("Day drag:", { activeLevel, overLevel });
+
+    if (activeLevel !== "day" || overLevel !== "day") {
+      console.warn("Cross-level drag attempt blocked at day level", { activeLevel, overLevel });
+      return;
     }
+
+    const oldIndex = days.findIndex((d) => d.id === active.id);
+    const newIndex = days.findIndex((d) => d.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newDays = arrayMove(days, oldIndex, newIndex);
+    setDays(newDays.map((day, index) => ({ ...day, order: index + 1 })));
   };
 
   // Predefined categories for suggestions
@@ -773,7 +786,7 @@ const TemplateEditor = () => {
                   items={days.map((d) => d.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-6" role="list" aria-label="Giorni di allenamento">
+                  <div className="space-y-6" role="list" aria-label="Giorni di allenamento" data-drop-level="day">
                     {days.map((day, index) => (
                       <div key={day.id} role="listitem" aria-label={`Giorno ${index + 1}`}>
                         <DayCardCompact
