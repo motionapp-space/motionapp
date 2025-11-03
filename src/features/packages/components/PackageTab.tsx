@@ -77,21 +77,16 @@ export function PackageTab({ clientId }: PackageTabProps) {
       {/* Client Header */}
       {client && (
         <div className="flex items-start justify-between pb-6 border-b">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">
-                {client.last_name} {client.first_name}
-              </h1>
-              <Badge 
-                variant={client.status === 'ATTIVO' ? 'default' : 'secondary'}
-                className="capitalize"
-              >
-                {client.status.toLowerCase()}
-              </Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Cliente {client.status.toLowerCase()} • {totalActiveSessions > 0 ? `${totalActiveSessions} lezioni in corso` : 'Nessuna lezione in corso'}
-            </p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">
+              {client.last_name} {client.first_name}
+            </h1>
+            <Badge 
+              variant={client.status === 'ATTIVO' ? 'default' : 'secondary'}
+              className="capitalize"
+            >
+              {client.status.toLowerCase()}
+            </Badge>
           </div>
         </div>
       )}
