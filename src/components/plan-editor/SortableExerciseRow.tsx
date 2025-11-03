@@ -42,7 +42,7 @@ export const SortableExerciseRow = ({
   const dragHandleProps = readonly ? undefined : { ...attributes, ...listeners };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} {...attributes}>
       <ExerciseRowCompact
         exercise={exercise}
         onUpdate={onUpdate}

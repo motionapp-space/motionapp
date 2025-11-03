@@ -46,11 +46,10 @@ export const SortableGroupCard = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  // Combine attributes and listeners for the drag handle only
   const dragHandleProps = readonly ? undefined : { ...attributes, ...listeners };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} {...attributes}>
       <GroupCard
         group={group}
         phaseType={phaseType}
