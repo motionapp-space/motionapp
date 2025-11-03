@@ -74,23 +74,6 @@ export function PackageTab({ clientId }: PackageTabProps) {
 
   return (
     <div className="space-y-8 p-6">
-      {/* Client Header */}
-      {client && (
-        <div className="flex items-start justify-between pb-6 border-b">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">
-              {client.last_name} {client.first_name}
-            </h1>
-            <Badge 
-              variant={client.status === 'ATTIVO' ? 'default' : 'secondary'}
-              className="capitalize"
-            >
-              {client.status.toLowerCase()}
-            </Badge>
-          </div>
-        </div>
-      )}
-
       {/* Info Alert */}
       {hasActivePackage && (
         <Alert className="bg-info/10 border-info rounded-2xl">
