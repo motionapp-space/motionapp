@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
-import { getDragId, parseDragId, moveWithin, DnDItemType } from "./dnd-utils";
+import { getDragId, parseDragId, moveWithin, canDrop, DnDItemType } from "./dnd-utils";
 import { toast } from "sonner";
 
 interface PhaseSectionCompactProps {
@@ -82,6 +82,17 @@ export const PhaseSectionCompact = ({
     const overData = parseDragId(over.id as string);
 
     if (!activeData || !overData) return;
+
+    // Validate level - only allow same-level reordering
+    const activeLevel = active.data.current?.level;
+    const overLevel = over.data.current?.level;
+
+    if (activeLevel && overLevel && !canDrop(activeLevel, overLevel)) {
+      toast.error("Spostamento non consentito", {
+        description: "Puoi riordinare solo elementi dello stesso livello",
+      });
+      return;
+    }
 
     // Find indices in the block-top list
     const oldIndex = groups.findIndex((g) => g.id === activeData.itemId);

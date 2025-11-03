@@ -2,10 +2,12 @@
 
 export type DnDItemType = "exercise" | "group:superset" | "group:circuit";
 export type ContainerScope = "block-top" | "group-body";
+export type Level = "day" | "block" | "block-item" | "group-exercise";
 
 export interface DragData {
   itemType: DnDItemType;
   itemId: string;
+  level: Level;
   source: {
     container: ContainerScope;
     blockId: string;
@@ -70,4 +72,17 @@ export function parseDragId(dragId: string): { itemType: DnDItemType; itemId: st
     : parts.slice(1).join("-");
   
   return { itemType, itemId };
+}
+
+/**
+ * Validate if a drop is allowed based on levels
+ * Blocks ("block" level) are never draggable/droppable
+ * All other items can only be reordered within their own level
+ */
+export function canDrop(sourceLevel: Level, targetLevel: Level): boolean {
+  // Block level is never draggable
+  if (sourceLevel === "block" || targetLevel === "block") return false;
+  
+  // Must be same level
+  return sourceLevel === targetLevel;
 }

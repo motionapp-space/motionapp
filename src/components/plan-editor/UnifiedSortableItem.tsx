@@ -3,7 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { ExerciseRowCompact } from "./ExerciseRowCompact";
 import { GroupCard } from "./GroupCard";
 import { Exercise, ExerciseGroup, PhaseType } from "@/types/plan";
-import { getDragId, DnDItemType, ContainerScope } from "./dnd-utils";
+import { getDragId, DnDItemType, ContainerScope, Level } from "./dnd-utils";
 
 interface UnifiedSortableItemProps {
   // Either exercise (single) or group
@@ -51,6 +51,7 @@ export const UnifiedSortableItem = ({
     : getDragId(itemType, item.group.id);
 
   const containerScope: ContainerScope = "block-top";
+  const level: Level = "block-item";
 
   const {
     attributes,
@@ -65,6 +66,7 @@ export const UnifiedSortableItem = ({
     data: {
       itemType,
       itemId: item.type === "exercise" ? item.groupId : item.group.id,
+      level,
       containerScope,
     },
   });
