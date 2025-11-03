@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
-import { getDragId, parseDragId, moveWithin, isDropAllowed, DnDItemType } from "./dnd-utils";
+import { getDragId, parseDragId, moveWithin, DnDItemType } from "./dnd-utils";
 import { toast } from "sonner";
 
 interface PhaseSectionCompactProps {
@@ -83,22 +83,14 @@ export const PhaseSectionCompact = ({
 
     if (!activeData || !overData) return;
 
-    // Validate drop: only same-type items can be reordered
-    if (!isDropAllowed(activeData.itemType, overData.itemType)) {
-      toast.error("Impossibile spostare tra tipi diversi", {
-        description: "Puoi riordinare solo tra elementi dello stesso tipo (esercizio ↔ esercizio, superset ↔ superset, circuit ↔ circuit)",
-      });
-      return;
-    }
-
-    // Find indices
+    // Find indices in the block-top list
     const oldIndex = groups.findIndex((g) => g.id === activeData.itemId);
     const newIndex = groups.findIndex((g) => g.id === overData.itemId);
 
     if (oldIndex === -1 || newIndex === -1) return;
 
     try {
-      // Reorder groups
+      // Reorder block-top items (heterogeneous: exercise, superset, circuit)
       const newGroups = moveWithin(groups, oldIndex, newIndex);
       setGroups(newGroups);
 

@@ -1,26 +1,17 @@
 // Drag & Drop utilities for Plan Editor
 
 export type DnDItemType = "exercise" | "group:superset" | "group:circuit";
+export type ContainerScope = "block-top" | "group-body";
 
 export interface DragData {
   itemType: DnDItemType;
   itemId: string;
   source: {
-    level: "block" | "group";
-    containerId: string;
-    groupId?: string;
+    container: ContainerScope;
+    blockId: string;
+    groupId?: string; // only when container === "group-body"
+    index: number;
   };
-}
-
-/**
- * Check if a drop is allowed based on item types
- */
-export function isDropAllowed(activeType: DnDItemType, overType: DnDItemType): boolean {
-  // Same type is always allowed
-  if (activeType === overType) return true;
-  
-  // Block any cross-type moves
-  return false;
 }
 
 /**
