@@ -2,12 +2,19 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Package } from "../types";
 import { 
   calculatePackageKPI, 
@@ -15,7 +22,10 @@ import {
   getUsageStatusInfo, 
   getPaymentStatusInfo 
 } from "../utils/kpi";
-import { MoreVertical, Pause, Play, Archive, Copy, Eye } from "lucide-react";
+import { PackageStatsBar } from "./PackageStatsBar";
+import { MoreVertical, Pause, Play, Archive, Copy, Eye, AlertCircle, Info } from "lucide-react";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 
 interface PackageCardProps {
   package: Package;
@@ -36,133 +46,194 @@ export function PackageCard({
   const usageInfo = getUsageStatusInfo(pkg.usage_status as any);
   const paymentInfo = getPaymentStatusInfo(pkg.payment_status as any);
   const progressPercent = (pkg.consumed_sessions / pkg.total_sessions) * 100;
-
   const canArchive = pkg.on_hold_sessions === 0;
 
+  const createdDate = format(new Date(pkg.created_at), "d MMM yyyy", { locale: it });
+  const expiresDate = pkg.expires_at ? format(new Date(pkg.expires_at), "d MMM yyyy", { locale: it }) : null;
+
   return (
-    <Card className="p-6 space-y-4">
+    <Card className="p-6 space-y-4 shadow-sm hover:shadow-md transition-all duration-200 rounded-2xl animate-fade-in">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="space-y-1 flex-1">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 space-y-2">
           <h3 className="text-lg font-semibold">{pkg.name}</h3>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="outline" className={usageInfo.color}>
-              {usageInfo.icon} {usageInfo.label}
-            </Badge>
-            <Badge variant="outline" className={paymentInfo.color}>
-              {paymentInfo.icon} {paymentInfo.label}
-            </Badge>
+          <p className="text-xs text-muted-foreground">
+            Creato il {createdDate}
+            {expiresDate && ` • Scade il ${expiresDate}`}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge 
+                  variant={pkg.usage_status === 'active' ? 'default' : 'secondary'}
+                  className="cursor-help"
+                >
+                  {usageInfo.label}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Stato di utilizzo del pacchetto</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge 
+                  variant={pkg.payment_status === 'paid' ? 'default' : 'outline'}
+                  className="cursor-help"
+                >
+                  {paymentInfo.label}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Stato di pagamento del pacchetto</p>
+              </TooltipContent>
+            </Tooltip>
+
             {pkg.is_single_technical && (
-              <Badge variant="secondary">Tecnico</Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="secondary" className="cursor-help">Tecnico</Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Pacchetto creato automaticamente</p>
+                </TooltipContent>
+              </Tooltip>
             )}
-          </div>
-        </div>
+          </TooltipProvider>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onViewDetails}>
-              <Eye className="h-4 w-4 mr-2" />
-              Dettagli
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onToggleSuspension}>
-              {pkg.usage_status === 'suspended' ? (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  Riattiva
-                </>
-              ) : (
-                <>
-                  <Pause className="h-4 w-4 mr-2" />
-                  Sospendi
-                </>
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={onArchive} 
-              disabled={!canArchive}
-            >
-              <Archive className="h-4 w-4 mr-2" />
-              Archivia
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDuplicate}>
-              <Copy className="h-4 w-4 mr-2" />
-              Duplica
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-50 bg-background">
+              <DropdownMenuItem onClick={onViewDetails}>
+                <Eye className="h-4 w-4 mr-2" />
+                Dettagli completi
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onToggleSuspension}>
+                {pkg.usage_status === 'suspended' ? (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Riattiva pacchetto
+                  </>
+                ) : (
+                  <>
+                    <Pause className="h-4 w-4 mr-2" />
+                    Sospendi pacchetto
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={onArchive} 
+                disabled={!canArchive}
+              >
+                <Archive className="h-4 w-4 mr-2" />
+                Archivia
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDuplicate}>
+                <Copy className="h-4 w-4 mr-2" />
+                Duplica pacchetto
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      {/* KPI Strip */}
-      <div className="grid grid-cols-4 gap-4 pt-4 border-t">
-        <div>
-          <p className="text-sm text-muted-foreground">Rimanenti</p>
-          <p className="text-2xl font-bold">{kpi.remaining}</p>
-        </div>
-        <div>
-          <p className="text-sm text-muted-foreground">In attesa</p>
-          <p className="text-2xl font-bold text-warning">{kpi.on_hold}</p>
-        </div>
-        <div>
-          <p className="text-sm text-muted-foreground">Completate</p>
-          <p className="text-2xl font-bold">{kpi.consumed}</p>
-        </div>
-        <div>
-          <p className="text-sm text-muted-foreground">Disponibili</p>
-          <p className="text-2xl font-bold text-success">{kpi.available}</p>
-        </div>
-      </div>
+      {/* Stats Bar */}
+      <PackageStatsBar
+        stats={[
+          { label: "Rimanenti", value: kpi.remaining },
+          { 
+            label: "In attesa", 
+            value: kpi.on_hold,
+            highlight: kpi.on_hold > 0 ? 'warning' : undefined
+          },
+          { label: "Completate", value: kpi.consumed },
+          { 
+            label: "Disponibili", 
+            value: kpi.available,
+            highlight: kpi.available > 0 ? 'success' : undefined
+          },
+        ]}
+      />
 
       {/* Progress Bar */}
       <div className="space-y-2">
-        <Progress value={progressPercent} className="h-2" />
-        <p className="text-sm text-muted-foreground text-center">
-          {pkg.consumed_sessions}/{pkg.total_sessions} completate
-        </p>
+        <div className="flex items-center justify-between text-sm mb-1">
+          <span className="text-muted-foreground">Progresso</span>
+          <span className="font-medium">{pkg.consumed_sessions}/{pkg.total_sessions} completate</span>
+        </div>
+        <Progress 
+          value={progressPercent} 
+          className="h-2 rounded-full" 
+        />
       </div>
 
       {/* Price Info */}
       {pkg.price_total_cents !== null && (
-        <div className="pt-4 border-t space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Prezzo totale</span>
-            <span className="font-semibold">{formatCurrency(pkg.price_total_cents)}</span>
-          </div>
+        <div className="grid grid-cols-2 gap-y-2 pt-4 border-t text-sm">
+          <div className="text-muted-foreground">Prezzo totale</div>
+          <div className="text-right font-semibold">{formatCurrency(pkg.price_total_cents)}</div>
+          
           {kpi.price_per_session !== null && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Prezzo unitario</span>
-              <span className="text-sm">{formatCurrency(kpi.price_per_session)}</span>
-            </div>
+            <>
+              <div className="text-muted-foreground">Prezzo unitario</div>
+              <div className="text-right font-semibold flex items-center justify-end gap-2">
+                {formatCurrency(kpi.price_per_session)}
+                {pkg.price_source === 'custom' && (
+                  <Badge variant="secondary" className="text-xs">Personalizzato</Badge>
+                )}
+              </div>
+            </>
           )}
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              {pkg.price_source === 'custom' ? 'Personalizzato' : 'Listino'}
-            </span>
-          </div>
         </div>
       )}
 
-      {/* Helper Text */}
-      {pkg.usage_status === 'active' && (
-        <p className="text-xs text-muted-foreground pt-2 border-t">
-          Le prenotazioni confermate riservano il credito finché non si svolgono (in attesa).
-        </p>
+      {/* Alerts */}
+      {pkg.usage_status === 'active' && kpi.on_hold > 0 && (
+        <Alert className="bg-info/10 border-info">
+          <Info className="h-4 w-4 text-info" />
+          <AlertDescription className="text-sm">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="cursor-help underline decoration-dotted">
+                    {kpi.on_hold} {kpi.on_hold === 1 ? 'sessione in attesa' : 'sessioni in attesa'}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">
+                    Prenotazioni confermate ma non ancora svolte. Il credito è riservato fino al completamento.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </AlertDescription>
+        </Alert>
       )}
 
       {pkg.usage_status === 'suspended' && (
-        <p className="text-xs text-destructive pt-2 border-t">
-          Pacchetto sospeso: non è possibile confermare nuove prenotazioni.
-        </p>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            Pacchetto sospeso: non è possibile confermare nuove prenotazioni.
+          </AlertDescription>
+        </Alert>
       )}
 
       {pkg.payment_status === 'unpaid' && (
-        <p className="text-xs text-warning pt-2 border-t">
-          Questo pacchetto risulta ancora da pagare.
-        </p>
+        <Alert className="bg-warning/10 border-warning">
+          <AlertCircle className="h-4 w-4 text-warning" />
+          <AlertDescription className="text-sm text-warning-foreground">
+            Questo pacchetto risulta ancora da pagare.
+          </AlertDescription>
+        </Alert>
       )}
     </Card>
   );
