@@ -49,7 +49,7 @@ export const SortableGroupCard = ({
   const dragHandleProps = readonly ? undefined : { ...attributes, ...listeners };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
+    <div ref={setNodeRef} style={style}>
       <GroupCard
         group={group}
         phaseType={phaseType}
