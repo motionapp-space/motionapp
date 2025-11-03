@@ -155,29 +155,38 @@ export const DayCardCompact = ({
         <CardContent className="space-y-6 pt-6">
           {/* Day Objective - only show if readonly and exists, or if editable */}
           {(day.objective || !readonly) && (
-            <div className="space-y-2">
+            <div className="flex flex-col gap-3">
               {!readonly ? (
                 <>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Obiettivo del giorno (opzionale)
+                  <label 
+                    htmlFor={`day-objective-${day.id}`}
+                    className="text-sm font-medium text-muted-foreground"
+                  >
+                    Obiettivo del giorno
                   </label>
-                  <Textarea
-                    value={day.objective || ""}
-                    onChange={(e) => {
-                      const value = e.target.value.slice(0, 120);
-                      if (onUpdateObjective) {
-                        onUpdateObjective(value);
-                      }
-                    }}
-                    placeholder="Descrivi l'obiettivo di questo giorno (max 120 caratteri)..."
-                    className="resize-none text-sm"
-                    rows={2}
-                    maxLength={120}
-                    aria-label="Obiettivo del giorno"
-                  />
-                  <p className="text-xs text-muted-foreground text-right">
-                    {(day.objective || "").length}/120
-                  </p>
+                  <div className="relative">
+                    <Textarea
+                      id={`day-objective-${day.id}`}
+                      value={day.objective || ""}
+                      onChange={(e) => {
+                        const value = e.target.value.slice(0, 120);
+                        if (onUpdateObjective) {
+                          onUpdateObjective(value);
+                        }
+                      }}
+                      placeholder="Descrivi l'obiettivo di questo giorno (max 120 caratteri)..."
+                      className="resize-none text-sm pr-16"
+                      rows={2}
+                      maxLength={120}
+                      aria-describedby={`day-objective-count-${day.id}`}
+                    />
+                    <div
+                      id={`day-objective-count-${day.id}`}
+                      className="absolute bottom-2 right-3 text-xs text-muted-foreground select-none pointer-events-none"
+                    >
+                      {(day.objective || "").length}/120
+                    </div>
+                  </div>
                 </>
               ) : (
                 <div className="text-sm text-muted-foreground border-l-2 border-primary/40 pl-3 italic">

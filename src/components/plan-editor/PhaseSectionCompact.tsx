@@ -65,27 +65,36 @@ export const PhaseSectionCompact = ({
 
       {/* Phase/Block Objective */}
       {(phase.objective || !readonly) && onUpdatePhaseObjective && (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-3">
           {!readonly ? (
             <>
-              <label className="text-xs font-medium text-muted-foreground">
-                Obiettivo del blocco (opzionale)
+              <label 
+                htmlFor={`phase-objective-${phase.id}`}
+                className="text-sm font-medium text-muted-foreground"
+              >
+                Obiettivo del blocco
               </label>
-              <Textarea
-                value={phase.objective || ""}
-                onChange={(e) => {
-                  const value = e.target.value.slice(0, 120);
-                  onUpdatePhaseObjective(value);
-                }}
-                placeholder="Descrivi l'obiettivo di questo blocco (max 120 caratteri)..."
-                className="resize-none text-sm"
-                rows={2}
-                maxLength={120}
-                aria-label="Obiettivo del blocco"
-              />
-              <p className="text-xs text-muted-foreground text-right">
-                {(phase.objective || "").length}/120
-              </p>
+              <div className="relative">
+                <Textarea
+                  id={`phase-objective-${phase.id}`}
+                  value={phase.objective || ""}
+                  onChange={(e) => {
+                    const value = e.target.value.slice(0, 120);
+                    onUpdatePhaseObjective(value);
+                  }}
+                  placeholder="Descrivi l'obiettivo di questo blocco (max 120 caratteri)..."
+                  className="resize-none text-sm pr-16"
+                  rows={2}
+                  maxLength={120}
+                  aria-describedby={`phase-objective-count-${phase.id}`}
+                />
+                <div
+                  id={`phase-objective-count-${phase.id}`}
+                  className="absolute bottom-2 right-3 text-xs text-muted-foreground select-none pointer-events-none"
+                >
+                  {(phase.objective || "").length}/120
+                </div>
+              </div>
             </>
           ) : (
             <div className="text-sm text-muted-foreground border-l-2 border-primary/40 pl-3 italic">
