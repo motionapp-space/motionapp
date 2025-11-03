@@ -6,7 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Trash2, Plus, GripVertical, Edit2, ChevronDown, Info } from "lucide-react";
 import { ExerciseRowCompact } from "./ExerciseRowCompact";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import {
   Tooltip,
   TooltipContent,
@@ -52,6 +67,35 @@ export const GroupCard = ({
 }: GroupCardProps) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [exercises, setExercises] = useState(group.exercises);
+
+  useEffect(() => {
+    setExercises(group.exercises);
+  }, [group.exercises]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleExerciseDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = exercises.findIndex((e) => e.id === active.id);
+      const newIndex = exercises.findIndex((e) => e.id === over.id);
+
+      const newExercises = arrayMove(exercises, oldIndex, newIndex);
+      setExercises(newExercises);
+
+      // Update order for all exercises
+      newExercises.forEach((exercise, index) => {
+        onUpdateExercise(exercise.id, { order: index + 1 });
+      });
+    }
+  };
 
   const getGroupBadge = () => {
     if (group.type === "superset") {
@@ -262,26 +306,36 @@ export const GroupCard = ({
         {/* Exercises Table */}
         {isExpanded && (
           <div className="space-y-2" role="region" aria-label="Esercizi del gruppo">
-            {group.exercises.length === 0 ? (
+            {exercises.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg" role="status">
                 <p>Nessun esercizio ancora</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {/* Exercise Rows */}
-                {group.exercises
-                  .sort((a, b) => a.order - b.order)
-                  .map((exercise) => (
-                    <ExerciseRowCompact
-                      key={exercise.id}
-                      exercise={exercise}
-                      onUpdate={(patch) => onUpdateExercise(exercise.id, patch)}
-                      onDuplicate={() => onDuplicateExercise(exercise.id)}
-                      onDelete={() => onDeleteExercise(exercise.id)}
-                      readonly={readonly}
-                    />
-                  ))}
-              </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleExerciseDragEnd}
+              >
+                <SortableContext
+                  items={exercises.map((e) => e.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2">
+                    {exercises
+                      .sort((a, b) => a.order - b.order)
+                      .map((exercise) => (
+                        <ExerciseRowCompact
+                          key={exercise.id}
+                          exercise={exercise}
+                          onUpdate={(patch) => onUpdateExercise(exercise.id, patch)}
+                          onDuplicate={() => onDuplicateExercise(exercise.id)}
+                          onDelete={() => onDeleteExercise(exercise.id)}
+                          readonly={readonly}
+                        />
+                      ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </div>
         )}

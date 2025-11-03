@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2, ChevronDown } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { GripVertical, Copy, Trash2, ChevronDown, Clock } from "lucide-react";
 import { PhaseSectionCompact } from "./PhaseSectionCompact";
 import { useState, useMemo } from "react";
 import {
@@ -18,6 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface DayCardCompactProps {
   day: Day;
@@ -55,6 +58,21 @@ export const DayCardCompact = ({
   readonly = false,
 }: DayCardCompactProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: day.id, disabled: readonly });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.8 : 1,
+  };
 
   // Calculate summary stats
   const summary = useMemo(() => {
@@ -62,160 +80,177 @@ export const DayCardCompact = ({
     const exercises = day.phases.reduce((sum, p) => 
       sum + (p.groups?.reduce((gSum, g) => gSum + g.exercises.length, 0) || 0), 0
     );
-    // Rough estimation: 2 min per exercise
-    const estimatedMinutes = exercises * 2;
+    // Rough estimation: 2 min per exercise + 1 min per block
+    const estimatedMinutes = Math.max(1, exercises * 2 + blocks);
     return { blocks, exercises, estimatedMinutes };
   }, [day.phases]);
 
-  const totalExercises = day.phases.reduce((sum, phase) => {
-    const groups = phase.groups || [];
-    return sum + groups.reduce((gSum, g) => gSum + g.exercises.length, 0);
-  }, 0);
-
   return (
-    <Card className="overflow-hidden bg-card shadow-sm">
-      <CardHeader className="pb-4 sticky top-[73px] bg-card z-20 border-b border-border/50">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className="overflow-hidden border-2 transition-all"
+    >
+      <CardHeader className="p-4 bg-muted/30">
+        <div className="flex items-center gap-3">
+          {/* Drag Handle */}
+          {!readonly && (
+            <div
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing touch-none shrink-0"
+              aria-label="Trascina per riordinare"
+            >
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </div>
+          )}
+
+          {/* Day Title and Summary */}
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              <Input
+                value={day.title}
+                onChange={(e) => onUpdateTitle(e.target.value)}
+                className="font-semibold text-base h-auto py-1 px-2 border-0 bg-transparent hover:bg-background/50 focus:bg-background transition-colors max-w-xs"
+                disabled={readonly}
+                placeholder="Nome del giorno"
+                aria-label="Nome del giorno"
+              />
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="secondary" className="text-xs font-medium bg-primary/10 text-primary border-primary/20">
+                  {summary.blocks} blocc{summary.blocks === 1 ? "o" : "hi"}
+                </Badge>
+                <Badge variant="secondary" className="text-xs font-medium bg-secondary/10 text-secondary-foreground border-secondary/20">
+                  {summary.exercises} eserciz{summary.exercises === 1 ? "io" : "i"}
+                </Badge>
+                {summary.estimatedMinutes > 0 && (
+                  <Badge variant="outline" className="text-xs font-medium gap-1">
+                    <Clock className="h-3 w-3" />
+                    ~{summary.estimatedMinutes} min
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1 shrink-0">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="h-11 w-11 min-w-[44px] min-h-[44px] shrink-0"
+              className="h-9 w-9"
               aria-expanded={isExpanded}
               aria-label={isExpanded ? "Comprimi giorno" : "Espandi giorno"}
             >
-              <ChevronDown className={`h-5 w-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-            </Button>
-            <div className="flex-1 min-w-0">
-              <Input
-                value={day.title}
-                onChange={(e) => onUpdateTitle(e.target.value)}
-                className="text-lg font-semibold h-11 mb-2"
-                disabled={readonly}
-                readOnly={readonly}
-                aria-label="Titolo giorno"
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
               />
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="secondary" className="text-xs">
-                  {summary.blocks} {summary.blocks === 1 ? 'blocco' : 'blocchi'}
-                </Badge>
-                <Badge variant="secondary" className="text-xs">
-                  {summary.exercises} {summary.exercises === 1 ? 'esercizio' : 'esercizi'}
-                </Badge>
-                <Badge variant="secondary" className="text-xs">
-                  ~{summary.estimatedMinutes} min
-                </Badge>
-              </div>
-            </div>
+            </Button>
+            {!readonly && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onDuplicate}
+                  title="Duplica giorno"
+                  className="h-9 w-9"
+                  aria-label="Duplica giorno"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-destructive hover:text-destructive"
+                      title="Elimina giorno"
+                      aria-label="Elimina giorno"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Eliminare questo giorno?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tutti i blocchi e gli esercizi verranno eliminati.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annulla</AlertDialogCancel>
+                      <AlertDialogAction onClick={onDelete}>Elimina</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
           </div>
-          {!readonly && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onDuplicate}
-                title="Duplica giorno"
-                className="h-11 w-11 min-w-[44px] min-h-[44px]"
-                aria-label="Duplica giorno"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-11 w-11 min-w-[44px] min-h-[44px] text-destructive hover:text-destructive"
-                    title="Elimina giorno"
-                    aria-label="Elimina giorno"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Eliminare questo giorno?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Questa azione non può essere annullata. Tutti gli esercizi verranno eliminati.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annulla</AlertDialogCancel>
-                    <AlertDialogAction onClick={onDelete}>Elimina</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
         </div>
       </CardHeader>
-      
+
       {isExpanded && (
-        <CardContent className="space-y-6 pt-6">
-          {/* Day Objective - only show if readonly and exists, or if editable */}
-          {(day.objective || !readonly) && (
-            <div className="flex flex-col gap-3">
-              {!readonly ? (
-                <>
-                  <label 
-                    htmlFor={`day-objective-${day.id}`}
-                    className="text-sm font-medium text-muted-foreground"
-                  >
-                    Obiettivo del giorno
-                  </label>
-                  <div className="relative">
-                    <Textarea
-                      id={`day-objective-${day.id}`}
-                      value={day.objective || ""}
-                      onChange={(e) => {
-                        const value = e.target.value.slice(0, 120);
-                        if (onUpdateObjective) {
-                          onUpdateObjective(value);
-                        }
-                      }}
-                      placeholder="Descrivi l'obiettivo di questo giorno (max 120 caratteri)..."
-                      className="resize-none text-sm pr-16"
-                      rows={2}
-                      maxLength={120}
-                      aria-describedby={`day-objective-count-${day.id}`}
-                    />
-                    <div
-                      id={`day-objective-count-${day.id}`}
-                      className="absolute bottom-2 right-3 text-xs text-muted-foreground select-none pointer-events-none"
-                    >
-                      {(day.objective || "").length}/120
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground border-l-2 border-primary/40 pl-3 italic">
-                  {day.objective}
+        <CardContent className="p-6 pt-4 space-y-8">
+          {/* Day Objective */}
+          {(day.objective || !readonly) && onUpdateObjective && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`day-objective-${day.id}`} className="text-sm font-semibold text-foreground">
+                Obiettivo del giorno
+              </Label>
+              <div className="relative">
+                <Textarea
+                  id={`day-objective-${day.id}`}
+                  value={day.objective || ""}
+                  onChange={(e) =>
+                    onUpdateObjective(e.target.value.slice(0, 120))
+                  }
+                  placeholder="Descrivi l'obiettivo di questo giorno (max 120 caratteri)…"
+                  maxLength={120}
+                  aria-describedby={`day-objective-count-${day.id}`}
+                  rows={2}
+                  disabled={readonly}
+                  className="resize-none pr-16 text-sm"
+                />
+                <div
+                  id={`day-objective-count-${day.id}`}
+                  className="absolute bottom-2 right-3 text-xs text-muted-foreground select-none pointer-events-none"
+                >
+                  {(day.objective || "").length}/120
                 </div>
-              )}
+              </div>
             </div>
           )}
 
-          {day.phases.map((phase) => (
-            <PhaseSectionCompact
-              key={phase.id}
-              phase={phase}
-              onAddGroup={(groupType) => onAddGroup(phase.type, groupType)}
-              onUpdateGroup={(groupId, updates) => onUpdateGroup(phase.type, groupId, updates)}
-              onDuplicateGroup={(groupId) => onDuplicateGroup(phase.type, groupId)}
-              onDeleteGroup={(groupId) => onDeleteGroup(phase.type, groupId)}
-              onAddExerciseToGroup={(groupId) => onAddExerciseToGroup(phase.type, groupId)}
-              onUpdateExercise={(groupId, exerciseId, patch) => onUpdateExercise(phase.type, groupId, exerciseId, patch)}
-              onDuplicateExercise={(groupId, exerciseId) => onDuplicateExercise(phase.type, groupId, exerciseId)}
-              onDeleteExercise={(groupId, exerciseId) => onDeleteExercise(phase.type, groupId, exerciseId)}
-              onUpdatePhaseObjective={
-                onUpdatePhaseObjective
-                  ? (objective) => onUpdatePhaseObjective(phase.type, objective)
-                  : undefined
-              }
-              readonly={readonly}
-            />
-          ))}
+          {/* Blocks (Phases) */}
+          <div className="space-y-8">
+            {day.phases.map((phase) => (
+              <PhaseSectionCompact
+                key={phase.id}
+                phase={phase}
+                onAddGroup={(type) => onAddGroup(phase.type, type)}
+                onUpdateGroup={(groupId, updates) => onUpdateGroup(phase.type, groupId, updates)}
+                onDuplicateGroup={(groupId) => onDuplicateGroup(phase.type, groupId)}
+                onDeleteGroup={(groupId) => onDeleteGroup(phase.type, groupId)}
+                onAddExerciseToGroup={(groupId) => onAddExerciseToGroup(phase.type, groupId)}
+                onUpdateExercise={(groupId, exerciseId, patch) =>
+                  onUpdateExercise(phase.type, groupId, exerciseId, patch)
+                }
+                onDuplicateExercise={(groupId, exerciseId) =>
+                  onDuplicateExercise(phase.type, groupId, exerciseId)
+                }
+                onDeleteExercise={(groupId, exerciseId) =>
+                  onDeleteExercise(phase.type, groupId, exerciseId)
+                }
+                onUpdatePhaseObjective={
+                  onUpdatePhaseObjective
+                    ? (objective) => onUpdatePhaseObjective(phase.type, objective)
+                    : undefined
+                }
+                readonly={readonly}
+              />
+            ))}
+          </div>
         </CardContent>
       )}
     </Card>

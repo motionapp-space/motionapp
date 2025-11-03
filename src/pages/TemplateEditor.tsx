@@ -19,6 +19,21 @@ import type { PlanTemplate } from "@/types/template";
 import { makeDay, makeGroup, type Day, type PhaseType, type GroupType, type Exercise, type ExerciseGroup, migratePhaseToGroups } from "@/types/plan";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 const TemplateEditor = () => {
   const { id } = useParams();
@@ -39,6 +54,26 @@ const TemplateEditor = () => {
   
   const updateMutation = useUpdateTemplate();
   const readonly = location.state?.readonly === true;
+
+  // Drag & drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDayDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = days.findIndex((d) => d.id === active.id);
+      const newIndex = days.findIndex((d) => d.id === over.id);
+
+      const newDays = arrayMove(days, oldIndex, newIndex);
+      setDays(newDays.map((day, index) => ({ ...day, order: index + 1 })));
+    }
+  };
 
   // Predefined categories for suggestions
   const suggestedCategories = ["Forza", "Ipertrofia", "Resistenza", "Mobilità", "Cardio", "Funzionale"];
@@ -725,29 +760,40 @@ const TemplateEditor = () => {
                 )}
               </div>
             ) : (
-              <div className="space-y-6" role="list" aria-label="Giorni di allenamento">
-                {days.map((day, index) => (
-                  <div key={day.id} role="listitem" aria-label={`Giorno ${index + 1}`}>
-                    <DayCardCompact
-                      day={day}
-                      onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
-                      onUpdateObjective={(objective) => handleUpdateDayObjective(day.id, objective)}
-                      onUpdatePhaseObjective={(phaseType, objective) => handleUpdatePhaseObjective(day.id, phaseType, objective)}
-                      onDuplicate={() => handleDuplicateDay(day.id)}
-                      onDelete={() => handleDeleteDay(day.id)}
-                      onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
-                      onUpdateGroup={(phaseType, groupId, updates) => handleUpdateGroup(day.id, phaseType, groupId, updates)}
-                      onDuplicateGroup={(phaseType, groupId) => handleDuplicateGroup(day.id, phaseType, groupId)}
-                      onDeleteGroup={(phaseType, groupId) => handleDeleteGroup(day.id, phaseType, groupId)}
-                      onAddExerciseToGroup={(phaseType, groupId) => handleAddExerciseToGroup(day.id, phaseType, groupId)}
-                      onUpdateExercise={(phaseType, groupId, exerciseId, patch) => handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)}
-                      onDuplicateExercise={(phaseType, groupId, exerciseId) => handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)}
-                      onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
-                      readonly={readonly}
-                    />
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDayDragEnd}
+              >
+                <SortableContext
+                  items={days.map((d) => d.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-6" role="list" aria-label="Giorni di allenamento">
+                    {days.map((day, index) => (
+                      <div key={day.id} role="listitem" aria-label={`Giorno ${index + 1}`}>
+                        <DayCardCompact
+                          day={day}
+                          onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
+                          onUpdateObjective={(objective) => handleUpdateDayObjective(day.id, objective)}
+                          onUpdatePhaseObjective={(phaseType, objective) => handleUpdatePhaseObjective(day.id, phaseType, objective)}
+                          onDuplicate={() => handleDuplicateDay(day.id)}
+                          onDelete={() => handleDeleteDay(day.id)}
+                          onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
+                          onUpdateGroup={(phaseType, groupId, updates) => handleUpdateGroup(day.id, phaseType, groupId, updates)}
+                          onDuplicateGroup={(phaseType, groupId) => handleDuplicateGroup(day.id, phaseType, groupId)}
+                          onDeleteGroup={(phaseType, groupId) => handleDeleteGroup(day.id, phaseType, groupId)}
+                          onAddExerciseToGroup={(phaseType, groupId) => handleAddExerciseToGroup(day.id, phaseType, groupId)}
+                          onUpdateExercise={(phaseType, groupId, exerciseId, patch) => handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)}
+                          onDuplicateExercise={(phaseType, groupId, exerciseId) => handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)}
+                          onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
+                          readonly={readonly}
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             )}
           </div>
         </div>

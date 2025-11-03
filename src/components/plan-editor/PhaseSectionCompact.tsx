@@ -2,6 +2,23 @@ import { Phase, Exercise, ExerciseGroup, GroupType, migratePhaseToGroups } from 
 import { GroupCard } from "./GroupCard";
 import { AddMenu } from "./AddMenu";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useState, useEffect } from "react";
 
 interface PhaseSectionCompactProps {
   phase: Phase;
@@ -38,19 +55,48 @@ export const PhaseSectionCompact = ({
 }: PhaseSectionCompactProps) => {
   // Migrate legacy exercises to groups
   const migratedPhase = migratePhaseToGroups(phase);
-  const groups = migratedPhase.groups;
+  const [groups, setGroups] = useState(migratedPhase.groups);
+
+  useEffect(() => {
+    setGroups(migratePhaseToGroups(phase).groups);
+  }, [phase]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = groups.findIndex((g) => g.id === active.id);
+      const newIndex = groups.findIndex((g) => g.id === over.id);
+
+      const newGroups = arrayMove(groups, oldIndex, newIndex);
+      setGroups(newGroups);
+
+      // Update order for all groups
+      newGroups.forEach((group, index) => {
+        onUpdateGroup(group.id, { order: index + 1 });
+      });
+    }
+  };
 
   const totalExercises = groups.reduce((sum, g) => sum + g.exercises.length, 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Phase Header */}
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-foreground">
+          <h3 className="text-base font-semibold text-foreground">
             {phaseLabels[phase.type] || phase.type}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {totalExercises} {totalExercises === 1 ? 'esercizio' : 'esercizi'}
+            {totalExercises} {totalExercises === 1 ? "esercizio" : "esercizi"}
           </p>
         </div>
         {!readonly && (
@@ -65,69 +111,77 @@ export const PhaseSectionCompact = ({
 
       {/* Phase/Block Objective */}
       {(phase.objective || !readonly) && onUpdatePhaseObjective && (
-        <div className="flex flex-col gap-3">
-          {!readonly ? (
-            <>
-              <label 
-                htmlFor={`phase-objective-${phase.id}`}
-                className="text-sm font-medium text-muted-foreground"
-              >
-                Obiettivo del blocco
-              </label>
-              <div className="relative">
-                <Textarea
-                  id={`phase-objective-${phase.id}`}
-                  value={phase.objective || ""}
-                  onChange={(e) => {
-                    const value = e.target.value.slice(0, 120);
-                    onUpdatePhaseObjective(value);
-                  }}
-                  placeholder="Descrivi l'obiettivo di questo blocco (max 120 caratteri)..."
-                  className="resize-none text-sm pr-16"
-                  rows={2}
-                  maxLength={120}
-                  aria-describedby={`phase-objective-count-${phase.id}`}
-                />
-                <div
-                  id={`phase-objective-count-${phase.id}`}
-                  className="absolute bottom-2 right-3 text-xs text-muted-foreground select-none pointer-events-none"
-                >
-                  {(phase.objective || "").length}/120
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="text-sm text-muted-foreground border-l-2 border-primary/40 pl-3 italic">
-              {phase.objective}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={`phase-objective-${phase.id}`} className="text-sm font-semibold text-foreground">
+            Obiettivo del blocco
+          </Label>
+          <div className="relative">
+            <Textarea
+              id={`phase-objective-${phase.id}`}
+              value={phase.objective || ""}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 120);
+                onUpdatePhaseObjective(value);
+              }}
+              placeholder="Descrivi l'obiettivo di questo blocco (max 120 caratteri)…"
+              className="resize-none text-sm pr-16"
+              rows={2}
+              maxLength={120}
+              aria-describedby={`phase-objective-count-${phase.id}`}
+              disabled={readonly}
+            />
+            <div
+              id={`phase-objective-count-${phase.id}`}
+              className="absolute bottom-2 right-3 text-xs text-muted-foreground select-none pointer-events-none"
+            >
+              {(phase.objective || "").length}/120
             </div>
-          )}
+          </div>
         </div>
       )}
 
+      {/* Groups List with Drag & Drop */}
       {groups.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg" role="status">
+        <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
           <p>Nessun esercizio ancora</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {groups
-            .sort((a, b) => a.order - b.order)
-            .map((group) => (
-              <GroupCard
-                key={group.id}
-                group={group}
-                phaseType={phase.type}
-                onUpdateGroup={(updates) => onUpdateGroup(group.id, updates)}
-                onDuplicateGroup={() => onDuplicateGroup(group.id)}
-                onDeleteGroup={() => onDeleteGroup(group.id)}
-                onAddExercise={() => onAddExerciseToGroup(group.id)}
-                onUpdateExercise={(exerciseId, patch) => onUpdateExercise(group.id, exerciseId, patch)}
-                onDuplicateExercise={(exerciseId) => onDuplicateExercise(group.id, exerciseId)}
-                onDeleteExercise={(exerciseId) => onDeleteExercise(group.id, exerciseId)}
-                readonly={readonly}
-              />
-            ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={groups.map((g) => g.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-4">
+              {groups
+                .sort((a, b) => a.order - b.order)
+                .map((group) => (
+                  <GroupCard
+                    key={group.id}
+                    group={group}
+                    phaseType={phase.type}
+                    onUpdateGroup={(updates) => onUpdateGroup(group.id, updates)}
+                    onDuplicateGroup={() => onDuplicateGroup(group.id)}
+                    onDeleteGroup={() => onDeleteGroup(group.id)}
+                    onAddExercise={() => onAddExerciseToGroup(group.id)}
+                    onUpdateExercise={(exerciseId, patch) =>
+                      onUpdateExercise(group.id, exerciseId, patch)
+                    }
+                    onDuplicateExercise={(exerciseId) =>
+                      onDuplicateExercise(group.id, exerciseId)
+                    }
+                    onDeleteExercise={(exerciseId) =>
+                      onDeleteExercise(group.id, exerciseId)
+                    }
+                    readonly={readonly}
+                  />
+                ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );

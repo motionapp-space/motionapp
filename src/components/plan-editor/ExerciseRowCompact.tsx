@@ -1,9 +1,23 @@
 import { Exercise } from "@/types/plan";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Copy, Trash2, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
-import { useState } from "react";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { GripVertical, Copy, Trash2, StickyNote, MoreVertical } from "lucide-react";
+import { useState } from "react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface ExerciseRowCompactProps {
   exercise: Exercise;
@@ -13,179 +27,190 @@ interface ExerciseRowCompactProps {
   readonly?: boolean;
 }
 
-export const ExerciseRowCompact = ({ exercise, onUpdate, onDuplicate, onDelete, readonly = false }: ExerciseRowCompactProps) => {
-  const [showMore, setShowMore] = useState(false);
-  const hasNotes = Boolean(exercise.notes && exercise.notes.trim().length > 0);
-  const hasGoal = Boolean(exercise.goal && exercise.goal.trim().length > 0);
+export const ExerciseRowCompact = ({
+  exercise,
+  onUpdate,
+  onDuplicate,
+  onDelete,
+  readonly = false,
+}: ExerciseRowCompactProps) => {
+  const [notesOpen, setNotesOpen] = useState(false);
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: exercise.id, disabled: readonly });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const hasNotesOrGoals = Boolean((exercise.notes && exercise.notes.trim()) || (exercise.goal && exercise.goal.trim()));
 
   return (
-    <div className="rounded-lg border border-border hover:border-muted-foreground/20 transition-colors bg-card">
-      {/* Main Row */}
-      <div className={`grid ${readonly ? 'grid-cols-11' : 'grid-cols-12'} gap-3 items-center p-3`}>
-        {/* Drag Handle */}
-        {!readonly && (
-          <div className="col-span-1 flex items-center justify-center cursor-grab active:cursor-grabbing" aria-label="Trascina per riordinare">
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </div>
-        )}
-        
-        {/* Name */}
-        <div className={readonly ? "col-span-3" : "col-span-2"}>
-          <Input
-            value={exercise.name}
-            onChange={(e) => onUpdate({ name: e.target.value })}
-            placeholder="Nome esercizio"
-            className="h-11"
-            disabled={readonly}
-            readOnly={readonly}
-            aria-label="Nome esercizio"
-          />
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group relative flex items-center gap-4 p-3 bg-background rounded-lg border border-border hover:border-primary/50 transition-colors"
+    >
+      {/* Drag Handle */}
+      {!readonly && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing touch-none shrink-0"
+          aria-label="Trascina per riordinare"
+        >
+          <GripVertical className="h-5 w-5 text-muted-foreground" />
         </div>
-        
-        {/* Sets */}
-        <div className="col-span-1">
-          <Input
-            type="number"
-            value={exercise.sets}
-            onChange={(e) => onUpdate({ sets: parseInt(e.target.value) || 0 })}
-            placeholder="Serie"
-            className="h-11 text-center"
-            min={0}
-            disabled={readonly}
-            readOnly={readonly}
-            aria-label="Serie"
-          />
-        </div>
-        
-        {/* Reps */}
-        <div className="col-span-1">
-          <Input
-            value={exercise.reps}
-            onChange={(e) => onUpdate({ reps: e.target.value })}
-            placeholder="Rip"
-            className="h-11 text-center"
-            disabled={readonly}
-            readOnly={readonly}
-            aria-label="Ripetizioni"
-          />
-        </div>
-        
-        {/* Load */}
-        <div className="col-span-1">
-          <Input
-            value={exercise.load || ""}
-            onChange={(e) => onUpdate({ load: e.target.value })}
-            placeholder="kg"
-            className="h-11 text-center"
-            disabled={readonly}
-            readOnly={readonly}
-            aria-label="Carico"
-          />
-        </div>
-        
-        {/* Rest */}
-        <div className="col-span-1">
-          <Input
-            value={exercise.rest || ""}
-            onChange={(e) => onUpdate({ rest: e.target.value })}
-            placeholder="60s"
-            className="h-11 text-center"
-            disabled={readonly}
-            readOnly={readonly}
-            aria-label="Recupero"
-          />
-        </div>
-        
-        {/* More Toggle & Actions */}
-        <div className={`${readonly ? 'col-span-4' : 'col-span-5'} flex items-center justify-end gap-2`}>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowMore(!showMore)}
-            className="gap-1 h-9 text-muted-foreground hover:text-foreground relative"
-            aria-expanded={showMore}
-            aria-controls={`exercise-${exercise.id}-more`}
-          >
-            {(hasNotes || hasGoal) && (
-              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" aria-label="Ha note o obiettivi" />
-            )}
-            {showMore ? (
-              <>
-                <ChevronUp className="h-4 w-4" />
-                <span className="text-xs">Meno</span>
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-4 w-4" />
-                <span className="text-xs">Altro</span>
-              </>
-            )}
-          </Button>
-          
-          {!readonly && (
-            <>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={onDuplicate}
-                title="Duplica esercizio"
-                className="h-9 w-9 min-w-[44px] min-h-[44px] hover:bg-muted/40 transition-colors"
-                aria-label="Duplica esercizio"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={onDelete}
-                title="Elimina esercizio"
-                className="h-9 w-9 min-w-[44px] min-h-[44px] text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
-                aria-label="Elimina esercizio"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </>
-          )}
-        </div>
+      )}
+
+      {/* Exercise Name - Wider */}
+      <div className="flex-1 min-w-[200px]">
+        <Input
+          value={exercise.name}
+          onChange={(e) => onUpdate({ name: e.target.value })}
+          placeholder="Nome esercizio"
+          disabled={readonly}
+          className="h-9 text-sm font-medium"
+          aria-label="Nome esercizio"
+        />
       </div>
 
-      {/* Progressive Disclosure - Goal & Notes */}
-      {showMore && (
-        <div 
-          id={`exercise-${exercise.id}-more`}
-          className="grid grid-cols-2 gap-3 p-3 pt-0 border-t border-border/50 bg-muted/10 animate-accordion-down"
-          role="region"
-          aria-label="Dettagli aggiuntivi esercizio"
-        >
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Obiettivo</label>
-            <Input
-              value={exercise.goal || ""}
-              onChange={(e) => onUpdate({ goal: e.target.value })}
-              placeholder="Es: Aumentare forza"
-              className="h-11"
-              disabled={readonly}
-              readOnly={readonly}
-              aria-label="Obiettivo"
-            />
+      {/* Sets */}
+      <div className="w-20 shrink-0">
+        <Input
+          type="number"
+          value={exercise.sets}
+          onChange={(e) => onUpdate({ sets: Math.max(1, parseInt(e.target.value) || 1) })}
+          disabled={readonly}
+          className="h-9 text-sm text-center"
+          min={1}
+          max={99}
+          aria-label="Serie"
+          placeholder="Serie"
+        />
+      </div>
+
+      {/* Reps */}
+      <div className="w-24 shrink-0">
+        <Input
+          value={exercise.reps}
+          onChange={(e) => onUpdate({ reps: e.target.value })}
+          disabled={readonly}
+          className="h-9 text-sm text-center"
+          aria-label="Ripetizioni"
+          placeholder="Rip."
+        />
+      </div>
+
+      {/* Load */}
+      <div className="w-24 shrink-0">
+        <Input
+          value={exercise.load || ""}
+          onChange={(e) => onUpdate({ load: e.target.value })}
+          disabled={readonly}
+          className="h-9 text-sm text-center"
+          aria-label="Carico"
+          placeholder="Carico"
+        />
+      </div>
+
+      {/* Rest */}
+      <div className="w-24 shrink-0">
+        <Input
+          value={exercise.rest || ""}
+          onChange={(e) => onUpdate({ rest: e.target.value })}
+          disabled={readonly}
+          className="h-9 text-sm text-center"
+          aria-label="Recupero"
+          placeholder="Rec."
+        />
+      </div>
+
+      {/* Notes Popover */}
+      <Popover open={notesOpen} onOpenChange={setNotesOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant={hasNotesOrGoals ? "default" : "ghost"}
+            size="icon"
+            className="h-9 w-9 shrink-0 relative"
+            aria-label="Note e obiettivi"
+          >
+            <StickyNote className="h-4 w-4" />
+            {hasNotesOrGoals && (
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80" align="end">
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-sm font-semibold text-foreground">
+                Obiettivo
+              </Label>
+              <Input
+                value={exercise.goal || ""}
+                onChange={(e) => onUpdate({ goal: e.target.value })}
+                placeholder="Es. Controllo eccentrico"
+                disabled={readonly}
+                className="h-9 text-sm"
+                maxLength={120}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-sm font-semibold text-foreground">
+                Note
+              </Label>
+              <Textarea
+                value={exercise.notes || ""}
+                onChange={(e) => onUpdate({ notes: e.target.value })}
+                placeholder="Note aggiuntive per l'esecuzione..."
+                disabled={readonly}
+                className="min-h-[80px] text-sm resize-none"
+                maxLength={240}
+              />
+              <div className="text-xs text-muted-foreground text-right">
+                {(exercise.notes || "").length}/240
+              </div>
+            </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Note</label>
-            <Textarea
-              value={exercise.notes || ""}
-              onChange={(e) => onUpdate({ notes: e.target.value })}
-              placeholder="Note aggiuntive..."
-              className="min-h-[44px] resize-none"
-              rows={1}
-              disabled={readonly}
-              readOnly={readonly}
-              aria-label="Note"
-            />
-          </div>
-        </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Actions Menu */}
+      {!readonly && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              aria-label="Altre azioni"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onDuplicate} className="gap-2 cursor-pointer">
+              <Copy className="h-4 w-4" />
+              Duplica esercizio
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={onDelete}
+              className="gap-2 text-destructive focus:text-destructive cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+              Elimina esercizio
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
     </div>
   );
