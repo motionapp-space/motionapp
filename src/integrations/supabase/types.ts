@@ -909,6 +909,7 @@ export type Database = {
           consumed_sessions: number
           created_at: string
           currency_code: string
+          duration_months: number
           expires_at: string | null
           is_single_technical: boolean
           name: string
@@ -929,6 +930,7 @@ export type Database = {
           consumed_sessions?: number
           created_at?: string
           currency_code?: string
+          duration_months: number
           expires_at?: string | null
           is_single_technical?: boolean
           name: string
@@ -949,6 +951,7 @@ export type Database = {
           consumed_sessions?: number
           created_at?: string
           currency_code?: string
+          duration_months?: number
           expires_at?: string | null
           is_single_technical?: boolean
           name?: string
@@ -1092,9 +1095,13 @@ export type Database = {
           created_at: string
           currency_code: string
           lock_window_hours: number
+          sessions_1_duration: number
           sessions_1_price: number
+          sessions_10_duration: number
           sessions_10_price: number
+          sessions_20_duration: number
           sessions_20_price: number
+          sessions_5_duration: number
           sessions_5_price: number
           settings_id: string
           updated_at: string
@@ -1104,9 +1111,13 @@ export type Database = {
           created_at?: string
           currency_code?: string
           lock_window_hours?: number
+          sessions_1_duration?: number
           sessions_1_price?: number
+          sessions_10_duration?: number
           sessions_10_price?: number
+          sessions_20_duration?: number
           sessions_20_price?: number
+          sessions_5_duration?: number
           sessions_5_price?: number
           settings_id?: string
           updated_at?: string
@@ -1116,9 +1127,13 @@ export type Database = {
           created_at?: string
           currency_code?: string
           lock_window_hours?: number
+          sessions_1_duration?: number
           sessions_1_price?: number
+          sessions_10_duration?: number
           sessions_10_price?: number
+          sessions_20_duration?: number
           sessions_20_price?: number
+          sessions_5_duration?: number
           sessions_5_price?: number
           settings_id?: string
           updated_at?: string
@@ -1542,7 +1557,12 @@ export type Database = {
         | "COMPLETE"
         | "ADMIN_CORRECTION"
         | "RECONCILE"
-      ledger_type: "HOLD_CREATE" | "HOLD_RELEASE" | "CONSUME" | "CORRECTION"
+      ledger_type:
+        | "HOLD_CREATE"
+        | "HOLD_RELEASE"
+        | "CONSUME"
+        | "CORRECTION"
+        | "PRICE_UPDATE"
       package_payment_status: "unpaid" | "partial" | "paid" | "refunded"
       package_usage_status: "active" | "completed" | "suspended" | "archived"
       plan_status: "IN_CORSO" | "COMPLETATO" | "ELIMINATO"
@@ -1698,7 +1718,13 @@ export const Constants = {
         "ADMIN_CORRECTION",
         "RECONCILE",
       ],
-      ledger_type: ["HOLD_CREATE", "HOLD_RELEASE", "CONSUME", "CORRECTION"],
+      ledger_type: [
+        "HOLD_CREATE",
+        "HOLD_RELEASE",
+        "CONSUME",
+        "CORRECTION",
+        "PRICE_UPDATE",
+      ],
       package_payment_status: ["unpaid", "partial", "paid", "refunded"],
       package_usage_status: ["active", "completed", "suspended", "archived"],
       plan_status: ["IN_CORSO", "COMPLETATO", "ELIMINATO"],
