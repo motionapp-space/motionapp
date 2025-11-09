@@ -4,14 +4,17 @@ import { PageHeading } from "@/components/ui/page-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { User, Lock, Shield, Globe } from "lucide-react";
+import { User, Lock, Shield, Calendar, Package } from "lucide-react";
+import { BookingSettingsForm } from "@/features/bookings/components/BookingSettingsForm";
+import { PackageSettingsForm } from "@/features/packages/components/PackageSettingsForm";
 
 const Settings = () => {
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState({ name: "", email: "" });
+  const [profile, setProfile] = useState({ name: "", email: "", locale: "it" });
   const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
 
   useEffect(() => {
@@ -30,7 +33,11 @@ const Settings = () => {
         .single();
 
       if (data) {
-        setProfile({ name: data.name || "", email: data.email || "" });
+        setProfile({ 
+          name: data.name || "", 
+          email: data.email || "",
+          locale: data.locale || "it"
+        });
       }
     } catch (error: any) {
       toast.error("Errore nel caricamento del profilo");
@@ -45,7 +52,7 @@ const Settings = () => {
 
       const { error } = await supabase
         .from("coaches")
-        .update({ name: profile.name })
+        .update({ name: profile.name, locale: profile.locale })
         .eq("id", user.id);
 
       if (error) throw error;
@@ -87,7 +94,7 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
             Profilo
@@ -96,13 +103,17 @@ const Settings = () => {
             <Lock className="h-4 w-4" />
             Credenziali
           </TabsTrigger>
+          <TabsTrigger value="bookings" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            Prenotazioni
+          </TabsTrigger>
+          <TabsTrigger value="packages" className="gap-2">
+            <Package className="h-4 w-4" />
+            Pacchetti
+          </TabsTrigger>
           <TabsTrigger value="privacy" className="gap-2">
             <Shield className="h-4 w-4" />
             Privacy
-          </TabsTrigger>
-          <TabsTrigger value="language" className="gap-2">
-            <Globe className="h-4 w-4" />
-            Lingua
           </TabsTrigger>
         </TabsList>
 
@@ -132,6 +143,24 @@ const Settings = () => {
                   className="bg-muted"
                 />
                 <p className="text-sm text-muted-foreground">L'email non può essere modificata</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="locale">Lingua interfaccia</Label>
+                <Select
+                  value={profile.locale}
+                  onValueChange={(value) => setProfile({ ...profile, locale: value })}
+                >
+                  <SelectTrigger id="locale">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="it">🇮🇹 Italiano</SelectItem>
+                    <SelectItem value="en">🇬🇧 English</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  La lingua scelta verrà applicata a tutta l'interfaccia. Potrai cambiarla in qualsiasi momento.
+                </p>
               </div>
               <Button onClick={updateProfile} disabled={loading}>
                 {loading ? "Salvataggio..." : "Salva Modifiche"}
@@ -174,6 +203,14 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="bookings">
+          <BookingSettingsForm />
+        </TabsContent>
+
+        <TabsContent value="packages">
+          <PackageSettingsForm />
+        </TabsContent>
+
         <TabsContent value="privacy">
           <Card>
             <CardHeader>
@@ -195,24 +232,6 @@ const Settings = () => {
                     Politica Cookie
                   </a>
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="language">
-          <Card>
-            <CardHeader>
-              <CardTitle>Lingua</CardTitle>
-              <CardDescription>Seleziona la lingua dell'interfaccia</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label>Lingua</Label>
-                <Input value="Italiano" disabled className="bg-muted" />
-                <p className="text-sm text-muted-foreground">
-                  Al momento è disponibile solo la lingua italiana
-                </p>
               </div>
             </CardContent>
           </Card>

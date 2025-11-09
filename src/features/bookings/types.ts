@@ -40,6 +40,11 @@ export interface BookingSettings {
   min_advance_notice_hours: number;
   slot_duration_minutes: number;
   approval_mode: ApprovalMode;
+  buffer_before_minutes?: number;
+  buffer_after_minutes?: number;
+  cancel_policy_hours?: number;
+  max_future_days?: number;
+  timezone?: string;
   created_at: string;
   updated_at: string;
 }
@@ -49,6 +54,11 @@ export interface UpdateBookingSettingsInput {
   min_advance_notice_hours?: number;
   slot_duration_minutes?: number;
   approval_mode?: ApprovalMode;
+  buffer_before_minutes?: number;
+  buffer_after_minutes?: number;
+  cancel_policy_hours?: number;
+  max_future_days?: number;
+  timezone?: string;
 }
 
 export interface AvailabilityWindow {
