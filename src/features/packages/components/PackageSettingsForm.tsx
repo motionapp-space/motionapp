@@ -6,8 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { usePackageSettings, useUpdatePackageSettings } from "../hooks/usePackageSettings";
-import { Loader2, Package } from "lucide-react";
+import { Loader2, Package, AlertCircle } from "lucide-react";
 
 interface PackageSettingsFormValues {
   sessions_1_price: number;
@@ -63,6 +64,33 @@ export function PackageSettingsForm() {
     return (cents / 100).toFixed(2);
   };
 
+  const formatCurrency = (cents: number) => {
+    return new Intl.NumberFormat('it-IT', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(cents / 100);
+  };
+
+  // Calcola prezzo per sessione
+  const calculateUnitPrice = (totalCents: number, sessions: number) => {
+    return totalCents / sessions;
+  };
+
+  // Calcola sconto assoluto
+  const calculateDiscountAbs = (unitPrice: number, singlePrice: number) => {
+    return singlePrice - unitPrice;
+  };
+
+  // Calcola sconto percentuale
+  const calculateDiscountPct = (discountAbs: number, singlePrice: number) => {
+    if (singlePrice === 0) return 0;
+    return (discountAbs / singlePrice) * 100;
+  };
+
+  // Watch per calcoli in tempo reale
+  const watchedValues = form.watch();
+  const singleSessionPrice = watchedValues.sessions_1_price || 0;
+
   if (isLoading) {
     return (
       <Card>
@@ -89,9 +117,24 @@ export function PackageSettingsForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {singleSessionPrice === 0 && (
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Imposta un prezzo valido per la lezione singola per calcolare correttamente gli sconti.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            {packageTypes.map(({ sessions, priceField, durationField }) => (
+            {packageTypes.map(({ sessions, priceField, durationField }) => {
+              const totalPrice = watchedValues[priceField] || 0;
+              const unitPrice = calculateUnitPrice(totalPrice, sessions);
+              const discountAbs = sessions === 1 ? 0 : calculateDiscountAbs(unitPrice, singleSessionPrice);
+              const discountPct = sessions === 1 ? 0 : calculateDiscountPct(discountAbs, singleSessionPrice);
+              
+              return (
               <div key={sessions} className="space-y-4 pb-6 border-b last:border-0">
                 <div className="flex items-center gap-2 mb-4">
                   <Package className="h-5 w-5 text-primary" />
@@ -106,7 +149,7 @@ export function PackageSettingsForm() {
                     name={priceField}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Prezzo di default</FormLabel>
+                        <FormLabel>Prezzo totale (€)</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Input
@@ -151,8 +194,40 @@ export function PackageSettingsForm() {
                     )}
                   />
                 </div>
+
+                {/* Calcoli derivati */}
+                <div className="grid gap-4 md:grid-cols-2 pt-2">
+                  <div className="space-y-1">
+                    <FormLabel className="text-muted-foreground">Prezzo per sessione</FormLabel>
+                    <div className="text-lg font-semibold">
+                      {formatCurrency(unitPrice)}
+                    </div>
+                  </div>
+
+                  {sessions > 1 && (
+                    <div className="space-y-1">
+                      <FormLabel className="text-muted-foreground">
+                        Sconto rispetto alla singola
+                      </FormLabel>
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg font-semibold">
+                          {discountAbs > 0 ? '−' : discountAbs < 0 ? '+' : ''}
+                          {formatCurrency(Math.abs(discountAbs))}
+                        </div>
+                        <Badge 
+                          variant={discountAbs > 0 ? "default" : discountAbs < 0 ? "destructive" : "secondary"}
+                          className={discountAbs > 0 ? "bg-green-600 hover:bg-green-700" : ""}
+                        >
+                          {discountPct > 0 ? '−' : discountPct < 0 ? '+' : ''}
+                          {Math.abs(discountPct).toFixed(2)}%
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            ))}
+              );
+            })}
 
             <FormField
               control={form.control}
@@ -188,7 +263,14 @@ export function PackageSettingsForm() {
                 Puoi modificarli liberamente nella scheda cliente o mantenerli come default.
               </p>
               <Button type="submit" disabled={isPending} className="w-full md:w-auto">
-                {isPending ? "Salvataggio..." : "Salva Tutte"}
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvataggio...
+                  </>
+                ) : (
+                  "Salva Tutte"
+                )}
               </Button>
             </div>
           </form>
