@@ -2,7 +2,7 @@
 
 export type PackageUsageStatus = 'active' | 'completed' | 'suspended' | 'archived';
 export type PackagePaymentStatus = 'unpaid' | 'partial' | 'paid' | 'refunded';
-export type LedgerType = 'HOLD_CREATE' | 'HOLD_RELEASE' | 'CONSUME' | 'CORRECTION';
+export type LedgerType = 'HOLD_CREATE' | 'HOLD_RELEASE' | 'CONSUME' | 'CORRECTION' | 'PRICE_UPDATE';
 export type LedgerReason = 'CONFIRM' | 'CANCEL_GT_24H' | 'CANCEL_LT_24H' | 'COMPLETE' | 'ADMIN_CORRECTION' | 'RECONCILE';
 
 export interface Package {
@@ -18,6 +18,7 @@ export interface Package {
   price_source: string; // 'settings' | 'custom' in DB
   usage_status: string; // PackageUsageStatus in DB
   payment_status: string; // PackagePaymentStatus in DB
+  duration_months: number; // 1, 3, 6, or 12 months
   expires_at: string | null;
   payment_method: string | null;
   notes_internal: string | null;
@@ -76,6 +77,10 @@ export interface PackageSettings {
   sessions_5_price: number;
   sessions_10_price: number;
   sessions_20_price: number;
+  sessions_1_duration: number;
+  sessions_5_duration: number;
+  sessions_10_duration: number;
+  sessions_20_duration: number;
   currency_code: string;
   lock_window_hours: number;
   created_at: string;
@@ -87,10 +92,12 @@ export interface CreatePackageInput {
   name: string;
   total_sessions: number; // Should be 1, 5, 10, or 20
   price_total_cents?: number | null;
+  duration_months?: number; // 1, 3, 6, or 12 - defaults from settings
   expires_at?: string | null;
   payment_method?: string | null;
   notes_internal?: string | null;
   payment_status?: PackagePaymentStatus;
+  is_single_technical?: boolean;
 }
 
 export interface UpdatePackageInput {

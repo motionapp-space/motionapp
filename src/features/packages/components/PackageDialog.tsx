@@ -41,25 +41,38 @@ export function PackageDialog({
   const { data: settings } = usePackageSettings();
   const [selectedSessions, setSelectedSessions] = useState<number>(10);
   const [customPrice, setCustomPrice] = useState<boolean>(false);
+  const [customDuration, setCustomDuration] = useState<boolean>(false);
   
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<CreatePackageInput>({
     defaultValues: {
       client_id: clientId,
       total_sessions: 10,
       name: suggestPackageName(10),
+      duration_months: 6,
     },
   });
 
   const priceValue = watch("price_total_cents");
+  const durationValue = watch("duration_months");
 
-  // Update default price when sessions change
+  // Update default price and duration when sessions change
   useEffect(() => {
-    if (settings && !customPrice) {
-      const priceKey = `sessions_${selectedSessions}_price` as keyof typeof settings;
-      const defaultPrice = settings[priceKey] as number;
-      setValue("price_total_cents", defaultPrice);
+    if (settings) {
+      // Set default price if not custom
+      if (!customPrice) {
+        const priceKey = `sessions_${selectedSessions}_price` as keyof typeof settings;
+        const defaultPrice = settings[priceKey] as number;
+        setValue("price_total_cents", defaultPrice);
+      }
+      
+      // Set default duration if not custom
+      if (!customDuration) {
+        const durationKey = `sessions_${selectedSessions}_duration` as keyof typeof settings;
+        const defaultDuration = settings[durationKey] as number;
+        setValue("duration_months", defaultDuration);
+      }
     }
-  }, [selectedSessions, settings, customPrice, setValue]);
+  }, [selectedSessions, settings, customPrice, customDuration, setValue]);
 
   const handleSessionsChange = (value: string) => {
     const sessions = parseInt(value);
@@ -67,12 +80,18 @@ export function PackageDialog({
     setValue("total_sessions", sessions);
     setValue("name", suggestPackageName(sessions));
     setCustomPrice(false); // Reset custom price flag
+    setCustomDuration(false); // Reset custom duration flag
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const cents = Math.round(parseFloat(e.target.value || "0") * 100);
     setValue("price_total_cents", cents);
     setCustomPrice(true);
+  };
+
+  const handleDurationChange = (value: string) => {
+    setValue("duration_months", parseInt(value));
+    setCustomDuration(true);
   };
 
   const onSubmitForm = (data: CreatePackageInput) => {
@@ -162,13 +181,29 @@ export function PackageDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="expires_at">Scadenza (opzionale)</Label>
-            <Input
-              id="expires_at"
-              type="date"
-              {...register("expires_at")}
-              min={new Date().toISOString().split('T')[0]}
-            />
+            <Label htmlFor="duration_months">Durata</Label>
+            <Select
+              value={durationValue?.toString() || "3"}
+              onValueChange={handleDurationChange}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 mese</SelectItem>
+                <SelectItem value="3">3 mesi</SelectItem>
+                <SelectItem value="6">6 mesi</SelectItem>
+                <SelectItem value="12">12 mesi</SelectItem>
+              </SelectContent>
+            </Select>
+            {customDuration && (
+              <p className="text-xs text-muted-foreground">
+                Durata personalizzata
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Il pacchetto scadrà {durationValue} {durationValue === 1 ? 'mese' : 'mesi'} dopo la creazione
+            </p>
           </div>
 
           <div className="space-y-2">

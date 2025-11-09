@@ -1,224 +1,232 @@
+/**
+ * Calendar-Package Integration API
+ * Manages automatic credit consumption based on calendar event status changes
+ */
+
 import { supabase } from "@/integrations/supabase/client";
-import { getActivePackage, createPackage, getPackage, getPackageSettings } from "./packages.api";
-import { createLedgerEntry, isEventLocked } from "./ledger.api";
+import { getActivePackage, getPackageSettings, createPackage } from "./packages.api";
+import { createLedgerEntry } from "./ledger.api";
 import type { Package } from "../types";
 
 /**
- * Handle event confirmation: create hold on active package (or auto-create 1-session package)
+ * Handle event confirmation - creates hold on package
+ * Auto-creates 1-session technical package if no active package exists
  */
 export async function handleEventConfirm(
-  clientId: string, 
-  eventId: string
-): Promise<Package> {
+  eventId: string,
+  clientId: string,
+  startAt: string
+): Promise<{ package: Package; holdCreated: boolean }> {
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new Error("Non autenticato");
 
-  // Start transaction-like operation using FOR UPDATE
+  // Get or create active package
   let pkg = await getActivePackage(clientId);
-
-  // If no active package, auto-create a 1-session technical package
+  
   if (!pkg) {
+    // Auto-create 1-session technical package
     const settings = await getPackageSettings();
     pkg = await createPackage({
       client_id: clientId,
-      name: "1 lezione individuale",
+      name: "1 lezione individuale (automatico)",
       total_sessions: 1,
       price_total_cents: settings.sessions_1_price,
+      duration_months: settings.sessions_1_duration,
       payment_status: 'unpaid',
+      is_single_technical: true,
     });
-
-    // Update the package record to mark it as technical
-    await supabase
-      .from("package")
-      .update({ is_single_technical: true })
-      .eq("package_id", pkg.package_id);
-
-    pkg.is_single_technical = true;
   }
 
-  // Check if package is suspended
-  if (pkg.usage_status === 'suspended') {
-    throw new Error("Impossibile confermare: il pacchetto è sospeso");
-  }
-
-  // Calculate available sessions
-  const available = pkg.total_sessions - pkg.consumed_sessions - pkg.on_hold_sessions;
-  
-  if (available < 1) {
+  // Check if package is expired
+  if (pkg.expires_at && new Date(pkg.expires_at) <= new Date()) {
     throw new Error(
-      `Credito insufficiente: disponibili ${available}, in attesa ${pkg.on_hold_sessions}. ` +
-      "Crea un nuovo pacchetto o libera una prenotazione."
+      "Il pacchetto è scaduto. Impossibile creare una prenotazione."
     );
   }
 
-  // Create ledger entry (idempotent)
-  const ledgerEntry = await createLedgerEntry(
+  // Check available credits (total - consumed - on_hold)
+  const available = pkg.total_sessions - pkg.consumed_sessions - pkg.on_hold_sessions;
+  if (available < 1) {
+    throw new Error(
+      `Credito insufficiente. Disponibili: ${available}, ` +
+      `in attesa: ${pkg.on_hold_sessions}, consumate: ${pkg.consumed_sessions}`
+    );
+  }
+
+  // Create hold (idempotent via unique constraint)
+  await createLedgerEntry(
     pkg.package_id,
     'HOLD_CREATE',
     'CONFIRM',
     0,
     1,
     eventId,
-    "Prenotazione confermata"
+    `Appuntamento confermato - ${new Date(startAt).toLocaleDateString('it-IT')}`
   );
 
-  // Only update package if ledger entry was created (not duplicate)
-  if (ledgerEntry) {
-    const { error } = await supabase
-      .from("package")
-      .update({
-        on_hold_sessions: pkg.on_hold_sessions + 1,
-      })
-      .eq("package_id", pkg.package_id);
+  // Update package counters
+  const { data: updatedPkg, error } = await supabase
+    .from("package")
+    .update({ on_hold_sessions: pkg.on_hold_sessions + 1 })
+    .eq("package_id", pkg.package_id)
+    .select()
+    .single();
 
-    if (error) throw error;
-  }
+  if (error) throw error;
 
-  // Return updated package
-  return getPackage(pkg.package_id);
+  return { package: updatedPkg, holdCreated: true };
 }
 
 /**
- * Handle event completion: release hold and consume session
+ * Handle event completion - releases hold and consumes credit
  */
 export async function handleEventComplete(
   eventId: string,
-  eventStartAt: string
+  packageId: string
 ): Promise<Package> {
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new Error("Non autenticato");
 
-  // Get the event to find its package
-  const { data: event, error: eventError } = await supabase
-    .from("events")
-    .select("client_id")
-    .eq("id", eventId)
+  // Get package
+  const { data: pkg, error: pkgError } = await supabase
+    .from("package")
+    .select("*")
+    .eq("package_id", packageId)
+    .eq("coach_id", session.session.user.id)
     .single();
 
-  if (eventError) throw eventError;
+  if (pkgError) throw pkgError;
 
-  const pkg = await getActivePackage(event.client_id);
-  if (!pkg) throw new Error("Nessun pacchetto attivo trovato");
-
-  // Check lock window
-  const settings = await getPackageSettings();
-  const locked = await isEventLocked(eventStartAt, settings.lock_window_hours);
-  
-  if (locked) {
-    throw new Error(
-      `Evento bloccato: sono passate più di ${settings.lock_window_hours} ore. ` +
-      "Usa 'Correzione amministrativa' invece."
-    );
-  }
-
-  // Create ledger entries (idempotent)
+  // Create ledger entry (releases hold, consumes credit)
   await createLedgerEntry(
-    pkg.package_id,
-    'HOLD_RELEASE',
-    'COMPLETE',
-    0,
-    -1,
-    eventId,
-    "Prenotazione completata - rilascio attesa"
-  );
-
-  await createLedgerEntry(
-    pkg.package_id,
+    packageId,
     'CONSUME',
     'COMPLETE',
     1,
-    0,
+    -1,
     eventId,
-    "Sessione consumata"
+    "Sessione completata"
   );
 
-  // Update package
-  const { error } = await supabase
+  // Update package counters
+  const newConsumed = pkg.consumed_sessions + 1;
+  const newOnHold = Math.max(0, pkg.on_hold_sessions - 1);
+
+  const { data: updatedPkg, error } = await supabase
     .from("package")
-    .update({
-      on_hold_sessions: Math.max(0, pkg.on_hold_sessions - 1),
-      consumed_sessions: pkg.consumed_sessions + 1,
+    .update({ 
+      consumed_sessions: newConsumed,
+      on_hold_sessions: newOnHold,
     })
-    .eq("package_id", pkg.package_id);
+    .eq("package_id", packageId)
+    .select()
+    .single();
 
   if (error) throw error;
-
-  return getPackage(pkg.package_id);
+  return updatedPkg;
 }
 
 /**
  * Handle event cancellation
+ * - If >24h before start: release hold (CANCEL_GT_24H)
+ * - If <24h before start: consume credit (CANCEL_LT_24H)
  */
 export async function handleEventCancel(
   eventId: string,
-  eventStartAt: string,
-  isLateCancel: boolean
-): Promise<Package> {
+  packageId: string,
+  startAt: string
+): Promise<{ package: Package; penaltyApplied: boolean }> {
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new Error("Non autenticato");
 
-  // Get the event to find its package
-  const { data: event, error: eventError } = await supabase
-    .from("events")
-    .select("client_id")
-    .eq("id", eventId)
+  const settings = await getPackageSettings();
+  const hoursUntilStart = (new Date(startAt).getTime() - Date.now()) / (1000 * 60 * 60);
+
+  // Determine if within cancel policy window
+  const isLateCancellation = hoursUntilStart < settings.lock_window_hours;
+
+  // Get package
+  const { data: pkg, error: pkgError } = await supabase
+    .from("package")
+    .select("*")
+    .eq("package_id", packageId)
+    .eq("coach_id", session.session.user.id)
     .single();
 
-  if (eventError) throw eventError;
+  if (pkgError) throw pkgError;
 
-  const pkg = await getActivePackage(event.client_id);
-  if (!pkg) throw new Error("Nessun pacchetto attivo trovato");
-
-  // Check lock window
-  const settings = await getPackageSettings();
-  const locked = await isEventLocked(eventStartAt, settings.lock_window_hours);
-  
-  if (locked) {
-    throw new Error(
-      `Evento bloccato: sono passate più di ${settings.lock_window_hours} ore. ` +
-      "Usa 'Correzione amministrativa' invece."
-    );
-  }
-
-  const reason = isLateCancel ? 'CANCEL_LT_24H' : 'CANCEL_GT_24H';
-  
-  // Release hold
-  await createLedgerEntry(
-    pkg.package_id,
-    'HOLD_RELEASE',
-    reason,
-    0,
-    -1,
-    eventId,
-    isLateCancel ? "Cancellazione tardiva - rilascio attesa" : "Cancellazione - rilascio attesa"
-  );
-
-  let newConsumed = pkg.consumed_sessions;
-
-  // If late cancel, also consume a session
-  if (isLateCancel) {
+  if (isLateCancellation) {
+    // Late cancel: consume credit
     await createLedgerEntry(
-      pkg.package_id,
+      packageId,
       'CONSUME',
-      reason,
+      'CANCEL_LT_24H',
       1,
-      0,
+      -1,
       eventId,
-      "Cancellazione tardiva - sessione consumata"
+      `Cancellazione tardiva (meno di ${settings.lock_window_hours}h prima)`
     );
-    newConsumed += 1;
-  }
 
-  // Update package
-  const { error } = await supabase
-    .from("package")
-    .update({
-      on_hold_sessions: Math.max(0, pkg.on_hold_sessions - 1),
-      consumed_sessions: newConsumed,
-    })
-    .eq("package_id", pkg.package_id);
+    const { data: updatedPkg, error } = await supabase
+      .from("package")
+      .update({ 
+        consumed_sessions: pkg.consumed_sessions + 1,
+        on_hold_sessions: Math.max(0, pkg.on_hold_sessions - 1),
+      })
+      .eq("package_id", packageId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { package: updatedPkg, penaltyApplied: true };
+  } else {
+    // Early cancel: just release hold
+    await createLedgerEntry(
+      packageId,
+      'HOLD_RELEASE',
+      'CANCEL_GT_24H',
+      0,
+      -1,
+      eventId,
+      "Cancellazione anticipata - credito rilasciato"
+    );
+
+    const { data: updatedPkg, error } = await supabase
+      .from("package")
+      .update({ 
+        on_hold_sessions: Math.max(0, pkg.on_hold_sessions - 1),
+      })
+      .eq("package_id", packageId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { package: updatedPkg, penaltyApplied: false };
+  }
+}
+
+/**
+ * Find package ID for an event (looks up in ledger)
+ */
+export async function findPackageForEvent(eventId: string): Promise<string | null> {
+  const { data: session } = await supabase.auth.getSession();
+  if (!session.session) throw new Error("Non autenticato");
+
+  const { data, error } = await supabase
+    .from("package_ledger")
+    .select("package_id")
+    .eq("calendar_event_id", eventId)
+    .limit(1)
+    .maybeSingle();
 
   if (error) throw error;
+  return data?.package_id || null;
+}
 
-  return getPackage(pkg.package_id);
+/**
+ * Check if event is within lock window (for penalty logic)
+ */
+export function isWithinLockWindow(startAt: string, lockWindowHours: number): boolean {
+  const hoursUntilStart = (new Date(startAt).getTime() - Date.now()) / (1000 * 60 * 60);
+  return hoursUntilStart < lockWindowHours;
 }

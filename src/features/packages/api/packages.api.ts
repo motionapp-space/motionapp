@@ -76,16 +76,31 @@ export async function createPackage(input: CreatePackageInput): Promise<Package>
     throw new Error("Esiste già un pacchetto attivo per questo cliente");
   }
 
-  // Get price from settings if not provided
+  // Get price and duration from settings if not provided
+  const settings = await getPackageSettings();
+  
   let price = input.price_total_cents;
   let price_source: 'settings' | 'custom' = 'settings';
 
   if (price === undefined || price === null) {
-    const settings = await getPackageSettings();
     const priceKey = `sessions_${input.total_sessions}_price` as keyof PackageSettings;
     price = settings[priceKey] as number;
   } else {
     price_source = 'custom';
+  }
+
+  let duration_months = input.duration_months;
+  if (!duration_months) {
+    const durationKey = `sessions_${input.total_sessions}_duration` as keyof PackageSettings;
+    duration_months = settings[durationKey] as number;
+  }
+
+  // Calculate expires_at from duration_months if not explicitly provided
+  let expires_at = input.expires_at;
+  if (!expires_at) {
+    const expiresDate = new Date();
+    expiresDate.setMonth(expiresDate.getMonth() + duration_months);
+    expires_at = expiresDate.toISOString();
   }
 
   const { data, error } = await supabase
@@ -95,8 +110,11 @@ export async function createPackage(input: CreatePackageInput): Promise<Package>
       coach_id: session.session.user.id,
       price_total_cents: price,
       price_source,
+      duration_months,
+      expires_at,
       usage_status: 'active',
       payment_status: input.payment_status || 'unpaid',
+      is_single_technical: input.is_single_technical || false,
     })
     .select()
     .single();
