@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { format, addMonths } from "date-fns";
+import { it } from "date-fns/locale";
 import {
   Dialog,
   DialogContent,
@@ -111,6 +113,11 @@ export function PackageDialog({
     ? formatCurrency(priceValue / selectedSessions) 
     : "N/D";
 
+  // Calculate expiration date based on duration
+  const expirationDate = durationValue 
+    ? format(addMonths(new Date(), durationValue), "d MMMM yyyy", { locale: it })
+    : "";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -202,7 +209,7 @@ export function PackageDialog({
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              Il pacchetto scadrà {durationValue} {durationValue === 1 ? 'mese' : 'mesi'} dopo la creazione
+              Scadrà il <span className="font-medium">{expirationDate}</span>
             </p>
           </div>
 
