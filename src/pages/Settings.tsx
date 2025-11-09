@@ -87,13 +87,13 @@ const Settings = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-8">
+    <div className="container mx-auto p-6 max-w-4xl pb-8">
+      <div className="mb-6">
         <PageHeading className="mb-2">Impostazioni</PageHeading>
         <p className="text-muted-foreground">Gestisci il tuo account e le preferenze</p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs defaultValue="profile" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
