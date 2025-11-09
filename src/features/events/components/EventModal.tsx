@@ -14,7 +14,12 @@ import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useUpdateEvent } from "../hooks/useUpdateEvent";
 import { useDeleteEvent } from "../hooks/useDeleteEvent";
-import { AlertCircle, Trash2 } from "lucide-react";
+import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettings";
+import { useAvailabilityWindowsQuery } from "@/features/bookings/hooks/useAvailability";
+import { useOutOfOfficeBlocksQuery } from "@/features/bookings/hooks/useOutOfOffice";
+import { useEventsQuery } from "../hooks/useEventsQuery";
+import { snapToSlot, hasConflict, isWithinAvailability } from "@/features/bookings/utils/slot-snap";
+import { AlertCircle, Trash2, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { EventWithClient } from "../types";
 
@@ -38,6 +43,11 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
   const updateMutation = useUpdateEvent();
   const deleteMutation = useDeleteEvent();
 
+  const { data: bookingSettings } = useBookingSettingsQuery();
+  const { data: availabilityWindows = [] } = useAvailabilityWindowsQuery();
+  const { data: outOfOfficeBlocks = [] } = useOutOfOfficeBlocksQuery();
+  const { data: existingEvents = [] } = useEventsQuery({});
+
   const [formData, setFormData] = useState({
     title: "",
     client_id: "",
@@ -47,10 +57,14 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
     notes: "",
     is_all_day: false,
     reminder_offset_minutes: 0,
+    align_to_slot: true,
+    allow_exception: false,
   });
 
   const [savedTimeValues, setSavedTimeValues] = useState({ start: "", end: "" });
   const [errors, setErrors] = useState<string[]>([]);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [snapInfo, setSnapInfo] = useState<string | null>(null);
   
   // Dirty flags to track manual end time/date overrides
   const endTimeDirtyRef = useRef(false);
@@ -69,6 +83,8 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
         notes: event.notes || "",
         is_all_day: event.is_all_day || false,
         reminder_offset_minutes: event.reminder_offset_minutes || 0,
+        align_to_slot: event.aligned_to_slot ?? true,
+        allow_exception: false,
       });
       setSavedTimeValues({ start: startFormatted, end: endFormatted });
     } else if (prefillData) {
@@ -83,6 +99,8 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
         notes: "",
         is_all_day: false,
         reminder_offset_minutes: 0,
+        align_to_slot: true,
+        allow_exception: false,
       });
       setSavedTimeValues({ start: startFormatted, end: endFormatted });
     } else {
@@ -95,10 +113,14 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
         notes: "",
         is_all_day: false,
         reminder_offset_minutes: 0,
+        align_to_slot: true,
+        allow_exception: false,
       });
       setSavedTimeValues({ start: "", end: "" });
     }
     setErrors([]);
+    setWarnings([]);
+    setSnapInfo(null);
     // Reset dirty flags when modal opens/changes
     endTimeDirtyRef.current = false;
     endDateDirtyRef.current = false;
@@ -170,6 +192,7 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
 
   const validate = (): boolean => {
     const newErrors: string[] = [];
+    const newWarnings: string[] = [];
 
     if (!formData.title.trim()) {
       newErrors.push("Il titolo è obbligatorio");
@@ -184,33 +207,108 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
       newErrors.push("Data e ora di fine obbligatoria");
     }
 
-    if (formData.start_at && formData.end_at) {
+    if (formData.start_at && formData.end_at && !formData.is_all_day) {
       const start = new Date(formData.start_at);
       const end = new Date(formData.end_at);
+      
       if (end <= start) {
         newErrors.push("La data di fine deve essere dopo quella di inizio");
       }
       if (start < new Date()) {
-        newErrors.push("⚠️ Attenzione: stai creando un appuntamento nel passato");
+        newWarnings.push("⚠️ Attenzione: stai creando un appuntamento nel passato");
+      }
+
+      // Check conflicts
+      const conflict = hasConflict(
+        start,
+        end,
+        existingEvents.filter(e => !event || e.id !== event.id),
+        outOfOfficeBlocks
+      );
+
+      if (conflict.hasConflict && !formData.allow_exception) {
+        newErrors.push(conflict.reason || "Conflitto con eventi esistenti");
+      }
+
+      // Check if within availability
+      if (availabilityWindows.length > 0 && !formData.allow_exception) {
+        const withinAvailability = isWithinAvailability(start, end, availabilityWindows);
+        if (!withinAvailability) {
+          newWarnings.push("⚠️ L'orario è fuori dalla disponibilità configurata");
+        }
+      }
+
+      // Try to snap if enabled
+      if (formData.align_to_slot && bookingSettings && !isEdit) {
+        const snapResult = snapToSlot({
+          requestedStart: start,
+          requestedEnd: end,
+          availabilityWindows,
+          existingEvents: existingEvents.filter(e => !event || e.id !== event.id),
+          outOfOfficeBlocks,
+          slotDurationMinutes: bookingSettings.slot_duration_minutes,
+          bufferBetweenMinutes: bookingSettings.buffer_between_minutes || 0,
+          minAdvanceNoticeHours: bookingSettings.min_advance_notice_hours,
+        });
+
+        if (snapResult.snapped && snapResult.slot) {
+          setSnapInfo(`✓ Allineato allo slot ${format(parseISO(snapResult.slot.start), "HH:mm")} - ${format(parseISO(snapResult.slot.end), "HH:mm")}`);
+        } else if (snapResult.alternatives.length > 0) {
+          const altText = snapResult.alternatives
+            .slice(0, 2)
+            .map(s => format(parseISO(s.start), "HH:mm"))
+            .join(", ");
+          newWarnings.push(`⚠️ Slot non disponibile. Alternative: ${altText}`);
+        }
       }
     }
 
     setErrors(newErrors);
-    return newErrors.length === 0 || newErrors.some(e => e.includes("⚠️"));
+    setWarnings(newWarnings);
+    return newErrors.length === 0;
   };
 
   const handleSubmit = async () => {
     if (!validate()) return;
 
+    let finalStartAt = new Date(formData.start_at);
+    let finalEndAt = new Date(formData.end_at);
+
+    // Snap to slot if enabled and not editing
+    if (formData.align_to_slot && bookingSettings && !isEdit && !formData.is_all_day) {
+      const snapResult = snapToSlot({
+        requestedStart: finalStartAt,
+        requestedEnd: finalEndAt,
+        availabilityWindows,
+        existingEvents: existingEvents.filter(e => !event || e.id !== event.id),
+        outOfOfficeBlocks,
+        slotDurationMinutes: bookingSettings.slot_duration_minutes,
+        bufferBetweenMinutes: bookingSettings.buffer_between_minutes || 0,
+        minAdvanceNoticeHours: bookingSettings.min_advance_notice_hours,
+      });
+
+      if (snapResult.snapped && snapResult.slot) {
+        finalStartAt = parseISO(snapResult.slot.start);
+        finalEndAt = parseISO(snapResult.slot.end);
+      }
+    }
+
+    if (formData.is_all_day) {
+      finalStartAt.setHours(0, 0, 0, 0);
+      finalEndAt.setHours(23, 59, 59, 999);
+    }
+
     const data = {
       title: formData.title,
       client_id: formData.client_id,
       location: formData.location || undefined,
-      start_at: new Date(formData.start_at).toISOString(),
-      end_at: new Date(formData.end_at).toISOString(),
+      start_at: finalStartAt.toISOString(),
+      end_at: finalEndAt.toISOString(),
       notes: formData.notes || undefined,
       is_all_day: formData.is_all_day,
       reminder_offset_minutes: formData.reminder_offset_minutes || undefined,
+      aligned_to_slot: formData.align_to_slot && !formData.allow_exception,
+      source: 'manual' as const,
     };
 
     if (isEdit) {
@@ -219,18 +317,6 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
       await createMutation.mutateAsync(data);
     }
     onOpenChange(false);
-
-    //modificato qui
-    if (formData.is_all_day) {
-      const start = new Date(formData.start_at);
-      const end = new Date(formData.end_at);
-    
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-    
-      data.start_at = start.toISOString();
-      data.end_at = end.toISOString();
-    }
   };
 
   const handleDelete = async () => {
@@ -252,7 +338,7 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
 
         <div className="space-y-4 px-6 flex-1 overflow-y-auto pb-4">
           {errors.length > 0 && (
-            <Alert variant={errors.some(e => !e.includes("⚠️")) ? "destructive" : "default"}>
+            <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 <ul className="list-disc pl-4 space-y-1">
@@ -260,6 +346,28 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
                     <li key={i}>{error}</li>
                   ))}
                 </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {warnings.length > 0 && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <ul className="list-disc pl-4 space-y-1">
+                  {warnings.map((warning, i) => (
+                    <li key={i}>{warning}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {snapInfo && (
+            <Alert className="bg-green-50 border-green-200">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                {snapInfo}
               </AlertDescription>
             </Alert>
           )}
@@ -336,15 +444,53 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
             </div>
           )}
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="all-day"
-              checked={formData.is_all_day}
-              onCheckedChange={handleAllDayToggle}
-            />
-            <Label htmlFor="all-day" className="cursor-pointer">
-              Tutto il giorno
-            </Label>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="all-day"
+                checked={formData.is_all_day}
+                onCheckedChange={handleAllDayToggle}
+              />
+              <Label htmlFor="all-day" className="cursor-pointer">
+                Tutto il giorno
+              </Label>
+            </div>
+
+            {!isEdit && !formData.is_all_day && (
+              <>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="align-to-slot"
+                    checked={formData.align_to_slot}
+                    onCheckedChange={(checked) => {
+                      setFormData({ ...formData, align_to_slot: checked });
+                      if (checked) {
+                        setFormData({ ...formData, align_to_slot: checked, allow_exception: false });
+                      }
+                    }}
+                  />
+                  <Label htmlFor="align-to-slot" className="cursor-pointer">
+                    Allinea agli slot disponibili
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="allow-exception"
+                    checked={formData.allow_exception}
+                    onCheckedChange={(checked) => {
+                      setFormData({ ...formData, allow_exception: checked });
+                      if (checked) {
+                        setFormData({ ...formData, allow_exception: checked, align_to_slot: false });
+                      }
+                    }}
+                  />
+                  <Label htmlFor="allow-exception" className="cursor-pointer text-muted-foreground">
+                    Consenti eccezione (fuori disponibilità/slot)
+                  </Label>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="space-y-2">

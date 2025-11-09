@@ -644,6 +644,7 @@ export type Database = {
       }
       events: {
         Row: {
+          aligned_to_slot: boolean | null
           client_id: string
           coach_id: string
           color: string | null
@@ -658,11 +659,13 @@ export type Database = {
           recurrence_rule: string | null
           reminder_offset_minutes: number | null
           session_status: string | null
+          source: string | null
           start_at: string
           title: string
           updated_at: string
         }
         Insert: {
+          aligned_to_slot?: boolean | null
           client_id: string
           coach_id: string
           color?: string | null
@@ -677,11 +680,13 @@ export type Database = {
           recurrence_rule?: string | null
           reminder_offset_minutes?: number | null
           session_status?: string | null
+          source?: string | null
           start_at: string
           title: string
           updated_at?: string
         }
         Update: {
+          aligned_to_slot?: boolean | null
           client_id?: string
           coach_id?: string
           color?: string | null
@@ -696,6 +701,7 @@ export type Database = {
           recurrence_rule?: string | null
           reminder_offset_minutes?: number | null
           session_status?: string | null
+          source?: string | null
           start_at?: string
           title?: string
           updated_at?: string

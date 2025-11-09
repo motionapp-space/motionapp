@@ -14,6 +14,8 @@ export interface Event {
   linked_plan_id?: string;
   linked_day_id?: string;
   session_status?: "scheduled" | "done" | "canceled" | "no_show";
+  aligned_to_slot?: boolean;
+  source?: 'manual' | 'generated' | 'client';
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +38,8 @@ export interface CreateEventInput {
   linked_plan_id?: string;
   linked_day_id?: string;
   session_status?: "scheduled" | "done" | "canceled" | "no_show";
+  aligned_to_slot?: boolean;
+  source?: 'manual' | 'generated' | 'client';
 }
 
 export interface UpdateEventInput {
@@ -52,6 +56,8 @@ export interface UpdateEventInput {
   linked_plan_id?: string;
   linked_day_id?: string;
   session_status?: "scheduled" | "done" | "canceled" | "no_show";
+  aligned_to_slot?: boolean;
+  source?: 'manual' | 'generated' | 'client';
 }
 
 export interface EventsFilters {

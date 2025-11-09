@@ -8,8 +8,8 @@ interface SlotGeneratorOptions {
   bufferBetweenMinutes?: number;
   minAdvanceNoticeHours: number;
   availabilityWindows: AvailabilityWindow[];
-  outOfOfficeBlocks: OutOfOfficeBlock[];
-  existingEvents: EventWithClient[];
+  outOfOfficeBlocks: Array<{ start_at: string; end_at: string }>;
+  existingEvents: Array<{ start_at: string; end_at: string }>;
 }
 
 /**
