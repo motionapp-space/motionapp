@@ -15,6 +15,7 @@ interface BookingSettingsFormValues {
   enabled: boolean;
   min_advance_notice_hours: number;
   slot_duration_minutes: number;
+  buffer_between_minutes: number;
   cancel_policy_hours: number;
   approval_mode: "AUTO" | "MANUAL";
 }
@@ -28,6 +29,7 @@ export function BookingSettingsForm() {
       enabled: false,
       min_advance_notice_hours: 24,
       slot_duration_minutes: 60,
+      buffer_between_minutes: 0,
       cancel_policy_hours: 24,
       approval_mode: "MANUAL",
     },
@@ -39,6 +41,7 @@ export function BookingSettingsForm() {
         enabled: settings.enabled ?? false,
         min_advance_notice_hours: settings.min_advance_notice_hours,
         slot_duration_minutes: settings.slot_duration_minutes ?? 60,
+        buffer_between_minutes: settings.buffer_between_minutes ?? 0,
         cancel_policy_hours: settings.cancel_policy_hours || 24,
         approval_mode: settings.approval_mode,
       });
@@ -145,6 +148,35 @@ export function BookingSettingsForm() {
                     </Select>
                     <FormDescription>
                       Durata predefinita di ogni slot di prenotazione
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="buffer_between_minutes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Buffer tra slot</FormLabel>
+                    <Select
+                      value={field.value.toString()}
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="0">Nessuno</SelectItem>
+                        <SelectItem value="5">5 minuti</SelectItem>
+                        <SelectItem value="10">10 minuti</SelectItem>
+                        <SelectItem value="15">15 minuti</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Tempo di pausa invisibile tra slot consecutivi (non prenotabile dai clienti)
                     </FormDescription>
                   </FormItem>
                 )}

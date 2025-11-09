@@ -129,6 +129,7 @@ export type Database = {
           approval_mode: Database["public"]["Enums"]["approval_mode"]
           buffer_after_minutes: number | null
           buffer_before_minutes: number | null
+          buffer_between_minutes: number | null
           cancel_policy_hours: number | null
           coach_id: string
           created_at: string
@@ -144,6 +145,7 @@ export type Database = {
           approval_mode?: Database["public"]["Enums"]["approval_mode"]
           buffer_after_minutes?: number | null
           buffer_before_minutes?: number | null
+          buffer_between_minutes?: number | null
           cancel_policy_hours?: number | null
           coach_id: string
           created_at?: string
@@ -159,6 +161,7 @@ export type Database = {
           approval_mode?: Database["public"]["Enums"]["approval_mode"]
           buffer_after_minutes?: number | null
           buffer_before_minutes?: number | null
+          buffer_between_minutes?: number | null
           cancel_policy_hours?: number | null
           coach_id?: string
           created_at?: string

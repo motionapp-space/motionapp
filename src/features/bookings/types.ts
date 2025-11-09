@@ -42,6 +42,7 @@ export interface BookingSettings {
   approval_mode: ApprovalMode;
   buffer_before_minutes?: number;
   buffer_after_minutes?: number;
+  buffer_between_minutes?: number;
   cancel_policy_hours?: number;
   max_future_days?: number;
   timezone?: string;
@@ -56,6 +57,7 @@ export interface UpdateBookingSettingsInput {
   approval_mode?: ApprovalMode;
   buffer_before_minutes?: number;
   buffer_after_minutes?: number;
+  buffer_between_minutes?: number;
   cancel_policy_hours?: number;
   max_future_days?: number;
   timezone?: string;

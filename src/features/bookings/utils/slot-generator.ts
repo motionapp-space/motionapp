@@ -5,6 +5,7 @@ import type { EventWithClient } from "@/features/events/types";
 interface SlotGeneratorOptions {
   date: Date;
   slotDurationMinutes: number;
+  bufferBetweenMinutes?: number;
   minAdvanceNoticeHours: number;
   availabilityWindows: AvailabilityWindow[];
   outOfOfficeBlocks: OutOfOfficeBlock[];
@@ -21,6 +22,7 @@ interface SlotGeneratorOptions {
 export function generateAvailableSlots({
   date,
   slotDurationMinutes,
+  bufferBetweenMinutes = 0,
   minAdvanceNoticeHours,
   availabilityWindows,
   outOfOfficeBlocks,
@@ -45,11 +47,12 @@ export function generateAvailableSlots({
     const windowEnd = startOfDay(date);
     windowEnd.setHours(endHour, endMin, 0, 0);
 
-    // Generate slots in 5-minute increments
+    // Generate slots considering buffer between slots
+    const incrementMinutes = bufferBetweenMinutes > 0 ? 5 : 5; // Always 5min for granular positioning
     while (isBefore(currentSlotStart, windowEnd)) {
       const slotEnd = addMinutes(currentSlotStart, slotDurationMinutes);
 
-      // Check if slot end exceeds window end
+      // Check if slot end + buffer exceeds window end
       if (isAfter(slotEnd, windowEnd)) break;
 
       // Check minimum advance notice
@@ -94,8 +97,8 @@ export function generateAvailableSlots({
         end: slotEnd.toISOString(),
       });
 
-      // Move to next 5-minute increment
-      currentSlotStart = addMinutes(currentSlotStart, 5);
+      // Move to next slot start + buffer (the buffer is invisible to clients)
+      currentSlotStart = addMinutes(currentSlotStart, slotDurationMinutes + bufferBetweenMinutes);
     }
   }
 

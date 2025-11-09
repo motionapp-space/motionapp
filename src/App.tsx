@@ -16,6 +16,7 @@ import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Calendar from "./pages/Calendar";
 import BookingManagement from "./pages/BookingManagement";
+import ClientBooking from "./pages/ClientBooking";
 import LiveSession from "./pages/LiveSession";
 import Settings from "./pages/Settings";
 import SharedPlan from "./pages/SharedPlan";
@@ -91,6 +92,7 @@ const App = () => {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/share/:token" element={<SharedPlan />} />
+              <Route path="/booking/:coachId" element={<ClientBooking />} />
               <Route path="*" element={<Navigate to="/auth" replace />} />
             </Routes>
           )}
