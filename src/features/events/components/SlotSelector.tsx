@@ -1,13 +1,17 @@
-import { useState } from "react";
-import { format, addDays, subDays, startOfDay } from "date-fns";
+import { useState, useMemo } from "react";
+import { format, addDays, startOfDay } from "date-fns";
 import { it } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAvailableSlots } from "@/features/bookings/hooks/useAvailableSlots";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import type { AvailableSlot } from "@/features/bookings/types";
+import { WeeklyDateStrip } from "./WeeklyDateStrip";
+import { SlotFilters, type TimeOfDay } from "./SlotFilters";
+import { SlotGrid } from "./SlotGrid";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 interface SlotSelectorProps {
   coachId: string;
@@ -26,6 +30,9 @@ export function SlotSelector({
   onSlotSelect,
   duration 
 }: SlotSelectorProps) {
+  const [timeFilter, setTimeFilter] = useState<TimeOfDay>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  
   const dayStart = startOfDay(selectedDate);
   const dayEnd = addDays(dayStart, 1);
 
@@ -36,61 +43,111 @@ export function SlotSelector({
     enabled: !!coachId,
   });
 
-  const handlePreviousDay = () => {
-    onDateChange(subDays(selectedDate, 1));
-  };
+  // Filter slots by time of day
+  const filteredSlots = useMemo(() => {
+    if (!timeFilter) return slots;
 
-  const handleNextDay = () => {
+    return slots.filter(slot => {
+      const hour = new Date(slot.start).getHours();
+      
+      switch (timeFilter) {
+        case "morning":
+          return hour >= 6 && hour < 12;
+        case "afternoon":
+          return hour >= 12 && hour < 18;
+        case "evening":
+          return hour >= 18 && hour < 23;
+        default:
+          return true;
+      }
+    });
+  }, [slots, timeFilter]);
+
+  // Calculate slot counts for the weekly strip (simplified - could be enhanced with API)
+  const slotCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const dateKey = format(selectedDate, "yyyy-MM-dd");
+    counts[dateKey] = slots.length;
+    return counts;
+  }, [selectedDate, slots.length]);
+
+  // Find next available slot
+  const findNextAvailableSlot = () => {
+    if (filteredSlots.length > 0) {
+      onSlotSelect(filteredSlots[0]);
+      return;
+    }
+    
+    // In a real implementation, this would query the API for the next available slot
+    // For now, just move to the next day
     onDateChange(addDays(selectedDate, 1));
-  };
-
-  const isSlotSelected = (slot: AvailableSlot) => {
-    if (!selectedSlot) return false;
-    return slot.start === selectedSlot.start && slot.end === selectedSlot.end;
-  };
-
-  const formatSlotTime = (slot: AvailableSlot) => {
-    const start = new Date(slot.start);
-    const end = new Date(slot.end);
-    return `${format(start, "HH:mm")}–${format(end, "HH:mm")}`;
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handlePreviousDay}
-          className="flex items-center gap-1"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Giorno precedente
-        </Button>
-        
-        <div className="text-sm font-medium">
-          {format(selectedDate, "EEEE d MMMM yyyy", { locale: it })}
+      {/* Date Navigation */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-muted-foreground">Scegli un giorno</h3>
+          <div className="flex gap-2">
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3"
+                >
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  Vai a data
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      onDateChange(date);
+                      setCalendarOpen(false);
+                    }
+                  }}
+                  locale={it}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 px-3"
+              onClick={findNextAvailableSlot}
+            >
+              <ChevronRight className="h-4 w-4 mr-2" />
+              Prossimo disponibile
+            </Button>
+          </div>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleNextDay}
-          className="flex items-center gap-1"
-        >
-          Giorno successivo
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        <WeeklyDateStrip
+          selectedDate={selectedDate}
+          onDateSelect={onDateChange}
+          slotCounts={slotCounts}
+        />
       </div>
 
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      )}
+      {/* Filters */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-muted-foreground">Filtra per orario</h3>
+        <SlotFilters
+          selectedTimeOfDay={timeFilter}
+          onTimeOfDayChange={setTimeFilter}
+        />
+      </div>
 
+      {/* Error State */}
       {error && (
         <Alert variant="destructive">
           <AlertDescription>
@@ -99,37 +156,69 @@ export function SlotSelector({
         </Alert>
       )}
 
-      {!isLoading && !error && slots.length === 0 && (
+      {/* Empty State with Suggestions */}
+      {!isLoading && !error && filteredSlots.length === 0 && slots.length === 0 && (
         <Alert>
           <AlertDescription>
-            Nessuno slot disponibile in questa giornata. Seleziona un'altra data o crea un orario personalizzato.
+            <div className="space-y-3">
+              <p className="font-medium">
+                Nessuno slot disponibile per {format(selectedDate, "EEEE d MMMM", { locale: it })}.
+              </p>
+              <p className="text-sm">Prova questi orari disponibili:</p>
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 3].map((days) => {
+                  const nextDate = addDays(selectedDate, days);
+                  return (
+                    <Button
+                      key={days}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onDateChange(nextDate)}
+                    >
+                      {format(nextDate, "EEE d MMM", { locale: it })}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
           </AlertDescription>
         </Alert>
       )}
 
-      {!isLoading && !error && slots.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-          {slots.map((slot, index) => (
-            <Button
-              key={`${slot.start}-${index}`}
-              type="button"
-              variant={isSlotSelected(slot) ? "default" : "outline"}
-              className={cn(
-                "h-auto py-3 px-4 text-sm font-normal transition-all",
-                isSlotSelected(slot) && "ring-2 ring-primary ring-offset-2"
-              )}
-              onClick={() => onSlotSelect(slot)}
-            >
-              {formatSlotTime(slot)}
-            </Button>
-          ))}
-        </div>
+      {/* Filtered Empty State */}
+      {!isLoading && !error && filteredSlots.length === 0 && slots.length > 0 && (
+        <Alert>
+          <AlertDescription>
+            Nessuno slot trovato per il filtro selezionato. 
+            Prova a modificare i filtri o seleziona "Tutti".
+          </AlertDescription>
+        </Alert>
       )}
 
+      {/* Slot Grid */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-muted-foreground">
+          Slot disponibili ({filteredSlots.length})
+        </h3>
+        <SlotGrid
+          slots={filteredSlots}
+          selectedSlot={selectedSlot}
+          onSlotSelect={onSlotSelect}
+          isLoading={isLoading}
+        />
+      </div>
+
+      {/* Selected Slot Confirmation */}
       {selectedSlot && (
         <Alert className="bg-green-50 border-green-200">
           <AlertDescription className="text-green-700 text-sm">
-            Appuntamento creato nello slot {formatSlotTime(selectedSlot)} ({duration} min)
+            Appuntamento nello slot{" "}
+            <span className="font-semibold">
+              {format(new Date(selectedSlot.start), "HH:mm")}–
+              {format(new Date(selectedSlot.end), "HH:mm")}
+            </span>{" "}
+            ({duration} min)
           </AlertDescription>
         </Alert>
       )}
