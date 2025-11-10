@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { DatePicker } from "@/components/ui/date-picker";
-import { format, parseISO, addHours } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { format, parseISO, addMinutes, differenceInMinutes, addDays, startOfDay } from "date-fns";
 import { it } from "date-fns/locale";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useCreateEvent } from "../hooks/useCreateEvent";
@@ -19,7 +20,8 @@ import { useAvailabilityWindowsQuery } from "@/features/bookings/hooks/useAvaila
 import { useOutOfOfficeBlocksQuery } from "@/features/bookings/hooks/useOutOfOffice";
 import { useEventsQuery } from "../hooks/useEventsQuery";
 import { snapToSlot, hasConflict, isWithinAvailability } from "@/features/bookings/utils/slot-snap";
-import { AlertCircle, Trash2, CheckCircle2 } from "lucide-react";
+import { generateAvailableSlots } from "@/features/bookings/utils/slot-generator";
+import { AlertCircle, Trash2, CheckCircle2, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { EventWithClient } from "../types";
 
@@ -59,6 +61,8 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
     reminder_offset_minutes: 0,
     align_to_slot: true,
     allow_exception: false,
+    duration_minutes: 60, // default, will be overridden by settings
+    custom_duration: "",
   });
 
   const [savedTimeValues, setSavedTimeValues] = useState({ start: "", end: "" });
@@ -70,61 +74,73 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
   const endTimeDirtyRef = useRef(false);
   const endDateDirtyRef = useRef(false);
 
+  // Initialize duration from settings or event
   useEffect(() => {
-    if (event) {
-      const startFormatted = format(parseISO(event.start_at), "yyyy-MM-dd'T'HH:mm");
-      const endFormatted = format(parseISO(event.end_at), "yyyy-MM-dd'T'HH:mm");
-      setFormData({
-        title: event.title,
-        client_id: event.client_id,
-        location: event.location || "",
-        start_at: startFormatted,
-        end_at: endFormatted,
-        notes: event.notes || "",
-        is_all_day: event.is_all_day || false,
-        reminder_offset_minutes: event.reminder_offset_minutes || 0,
-        align_to_slot: event.aligned_to_slot ?? true,
-        allow_exception: false,
-      });
-      setSavedTimeValues({ start: startFormatted, end: endFormatted });
-    } else if (prefillData) {
-      const startFormatted = format(prefillData.start, "yyyy-MM-dd'T'HH:mm");
-      const endFormatted = format(prefillData.end, "yyyy-MM-dd'T'HH:mm");
-      setFormData({
-        title: "",
-        client_id: lockedClientId || prefillData.clientId || "",
-        location: "",
-        start_at: startFormatted,
-        end_at: endFormatted,
-        notes: "",
-        is_all_day: false,
-        reminder_offset_minutes: 0,
-        align_to_slot: true,
-        allow_exception: false,
-      });
-      setSavedTimeValues({ start: startFormatted, end: endFormatted });
-    } else {
-      setFormData({
-        title: "",
-        client_id: lockedClientId || "",
-        location: "",
-        start_at: "",
-        end_at: "",
-        notes: "",
-        is_all_day: false,
-        reminder_offset_minutes: 0,
-        align_to_slot: true,
-        allow_exception: false,
-      });
-      setSavedTimeValues({ start: "", end: "" });
+    if (open) {
+      const defaultDuration = bookingSettings?.slot_duration_minutes || 60;
+      
+      if (event) {
+        const startFormatted = format(parseISO(event.start_at), "yyyy-MM-dd'T'HH:mm");
+        const endFormatted = format(parseISO(event.end_at), "yyyy-MM-dd'T'HH:mm");
+        const eventDuration = differenceInMinutes(parseISO(event.end_at), parseISO(event.start_at));
+        
+        setFormData({
+          title: event.title,
+          client_id: event.client_id,
+          location: event.location || "",
+          start_at: startFormatted,
+          end_at: endFormatted,
+          notes: event.notes || "",
+          is_all_day: event.is_all_day || false,
+          reminder_offset_minutes: event.reminder_offset_minutes || 0,
+          align_to_slot: event.source === 'manual' ? false : (event.aligned_to_slot ?? true),
+          allow_exception: event.source === 'manual',
+          duration_minutes: [30, 45, 60].includes(eventDuration) ? eventDuration : 0,
+          custom_duration: [30, 45, 60].includes(eventDuration) ? "" : eventDuration.toString(),
+        });
+        setSavedTimeValues({ start: startFormatted, end: endFormatted });
+      } else if (prefillData) {
+        const startFormatted = format(prefillData.start, "yyyy-MM-dd'T'HH:mm");
+        const endFormatted = format(prefillData.end, "yyyy-MM-dd'T'HH:mm");
+        setFormData({
+          title: "",
+          client_id: lockedClientId || prefillData.clientId || "",
+          location: "",
+          start_at: startFormatted,
+          end_at: endFormatted,
+          notes: "",
+          is_all_day: false,
+          reminder_offset_minutes: 0,
+          align_to_slot: true,
+          allow_exception: false,
+          duration_minutes: defaultDuration,
+          custom_duration: "",
+        });
+        setSavedTimeValues({ start: startFormatted, end: endFormatted });
+      } else {
+        setFormData({
+          title: "",
+          client_id: lockedClientId || "",
+          location: "",
+          start_at: "",
+          end_at: "",
+          notes: "",
+          is_all_day: false,
+          reminder_offset_minutes: 0,
+          align_to_slot: true,
+          allow_exception: false,
+          duration_minutes: defaultDuration,
+          custom_duration: "",
+        });
+        setSavedTimeValues({ start: "", end: "" });
+      }
+      setErrors([]);
+      setWarnings([]);
+      setSnapInfo(null);
+      endTimeDirtyRef.current = false;
+      endDateDirtyRef.current = false;
     }
-    setErrors([]);
-    setWarnings([]);
-    setSnapInfo(null);
-    // Reset dirty flags when modal opens/changes
-    endTimeDirtyRef.current = false;
-    endDateDirtyRef.current = false;
-  }, [event, prefillData, lockedClientId, open]);
+  }, [event, prefillData, lockedClientId, open, bookingSettings]);
 
   const handleStartChange = (value: string) => {
     if (!value) return;
@@ -133,9 +149,12 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
     setSavedTimeValues((prev) => ({ ...prev, start: value }));
     
     if (!formData.is_all_day) {
-      // Auto-set end time to +1 hour if not manually overridden
-      if (!endTimeDirtyRef.current) {
-        const endDate = addHours(startDate, 1);
+      // Auto-calculate end based on duration if not manually overridden
+      if (!endTimeDirtyRef.current || formData.align_to_slot) {
+        const duration = formData.duration_minutes === 0 
+          ? parseInt(formData.custom_duration || "60") 
+          : formData.duration_minutes;
+        const endDate = addMinutes(startDate, duration);
         const endValue = format(endDate, "yyyy-MM-dd'T'HH:mm");
         setSavedTimeValues((prev) => ({ ...prev, end: endValue }));
         setFormData({ ...formData, start_at: value, end_at: endValue });
@@ -144,7 +163,6 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
       }
     } else {
       const dateOnly = format(startDate, "yyyy-MM-dd");
-      // Auto-set end date to +1 day if not manually overridden
       if (!endDateDirtyRef.current) {
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + 1);
@@ -170,22 +188,53 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
     setFormData({ ...formData, end_at: value });
   };
 
+  const handleDurationChange = (value: string) => {
+    const minutes = value === "custom" ? 0 : parseInt(value);
+    setFormData({ ...formData, duration_minutes: minutes });
+    
+    // Recalculate end time if start is set
+    if (formData.start_at && !formData.is_all_day) {
+      const duration = minutes === 0 
+        ? parseInt(formData.custom_duration || "60") 
+        : minutes;
+      const startDate = new Date(formData.start_at);
+      const endDate = addMinutes(startDate, duration);
+      const endValue = format(endDate, "yyyy-MM-dd'T'HH:mm");
+      setSavedTimeValues((prev) => ({ ...prev, end: endValue }));
+      setFormData((prev) => ({ ...prev, end_at: endValue, duration_minutes: minutes }));
+    }
+  };
+
+  const handleCustomDurationChange = (value: string) => {
+    const minutes = parseInt(value) || 0;
+    setFormData({ ...formData, custom_duration: value });
+    
+    // Recalculate end time if start is set and it's a valid number
+    if (formData.start_at && !formData.is_all_day && minutes > 0) {
+      const startDate = new Date(formData.start_at);
+      const endDate = addMinutes(startDate, minutes);
+      const endValue = format(endDate, "yyyy-MM-dd'T'HH:mm");
+      setSavedTimeValues((prev) => ({ ...prev, end: endValue }));
+      setFormData((prev) => ({ ...prev, end_at: endValue }));
+    }
+  };
+
   const handleAllDayToggle = (checked: boolean) => {
-    // Reset dirty flags when switching modes
     endTimeDirtyRef.current = false;
     endDateDirtyRef.current = false;
     
     if (checked) {
-      // Switch to all-day: keep date only, set end to +1 day
       const dateOnly = formData.start_at ? formData.start_at.split('T')[0] : format(new Date(), "yyyy-MM-dd");
       const endDate = new Date(dateOnly);
       endDate.setDate(endDate.getDate() + 1);
       const endDateOnly = format(endDate, "yyyy-MM-dd");
       setFormData({ ...formData, is_all_day: true, start_at: dateOnly, end_at: endDateOnly });
     } else {
-      // Switch back to timed: restore saved times or use defaults with +1h
       const start = savedTimeValues.start || format(new Date(), "yyyy-MM-dd'T'HH:mm");
-      const end = savedTimeValues.end || format(addHours(new Date(start), 1), "yyyy-MM-dd'T'HH:mm");
+      const duration = formData.duration_minutes === 0 
+        ? parseInt(formData.custom_duration || "60") 
+        : formData.duration_minutes;
+      const end = savedTimeValues.end || format(addMinutes(new Date(start), duration), "yyyy-MM-dd'T'HH:mm");
       setFormData({ ...formData, is_all_day: false, start_at: start, end_at: end });
     }
   };
@@ -193,6 +242,7 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
   const validate = (): boolean => {
     const newErrors: string[] = [];
     const newWarnings: string[] = [];
+    let suggestedSlotInfo: string | null = null;
 
     if (!formData.title.trim()) {
       newErrors.push("Il titolo è obbligatorio");
@@ -205,6 +255,18 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
     }
     if (!formData.end_at) {
       newErrors.push("Data e ora di fine obbligatoria");
+    }
+
+    // Validate duration
+    const duration = formData.duration_minutes === 0 
+      ? parseInt(formData.custom_duration || "0") 
+      : formData.duration_minutes;
+    
+    if (duration <= 0 && !formData.is_all_day) {
+      newErrors.push("La durata deve essere maggiore di 0");
+    }
+    if (duration > 720 && !formData.is_all_day) {
+      newErrors.push("La durata massima è 12 ore (720 minuti)");
     }
 
     if (formData.start_at && formData.end_at && !formData.is_all_day) {
@@ -239,7 +301,7 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
       }
 
       // Try to snap if enabled
-      if (formData.align_to_slot && bookingSettings && !isEdit) {
+      if (formData.align_to_slot && bookingSettings) {
         const snapResult = snapToSlot({
           requestedStart: start,
           requestedEnd: end,
@@ -252,19 +314,51 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
         });
 
         if (snapResult.snapped && snapResult.slot) {
-          setSnapInfo(`✓ Allineato allo slot ${format(parseISO(snapResult.slot.start), "HH:mm")} - ${format(parseISO(snapResult.slot.end), "HH:mm")}`);
-        } else if (snapResult.alternatives.length > 0) {
-          const altText = snapResult.alternatives
-            .slice(0, 2)
-            .map(s => format(parseISO(s.start), "HH:mm"))
-            .join(", ");
-          newWarnings.push(`⚠️ Slot non disponibile. Alternative: ${altText}`);
+          const slotStart = format(parseISO(snapResult.slot.start), "HH:mm");
+          const slotEnd = format(parseISO(snapResult.slot.end), "HH:mm");
+          const slotDuration = differenceInMinutes(parseISO(snapResult.slot.end), parseISO(snapResult.slot.start));
+          suggestedSlotInfo = `Questo appuntamento verrà creato nello slot ${slotStart}–${slotEnd} (${slotDuration} min)`;
+        } else {
+          // No exact snap found, find next available slots
+          if (bookingSettings) {
+            const nextSlots: string[] = [];
+            let searchDate = startOfDay(start);
+            const maxSearchDays = 7;
+            
+            for (let i = 0; i < maxSearchDays && nextSlots.length === 0; i++) {
+              const daySlots = generateAvailableSlots({
+                date: searchDate,
+                slotDurationMinutes: bookingSettings.slot_duration_minutes,
+                bufferBetweenMinutes: bookingSettings.buffer_between_minutes || 0,
+                minAdvanceNoticeHours: bookingSettings.min_advance_notice_hours,
+                availabilityWindows,
+                outOfOfficeBlocks,
+                existingEvents: existingEvents.filter(e => !event || e.id !== event.id),
+              });
+              
+              if (daySlots.length > 0) {
+                const firstSlot = daySlots[0];
+                const slotDate = format(parseISO(firstSlot.start), "dd/MM");
+                const slotTime = format(parseISO(firstSlot.start), "HH:mm");
+                nextSlots.push(`${slotDate} alle ${slotTime}`);
+              }
+              
+              searchDate = addDays(searchDate, 1);
+            }
+            
+            if (nextSlots.length > 0) {
+              newWarnings.push(`⚠️ Nessuno slot disponibile per questo orario. Primo slot disponibile: ${nextSlots[0]}`);
+            } else {
+              newWarnings.push(`⚠️ Nessuno slot disponibile nei prossimi ${maxSearchDays} giorni`);
+            }
+          }
         }
       }
     }
 
     setErrors(newErrors);
     setWarnings(newWarnings);
+    setSnapInfo(suggestedSlotInfo);
     return newErrors.length === 0;
   };
 
@@ -274,8 +368,8 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
     let finalStartAt = new Date(formData.start_at);
     let finalEndAt = new Date(formData.end_at);
 
-    // Snap to slot if enabled and not editing
-    if (formData.align_to_slot && bookingSettings && !isEdit && !formData.is_all_day) {
+    // Snap to slot if enabled and not all-day
+    if (formData.align_to_slot && bookingSettings && !formData.is_all_day) {
       const snapResult = snapToSlot({
         requestedStart: finalStartAt,
         requestedEnd: finalEndAt,
@@ -308,7 +402,7 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
       is_all_day: formData.is_all_day,
       reminder_offset_minutes: formData.reminder_offset_minutes || undefined,
       aligned_to_slot: formData.align_to_slot && !formData.allow_exception,
-      source: 'manual' as const,
+      source: formData.allow_exception ? 'manual' as const : 'manual' as const,
     };
 
     if (isEdit) {
@@ -372,79 +466,171 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
             </Alert>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Titolo *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="es. Consulenza allenamento"
-            />
+          {/* Sezione Dati principali */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground">Dati principali</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="title">Titolo *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="es. Consulenza allenamento"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="client">Cliente *</Label>
+              <Select
+                value={formData.client_id}
+                onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+                disabled={!!lockedClientId}
+              >
+                <SelectTrigger id="client">
+                  <SelectValue placeholder="Seleziona cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientsData?.items.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.first_name} {client.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="client">Cliente *</Label>
-            <Select
-              value={formData.client_id}
-              onValueChange={(value) => setFormData({ ...formData, client_id: value })}
-              disabled={!!lockedClientId}
-            >
-              <SelectTrigger id="client">
-                <SelectValue placeholder="Seleziona cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                {clientsData?.items.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.first_name} {client.last_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Sezione Dettagli appuntamento */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="text-sm font-semibold text-muted-foreground">Dettagli appuntamento</h3>
+            
+            {!formData.is_all_day ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="start">Inizio *</Label>
+                  <DateTimePicker
+                    value={formData.start_at}
+                    onChange={(value) => handleStartChange(value)}
+                    placeholder="Seleziona data e ora"
+                  />
+                </div>
 
-          {!formData.is_all_day ? (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start">Inizio *</Label>
-                <DateTimePicker
-                  value={formData.start_at}
-                  onChange={(value) => handleStartChange(value)}
-                  placeholder="Seleziona data e ora"
-                />
-              </div>
+                <div className="space-y-2">
+                  <TooltipProvider>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="duration">Durata *</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Valore predefinito dalle tue impostazioni. Modificalo solo se necessario.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TooltipProvider>
+                  <Select
+                    value={formData.duration_minutes === 0 ? "custom" : formData.duration_minutes.toString()}
+                    onValueChange={handleDurationChange}
+                  >
+                    <SelectTrigger id="duration">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30">30 minuti</SelectItem>
+                      <SelectItem value="45">45 minuti</SelectItem>
+                      <SelectItem value="60">60 minuti</SelectItem>
+                      <SelectItem value="custom">Personalizzato</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {formData.duration_minutes === 0 && (
+                    <Input
+                      type="number"
+                      min="1"
+                      max="720"
+                      placeholder="Durata in minuti"
+                      value={formData.custom_duration}
+                      onChange={(e) => handleCustomDurationChange(e.target.value)}
+                      className="mt-2"
+                    />
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Impostazione predefinita dalle tue preferenze di prenotazione.
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="end">Fine *</Label>
-                <DateTimePicker
-                  value={formData.end_at}
-                  onChange={(value) => handleEndChange(value)}
-                  placeholder="Seleziona data e ora"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start-date">Data Inizio *</Label>
-                <DatePicker
-                  value={formData.start_at}
-                  onChange={(value) => handleStartChange(value)}
-                  placeholder="Seleziona data"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="end">Fine *</Label>
+                  <DateTimePicker
+                    value={formData.end_at}
+                    onChange={(value) => handleEndChange(value)}
+                    placeholder="Seleziona data e ora"
+                    disabled={formData.align_to_slot && !formData.allow_exception}
+                  />
+                  {formData.align_to_slot && !formData.allow_exception && (
+                    <p className="text-xs text-muted-foreground">
+                      Calcolato automaticamente in base alla durata
+                    </p>
+                  )}
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="end-date">Data Fine *</Label>
-                <DatePicker
-                  value={formData.end_at}
-                  onChange={(value) => handleEndChange(value)}
-                  placeholder="Seleziona data"
-                />
-              </div>
-            </div>
-          )}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="align-to-slot"
+                      checked={formData.align_to_slot}
+                      onCheckedChange={(checked) => {
+                        setFormData({ ...formData, align_to_slot: checked });
+                        if (checked) {
+                          setFormData({ ...formData, align_to_slot: checked, allow_exception: false });
+                        }
+                      }}
+                    />
+                    <Label htmlFor="align-to-slot" className="cursor-pointer">
+                      Allinea agli slot disponibili
+                    </Label>
+                  </div>
 
-          <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="allow-exception"
+                      checked={formData.allow_exception}
+                      onCheckedChange={(checked) => {
+                        setFormData({ ...formData, allow_exception: checked });
+                        if (checked) {
+                          setFormData({ ...formData, allow_exception: checked, align_to_slot: false });
+                        }
+                      }}
+                    />
+                    <Label htmlFor="allow-exception" className="cursor-pointer text-muted-foreground">
+                      Consenti eccezione (fuori disponibilità/slot)
+                    </Label>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start-date">Data Inizio *</Label>
+                  <DatePicker
+                    value={formData.start_at}
+                    onChange={(value) => handleStartChange(value)}
+                    placeholder="Seleziona data"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="end-date">Data Fine *</Label>
+                  <DatePicker
+                    value={formData.end_at}
+                    onChange={(value) => handleEndChange(value)}
+                    placeholder="Seleziona data"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center space-x-2">
               <Switch
                 id="all-day"
@@ -455,82 +641,50 @@ export function EventModal({ open, onOpenChange, event, prefillData, lockedClien
                 Tutto il giorno
               </Label>
             </div>
-
-            {!isEdit && !formData.is_all_day && (
-              <>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="align-to-slot"
-                    checked={formData.align_to_slot}
-                    onCheckedChange={(checked) => {
-                      setFormData({ ...formData, align_to_slot: checked });
-                      if (checked) {
-                        setFormData({ ...formData, align_to_slot: checked, allow_exception: false });
-                      }
-                    }}
-                  />
-                  <Label htmlFor="align-to-slot" className="cursor-pointer">
-                    Allinea agli slot disponibili
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="allow-exception"
-                    checked={formData.allow_exception}
-                    onCheckedChange={(checked) => {
-                      setFormData({ ...formData, allow_exception: checked });
-                      if (checked) {
-                        setFormData({ ...formData, allow_exception: checked, align_to_slot: false });
-                      }
-                    }}
-                  />
-                  <Label htmlFor="allow-exception" className="cursor-pointer text-muted-foreground">
-                    Consenti eccezione (fuori disponibilità/slot)
-                  </Label>
-                </div>
-              </>
-            )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="location">Luogo</Label>
-            <Input
-              id="location"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="es. Palestra, Via Roma 10"
-            />
-          </div>
+          {/* Sezione Luogo & promemoria */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="text-sm font-semibold text-muted-foreground">Luogo & promemoria</h3>
+            <div className="space-y-2">
+              <Label htmlFor="location">Luogo</Label>
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                placeholder="es. Palestra, Via Roma 10"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="reminder">Promemoria</Label>
-            <Select
-              value={formData.reminder_offset_minutes.toString()}
-              onValueChange={(value) => setFormData({ ...formData, reminder_offset_minutes: parseInt(value) })}
-            >
-              <SelectTrigger id="reminder">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Nessuno</SelectItem>
-                <SelectItem value="15">15 minuti prima</SelectItem>
-                <SelectItem value="30">30 minuti prima</SelectItem>
-                <SelectItem value="60">1 ora prima</SelectItem>
-                <SelectItem value="1440">1 giorno prima</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="reminder">Promemoria</Label>
+              <Select
+                value={formData.reminder_offset_minutes.toString()}
+                onValueChange={(value) => setFormData({ ...formData, reminder_offset_minutes: parseInt(value) })}
+              >
+                <SelectTrigger id="reminder">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Nessuno</SelectItem>
+                  <SelectItem value="15">15 minuti prima</SelectItem>
+                  <SelectItem value="30">30 minuti prima</SelectItem>
+                  <SelectItem value="60">1 ora prima</SelectItem>
+                  <SelectItem value="1440">1 giorno prima</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Note</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Note aggiuntive..."
-              rows={3}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="notes">Note</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Note aggiuntive..."
+                rows={3}
+              />
+            </div>
           </div>
         </div>
 
