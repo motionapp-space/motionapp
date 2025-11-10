@@ -527,14 +527,14 @@ export function BookingModalSimple({
           <div className="space-y-2">
             <Label htmlFor="reminder">Promemoria</Label>
             <Select
-              value={reminderMinutes?.toString() || ""}
-              onValueChange={(value) => setReminderMinutes(value ? parseInt(value) : undefined)}
+              value={reminderMinutes?.toString() || "none"}
+              onValueChange={(value) => setReminderMinutes(value === "none" ? undefined : parseInt(value))}
             >
               <SelectTrigger id="reminder">
                 <SelectValue placeholder="Nessuno" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nessuno</SelectItem>
+                <SelectItem value="none">Nessuno</SelectItem>
                 <SelectItem value="15">15 minuti prima</SelectItem>
                 <SelectItem value="30">30 minuti prima</SelectItem>
                 <SelectItem value="60">1 ora prima</SelectItem>
