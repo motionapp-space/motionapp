@@ -1,8 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Client, ClientWithTags, CreateClientInput, UpdateClientInput, ClientsFilters, ClientsPageResult } from "../types";
+import type { Client, ClientWithTags, ClientWithDetails, CreateClientInput, UpdateClientInput, ClientsFilters, ClientsPageResult } from "../types";
 
 export async function listClients(filters: ClientsFilters): Promise<ClientsPageResult> {
-  const { q = "", status = ["ATTIVO", "POTENZIALE", "INATTIVO"], tag = "", sort = "updated_desc", page = 1, limit = 25 } = filters;
+  const { 
+    q = "", 
+    status = ["ATTIVO", "POTENZIALE", "INATTIVO"], 
+    tag = "", 
+    sort = "updated_desc", 
+    page = 1, 
+    limit = 25,
+    withActivePlan,
+    withActivePackage,
+    lastAccessDays
+  } = filters;
   
   let query = supabase
     .from("clients")
@@ -10,7 +20,10 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       *,
       tags:client_tag_on_client(
         tag:client_tags(*)
-      )
+      ),
+      current_plan:client_plans!active_plan_id(name),
+      packages:package(package_id, consumed_sessions, total_sessions),
+      sessions:training_sessions(id, started_at)
     `, { count: "exact" });
 
   // Status filter (default excludes ARCHIVIATO)
@@ -21,6 +34,27 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
   // Search filter
   if (q) {
     query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`);
+  }
+
+  // Active plan filter
+  if (withActivePlan !== undefined) {
+    if (withActivePlan) {
+      query = query.not("active_plan_id", "is", null);
+    } else {
+      query = query.is("active_plan_id", null);
+    }
+  }
+
+  // Active package filter
+  if (withActivePackage !== undefined) {
+    // This is a client-side filter applied below since we can't do this easily in Postgres
+  }
+
+  // Last access filter
+  if (lastAccessDays !== undefined && lastAccessDays > 0) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - lastAccessDays);
+    query = query.gte("last_access_at", cutoffDate.toISOString());
   }
 
   // Sorting
@@ -55,15 +89,39 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
 
   if (error) throw error;
 
-  // Transform tags structure
-  const items: ClientWithTags[] = (data || []).map((client: any) => ({
-    ...client,
-    tags: client.tags?.map((t: any) => t.tag).filter(Boolean) || [],
-  }));
+  // Transform data structure
+  let items: ClientWithDetails[] = (data || []).map((client: any) => {
+    const activePackage = client.packages?.find((p: any) => p.consumed_sessions < p.total_sessions);
+    const lastSession = client.sessions?.sort((a: any, b: any) => 
+      new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+    )[0];
+
+    return {
+      ...client,
+      tags: client.tags?.map((t: any) => t.tag).filter(Boolean) || [],
+      current_plan_name: client.current_plan?.name,
+      package_sessions_used: activePackage?.consumed_sessions,
+      package_sessions_total: activePackage?.total_sessions,
+      last_session_date: lastSession?.started_at,
+      packages: undefined,
+      sessions: undefined,
+      current_plan: undefined,
+    };
+  });
+
+  // Apply client-side package filter
+  if (withActivePackage !== undefined) {
+    items = items.filter(client => {
+      const hasActivePackage = client.package_sessions_total !== undefined && 
+        client.package_sessions_used !== undefined &&
+        client.package_sessions_used < client.package_sessions_total;
+      return withActivePackage ? hasActivePackage : !hasActivePackage;
+    });
+  }
 
   return {
     items,
-    total: count || 0,
+    total: withActivePackage !== undefined ? items.length : (count || 0),
     page,
     limit,
   };

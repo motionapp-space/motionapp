@@ -69,7 +69,8 @@ const App = () => {
               <AppSidebar />
               <main className="flex-1 h-full overflow-y-auto bg-background">
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/" element={<Clients />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/templates" element={<Plans />} />
                   <Route path="/templates/:id" element={<TemplateDetail />} />
                   <Route path="/templates/:id/edit" element={<TemplateEditor />} />

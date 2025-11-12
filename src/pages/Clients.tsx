@@ -5,9 +5,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, UserPlus } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Plus, Search, UserPlus, Filter } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toSentenceCase } from "@/lib/text";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
@@ -164,38 +165,76 @@ const Clients = () => {
           </div>
         }
         toolbarRight={
-          <>
-            <Select
-              value={encodeStatus(filters.status || ["ATTIVO", "POTENZIALE", "INATTIVO"])}
-              onValueChange={(value) => {
-                const decoded = decodeStatus(value);
-                setFilters({ status: decoded });
-              }}
-            >
-              <SelectTrigger className="w-full md:w-[200px] h-11">
-                <span className="truncate">{currentStatusLabel}</span>
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
-              <SelectTrigger className="w-full md:w-[200px] h-11">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sortOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
+          <div className="flex flex-col md:flex-row gap-3 w-full">
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="withActivePlan"
+                  checked={filters.withActivePlan || false}
+                  onCheckedChange={(checked) => setFilters({ withActivePlan: checked === true ? true : undefined })}
+                />
+                <Label htmlFor="withActivePlan" className="text-sm cursor-pointer">
+                  Con piano attivo
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="withActivePackage"
+                  checked={filters.withActivePackage || false}
+                  onCheckedChange={(checked) => setFilters({ withActivePackage: checked === true ? true : undefined })}
+                />
+                <Label htmlFor="withActivePackage" className="text-sm cursor-pointer">
+                  Con pacchetto attivo
+                </Label>
+              </div>
+              <Select
+                value={filters.lastAccessDays?.toString() || "all"}
+                onValueChange={(value) => setFilters({ lastAccessDays: value === "all" ? undefined : parseInt(value) })}
+              >
+                <SelectTrigger className="w-[160px] h-11">
+                  <SelectValue placeholder="Ultimo accesso" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti</SelectItem>
+                  <SelectItem value="7">Ultimi 7 giorni</SelectItem>
+                  <SelectItem value="30">Ultimi 30 giorni</SelectItem>
+                  <SelectItem value="90">Ultimi 90 giorni</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Select
+                value={encodeStatus(filters.status || ["ATTIVO", "POTENZIALE", "INATTIVO"])}
+                onValueChange={(value) => {
+                  const decoded = decodeStatus(value);
+                  setFilters({ status: decoded });
+                }}
+              >
+                <SelectTrigger className="w-full md:w-[200px] h-11">
+                  <span className="truncate">{currentStatusLabel}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
+                <SelectTrigger className="w-full md:w-[200px] h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         }
       />
 

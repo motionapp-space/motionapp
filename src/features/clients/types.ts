@@ -35,6 +35,13 @@ export interface ClientWithTags extends Client {
   tags?: ClientTag[];
 }
 
+export interface ClientWithDetails extends ClientWithTags {
+  current_plan_name?: string;
+  package_sessions_used?: number;
+  package_sessions_total?: number;
+  last_session_date?: string;
+}
+
 export interface CreateClientInput {
   first_name: string;
   last_name: string;
@@ -61,10 +68,13 @@ export interface ClientsFilters {
   sort?: "updated_desc" | "updated_asc" | "name_asc" | "name_desc" | "created_desc" | "created_asc";
   page?: number;
   limit?: number;
+  withActivePlan?: boolean;
+  withActivePackage?: boolean;
+  lastAccessDays?: number;
 }
 
 export interface ClientsPageResult {
-  items: ClientWithTags[];
+  items: ClientWithDetails[];
   total: number;
   page: number;
   limit: number;

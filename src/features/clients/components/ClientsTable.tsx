@@ -4,13 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 import { toSentenceCase } from "@/lib/text";
-import { useNextAppointment } from "@/features/events/hooks/useClientEvents";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
-import type { ClientWithTags, ClientStatus } from "../types";
+import type { ClientWithDetails, ClientStatus } from "../types";
 
 interface ClientsTableProps {
-  rows: ClientWithTags[];
+  rows: ClientWithDetails[];
   highlightId?: string;
   onArchive: (id: string, name: string) => void;
   onUnarchive: (id: string, name: string) => void;
@@ -37,35 +36,34 @@ function ClientRow({
   onArchive,
   onUnarchive,
 }: {
-  client: ClientWithTags;
+  client: ClientWithDetails;
   highlightId?: string;
   onArchive: (id: string, name: string) => void;
   onUnarchive: (id: string, name: string) => void;
 }) {
   const navigate = useNavigate();
-  const { data: nextAppt } = useNextAppointment(client.id);
 
   return (
     <TableRow className={client.id === highlightId ? "ring-2 ring-primary/60 bg-primary/5" : ""}>
       <TableCell className="font-medium">
         {client.first_name} {client.last_name}
       </TableCell>
-      <TableCell>{client.email || "-"}</TableCell>
-      <TableCell>{nextAppt ? format(parseISO(nextAppt.start_at), "dd/MM/yy HH:mm", { locale: it }) : "-"}</TableCell>
       <TableCell>
         <Badge className={getStatusColor(client.status)} variant="secondary">
           {client.status}
         </Badge>
       </TableCell>
+      <TableCell>{client.current_plan_name || "—"}</TableCell>
       <TableCell>
-        <div className="flex gap-1 flex-wrap">
-          {client.tags?.slice(0, 2).map((tag) => (
-            <Badge key={tag.id} variant="outline" style={{ borderColor: tag.color }}>
-              {tag.label}
-            </Badge>
-          ))}
-          {(client.tags?.length || 0) > 2 && <Badge variant="outline">+{(client.tags?.length || 0) - 2}</Badge>}
-        </div>
+        {client.package_sessions_total !== undefined && client.package_sessions_used !== undefined
+          ? `${client.package_sessions_used}/${client.package_sessions_total}`
+          : "—"}
+      </TableCell>
+      <TableCell>
+        {client.last_session_date ? format(parseISO(client.last_session_date), "dd/MM/yy", { locale: it }) : "—"}
+      </TableCell>
+      <TableCell>
+        {client.last_access_at ? format(parseISO(client.last_access_at), "dd/MM/yy", { locale: it }) : "—"}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
@@ -105,11 +103,12 @@ export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: Clie
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{toSentenceCase("Nome")}</TableHead>
-            <TableHead>{toSentenceCase("Email")}</TableHead>
-            <TableHead>{toSentenceCase("Prossimo")}</TableHead>
+            <TableHead>{toSentenceCase("Cliente")}</TableHead>
             <TableHead>{toSentenceCase("Stato")}</TableHead>
-            <TableHead>{toSentenceCase("Tags")}</TableHead>
+            <TableHead>{toSentenceCase("Piano corrente")}</TableHead>
+            <TableHead>{toSentenceCase("Pacchetto")}</TableHead>
+            <TableHead>{toSentenceCase("Ultima sessione")}</TableHead>
+            <TableHead>{toSentenceCase("Ultimo accesso")}</TableHead>
             <TableHead className="text-right">{toSentenceCase("Azioni")}</TableHead>
           </TableRow>
         </TableHeader>

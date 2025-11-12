@@ -27,6 +27,9 @@ export function filtersToSearchParams(filters: ClientsFilters): URLSearchParams 
   if (filters.sort) sp.set("sort", filters.sort);
   if (filters.page) sp.set("page", String(filters.page));
   if (filters.limit) sp.set("limit", String(filters.limit));
+  if (filters.withActivePlan !== undefined) sp.set("withActivePlan", String(filters.withActivePlan));
+  if (filters.withActivePackage !== undefined) sp.set("withActivePackage", String(filters.withActivePackage));
+  if (filters.lastAccessDays !== undefined) sp.set("lastAccessDays", String(filters.lastAccessDays));
   
   return sp;
 }
