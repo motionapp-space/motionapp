@@ -6,6 +6,10 @@ export function getDefaultFilters(sp: URLSearchParams): ClientsFilters {
     ? statusParam as ClientStatus[]
     : ["ATTIVO", "POTENZIALE", "INATTIVO"];
 
+  const withActivePlan = sp.get("withActivePlan");
+  const withActivePackage = sp.get("withActivePackage");
+  const lastAccessDays = sp.get("lastAccessDays");
+
   return {
     q: sp.get("q") || "",
     status: defaultStatus,
@@ -13,6 +17,9 @@ export function getDefaultFilters(sp: URLSearchParams): ClientsFilters {
     sort: (sp.get("sort") as any) || "updated_desc",
     page: Number(sp.get("page")) || 1,
     limit: Number(sp.get("limit")) || 25,
+    withActivePlan: withActivePlan ? withActivePlan === "true" : undefined,
+    withActivePackage: withActivePackage ? withActivePackage === "true" : undefined,
+    lastAccessDays: lastAccessDays ? Number(lastAccessDays) : undefined,
   };
 }
 

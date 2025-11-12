@@ -47,6 +47,7 @@ export interface CreateClientInput {
   last_name: string;
   email?: string;
   phone?: string;
+  fiscal_code?: string;
   notes?: string;
 }
 
