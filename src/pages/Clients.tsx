@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import PageHeader from "@/components/PageHeader";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -149,58 +150,57 @@ const Clients = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{toSentenceCase("Clienti")}</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {toSentenceCase("Gestisci tutti i tuoi clienti in un unico posto")}
-              </p>
-            </div>
-            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2" data-testid="clients-new-btn">
-              <Plus className="h-4 w-4" />
-              {toSentenceCase("Nuovo cliente")}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters Section */}
-      <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 space-y-4">
-          {/* Search Bar */}
-          <div className="relative">
+    <div className="min-h-screen flex flex-col bg-background w-full">
+      <PageHeader
+        title="Clienti"
+        subtitle="Gestisci tutti i tuoi clienti in un unico posto"
+        primaryCta={{
+          label: "Nuovo cliente",
+          onClick: () => setCreateDialogOpen(true),
+          icon: <Plus className="h-4 w-4" />,
+          testId: "clients-new-btn",
+        }}
+        toolbarLeft={
+          <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={toSentenceCase("Cerca clienti per nome o email...")}
+              placeholder="Cerca clienti per nome o email..."
               value={filters.q}
               onChange={(e) => setFilters({ q: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setFilters({ q: "" });
+              }}
               className="pl-10 pr-10 h-11"
             />
             {filters.q && (
               <button
                 onClick={() => setFilters({ q: "" })}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Clear search"
               >
                 <X className="h-4 w-4" />
               </button>
             )}
           </div>
+        }
+      />
+
+      {/* Filters Section */}
+      <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-6 max-w-7xl py-4 space-y-4">
 
           {/* Quick Filters */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-muted-foreground mr-2">Filtri rapidi:</span>
-            
             <Toggle
               pressed={filters.withActivePlan || false}
               onPressedChange={(pressed) => setFilters({ withActivePlan: pressed ? true : undefined })}
               variant="outline"
+              aria-pressed={filters.withActivePlan || false}
               className={cn(
-                "rounded-full h-9 px-4 text-sm transition-all",
-                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary"
+                "rounded-full h-9 px-4 text-sm font-medium transition-all border",
+                "hover:bg-accent/40",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
               )}
             >
               Piano attivo
@@ -210,9 +210,12 @@ const Clients = () => {
               pressed={filters.withActivePackage || false}
               onPressedChange={(pressed) => setFilters({ withActivePackage: pressed ? true : undefined })}
               variant="outline"
+              aria-pressed={filters.withActivePackage || false}
               className={cn(
-                "rounded-full h-9 px-4 text-sm transition-all",
-                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary"
+                "rounded-full h-9 px-4 text-sm font-medium transition-all border",
+                "hover:bg-accent/40",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
               )}
             >
               Pacchetto attivo
@@ -224,9 +227,12 @@ const Clients = () => {
                 setFilters({ status: pressed ? ["ATTIVO"] : ["ATTIVO", "POTENZIALE", "INATTIVO"] })
               }
               variant="outline"
+              aria-pressed={filters.status?.includes("ATTIVO") && filters.status.length === 1}
               className={cn(
-                "rounded-full h-9 px-4 text-sm transition-all",
-                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary"
+                "rounded-full h-9 px-4 text-sm font-medium transition-all border",
+                "hover:bg-accent/40",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
               )}
             >
               Attivi
@@ -238,9 +244,12 @@ const Clients = () => {
                 setFilters({ status: pressed ? ["POTENZIALE"] : ["ATTIVO", "POTENZIALE", "INATTIVO"] })
               }
               variant="outline"
+              aria-pressed={filters.status?.includes("POTENZIALE") && filters.status.length === 1}
               className={cn(
-                "rounded-full h-9 px-4 text-sm transition-all",
-                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary"
+                "rounded-full h-9 px-4 text-sm font-medium transition-all border",
+                "hover:bg-accent/40",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
               )}
             >
               Potenziali
@@ -252,16 +261,19 @@ const Clients = () => {
                 setFilters({ status: pressed ? ["ARCHIVIATO"] : ["ATTIVO", "POTENZIALE", "INATTIVO"] })
               }
               variant="outline"
+              aria-pressed={filters.status?.includes("ARCHIVIATO") && filters.status.length === 1}
               className={cn(
-                "rounded-full h-9 px-4 text-sm transition-all",
-                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary"
+                "rounded-full h-9 px-4 text-sm font-medium transition-all border",
+                "hover:bg-accent/40",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
               )}
             >
               Archiviati
             </Toggle>
 
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 px-3 text-sm">
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 px-3 text-sm ml-2">
                 <X className="h-3 w-3 mr-1" />
                 Pulisci filtri
               </Button>
@@ -271,19 +283,28 @@ const Clients = () => {
           {/* Advanced Filters */}
           <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-2 h-9"
+                aria-expanded={advancedOpen}
+                aria-controls="advanced-filters"
+              >
                 <ChevronDown
-                  className={cn("h-4 w-4 transition-transform", advancedOpen && "rotate-180")}
+                  className={cn("h-4 w-4 transition-transform duration-200", advancedOpen && "rotate-180")}
                 />
                 Filtri avanzati
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3 p-4 rounded-lg border bg-muted/30 animate-accordion-down">
+            <CollapsibleContent 
+              id="advanced-filters"
+              className="mt-3 p-4 rounded-xl bg-muted/30 border animate-in slide-in-from-top-2 duration-200"
+            >
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground mb-2 block">Ordina per</Label>
+                  <Label className="text-xs font-medium text-muted-foreground mb-2 block">Ordina per</Label>
                   <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -297,12 +318,12 @@ const Clients = () => {
                 </div>
 
                 <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground mb-2 block">Ultimo accesso</Label>
+                  <Label className="text-xs font-medium text-muted-foreground mb-2 block">Ultimo accesso</Label>
                   <Select
                     value={filters.lastAccessDays?.toString() || "all"}
                     onValueChange={(value) => setFilters({ lastAccessDays: value === "all" ? undefined : parseInt(value) })}
                   >
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-10">
                       <SelectValue placeholder="Tutti" />
                     </SelectTrigger>
                     <SelectContent>
@@ -320,7 +341,8 @@ const Clients = () => {
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6">
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto px-6 max-w-7xl py-6">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -353,6 +375,7 @@ const Clients = () => {
             onUnarchive={handleUnarchive}
           />
         )}
+        </div>
       </div>
 
       {/* Create Dialog */}
