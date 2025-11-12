@@ -78,7 +78,7 @@ const ClientPlanEditor = () => {
       setDays(migratedDays);
     } catch (error) {
       toast.error("Errore nel caricamento del piano");
-      navigate("/clients");
+      navigate("/");
     } finally {
       setLoading(false);
     }

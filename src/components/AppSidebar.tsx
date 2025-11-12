@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, FileText, Calendar, ClipboardList, Settings, LogOut } from "lucide-react";
+import { Users, FileText, Calendar, Settings, LogOut } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -8,8 +8,7 @@ import React from "react";
 type NavItem = { label: string; to: string; icon: React.ElementType };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", to: "/", icon: LayoutDashboard },
-  { label: "Clienti", to: "/clients", icon: Users },
+  { label: "Clienti", to: "/", icon: Users },
   { label: "Appuntamenti", to: "/calendar", icon: Calendar },
   { label: "Template", to: "/templates", icon: FileText },
   { label: "Impostazioni", to: "/settings", icon: Settings },

@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import Dashboard from "./pages/Dashboard";
+
 import Plans from "./pages/Plans";
 import TemplateEditor from "./pages/TemplateEditor";
 import TemplateDetail from "./pages/TemplateDetail";
@@ -70,14 +70,12 @@ const App = () => {
               <main className="flex-1 h-full overflow-y-auto bg-background">
                 <Routes>
                   <Route path="/" element={<Clients />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/templates" element={<Plans />} />
                   <Route path="/templates/:id" element={<TemplateDetail />} />
                   <Route path="/templates/:id/edit" element={<TemplateEditor />} />
                   <Route path="/templates/:id/missing" element={<TemplateMissing />} />
                   <Route path="/client-plans/new" element={<ClientPlanEditor />} />
                   <Route path="/client-plans/:id/edit" element={<ClientPlanEditor />} />
-                  <Route path="/clients" element={<Clients />} />
                   <Route path="/clients/:id" element={<ClientDetail />} />
                   <Route path="/calendar" element={<Calendar />} />
                   <Route path="/calendar/manage" element={<BookingManagement />} />
