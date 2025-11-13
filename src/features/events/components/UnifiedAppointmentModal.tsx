@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { format, addDays, startOfDay } from "date-fns";
+import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
 import { X, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, Repeat } from "lucide-react";
 import { useAvailableSlots } from "@/features/bookings/hooks/useAvailableSlots";
 import { useCreateEvent } from "../hooks/useCreateEvent";
@@ -17,6 +17,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Calendar } from "@/components/ui/calendar";
 import { RecurrenceSection, type RecurrenceConfig } from "./RecurrenceSection";
+import { generateRecurrenceOccurrences } from "../utils/recurrence";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { AvailableSlot } from "@/features/bookings/types";
 import type { EventWithClient } from "../types";
@@ -330,9 +332,77 @@ export function UnifiedAppointmentModal({
             end_at: `${selectedDay}T23:59:59Z`,
           });
         } else if (recurrence.enabled) {
-          // TODO: Implement recurring events creation
-          alert("La creazione di appuntamenti ricorrenti sarà disponibile a breve.");
-          return;
+          // Generate all recurrence occurrences
+          const firstSlotDate = new Date(selectedSlot!.start);
+          const occurrences = generateRecurrenceOccurrences({
+            startDate: firstSlotDate,
+            config: recurrence,
+          });
+
+          toast.info(`Generazione di ${occurrences.length} appuntamenti ricorrenti...`);
+
+          // Get slot time (hours and minutes) from the selected slot
+          const slotStartTime = {
+            hours: firstSlotDate.getHours(),
+            minutes: firstSlotDate.getMinutes(),
+          };
+          const slotEndTime = new Date(selectedSlot!.end);
+          const slotEndHours = slotEndTime.getHours();
+          const slotEndMinutes = slotEndTime.getMinutes();
+
+          // Create an event for each occurrence
+          let createdCount = 0;
+          let skippedCount = 0;
+
+          for (const occurrenceDate of occurrences) {
+            // Set the same time as the original slot
+            const eventStartDate = setMinutes(
+              setHours(startOfDay(occurrenceDate), slotStartTime.hours),
+              slotStartTime.minutes
+            );
+            const eventEndDate = setMinutes(
+              setHours(startOfDay(occurrenceDate), slotEndHours),
+              slotEndMinutes
+            );
+
+            // Check if there's an available slot at this time
+            const hasSlot = dayAvailability.some(day => {
+              if (day.date !== toISODate(occurrenceDate)) return false;
+              return day.slots.some(slot => {
+                const slotStart = new Date(slot.start);
+                return slotStart.getHours() === slotStartTime.hours && 
+                       slotStart.getMinutes() === slotStartTime.minutes;
+              });
+            });
+
+            if (!hasSlot) {
+              skippedCount++;
+              continue; // Skip this occurrence if no slot available
+            }
+
+            try {
+              await createEvent.mutateAsync({
+                ...basePayload,
+                start_at: eventStartDate.toISOString(),
+                end_at: eventEndDate.toISOString(),
+              });
+              createdCount++;
+            } catch (error) {
+              console.error("Error creating recurring event:", error);
+              skippedCount++;
+            }
+          }
+
+          if (createdCount > 0) {
+            toast.success(
+              `${createdCount} appuntamento/i creato/i con successo${
+                skippedCount > 0 ? ` (${skippedCount} saltato/i per mancanza di disponibilità)` : ""
+              }`
+            );
+          } else {
+            toast.error("Nessun appuntamento creato. Verifica la tua disponibilità.");
+            return;
+          }
         } else {
           await createEvent.mutateAsync({
             ...basePayload,
@@ -345,6 +415,7 @@ export function UnifiedAppointmentModal({
       onOpenChange(false);
     } catch (error) {
       console.error("Error saving appointment:", error);
+      toast.error("Errore durante il salvataggio dell'appuntamento");
     }
   };
 
