@@ -33,6 +33,7 @@ interface UnifiedAppointmentModalProps {
   onOpenChange: (open: boolean) => void;
   coachId: string;
   clientId?: string;
+  lockedClientId?: string;
   durationMinutes: number;
   event?: EventWithClient;
 }
@@ -149,6 +150,7 @@ export function UnifiedAppointmentModal({
   onOpenChange,
   coachId,
   clientId: initialClientId,
+  lockedClientId,
   durationMinutes,
   event
 }: UnifiedAppointmentModalProps) {
@@ -162,7 +164,7 @@ export function UnifiedAppointmentModal({
 
   // Form state
   const [title, setTitle] = useState("Allenamento");
-  const [selectedClientId, setSelectedClientId] = useState(initialClientId || "");
+  const [selectedClientId, setSelectedClientId] = useState(lockedClientId || initialClientId || "");
   const [location, setLocation] = useState("");
   const [reminderMinutes, setReminderMinutes] = useState<number | undefined>(15);
   const [notes, setNotes] = useState("");
@@ -205,7 +207,7 @@ export function UnifiedAppointmentModal({
     } else if (!event && open) {
       // Reset for new appointment
       setTitle("Allenamento");
-      setSelectedClientId(initialClientId || "");
+      setSelectedClientId(lockedClientId || initialClientId || "");
       setLocation("");
       setReminderMinutes(15);
       setNotes("");
@@ -225,7 +227,7 @@ export function UnifiedAppointmentModal({
         occurrenceCount: 10
       });
     }
-  }, [event, open, initialClientId, today]);
+  }, [event, open, lockedClientId, initialClientId, today]);
 
   const rangeEnd = useMemo(() => addDays(rangeStart, 13), [rangeStart]);
 
@@ -464,45 +466,52 @@ export function UnifiedAppointmentModal({
 
             <div className="space-y-1.5">
               <Label htmlFor="client" className="text-xs font-medium text-muted-foreground">Cliente *</Label>
-              <Popover open={clientOpen} onOpenChange={setClientOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className={cn(
-                      "w-full justify-between",
-                      !selectedClientId && "text-muted-foreground"
-                    )}
-                  >
-                    {selectedClientId
-                      ? clients.find((c) => c.id === selectedClientId)?.first_name + " " + clients.find((c) => c.id === selectedClientId)?.last_name
-                      : "Seleziona cliente"}
-                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Cerca cliente..." />
-                    <CommandList>
-                      <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
-                      <CommandGroup>
-                        {clients.map((client) => (
-                          <CommandItem
-                            key={client.id}
-                            value={`${client.first_name} ${client.last_name}`}
-                            onSelect={() => {
-                              setSelectedClientId(client.id);
-                              setClientOpen(false);
-                            }}
-                          >
-                            {client.first_name} {client.last_name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              {lockedClientId ? (
+                <div className="w-full px-3 py-2 rounded-md border border-border bg-muted text-foreground">
+                  {clients.find((c) => c.id === lockedClientId)?.first_name}{" "}
+                  {clients.find((c) => c.id === lockedClientId)?.last_name}
+                </div>
+              ) : (
+                <Popover open={clientOpen} onOpenChange={setClientOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "w-full justify-between",
+                        !selectedClientId && "text-muted-foreground"
+                      )}
+                    >
+                      {selectedClientId
+                        ? clients.find((c) => c.id === selectedClientId)?.first_name + " " + clients.find((c) => c.id === selectedClientId)?.last_name
+                        : "Seleziona cliente"}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Cerca cliente..." />
+                      <CommandList>
+                        <CommandEmpty>Nessun cliente trovato.</CommandEmpty>
+                        <CommandGroup>
+                          {clients.map((client) => (
+                            <CommandItem
+                              key={client.id}
+                              value={`${client.first_name} ${client.last_name}`}
+                              onSelect={() => {
+                                setSelectedClientId(client.id);
+                                setClientOpen(false);
+                              }}
+                            >
+                              {client.first_name} {client.last_name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           </div>
 
