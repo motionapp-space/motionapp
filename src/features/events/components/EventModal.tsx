@@ -43,6 +43,7 @@ export function EventModal({
       onOpenChange={onOpenChange}
       coachId={coachId}
       clientId={lockedClientId || prefillData?.clientId}
+      lockedClientId={lockedClientId}
       durationMinutes={defaultDuration}
       event={event}
     />
