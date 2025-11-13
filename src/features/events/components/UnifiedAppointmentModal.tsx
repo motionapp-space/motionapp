@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
-import { X, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, Repeat } from "lucide-react";
+import { X, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, Repeat, AlertCircle } from "lucide-react";
 import { useAvailableSlots } from "@/features/bookings/hooks/useAvailableSlots";
 import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useUpdateEvent } from "../hooks/useUpdateEvent";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
+import { useClientPackages } from "@/features/packages/hooks/useClientPackages";
+import { calculatePackageKPI } from "@/features/packages/utils/kpi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +18,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Calendar } from "@/components/ui/calendar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RecurrenceSection, type RecurrenceConfig } from "./RecurrenceSection";
 import { generateRecurrenceOccurrences } from "../utils/recurrence";
 import { toast } from "sonner";
@@ -275,6 +278,13 @@ export function UnifiedAppointmentModal({
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
 
+  // Fetch client packages to check available sessions
+  const { data: clientPackages } = useClientPackages(selectedClientId || "");
+  const activePackage = clientPackages?.find(pkg => pkg.usage_status === "active");
+  const availableSessions = activePackage 
+    ? calculatePackageKPI(activePackage).available 
+    : 0;
+
   // Group slots by day
   const dayAvailability = useMemo(() => {
     const grouped = new Map<string, AvailableSlot[]>();
@@ -288,13 +298,14 @@ export function UnifiedAppointmentModal({
     });
 
     const days: DayAvailability[] = [];
-    for (let i = 0; i < 14; i++) {
+    const totalDays = Math.ceil((rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24));
+    for (let i = 0; i < totalDays; i++) {
       const date = toISODate(addDays(rangeStart, i));
       days.push({ date, slots: grouped.get(date) || [] });
     }
 
     return days;
-  }, [slots, rangeStart]);
+  }, [slots, rangeStart, rangeEnd]);
 
   const selectedDaySlots = useMemo(() => {
     return dayAvailability.find(d => d.date === selectedDay)?.slots || [];
@@ -365,6 +376,24 @@ export function UnifiedAppointmentModal({
             startDate: firstSlotDate,
             config: recurrence,
           });
+
+          // Validate package sessions before creating recurring events
+          if (availableSessions === 0) {
+            toast.error(
+              "Il cliente non ha un pacchetto attivo. Crea un pacchetto prima di schedulare eventi ricorrenti.",
+              { duration: 5000 }
+            );
+            return;
+          }
+
+          if (occurrences.length > availableSessions) {
+            toast.error(
+              `Sessioni insufficienti. Disponibili: ${availableSessions}, richieste: ${occurrences.length}. ` +
+              `Aggiungi sessioni al pacchetto o riduci il numero di eventi.`,
+              { duration: 6000 }
+            );
+            return;
+          }
 
           toast.info(`Generazione di ${occurrences.length} appuntamenti ricorrenti...`);
 
@@ -731,7 +760,49 @@ export function UnifiedAppointmentModal({
                 config={recurrence}
                 onChange={setRecurrence}
                 startDate={selectedSlot ? new Date(selectedSlot.start) : new Date(selectedDay + "T09:00:00")}
+                maxOccurrences={availableSessions > 0 ? availableSessions : undefined}
+                onMaxOccurrencesExceeded={() => {
+                  toast.warning(
+                    `Puoi creare massimo ${availableSessions} eventi ricorrenti in base alle sessioni disponibili nel pacchetto.`,
+                    { duration: 4000 }
+                  );
+                }}
               />
+              
+              {/* Package sessions warning */}
+              {recurrence.enabled && selectedClientId && (
+                <Alert 
+                  variant={
+                    !activePackage ? "destructive" : 
+                    availableSessions === 0 ? "destructive" : 
+                    (recurrence.endType === 'count' && (recurrence.occurrenceCount || 10) > availableSessions) ? "destructive" : 
+                    "default"
+                  }
+                  className="mt-4"
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {!activePackage ? (
+                      <span className="text-sm">
+                        ⚠️ Il cliente non ha un pacchetto attivo. Crea un pacchetto prima di schedulare eventi ricorrenti.
+                      </span>
+                    ) : availableSessions === 0 ? (
+                      <span className="text-sm">
+                        ⚠️ Nessuna sessione disponibile nel pacchetto. Aggiungi sessioni prima di schedulare.
+                      </span>
+                    ) : (
+                      <span className="text-sm">
+                        ✅ Sessioni disponibili: <strong>{availableSessions}</strong>
+                        {recurrence.endType === 'count' && (recurrence.occurrenceCount || 10) > availableSessions && (
+                          <span className="text-destructive font-semibold ml-1">
+                            (Insufficienti per {recurrence.occurrenceCount || 10} eventi)
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           )}
         </div>

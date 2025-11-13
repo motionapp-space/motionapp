@@ -28,11 +28,13 @@ interface RecurrenceSectionProps {
   config: RecurrenceConfig;
   onChange: (config: RecurrenceConfig) => void;
   startDate: Date;
+  maxOccurrences?: number;
+  onMaxOccurrencesExceeded?: () => void;
 }
 
 const weekDayLabels = ["D", "L", "M", "M", "G", "V", "S"];
 
-export function RecurrenceSection({ config, onChange, startDate }: RecurrenceSectionProps) {
+export function RecurrenceSection({ config, onChange, startDate, maxOccurrences, onMaxOccurrencesExceeded }: RecurrenceSectionProps) {
   const [previewDates, setPreviewDates] = useState<Date[]>([]);
 
   const updateConfig = (updates: Partial<RecurrenceConfig>) => {
@@ -164,8 +166,16 @@ export function RecurrenceSection({ config, onChange, startDate }: RecurrenceSec
                     <Input
                       type="number"
                       min="1"
+                      max={maxOccurrences}
                       value={config.occurrenceCount || 10}
-                      onChange={(e) => updateConfig({ occurrenceCount: parseInt(e.target.value) || 10 })}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 10;
+                        if (maxOccurrences && value > maxOccurrences) {
+                          onMaxOccurrencesExceeded?.();
+                          return;
+                        }
+                        updateConfig({ occurrenceCount: value });
+                      }}
                       className="w-20"
                     />
                     <span className="text-sm text-muted-foreground">occorrenze</span>
