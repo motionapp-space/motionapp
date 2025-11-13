@@ -83,9 +83,9 @@ export function BookingSettingsForm() {
         {/* General Settings */}
         <div className="space-y-3">
           <div>
-            <h3 className="text-lg font-semibold">General Settings</h3>
+            <h3 className="text-lg font-semibold">Impostazioni generali</h3>
             <p className="text-sm text-muted-foreground">
-              Configure your booking preferences and requirements
+              Configura le tue preferenze di prenotazione
             </p>
           </div>
           <div className="border rounded-lg p-6">

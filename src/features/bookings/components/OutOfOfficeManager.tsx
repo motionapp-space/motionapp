@@ -54,14 +54,14 @@ export function OutOfOfficeManager() {
   };
 
   if (isLoading) {
-    return <div className="text-sm text-muted-foreground">Loading absence periods...</div>;
+    return <div className="text-sm text-muted-foreground">Caricamento periodi di assenza...</div>;
   }
 
   return (
     <div className="space-y-3">
       {blocks.length === 0 && !isAdding ? (
         <div className="border rounded-lg p-6 text-center text-sm text-muted-foreground">
-          No absence periods set
+          Nessun periodo di assenza impostato
         </div>
       ) : (
         <div className="space-y-2">
@@ -71,21 +71,21 @@ export function OutOfOfficeManager() {
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label htmlFor={`edit-start-${block.id}`} className="text-sm font-medium">Start date</Label>
+                      <Label htmlFor={`edit-start-${block.id}`} className="text-sm font-medium">Data inizio</Label>
                       <Input id={`edit-start-${block.id}`} type="datetime-local" value={formData.start_at} onChange={(e) => setFormData({ ...formData, start_at: e.target.value })} />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor={`edit-end-${block.id}`} className="text-sm font-medium">End date</Label>
+                      <Label htmlFor={`edit-end-${block.id}`} className="text-sm font-medium">Data fine</Label>
                       <Input id={`edit-end-${block.id}`} type="datetime-local" value={formData.end_at} onChange={(e) => setFormData({ ...formData, end_at: e.target.value })} />
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`edit-reason-${block.id}`} className="text-sm font-medium">Reason (optional)</Label>
-                    <Textarea id={`edit-reason-${block.id}`} value={formData.reason || ""} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} placeholder="e.g., Vacation, Conference..." rows={2} />
+                    <Label htmlFor={`edit-reason-${block.id}`} className="text-sm font-medium">Motivo (facoltativo)</Label>
+                    <Textarea id={`edit-reason-${block.id}`} value={formData.reason || ""} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} placeholder="es. Vacanza, Conferenza..." rows={2} />
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={handleCreate} disabled={!formData.start_at || !formData.end_at || createMutation.isPending}>Save</Button>
-                    <Button size="sm" variant="outline" onClick={cancelEdit}>Cancel</Button>
+                    <Button size="sm" onClick={handleCreate} disabled={!formData.start_at || !formData.end_at || createMutation.isPending}>Salva</Button>
+                    <Button size="sm" variant="outline" onClick={cancelEdit}>Annulla</Button>
                   </div>
                 </div>
               ) : (
@@ -110,21 +110,21 @@ export function OutOfOfficeManager() {
           <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="add-start" className="text-sm font-medium">Start date</Label>
+                <Label htmlFor="add-start" className="text-sm font-medium">Data inizio</Label>
                 <Input id="add-start" type="datetime-local" value={formData.start_at} onChange={(e) => setFormData({ ...formData, start_at: e.target.value })} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="add-end" className="text-sm font-medium">End date</Label>
+                <Label htmlFor="add-end" className="text-sm font-medium">Data fine</Label>
                 <Input id="add-end" type="datetime-local" value={formData.end_at} onChange={(e) => setFormData({ ...formData, end_at: e.target.value })} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="add-reason" className="text-sm font-medium">Reason (optional)</Label>
-              <Textarea id="add-reason" value={formData.reason || ""} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} placeholder="e.g., Vacation, Conference..." rows={2} />
+              <Label htmlFor="add-reason" className="text-sm font-medium">Motivo (facoltativo)</Label>
+              <Textarea id="add-reason" value={formData.reason || ""} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} placeholder="es. Vacanza, Conferenza..." rows={2} />
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleCreate} disabled={!formData.start_at || !formData.end_at || createMutation.isPending}>Create</Button>
-              <Button size="sm" variant="outline" onClick={cancelEdit}>Cancel</Button>
+              <Button size="sm" onClick={handleCreate} disabled={!formData.start_at || !formData.end_at || createMutation.isPending}>Crea</Button>
+              <Button size="sm" variant="outline" onClick={cancelEdit}>Annulla</Button>
             </div>
           </div>
         </div>
@@ -132,7 +132,7 @@ export function OutOfOfficeManager() {
 
       {!isAdding && (
         <Button variant="outline" size="sm" onClick={() => setIsAdding(true)} className="w-full">
-          <Plus className="h-4 w-4 mr-2" />Add period
+          <Plus className="h-4 w-4 mr-2" />Aggiungi periodo
         </Button>
       )}
     </div>
