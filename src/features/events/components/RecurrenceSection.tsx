@@ -7,10 +7,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { format, addDays, addWeeks, addMonths } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { it } from "date-fns/locale";
 import { AlertCircle, Info } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { generateRecurrenceOccurrences } from "../utils/recurrence";
 
 export interface RecurrenceConfig {
   enabled: boolean;
@@ -46,27 +47,14 @@ export function RecurrenceSection({ config, onChange, startDate }: RecurrenceSec
       return;
     }
 
-    const dates: Date[] = [startDate];
-    let current = startDate;
+    // Use the same logic as event creation for consistency
+    const occurrences = generateRecurrenceOccurrences({
+      startDate: startOfDay(startDate),
+      config: cfg,
+      maxOccurrences: 6, // Show up to 6 dates in preview
+    });
 
-    for (let i = 0; i < 2; i++) {
-      switch (cfg.frequency) {
-        case "daily":
-          current = addDays(current, cfg.interval || 1);
-          break;
-        case "weekly":
-          current = addWeeks(current, cfg.interval || 1);
-          break;
-        case "monthly":
-          current = addMonths(current, cfg.interval || 1);
-          break;
-        default:
-          break;
-      }
-      dates.push(current);
-    }
-
-    setPreviewDates(dates);
+    setPreviewDates(occurrences);
   };
 
   const toggleWeekDay = (day: number) => {
