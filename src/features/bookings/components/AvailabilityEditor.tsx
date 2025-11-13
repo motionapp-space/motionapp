@@ -58,7 +58,10 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
         { start_time: "09:00", end_time: "17:00", temp_id: `new-${Date.now()}` },
       ],
     });
-    setExpandedDay(dayOfWeek);
+    // Only set expanded if not already expanded
+    if (expandedDay !== dayOfWeek) {
+      setExpandedDay(dayOfWeek);
+    }
     onChangeDetected?.();
   };
 
@@ -67,9 +70,10 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
     const rangeToRemove = currentRanges[index];
     
     if (rangeToRemove.temp_id?.startsWith("new-")) {
+      const newRanges = currentRanges.filter((_, i) => i !== index);
       setEditMode({
         ...editMode,
-        [dayOfWeek]: currentRanges.filter((_, i) => i !== index),
+        [dayOfWeek]: newRanges,
       });
     } else {
       await deleteMutation.mutateAsync(rangeToRemove.temp_id!);
@@ -177,9 +181,9 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
                   <div className="w-28 font-medium text-sm">{dayName}</div>
 
                   {/* Time slot chips */}
-                  <div className="flex-1 flex flex-wrap gap-2">
+                  <div className="flex-1 flex flex-wrap gap-2 items-center">
                     {ranges.length === 0 ? (
-                      <span className="text-sm text-muted-foreground">—</span>
+                      <span className="text-sm text-muted-foreground">No availability</span>
                     ) : (
                       ranges.map((range, idx) => (
                         <Badge 
@@ -198,19 +202,14 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        if (isExpanded) {
-                          setExpandedDay(null);
-                        } else {
-                          addTimeRange(dayOfWeek);
-                        }
-                      }}
+                      onClick={() => addTimeRange(dayOfWeek)}
+                      className="h-8 w-8 p-0"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -220,14 +219,14 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
                           disabled={ranges.length === 0}
                         >
                           <Copy className="h-4 w-4 mr-2" />
-                          Copia ad altri giorni
+                          Copy to other days
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => deleteAllSlots(dayOfWeek)}
                           disabled={ranges.length === 0}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Elimina fasce
+                          Delete all slots
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -237,7 +236,12 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
                 {/* Inline editor */}
                 {isExpanded && (
                   <div className="border-t bg-muted/30 p-4 space-y-3">
-                    {ranges.map((range, index) => (
+                    {ranges.length === 0 ? (
+                      <div className="text-sm text-muted-foreground text-center py-2">
+                        Click Save to remove all availability for this day
+                      </div>
+                    ) : (
+                      ranges.map((range, index) => (
                       <div key={range.temp_id || index} className="flex items-center gap-3">
                         <input
                           type="time"
@@ -266,7 +270,8 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    ))}
+                      ))
+                    )}
                     {hasChanges && (
                       <div className="flex gap-2 pt-2">
                         <Button
@@ -274,7 +279,7 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
                           onClick={() => saveDay(dayOfWeek)}
                           disabled={deleteMutation.isPending || bulkCreateMutation.isPending}
                         >
-                          Salva
+                          Save
                         </Button>
                         <Button
                           size="sm"
@@ -286,7 +291,7 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
                             setExpandedDay(null);
                           }}
                         >
-                          Annulla
+                          Cancel
                         </Button>
                       </div>
                     )}
