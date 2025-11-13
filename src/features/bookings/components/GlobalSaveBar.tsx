@@ -5,11 +5,12 @@ import { cn } from "@/lib/utils";
 interface GlobalSaveBarProps {
   show: boolean;
   onSave: () => void;
+  onCancel: () => void;
   isSaving: boolean;
   error?: string;
 }
 
-export function GlobalSaveBar({ show, onSave, isSaving, error }: GlobalSaveBarProps) {
+export function GlobalSaveBar({ show, onSave, onCancel, isSaving, error }: GlobalSaveBarProps) {
   if (!show) return null;
 
   return (
@@ -28,13 +29,23 @@ export function GlobalSaveBar({ show, onSave, isSaving, error }: GlobalSaveBarPr
             )}
           </span>
         </div>
-        <Button 
-          onClick={onSave} 
-          disabled={isSaving}
-          size="sm"
-        >
-          {isSaving ? "Salvataggio..." : "Salva"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={onCancel} 
+            disabled={isSaving}
+            variant="ghost"
+            size="sm"
+          >
+            Annulla modifiche
+          </Button>
+          <Button 
+            onClick={onSave} 
+            disabled={isSaving}
+            size="sm"
+          >
+            {isSaving ? "Salvataggio..." : "Salva"}
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
@@ -7,10 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBookingSettingsQuery } from "../hooks/useBookingSettingsQuery";
 import { useUpdateBookingSettings } from "../hooks/useUpdateBookingSettings";
+import { useUpdateAvailabilityWindows } from "../hooks/useUpdateAvailabilityWindows";
+import { useAvailabilityWindowsQuery } from "../hooks/useAvailabilityWindowsQuery";
 import { AvailabilityEditor } from "./AvailabilityEditor";
 import { OutOfOfficeManager } from "./OutOfOfficeManager";
 import { GlobalSaveBar } from "./GlobalSaveBar";
 import { Loader2, CheckCircle2, Clock, Info } from "lucide-react";
+import type { CreateAvailabilityWindowInput } from "../types";
 
 interface BookingSettingsFormValues {
   enabled: boolean;
@@ -21,10 +24,20 @@ interface BookingSettingsFormValues {
   approval_mode: "AUTO" | "MANUAL";
 }
 
+interface TimeRange {
+  start_time: string;
+  end_time: string;
+  temp_id?: string;
+}
+
 export function BookingSettingsForm() {
   const { data: settings, isLoading } = useBookingSettingsQuery();
+  const { data: windows = [] } = useAvailabilityWindowsQuery();
   const { mutate: updateSettings, isPending, error } = useUpdateBookingSettings();
+  const { mutate: updateAvailability, isPending: isUpdatingAvailability } = useUpdateAvailabilityWindows();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [resetAvailability, setResetAvailability] = useState(0);
+  const availabilityChangesRef = useRef<Record<number, TimeRange[]>>({});
 
   const form = useForm<BookingSettingsFormValues>({
     defaultValues: {
@@ -59,12 +72,73 @@ export function BookingSettingsForm() {
   }, [form]);
 
   const onSubmit = (values: BookingSettingsFormValues) => {
+    // Save form settings
     updateSettings(values, {
       onSuccess: () => {
-        form.reset(values);
-        setHasUnsavedChanges(false);
+        // Save availability changes if any
+        const availabilityChanges = availabilityChangesRef.current;
+        if (Object.keys(availabilityChanges).length > 0) {
+          const allWindows: CreateAvailabilityWindowInput[] = [];
+          
+          // Process each day with changes
+          Object.entries(availabilityChanges).forEach(([dayKey, ranges]) => {
+            const dayOfWeek = parseInt(dayKey);
+            ranges.forEach((r) => {
+              allWindows.push({
+                day_of_week: dayOfWeek,
+                start_time: r.start_time,
+                end_time: r.end_time,
+              });
+            });
+          });
+
+          // Also include unchanged days from original windows
+          for (let day = 0; day < 7; day++) {
+            if (!availabilityChanges[day]) {
+              const dayWindows = windows.filter(w => w.day_of_week === day);
+              dayWindows.forEach(w => {
+                allWindows.push({
+                  day_of_week: w.day_of_week,
+                  start_time: w.start_time,
+                  end_time: w.end_time,
+                });
+              });
+            }
+          }
+
+          updateAvailability(allWindows, {
+            onSuccess: () => {
+              form.reset(values);
+              availabilityChangesRef.current = {};
+              setHasUnsavedChanges(false);
+            },
+          });
+        } else {
+          form.reset(values);
+          setHasUnsavedChanges(false);
+        }
       },
     });
+  };
+
+  const handleCancelChanges = () => {
+    // Reset form to last saved values
+    if (settings) {
+      form.reset({
+        enabled: settings.enabled ?? false,
+        min_advance_notice_hours: settings.min_advance_notice_hours,
+        slot_duration_minutes: settings.slot_duration_minutes ?? 60,
+        buffer_between_minutes: settings.buffer_between_minutes ?? 0,
+        cancel_policy_hours: settings.cancel_policy_hours || 24,
+        approval_mode: settings.approval_mode,
+      });
+    }
+    
+    // Reset availability changes
+    availabilityChangesRef.current = {};
+    setResetAvailability(prev => prev + 1);
+    
+    setHasUnsavedChanges(false);
   };
 
   if (isLoading) {
@@ -353,7 +427,9 @@ export function BookingSettingsForm() {
             </p>
           </div>
           <AvailabilityEditor 
+            key={resetAvailability}
             onChangeDetected={() => setHasUnsavedChanges(true)}
+            localChangesRef={availabilityChangesRef}
           />
         </div>
 
@@ -372,7 +448,8 @@ export function BookingSettingsForm() {
         <GlobalSaveBar
           show={hasUnsavedChanges}
           onSave={form.handleSubmit(onSubmit)}
-          isSaving={isPending}
+          onCancel={handleCancelChanges}
+          isSaving={isPending || isUpdatingAvailability}
           error={error?.message}
         />
       </div>

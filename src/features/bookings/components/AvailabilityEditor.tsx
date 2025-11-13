@@ -8,12 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  useAvailabilityWindowsQuery,
-  useCreateAvailabilityWindow,
-  useDeleteAvailabilityWindow,
-  useBulkCreateAvailabilityWindows,
-} from "../hooks/useAvailability";
+import { useAvailabilityWindowsQuery } from "../hooks/useAvailability";
 import type { CreateAvailabilityWindowInput } from "../types";
 
 const DAYS_OF_WEEK = [
@@ -34,16 +29,30 @@ interface TimeRange {
 
 interface AvailabilityEditorProps {
   onChangeDetected?: () => void;
+  onResetRequested?: () => void;
+  localChangesRef?: React.MutableRefObject<Record<number, TimeRange[]>>;
 }
 
-export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps) {
+export function AvailabilityEditor({ 
+  onChangeDetected, 
+  onResetRequested,
+  localChangesRef 
+}: AvailabilityEditorProps) {
   const { data: windows = [], isLoading } = useAvailabilityWindowsQuery();
-  const createMutation = useCreateAvailabilityWindow();
-  const deleteMutation = useDeleteAvailabilityWindow();
-  const bulkCreateMutation = useBulkCreateAvailabilityWindows();
 
   const [editMode, setEditMode] = useState<Record<number, TimeRange[]>>({});
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
+
+  // Sync local changes with parent ref
+  if (localChangesRef) {
+    localChangesRef.current = editMode;
+  }
+
+  // Reset handler
+  if (onResetRequested && Object.keys(editMode).length > 0) {
+    setEditMode({});
+    setExpandedDay(null);
+  }
 
   const getWindowsForDay = (dayOfWeek: number): TimeRange[] => {
     if (editMode[dayOfWeek]) return editMode[dayOfWeek];
@@ -73,19 +82,13 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
     onChangeDetected?.();
   };
 
-  const removeTimeRange = async (dayOfWeek: number, index: number) => {
+  const removeTimeRange = (dayOfWeek: number, index: number) => {
     const currentRanges = getWindowsForDay(dayOfWeek);
-    const rangeToRemove = currentRanges[index];
-    
-    if (rangeToRemove.temp_id?.startsWith("new-")) {
-      const newRanges = currentRanges.filter((_, i) => i !== index);
-      setEditMode({
-        ...editMode,
-        [dayOfWeek]: newRanges,
-      });
-    } else {
-      await deleteMutation.mutateAsync(rangeToRemove.temp_id!);
-    }
+    const newRanges = currentRanges.filter((_, i) => i !== index);
+    setEditMode({
+      ...editMode,
+      [dayOfWeek]: newRanges,
+    });
     onChangeDetected?.();
   };
 
@@ -102,69 +105,34 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
     onChangeDetected?.();
   };
 
-  const saveDay = async (dayOfWeek: number) => {
-    const ranges = editMode[dayOfWeek] || getWindowsForDay(dayOfWeek);
-    
-    const existingIds = windows
-      .filter((w) => w.day_of_week === dayOfWeek)
-      .map((w) => w.id);
-    
-    for (const id of existingIds) {
-      await deleteMutation.mutateAsync(id);
-    }
-    
-    const inputs: CreateAvailabilityWindowInput[] = ranges.map((r) => ({
-      day_of_week: dayOfWeek,
-      start_time: r.start_time,
-      end_time: r.end_time,
-    }));
-    
-    await bulkCreateMutation.mutateAsync(inputs);
-    
-    const newEditMode = { ...editMode };
-    delete newEditMode[dayOfWeek];
-    setEditMode(newEditMode);
+  const confirmSlotChanges = (dayOfWeek: number) => {
+    // Just close the editor - changes are already in editMode
     setExpandedDay(null);
   };
 
-  const copyToOtherDays = async (sourceDayOfWeek: number) => {
+  const copyToOtherDays = (sourceDayOfWeek: number) => {
     const sourceRanges = getWindowsForDay(sourceDayOfWeek);
-    
-    for (let day = 0; day < 7; day++) {
-      if (day !== sourceDayOfWeek) {
-        const existingIds = windows
-          .filter((w) => w.day_of_week === day)
-          .map((w) => w.id);
-        
-        for (const id of existingIds) {
-          await deleteMutation.mutateAsync(id);
-        }
-        
-        const inputs: CreateAvailabilityWindowInput[] = sourceRanges.map((r) => ({
-          day_of_week: day,
-          start_time: r.start_time,
-          end_time: r.end_time,
-        }));
-        
-        if (inputs.length > 0) {
-          await bulkCreateMutation.mutateAsync(inputs);
-        }
-      }
+    if (sourceRanges.length === 0) return;
+
+    const newEditMode = { ...editMode };
+    for (const day of DAYS_OF_WEEK) {
+      if (day.key === sourceDayOfWeek) continue;
+      newEditMode[day.key] = sourceRanges.map((r) => ({
+        ...r,
+        temp_id: `new-${Date.now()}-${day.key}`,
+      }));
     }
+    setEditMode(newEditMode);
+    onChangeDetected?.();
   };
 
-  const deleteAllSlots = async (dayOfWeek: number) => {
-    const existingIds = windows
-      .filter((w) => w.day_of_week === dayOfWeek)
-      .map((w) => w.id);
-    
-    for (const id of existingIds) {
-      await deleteMutation.mutateAsync(id);
-    }
-    
-    const newEditMode = { ...editMode };
-    delete newEditMode[dayOfWeek];
-    setEditMode(newEditMode);
+  const deleteAllSlots = (dayOfWeek: number) => {
+    setEditMode({
+      ...editMode,
+      [dayOfWeek]: [],
+    });
+    setExpandedDay(dayOfWeek);
+    onChangeDetected?.();
   };
 
   if (isLoading) {
@@ -246,7 +214,7 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
                   <div className="border-t bg-muted/30 p-4 space-y-3">
                     {ranges.length === 0 ? (
                       <div className="text-sm text-muted-foreground text-center py-2">
-                        Clicca Salva per rimuovere tutta la disponibilità per questo giorno
+                        Rimuovere tutte le fasce - ricorda di salvare le modifiche usando il pulsante Salva in fondo alla pagina
                       </div>
                     ) : (
                       ranges.map((range, index) => (
@@ -284,10 +252,9 @@ export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps
                       <div className="flex gap-2 pt-2">
                         <Button
                           size="sm"
-                          onClick={() => saveDay(day.key)}
-                          disabled={deleteMutation.isPending || bulkCreateMutation.isPending}
+                          onClick={() => confirmSlotChanges(day.key)}
                         >
-                          Salva
+                          {ranges.some(r => r.temp_id?.startsWith("new-")) ? "Aggiungi slot" : "Aggiorna slot"}
                         </Button>
                         <Button
                           size="sm"
