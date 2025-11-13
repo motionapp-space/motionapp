@@ -24,7 +24,7 @@ export function GlobalSaveBar({ show, onSave, isSaving, error }: GlobalSaveBarPr
                 {error}
               </span>
             ) : (
-              "Unsaved changes"
+              "Modifiche non salvate"
             )}
           </span>
         </div>
@@ -33,7 +33,7 @@ export function GlobalSaveBar({ show, onSave, isSaving, error }: GlobalSaveBarPr
           disabled={isSaving}
           size="sm"
         >
-          {isSaving ? "Saving..." : "Save"}
+          {isSaving ? "Salvataggio..." : "Salva"}
         </Button>
       </div>
     </div>
