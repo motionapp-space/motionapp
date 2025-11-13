@@ -78,14 +78,17 @@ export function BookingSettingsForm() {
   }
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6 pb-24">
+    <TooltipProvider delayDuration={200}>
+      <div className="space-y-8 pb-24">
         {/* General Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Impostazioni generali</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="space-y-3">
+          <div>
+            <h3 className="text-lg font-semibold">General Settings</h3>
+            <p className="text-sm text-muted-foreground">
+              Configure your booking preferences and requirements
+            </p>
+          </div>
+          <div className="border rounded-lg p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* Self-service bookings toggle */}
@@ -95,16 +98,18 @@ export function BookingSettingsForm() {
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between space-y-0 rounded-lg border p-4">
                       <div className="flex items-center gap-2">
-                        <FormLabel className="text-base font-normal cursor-pointer">
-                          Prenotazioni self-service
+                        <FormLabel className="text-sm font-medium cursor-pointer">
+                          Self-service bookings
                         </FormLabel>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-muted-foreground" />
+                            <button type="button" className="inline-flex">
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </button>
                           </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="max-w-xs">
-                              Consenti ai clienti di prenotare autonomamente gli slot disponibili
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p>
+                              Allow clients to book available time slots independently
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -112,7 +117,10 @@ export function BookingSettingsForm() {
                       <FormControl>
                         <Switch
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            setHasUnsavedChanges(true);
+                          }}
                         />
                       </FormControl>
                     </FormItem>
@@ -120,22 +128,24 @@ export function BookingSettingsForm() {
                 />
 
                 {/* Two-column grid for remaining fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Min advance notice */}
                   <FormField
                     control={form.control}
                     name="min_advance_notice_hours"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <FormLabel>Preavviso minimo</FormLabel>
+                          <FormLabel className="text-sm font-medium">Min advance notice</FormLabel>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground" />
+                              <button type="button" className="inline-flex">
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                              </button>
                             </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="max-w-xs">
-                                Tempo minimo richiesto tra la richiesta e l'orario della sessione
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p>
+                                Minimum time required between request and session time
                               </p>
                             </TooltipContent>
                           </Tooltip>
@@ -165,16 +175,18 @@ export function BookingSettingsForm() {
                     control={form.control}
                     name="slot_duration_minutes"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <FormLabel>Durata slot</FormLabel>
+                          <FormLabel className="text-sm font-medium">Slot duration</FormLabel>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground" />
+                              <button type="button" className="inline-flex">
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                              </button>
                             </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="max-w-xs">
-                                Durata predefinita di ogni slot di prenotazione
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p>
+                                Default duration for each booking slot
                               </p>
                             </TooltipContent>
                           </Tooltip>
@@ -204,16 +216,18 @@ export function BookingSettingsForm() {
                     control={form.control}
                     name="buffer_between_minutes"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <FormLabel>Buffer tra slot</FormLabel>
+                          <FormLabel className="text-sm font-medium">Buffer between slots</FormLabel>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground" />
+                              <button type="button" className="inline-flex">
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                              </button>
                             </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="max-w-xs">
-                                Tempo di pausa invisibile tra slot consecutivi (non prenotabile dai clienti)
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p>
+                                Invisible break time between consecutive slots (not bookable by clients)
                               </p>
                             </TooltipContent>
                           </Tooltip>
@@ -243,16 +257,18 @@ export function BookingSettingsForm() {
                     control={form.control}
                     name="cancel_policy_hours"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <FormLabel>Finestra "Late cancel"</FormLabel>
+                          <FormLabel className="text-sm font-medium">Late cancel window</FormLabel>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground" />
+                              <button type="button" className="inline-flex">
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                              </button>
                             </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="max-w-xs">
-                                Le cancellazioni entro questo periodo consumano una sessione
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p>
+                                Cancellations within this period consume a session
                               </p>
                             </TooltipContent>
                           </Tooltip>
@@ -281,18 +297,20 @@ export function BookingSettingsForm() {
                   control={form.control}
                   name="approval_mode"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <FormLabel>Modalità di approvazione</FormLabel>
+                        <FormLabel className="text-sm font-medium">Approval mode</FormLabel>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-muted-foreground" />
+                            <button type="button" className="inline-flex">
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </button>
                           </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="max-w-xs">
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p>
                               {field.value === "AUTO" 
-                                ? "Le richieste vengono approvate automaticamente"
-                                : "Dovrai approvare manualmente ogni richiesta"}
+                                ? "Requests are approved automatically"
+                                : "You will need to approve each request manually"}
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -307,13 +325,13 @@ export function BookingSettingsForm() {
                           <SelectItem value="AUTO">
                             <div className="flex items-center gap-2">
                               <CheckCircle2 className="h-4 w-4 text-green-600" />
-                              <span>Automatica</span>
+                              <span>Automatic</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="MANUAL">
                             <div className="flex items-center gap-2">
                               <Clock className="h-4 w-4 text-orange-600" />
-                              <span>Manuale</span>
+                              <span>Manual</span>
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -323,15 +341,15 @@ export function BookingSettingsForm() {
                 />
               </form>
             </Form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Weekly Time Slots */}
         <div className="space-y-3">
           <div>
-            <h3 className="text-lg font-semibold">Fasce orarie settimanali</h3>
+            <h3 className="text-lg font-semibold">Weekly Time Slots</h3>
             <p className="text-sm text-muted-foreground">
-              Definisci quando sei disponibile per le prenotazioni
+              Define when you're available for bookings
             </p>
           </div>
           <AvailabilityEditor 
@@ -342,9 +360,9 @@ export function BookingSettingsForm() {
         {/* Absence Periods */}
         <div className="space-y-3">
           <div>
-            <h3 className="text-lg font-semibold">Periodi di assenza</h3>
+            <h3 className="text-lg font-semibold">Absence Periods</h3>
             <p className="text-sm text-muted-foreground">
-              Blocca date specifiche per ferie o altri impegni
+              Block specific dates for holidays or other commitments
             </p>
           </div>
           <OutOfOfficeManager />
