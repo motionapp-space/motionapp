@@ -7,6 +7,7 @@ interface UseAvailableSlotsOptions {
   startDate: Date;
   endDate: Date;
   enabled?: boolean;
+  isCoachView?: boolean;
 }
 
 export function useAvailableSlots({
@@ -14,6 +15,7 @@ export function useAvailableSlots({
   startDate,
   endDate,
   enabled = true,
+  isCoachView = true,
 }: UseAvailableSlotsOptions) {
   return useQuery({
     queryKey: [
@@ -27,6 +29,7 @@ export function useAvailableSlots({
         coachId,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
+        isCoachView,
       }),
     enabled,
   });

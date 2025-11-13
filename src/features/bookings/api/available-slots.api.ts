@@ -6,6 +6,7 @@ interface GetAvailableSlotsParams {
   coachId: string;
   startDate: string; // ISO date string
   endDate: string;   // ISO date string
+  isCoachView?: boolean;
 }
 
 /**
@@ -17,6 +18,7 @@ export async function getAvailableSlots({
   coachId,
   startDate,
   endDate,
+  isCoachView = true,
 }: GetAvailableSlotsParams): Promise<AvailableSlot[]> {
   // Fetch booking settings
   const { data: settings, error: settingsError } = await supabase
@@ -104,7 +106,7 @@ export async function getAvailableSlots({
       date: currentDate,
       slotDurationMinutes: settings.slot_duration_minutes,
       bufferBetweenMinutes: settings.buffer_between_minutes || 0,
-      minAdvanceNoticeHours: settings.min_advance_notice_hours,
+      minAdvanceNoticeHours: isCoachView ? 0 : settings.min_advance_notice_hours,
       availabilityWindows: windows,
       outOfOfficeBlocks: oooBlocks || [],
       existingEvents: allEvents,
