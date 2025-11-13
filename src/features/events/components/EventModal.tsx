@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettings";
 import { supabase } from "@/integrations/supabase/client";
-import { BookingModalSimple } from "./BookingModalSimple";
+import { UnifiedAppointmentModal } from "./UnifiedAppointmentModal";
 import type { EventWithClient } from "../types";
 
 interface EventModalProps {
@@ -38,30 +37,14 @@ export function EventModal({
 
   const defaultDuration = bookingSettings?.slot_duration_minutes || 45;
 
-  // Use simplified modal for new events
-  if (!event) {
-    return (
-      <BookingModalSimple
-        open={open}
-        onOpenChange={onOpenChange}
-        coachId={coachId}
-        clientId={lockedClientId || prefillData?.clientId}
-        durationMinutes={defaultDuration}
-      />
-    );
-  }
-
-  // Fallback for editing - to be implemented
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Modifica appuntamento</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          La modifica degli appuntamenti sarà disponibile a breve.
-        </p>
-      </DialogContent>
-    </Dialog>
+    <UnifiedAppointmentModal
+      open={open}
+      onOpenChange={onOpenChange}
+      coachId={coachId}
+      clientId={lockedClientId || prefillData?.clientId}
+      durationMinutes={defaultDuration}
+      event={event}
+    />
   );
 }
