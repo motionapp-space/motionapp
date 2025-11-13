@@ -229,7 +229,32 @@ export function UnifiedAppointmentModal({
     }
   }, [event, open, lockedClientId, initialClientId, today]);
 
-  const rangeEnd = useMemo(() => addDays(rangeStart, 13), [rangeStart]);
+  const rangeEnd = useMemo(() => {
+    const baseEnd = addDays(rangeStart, 13);
+
+    if (recurrence.enabled) {
+      // Extend the fetched slot range to cover the last occurrence
+      if (recurrence.endType === "count" && (recurrence.occurrenceCount ?? 0) > 1) {
+        const seriesStart = startOfDay(new Date(`${selectedDay}T00:00:00`));
+        const occurrences = generateRecurrenceOccurrences({
+          startDate: seriesStart,
+          config: recurrence,
+          maxOccurrences: recurrence.occurrenceCount,
+        });
+        const last = occurrences[occurrences.length - 1] ?? seriesStart;
+        const computed = addDays(startOfDay(last), 1); // include full last day
+        return computed.getTime() > baseEnd.getTime() ? computed : baseEnd;
+      }
+
+      if (recurrence.endType === "until" && recurrence.endDate) {
+        const untilDate = startOfDay(new Date(`${recurrence.endDate}T00:00:00`));
+        const computed = addDays(untilDate, 1); // include full last day
+        return computed.getTime() > baseEnd.getTime() ? computed : baseEnd;
+      }
+    }
+
+    return baseEnd;
+  }, [rangeStart, selectedDay, recurrence]);
 
   const { data: slots = [], isLoading } = useAvailableSlots({
     coachId,
