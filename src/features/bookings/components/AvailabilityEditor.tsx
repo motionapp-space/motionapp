@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Copy } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, MoreVertical, Copy, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   useAvailabilityWindowsQuery,
   useCreateAvailabilityWindow,
@@ -19,13 +24,18 @@ interface TimeRange {
   temp_id?: string;
 }
 
-export function AvailabilityEditor() {
+interface AvailabilityEditorProps {
+  onChangeDetected?: () => void;
+}
+
+export function AvailabilityEditor({ onChangeDetected }: AvailabilityEditorProps) {
   const { data: windows = [], isLoading } = useAvailabilityWindowsQuery();
   const createMutation = useCreateAvailabilityWindow();
   const deleteMutation = useDeleteAvailabilityWindow();
   const bulkCreateMutation = useBulkCreateAvailabilityWindows();
 
   const [editMode, setEditMode] = useState<Record<number, TimeRange[]>>({});
+  const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   const getWindowsForDay = (dayOfWeek: number): TimeRange[] => {
     if (editMode[dayOfWeek]) return editMode[dayOfWeek];
@@ -48,22 +58,23 @@ export function AvailabilityEditor() {
         { start_time: "09:00", end_time: "17:00", temp_id: `new-${Date.now()}` },
       ],
     });
+    setExpandedDay(dayOfWeek);
+    onChangeDetected?.();
   };
 
-  const removeTimeRange = (dayOfWeek: number, index: number) => {
+  const removeTimeRange = async (dayOfWeek: number, index: number) => {
     const currentRanges = getWindowsForDay(dayOfWeek);
     const rangeToRemove = currentRanges[index];
     
     if (rangeToRemove.temp_id?.startsWith("new-")) {
-      // Just remove from edit mode
       setEditMode({
         ...editMode,
         [dayOfWeek]: currentRanges.filter((_, i) => i !== index),
       });
     } else {
-      // Delete from DB
-      deleteMutation.mutate(rangeToRemove.temp_id!);
+      await deleteMutation.mutateAsync(rangeToRemove.temp_id!);
     }
+    onChangeDetected?.();
   };
 
   const updateTimeRange = (
@@ -76,12 +87,12 @@ export function AvailabilityEditor() {
     const updated = [...currentRanges];
     updated[index] = { ...updated[index], [field]: value };
     setEditMode({ ...editMode, [dayOfWeek]: updated });
+    onChangeDetected?.();
   };
 
   const saveDay = async (dayOfWeek: number) => {
     const ranges = editMode[dayOfWeek] || getWindowsForDay(dayOfWeek);
     
-    // Delete all existing windows for this day
     const existingIds = windows
       .filter((w) => w.day_of_week === dayOfWeek)
       .map((w) => w.id);
@@ -90,7 +101,6 @@ export function AvailabilityEditor() {
       await deleteMutation.mutateAsync(id);
     }
     
-    // Create new windows
     const inputs: CreateAvailabilityWindowInput[] = ranges.map((r) => ({
       day_of_week: dayOfWeek,
       start_time: r.start_time,
@@ -99,26 +109,49 @@ export function AvailabilityEditor() {
     
     await bulkCreateMutation.mutateAsync(inputs);
     
-    // Clear edit mode
     const newEditMode = { ...editMode };
     delete newEditMode[dayOfWeek];
     setEditMode(newEditMode);
+    setExpandedDay(null);
   };
 
-  const copyToOtherDays = (sourceDayOfWeek: number) => {
+  const copyToOtherDays = async (sourceDayOfWeek: number) => {
     const sourceRanges = getWindowsForDay(sourceDayOfWeek);
-    const newEditMode = { ...editMode };
     
     for (let day = 0; day < 7; day++) {
       if (day !== sourceDayOfWeek) {
-        newEditMode[day] = sourceRanges.map((r) => ({
+        const existingIds = windows
+          .filter((w) => w.day_of_week === day)
+          .map((w) => w.id);
+        
+        for (const id of existingIds) {
+          await deleteMutation.mutateAsync(id);
+        }
+        
+        const inputs: CreateAvailabilityWindowInput[] = sourceRanges.map((r) => ({
+          day_of_week: day,
           start_time: r.start_time,
           end_time: r.end_time,
-          temp_id: `new-${Date.now()}-${day}`,
         }));
+        
+        if (inputs.length > 0) {
+          await bulkCreateMutation.mutateAsync(inputs);
+        }
       }
     }
+  };
+
+  const deleteAllSlots = async (dayOfWeek: number) => {
+    const existingIds = windows
+      .filter((w) => w.day_of_week === dayOfWeek)
+      .map((w) => w.id);
     
+    for (const id of existingIds) {
+      await deleteMutation.mutateAsync(id);
+    }
+    
+    const newEditMode = { ...editMode };
+    delete newEditMode[dayOfWeek];
     setEditMode(newEditMode);
   };
 
@@ -127,91 +160,143 @@ export function AvailabilityEditor() {
   }
 
   return (
-    <div className="space-y-4">
-      {DAYS.map((dayName, dayOfWeek) => {
-        const ranges = getWindowsForDay(dayOfWeek);
-        const hasChanges = !!editMode[dayOfWeek];
+    <div className="space-y-2">
+      {/* Compact table */}
+      <div className="border rounded-lg overflow-hidden">
+        <div className="divide-y">
+          {DAYS.map((dayName, dayOfWeek) => {
+            const ranges = getWindowsForDay(dayOfWeek);
+            const hasChanges = !!editMode[dayOfWeek];
+            const isExpanded = expandedDay === dayOfWeek;
 
-        return (
-          <Card key={dayOfWeek}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <Label className="text-base font-semibold">{dayName}</Label>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToOtherDays(dayOfWeek)}
-                    disabled={ranges.length === 0}
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copia ad altri giorni
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addTimeRange(dayOfWeek)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Aggiungi fascia
-                  </Button>
+            return (
+              <div key={dayOfWeek} className="bg-card">
+                {/* Day row */}
+                <div className="flex items-center gap-3 p-3">
+                  {/* Day name */}
+                  <div className="w-28 font-medium text-sm">{dayName}</div>
+
+                  {/* Time slot chips */}
+                  <div className="flex-1 flex flex-wrap gap-2">
+                    {ranges.length === 0 ? (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    ) : (
+                      ranges.map((range, idx) => (
+                        <Badge 
+                          key={range.temp_id || idx} 
+                          variant="secondary"
+                          className="font-mono text-xs"
+                        >
+                          {range.start_time}–{range.end_time}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (isExpanded) {
+                          setExpandedDay(null);
+                        } else {
+                          addTimeRange(dayOfWeek);
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => copyToOtherDays(dayOfWeek)}
+                          disabled={ranges.length === 0}
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copia ad altri giorni
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => deleteAllSlots(dayOfWeek)}
+                          disabled={ranges.length === 0}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Elimina fasce
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </div>
 
-              {ranges.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nessuna disponibilità impostata</p>
-              ) : (
-                <div className="space-y-3">
-                  {ranges.map((range, index) => (
-                    <div key={range.temp_id || index} className="flex items-center gap-3">
-                      <div className="flex-1 flex items-center gap-2">
+                {/* Inline editor */}
+                {isExpanded && (
+                  <div className="border-t bg-muted/30 p-4 space-y-3">
+                    {ranges.map((range, index) => (
+                      <div key={range.temp_id || index} className="flex items-center gap-3">
                         <input
                           type="time"
                           value={range.start_time}
                           onChange={(e) =>
                             updateTimeRange(dayOfWeek, index, "start_time", e.target.value)
                           }
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                          className="flex h-9 w-32 rounded-md border border-input bg-background px-3 py-1 text-sm"
                           step="300"
                         />
-                        <span className="text-muted-foreground">-</span>
+                        <span className="text-muted-foreground">—</span>
                         <input
                           type="time"
                           value={range.end_time}
                           onChange={(e) =>
                             updateTimeRange(dayOfWeek, index, "end_time", e.target.value)
                           }
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                          className="flex h-9 w-32 rounded-md border border-input bg-background px-3 py-1 text-sm"
                           step="300"
                         />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeTimeRange(dayOfWeek, index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeTimeRange(dayOfWeek, index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {hasChanges && (
-                <Button
-                  onClick={() => saveDay(dayOfWeek)}
-                  className="mt-4 w-full"
-                  disabled={deleteMutation.isPending || bulkCreateMutation.isPending}
-                >
-                  {deleteMutation.isPending || bulkCreateMutation.isPending
-                    ? "Salvataggio..."
-                    : "Salva modifiche"}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+                    ))}
+                    {hasChanges && (
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          size="sm"
+                          onClick={() => saveDay(dayOfWeek)}
+                          disabled={deleteMutation.isPending || bulkCreateMutation.isPending}
+                        >
+                          Salva
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const newEditMode = { ...editMode };
+                            delete newEditMode[dayOfWeek];
+                            setEditMode(newEditMode);
+                            setExpandedDay(null);
+                          }}
+                        >
+                          Annulla
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
