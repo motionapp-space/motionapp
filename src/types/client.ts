@@ -1,7 +1,21 @@
 export type Sex = "M" | "F" | "ALTRO";
 export type ClientStatus = "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO";
 export type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
-export type ActivityType = "CREATED" | "UPDATED" | "TAGGED" | "ASSIGNED_PLAN" | "COMPLETED_PLAN" | "ARCHIVED";
+export type ActivityType = 
+  | "CREATED" 
+  | "UPDATED" 
+  | "TAGGED" 
+  | "ASSIGNED_PLAN" 
+  | "COMPLETED_PLAN" 
+  | "ARCHIVED"
+  | "EVENT_CREATED"
+  | "EVENT_RECURRING_CREATED"
+  | "EVENT_UPDATED"
+  | "EVENT_DELETED"
+  | "PACKAGE_CREATED"
+  | "PACKAGE_UPDATED"
+  | "SESSION_STARTED"
+  | "SESSION_COMPLETED";
 
 export interface Client {
   id: string;
