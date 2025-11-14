@@ -61,7 +61,7 @@ serve(async (req) => {
       JSON.stringify({
         payload: {
           type: "text",
-          content: "Ciao! Sono il Copilot AI di PlanPal. Come posso aiutarti a migliorare il tuo piano di allenamento?"
+          content: "Ciao! Sono il Copilot AI di Studio AI. Come posso aiutarti a migliorare il tuo piano di allenamento?"
         }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
