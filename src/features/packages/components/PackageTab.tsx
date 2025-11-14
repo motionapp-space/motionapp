@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Info, AlertTriangle } from "lucide-react";
 import { PackageCard } from "./PackageCard";
 import { PackageDialog } from "./PackageDialog";
@@ -99,7 +100,11 @@ export function PackageTab({ clientId }: PackageTabProps) {
 
       {/* Active Packages */}
       {activePackages.length === 0 && completedPackages.length === 0 ? (
-        <PackageEmptyState onCreatePackage={() => setDialogOpen(true)} />
+        <Card>
+          <CardContent className="p-0">
+            <PackageEmptyState onCreatePackage={() => setDialogOpen(true)} />
+          </CardContent>
+        </Card>
       ) : (
         <>
           {activePackages.length > 0 && (
