@@ -65,7 +65,7 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
       ) : (
         <>
           {upcomingEvents.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h4 className="text-sm font-medium text-muted-foreground">Prossimi</h4>
               {upcomingEvents.map((event) => (
                 <Card
@@ -73,26 +73,28 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
                   className="cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => handleEventClick(event)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1 flex-1">
-                        <h4 className="font-semibold">{event.title}</h4>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          <span>
-                            {format(parseISO(event.start_at), "EEEE, d MMMM yyyy", { locale: it })}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          <span>{formatTimeRange(event.start_at, event.end_at, event.is_all_day)}</span>
-                        </div>
-                        {event.location && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{event.location}</span>
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-base mb-1 truncate">{event.title}</h4>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">
+                              {format(parseISO(event.start_at), "EEEE, d MMMM yyyy", { locale: it })}
+                            </span>
                           </div>
-                        )}
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span>{formatTimeRange(event.start_at, event.end_at, event.is_all_day)}</span>
+                          </div>
+                          {event.location && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate">{event.location}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -102,7 +104,7 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
           )}
 
           {pastEvents.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h4 className="text-sm font-medium text-muted-foreground">Passati</h4>
               {pastEvents.map((event) => (
                 <Card
@@ -110,26 +112,28 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
                   className="cursor-pointer hover:shadow-md transition-shadow opacity-75"
                   onClick={() => handleEventClick(event)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1 flex-1">
-                        <h4 className="font-semibold">{event.title}</h4>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          <span>
-                            {format(parseISO(event.start_at), "EEEE, d MMMM yyyy", { locale: it })}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          <span>{formatTimeRange(event.start_at, event.end_at, event.is_all_day)}</span>
-                        </div>
-                        {event.location && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{event.location}</span>
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-base mb-1 truncate">{event.title}</h4>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">
+                              {format(parseISO(event.start_at), "EEEE, d MMMM yyyy", { locale: it })}
+                            </span>
                           </div>
-                        )}
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span>{formatTimeRange(event.start_at, event.end_at, event.is_all_day)}</span>
+                          </div>
+                          {event.location && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate">{event.location}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
