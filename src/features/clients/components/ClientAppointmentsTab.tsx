@@ -4,6 +4,7 @@ import { EventModal } from "@/features/events/components/EventModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Calendar, MapPin, Clock } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { format, parseISO, addHours } from "date-fns";
 import { it } from "date-fns/locale";
 import { formatTimeRange, isEventInPast } from "@/features/events/utils/calendar-utils";
@@ -53,13 +54,16 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
 
       {upcomingEvents.length === 0 && pastEvents.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground mb-4">Nessun appuntamento</p>
-            <Button onClick={handleNewEvent} variant="outline" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Crea primo appuntamento
-            </Button>
+          <CardContent className="p-0">
+            <EmptyState
+              icon={Calendar}
+              title="Nessun appuntamento"
+              description="Non ci sono appuntamenti programmati per questo cliente. Crea il primo appuntamento per iniziare."
+              action={{
+                label: "Crea primo appuntamento",
+                onClick: handleNewEvent
+              }}
+            />
           </CardContent>
         </Card>
       ) : (

@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Edit, Plus, X } from "lucide-react";
+import { ArrowLeft, Edit, Plus, X, FileText } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
 import type { ClientStatus } from "@/types/client";
@@ -318,12 +319,16 @@ const ClientDetail = () => {
               </div>
             ) : clientPlans.length === 0 ? (
               <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">{toSentenceCase("Nessun piano assegnato")}</p>
-                  <Button onClick={() => setAssignDialogOpen(true)} className="mt-4 gap-2">
-                    <Plus className="h-4 w-4" />
-                    {toSentenceCase("Assegna piano")}
-                  </Button>
+                <CardContent className="p-0">
+                  <EmptyState
+                    icon={FileText}
+                    title="Nessun piano assegnato"
+                    description="Questo cliente non ha ancora piani di allenamento assegnati. Assegna un piano per iniziare."
+                    action={{
+                      label: "Assegna piano",
+                      onClick: () => setAssignDialogOpen(true)
+                    }}
+                  />
                 </CardContent>
               </Card>
             ) : (
