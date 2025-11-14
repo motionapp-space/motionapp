@@ -365,7 +365,7 @@ export const useClientStore = create<ClientStore>((set, get) => ({
         .from("client_activities")
         .insert([{
           client_id: clientId,
-          type: type as ActivityType,
+          type: type as any,
           message,
         }]);
     } catch (error) {
