@@ -74,7 +74,7 @@ export function PackageTab({ clientId }: PackageTabProps) {
   ) || [];
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-6">
       {/* Info Alert */}
       {hasActivePackage && (
         <Alert className="bg-info/10 border-info rounded-2xl">
@@ -87,13 +87,14 @@ export function PackageTab({ clientId }: PackageTabProps) {
 
       {/* Section Header with Button */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Pacchetti attivi</h2>
+        <h3 className="text-lg font-semibold">Pacchetti attivi</h3>
         <Button 
           onClick={() => setDialogOpen(true)}
           disabled={hasActivePackage}
-          className="rounded-2xl px-4 py-2 font-semibold"
+          size="sm"
+          className="gap-2"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4" />
           Nuovo pacchetto
         </Button>
       </div>
