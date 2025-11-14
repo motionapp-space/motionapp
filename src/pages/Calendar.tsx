@@ -177,8 +177,8 @@ const Calendar = () => {
             className="gap-2 h-10 relative"
           >
             <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">⚙️ Gestione prenotazioni</span>
-            <span className="sm:hidden">⚙️ Gestione</span>
+            <span className="hidden sm:inline">Gestione prenotazioni</span>
+            <span className="sm:hidden">Gestione</span>
             {pendingCount > 0 && (
               <Badge 
                 variant={pendingCount >= 10 ? "destructive" : "default"}
