@@ -58,11 +58,15 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
 
   if (sessions.length === 0) {
     return (
-      <EmptyState
-        icon={Activity}
-        title="Nessuna sessione registrata"
-        description="Non ci sono sessioni di allenamento registrate per questo cliente."
-      />
+      <Card>
+        <CardContent className="p-0">
+          <EmptyState
+            icon={Activity}
+            title="Nessuna sessione registrata"
+            description="Non ci sono sessioni di allenamento registrate per questo cliente."
+          />
+        </CardContent>
+      </Card>
     );
   }
 
