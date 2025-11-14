@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateSession } from "../api/sessions.api";
 import { toast } from "sonner";
+import { logClientActivity } from "@/features/clients/api/activities.api";
 
 export function useUpdateSession() {
   const queryClient = useQueryClient();
@@ -8,9 +9,18 @@ export function useUpdateSession() {
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: any }) =>
       updateSession(id, updates),
-    onSuccess: (data) => {
+    onSuccess: async (session) => {
+      // Log activity when session is completed
+      if (session.status === "completed") {
+        await logClientActivity(
+          session.client_id,
+          "SESSION_COMPLETED",
+          "Sessione live completata"
+        );
+      }
+
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      queryClient.invalidateQueries({ queryKey: ["session", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["session", session.id] });
     },
     onError: (error: Error) => {
       toast.error("Errore", {

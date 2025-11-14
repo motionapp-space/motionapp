@@ -8,6 +8,7 @@ import { useUpdateEvent } from "../hooks/useUpdateEvent";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useClientPackages } from "@/features/packages/hooks/useClientPackages";
 import { calculatePackageKPI } from "@/features/packages/utils/kpi";
+import { logClientActivity } from "@/features/clients/api/activities.api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -450,6 +451,15 @@ export function UnifiedAppointmentModal({
           }
 
           if (createdCount > 0) {
+            // Log recurring events activity (aggregate for multiple events)
+            if (createdCount > 1 && selectedClientId) {
+              await logClientActivity(
+                selectedClientId,
+                "EVENT_RECURRING_CREATED",
+                `${createdCount} appuntamenti ricorrenti programmati`
+              );
+            }
+            
             toast.success(
               `${createdCount} appuntamento/i creato/i con successo${
                 skippedCount > 0 ? ` (${skippedCount} saltato/i per mancanza di disponibilità)` : ""

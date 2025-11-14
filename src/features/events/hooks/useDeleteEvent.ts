@@ -1,13 +1,28 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteEvent } from "../api/events.api";
+import { deleteEvent, getEventById } from "../api/events.api";
 import { toast } from "@/hooks/use-toast";
+import { logClientActivity } from "@/features/clients/api/activities.api";
 
 export function useDeleteEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteEvent,
-    onSuccess: () => {
+    mutationFn: async (id: string) => {
+      // Get event before deletion to have client_id and title
+      const event = await getEventById(id);
+      await deleteEvent(id);
+      return event;
+    },
+    onSuccess: async (deletedEvent) => {
+      // Log activity
+      if (deletedEvent.client_id) {
+        await logClientActivity(
+          deletedEvent.client_id,
+          "EVENT_DELETED",
+          `Appuntamento eliminato: ${deletedEvent.title || "Sessione"}`
+        );
+      }
+
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       toast({
