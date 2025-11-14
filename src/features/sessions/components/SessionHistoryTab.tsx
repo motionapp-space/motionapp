@@ -71,7 +71,7 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Storico sessioni</h3>
         <Badge variant="secondary">{sessions.length} sessioni</Badge>

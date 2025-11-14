@@ -305,7 +305,7 @@ const ClientDetail = () => {
 
           {/* Plans Tab */}
           <TabsContent value="plans" className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">{toSentenceCase("Piani assegnati")}</h3>
               <Button onClick={() => setAssignDialogOpen(true)} size="sm" className="gap-2">
                 <Plus className="h-4 w-4" />
