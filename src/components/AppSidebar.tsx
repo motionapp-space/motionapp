@@ -30,7 +30,7 @@ export function AppSidebar() {
       data-testid="sidebar"
     >
       <div className="px-5 py-4">
-        <div className="text-2xl font-semibold tracking-tight">PlanPal</div>
+        <div className="text-2xl font-semibold tracking-tight">Studio AI</div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3">

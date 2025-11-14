@@ -106,7 +106,7 @@ const Auth = () => {
             <Dumbbell className="h-10 w-10 text-primary" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold text-foreground">PlanPal</h1>
+            <h1 className="text-4xl font-bold text-foreground">Studio AI</h1>
             <p className="text-muted-foreground mt-2">
               Crea e gestisci piani di allenamento professionali con l'assistenza AI
             </p>

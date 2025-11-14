@@ -3,7 +3,7 @@ import { Plan, Day, Exercise, PhaseType, Objective, makeDay, makeExercise, makeP
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
-const STORAGE_KEY = 'planpal.currentPlan';
+const STORAGE_KEY = 'studioai.currentPlan';
 let saveTimeout: NodeJS.Timeout | null = null;
 
 interface PlanStore {
