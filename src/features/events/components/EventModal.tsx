@@ -22,7 +22,8 @@ export function EventModal({
   onOpenChange, 
   event, 
   prefillData, 
-  lockedClientId 
+  lockedClientId,
+  onStartSession 
 }: EventModalProps) {
   const { data: bookingSettings } = useBookingSettingsQuery();
   const [coachId, setCoachId] = useState<string>("");
@@ -46,6 +47,7 @@ export function EventModal({
       lockedClientId={lockedClientId}
       durationMinutes={defaultDuration}
       event={event}
+      onStartSession={onStartSession}
     />
   );
 }

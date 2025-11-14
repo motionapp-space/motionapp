@@ -3,7 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Play, Pause, Save } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { ArrowLeft, Play, Pause, Save, MoreVertical, XCircle, PauseCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useSessionQuery } from "@/features/sessions/hooks/useSessionQuery";
 import { useUpdateSession } from "@/features/sessions/hooks/useUpdateSession";
@@ -34,6 +36,7 @@ export default function LiveSession() {
   const [elapsed, setElapsed] = useState(0);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [sessionNotes, setSessionNotes] = useState("");
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [restTimers, setRestTimers] = useState<Record<string, number>>({});
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [historyDrawerExercise, setHistoryDrawerExercise] = useState<{ id: string; name: string } | null>(null);
@@ -184,6 +187,32 @@ export default function LiveSession() {
     }
   };
 
+  const handleInterruptSession = async () => {
+    try {
+      await updateSession.mutateAsync({
+        id: sessionId!,
+        updates: { status: "interrupted" },
+      });
+      toast.success("Sessione interrotta");
+      navigate(`/clients/${session.client_id}?tab=sessions`);
+    } catch (error) {
+      toast.error("Errore nell'interrompere la sessione");
+    }
+  };
+
+  const handleCancelSession = async () => {
+    try {
+      await updateSession.mutateAsync({
+        id: sessionId!,
+        updates: { status: "cancelled" },
+      });
+      toast.success("Sessione annullata");
+      navigate(`/clients/${session.client_id}?tab=sessions`);
+    } catch (error) {
+      toast.error("Errore nell'annullare la sessione");
+    }
+  };
+
   if (sessionLoading || !session || !day) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -228,6 +257,27 @@ export default function LiveSession() {
                 <Save className="h-4 w-4" />
                 Fine sessione
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleInterruptSession}>
+                    <PauseCircle className="h-4 w-4 mr-2" />
+                    Interrompi sessione
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setCancelDialogOpen(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Annulla sessione
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -368,6 +418,28 @@ export default function LiveSession() {
           exerciseName={historyDrawerExercise.name}
         />
       )}
+
+      {/* Cancel Session Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Annullare la sessione?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Questa azione è irreversibile. La sessione verrà contrassegnata come annullata
+              e tutti i dati registrati saranno conservati ma la sessione non sarà più modificabile.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Torna indietro</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelSession}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Annulla sessione
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

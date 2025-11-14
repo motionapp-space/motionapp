@@ -1552,6 +1552,14 @@ export type Database = {
         | "ASSIGNED_PLAN"
         | "COMPLETED_PLAN"
         | "ARCHIVED"
+        | "EVENT_CREATED"
+        | "EVENT_RECURRING_CREATED"
+        | "EVENT_UPDATED"
+        | "EVENT_DELETED"
+        | "PACKAGE_CREATED"
+        | "PACKAGE_UPDATED"
+        | "SESSION_STARTED"
+        | "SESSION_COMPLETED"
       approval_mode: "AUTO" | "MANUAL"
       booking_request_status:
         | "PENDING"
@@ -1710,6 +1718,14 @@ export const Constants = {
         "ASSIGNED_PLAN",
         "COMPLETED_PLAN",
         "ARCHIVED",
+        "EVENT_CREATED",
+        "EVENT_RECURRING_CREATED",
+        "EVENT_UPDATED",
+        "EVENT_DELETED",
+        "PACKAGE_CREATED",
+        "PACKAGE_UPDATED",
+        "SESSION_STARTED",
+        "SESSION_COMPLETED",
       ],
       approval_mode: ["AUTO", "MANUAL"],
       booking_request_status: [
