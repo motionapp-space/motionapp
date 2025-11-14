@@ -40,6 +40,7 @@ interface UnifiedAppointmentModalProps {
   lockedClientId?: string;
   durationMinutes: number;
   event?: EventWithClient;
+  onStartSession?: (clientId: string, eventId: string, linkedPlanId?: string, linkedDayId?: string) => void;
 }
 
 const fmtDay = (d: Date) => d.toLocaleDateString("it-IT", { weekday: "short", day: "2-digit" });

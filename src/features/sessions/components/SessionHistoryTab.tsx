@@ -10,6 +10,7 @@ import { it } from "date-fns/locale";
 import { listSessions } from "../api/sessions.api";
 import { listActuals } from "../api/actuals.api";
 import type { TrainingSessionWithClient } from "../types";
+import { SessionDetailDrawer } from "./SessionDetailDrawer";
 
 interface SessionHistoryTabProps {
   clientId: string;
@@ -17,6 +18,7 @@ interface SessionHistoryTabProps {
 
 export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
+  const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
 
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["sessions", clientId],
@@ -41,6 +43,8 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
     const variants: Record<string, { variant: any; label: string }> = {
       completed: { variant: "default", label: "Completata" },
       in_progress: { variant: "secondary", label: "In corso" },
+      interrupted: { variant: "secondary", label: "Interrotta" },
+      cancelled: { variant: "destructive", label: "Annullata" },
       planned: { variant: "outline", label: "Pianificata" },
       no_show: { variant: "destructive", label: "No show" },
     };
@@ -77,9 +81,19 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
         <Badge variant="secondary">{sessions.length} sessioni</Badge>
       </div>
 
+      <SessionDetailDrawer
+        open={!!detailSessionId}
+        onOpenChange={(open) => !open && setDetailSessionId(null)}
+        sessionId={detailSessionId || ""}
+      />
+
       <div className="space-y-3">
         {sessions.map((session) => (
-          <Card key={session.id} className="overflow-hidden">
+          <Card 
+            key={session.id} 
+            className="overflow-hidden cursor-pointer hover:bg-accent/50 transition-colors"
+            onClick={() => setDetailSessionId(session.id)}
+          >
             <CardContent className="p-4">
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-4">

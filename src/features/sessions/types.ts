@@ -1,4 +1,4 @@
-export type SessionStatus = "planned" | "in_progress" | "completed" | "no_show";
+export type SessionStatus = "planned" | "in_progress" | "completed" | "no_show" | "interrupted" | "cancelled";
 
 export interface ExerciseRef {
   dayId: string;
