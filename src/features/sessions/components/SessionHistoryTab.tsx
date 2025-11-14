@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Calendar, Activity, FileText } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { format, parseISO, differenceInSeconds } from "date-fns";
 import { it } from "date-fns/locale";
 import { listSessions } from "../api/sessions.api";
@@ -57,10 +58,11 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
 
   if (sessions.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">Nessuna sessione registrata</p>
-      </div>
+      <EmptyState
+        icon={Activity}
+        title="Nessuna sessione registrata"
+        description="Non ci sono sessioni di allenamento registrate per questo cliente."
+      />
     );
   }
 
