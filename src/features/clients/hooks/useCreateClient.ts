@@ -20,7 +20,12 @@ export function useCreateClient() {
       toast.success("Cliente creato con successo");
     },
     onError: (error) => {
-      toast.error(`Errore durante la creazione: ${error.message}`);
+      // Check for duplicate email constraint violation
+      if (error.message.includes('uq_client_email') || error.message.includes('duplicate key')) {
+        toast.error("Questa email è già utilizzata da un altro cliente. Inserisci un indirizzo email diverso.");
+      } else {
+        toast.error(`Errore durante la creazione: ${error.message}`);
+      }
     },
   });
 }
