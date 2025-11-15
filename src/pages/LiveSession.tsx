@@ -18,6 +18,11 @@ import { ExerciseHistoryDrawer } from "@/features/sessions/components/ExerciseHi
 import type { Day, Phase, ExerciseGroup, Exercise } from "@/types/plan";
 import type { ExerciseActual } from "@/features/sessions/types";
 import { migratePhaseToGroups } from "@/types/plan";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export default function LiveSession() {
   const [searchParams] = useSearchParams();
@@ -40,6 +45,16 @@ export default function LiveSession() {
   const [restTimers, setRestTimers] = useState<Record<string, number>>({});
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [historyDrawerExercise, setHistoryDrawerExercise] = useState<{ id: string; name: string } | null>(null);
+  
+  // State per tracciare i valori modificabili per ogni esercizio
+  const [editableValues, setEditableValues] = useState<Record<string, {
+    reps: string;
+    load: string;
+    rest: string;
+  }>>({});
+  
+  // State per tracciare esercizi saltati
+  const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
 
   // Load day data from plan
   useEffect(() => {
@@ -110,6 +125,34 @@ export default function LiveSession() {
     return mins * 60 + secs;
   };
 
+  const getEditableValue = (exerciseId: string, field: 'reps' | 'load' | 'rest', defaultValue: string) => {
+    return editableValues[exerciseId]?.[field] ?? defaultValue;
+  };
+
+  const updateEditableValue = (exerciseId: string, field: 'reps' | 'load' | 'rest', value: string) => {
+    setEditableValues(prev => ({
+      ...prev,
+      [exerciseId]: {
+        reps: prev[exerciseId]?.reps ?? '',
+        load: prev[exerciseId]?.load ?? '',
+        rest: prev[exerciseId]?.rest ?? '',
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSkipExercise = (exerciseId: string) => {
+    setSkippedExercises(prev => new Set([...prev, exerciseId]));
+  };
+
+  const handleResumeExercise = (exerciseId: string) => {
+    setSkippedExercises(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(exerciseId);
+      return newSet;
+    });
+  };
+
   const handleCompleteSet = async (exercise: Exercise, phase: Phase, group: ExerciseGroup) => {
     if (!session || !day) return;
     
@@ -123,13 +166,21 @@ export default function LiveSession() {
         group_id: group.id,
         exercise_id: exercise.id,
         set_index: setIndex,
-        reps: exercise.reps,
-        load: exercise.load,
-        rest: exercise.rest,
+        reps: editableValues[exercise.id]?.reps || exercise.reps,
+        load: editableValues[exercise.id]?.load || exercise.load || null,
+        rest: editableValues[exercise.id]?.rest || exercise.rest || null,
+      });
+
+      // Reset editable values for next set
+      setEditableValues(prev => {
+        const newValues = { ...prev };
+        delete newValues[exercise.id];
+        return newValues;
       });
 
       // Start rest timer if applicable
-      const restSeconds = parseRestToSeconds(exercise.rest);
+      const restValue = editableValues[exercise.id]?.rest || exercise.rest;
+      const restSeconds = parseRestToSeconds(restValue);
       if (restSeconds > 0) {
         setRestTimers((prev) => ({ ...prev, [exercise.id]: restSeconds }));
       }
@@ -284,6 +335,31 @@ export default function LiveSession() {
       </header>
 
       <div className="container mx-auto px-4 md:px-6 py-6 max-w-6xl space-y-6">
+        {/* Legenda */}
+        <Card className="bg-muted/50">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm font-medium mb-2">Legenda</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-amber-100 dark:bg-amber-950"></div>
+                <span>Meno serie del previsto</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-green-100 dark:bg-green-950"></div>
+                <span>Serie come da piano</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-orange-100 dark:bg-orange-950"></div>
+                <span>Serie extra / valori diversi</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-muted border border-border"></div>
+                <span>Esercizio saltato</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {day.phases.map((phase) => {
           const migratedPhase = migratePhaseToGroups(phase);
           if (migratedPhase.groups.length === 0) return null;
@@ -301,23 +377,44 @@ export default function LiveSession() {
                   {group.exercises.map((exercise) => {
                     const exerciseActuals = getActualsForExercise(exercise.id);
                     const restTimer = restTimers[exercise.id] || 0;
+                    const isSkipped = skippedExercises.has(exercise.id);
 
                     return (
-                      <div key={exercise.id} className="border-l-4 border-primary/20 pl-3 space-y-2">
-                          <div className="flex items-start justify-between gap-4">
+                      <div key={exercise.id} className={cn(
+                        "border-l-4 pl-3 space-y-3",
+                        isSkipped 
+                          ? "border-muted opacity-60" 
+                          : "border-primary/20"
+                      )}>
+                        {/* Header esercizio */}
+                        <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium">{exercise.name || "Esercizio senza nome"}</p>
+                            <div className="flex items-center gap-2">
+                              <p className={cn(
+                                "font-medium",
+                                isSkipped && "line-through text-muted-foreground"
+                              )}>
+                                {exercise.name || "Esercizio senza nome"}
+                              </p>
+                              {isSkipped && (
+                                <Badge variant="outline" className="text-xs">Saltato</Badge>
+                              )}
+                            </div>
+                            
                             <p className="text-sm text-muted-foreground">
-                              {exercise.sets} x {exercise.reps}
+                              Target: {exercise.sets} x {exercise.reps}
                               {exercise.load && ` @ ${exercise.load}`}
                               {exercise.rest && ` · Recupero: ${exercise.rest}`}
                             </p>
+                            
                             {exercise.goal && (
                               <p className="text-sm text-muted-foreground italic mt-1">
-                                {exercise.goal}
+                                Obiettivo: {exercise.goal}
                               </p>
                             )}
                           </div>
+                          
+                          {/* Azioni header */}
                           <div className="flex items-center gap-2 shrink-0">
                             <Button
                               size="sm"
@@ -329,37 +426,159 @@ export default function LiveSession() {
                             >
                               Storico
                             </Button>
-                            <div className="text-sm font-medium">
+                            
+                            {/* Counter con styling condizionale */}
+                            <div className={cn(
+                              "text-sm font-medium px-2 py-1 rounded-md",
+                              exerciseActuals.length < exercise.sets && "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
+                              exerciseActuals.length === exercise.sets && "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+                              exerciseActuals.length > exercise.sets && "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400"
+                            )}>
                               {exerciseActuals.length}/{exercise.sets}
                             </div>
-                            <Button
-                              size="sm"
-                              onClick={() => handleCompleteSet(exercise, phase, group)}
-                              disabled={exerciseActuals.length >= exercise.sets}
-                            >
-                              Completa
-                            </Button>
-                            {exerciseActuals.length > 0 && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleUndoLastSet(exercise.id)}
-                              >
-                                Annulla
-                              </Button>
-                            )}
                           </div>
                         </div>
+
+                        {/* Input valori modificabili - Solo se NON saltato */}
+                        {!isSkipped && (
+                          <Card className="bg-muted/30">
+                            <CardContent className="pt-3 pb-3">
+                              <div className="space-y-2">
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                  Valori prossima serie
+                                </p>
+                                <div className="flex flex-wrap items-center gap-3">
+                                  {/* Ripetizioni */}
+                                  <div className="flex items-center gap-2">
+                                    <Label htmlFor={`reps-${exercise.id}`} className="text-sm whitespace-nowrap">
+                                      Reps
+                                    </Label>
+                                    <Input
+                                      id={`reps-${exercise.id}`}
+                                      type="text"
+                                      value={getEditableValue(exercise.id, 'reps', exercise.reps)}
+                                      onChange={(e) => updateEditableValue(exercise.id, 'reps', e.target.value)}
+                                      className="w-20 h-9 text-center font-medium"
+                                      placeholder={exercise.reps}
+                                    />
+                                  </div>
+                                  
+                                  {/* Carico */}
+                                  <div className="flex items-center gap-2">
+                                    <Label htmlFor={`load-${exercise.id}`} className="text-sm whitespace-nowrap">
+                                      Carico
+                                    </Label>
+                                    <Input
+                                      id={`load-${exercise.id}`}
+                                      type="text"
+                                      value={getEditableValue(exercise.id, 'load', exercise.load || '')}
+                                      onChange={(e) => updateEditableValue(exercise.id, 'load', e.target.value)}
+                                      className="w-24 h-9 font-medium"
+                                      placeholder={exercise.load || 'N/A'}
+                                    />
+                                  </div>
+                                  
+                                  {/* Recupero */}
+                                  <div className="flex items-center gap-2">
+                                    <Label htmlFor={`rest-${exercise.id}`} className="text-sm whitespace-nowrap">
+                                      Rest
+                                    </Label>
+                                    <Input
+                                      id={`rest-${exercise.id}`}
+                                      type="text"
+                                      value={getEditableValue(exercise.id, 'rest', exercise.rest || '')}
+                                      onChange={(e) => updateEditableValue(exercise.id, 'rest', e.target.value)}
+                                      className="w-20 h-9 text-center font-medium"
+                                      placeholder={exercise.rest || 'N/A'}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Timer recupero */}
                         {restTimer > 0 && (
-                          <div className="text-sm font-medium text-primary">
+                          <div className="text-sm font-medium text-primary animate-pulse">
                             Recupero: {formatTime(restTimer)}
                           </div>
                         )}
+
+                        {/* Serie completate con dettagli */}
                         {exerciseActuals.length > 0 && (
-                          <div className="text-xs text-muted-foreground">
-                            Serie: {exerciseActuals.map((a) => `${a.reps}`).join(", ")}
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground">Serie completate</p>
+                            <div className="flex flex-wrap gap-2">
+                              {exerciseActuals.map((actual, idx) => {
+                                // Calcola se diverso dal pianificato
+                                const repsDiff = actual.reps !== exercise.reps;
+                                const loadDiff = actual.load && exercise.load && actual.load !== exercise.load;
+                                
+                                return (
+                                  <Badge 
+                                    key={actual.id} 
+                                    variant="outline" 
+                                    className={cn(
+                                      "gap-1",
+                                      (repsDiff || loadDiff) && "border-orange-500 text-orange-700 dark:text-orange-400"
+                                    )}
+                                  >
+                                    #{idx + 1}: {actual.reps}r
+                                    {actual.load && ` × ${actual.load}`}
+                                  </Badge>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
+
+                        {/* Bottoni azione */}
+                        <div className="flex gap-2">
+                          {!isSkipped ? (
+                            <>
+                              {/* Completa Serie - sempre abilitato */}
+                              <Button
+                                size="sm"
+                                onClick={() => handleCompleteSet(exercise, phase, group)}
+                                className="flex-1"
+                              >
+                                ✓ Completa serie
+                              </Button>
+                              
+                              {/* Annulla ultima serie */}
+                              {exerciseActuals.length > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleUndoLastSet(exercise.id)}
+                                >
+                                  Annulla
+                                </Button>
+                              )}
+                              
+                              {/* Salta esercizio */}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleSkipExercise(exercise.id)}
+                                className="text-muted-foreground"
+                              >
+                                Salta
+                              </Button>
+                            </>
+                          ) : (
+                            // Esercizio saltato - permetti di riprendere
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleResumeExercise(exercise.id)}
+                              className="flex-1"
+                            >
+                              Riprendi esercizio
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
