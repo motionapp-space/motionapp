@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Edit, Plus, X, FileText } from "lucide-react";
+import { ArrowLeft, Edit, Plus, X, FileText, Play } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
@@ -22,6 +22,9 @@ import { ClientPlanCard } from "@/features/client-plans/components/ClientPlanCar
 import { ClientAppointmentsTab } from "@/features/clients/components/ClientAppointmentsTab";
 import { SessionHistoryTab } from "@/features/sessions/components/SessionHistoryTab";
 import { PackageTab } from "@/features/packages/components/PackageTab";
+import { DayPicker } from "@/features/sessions/components/DayPicker";
+import { useCreateEvent } from "@/features/events/hooks/useCreateEvent";
+import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 
 const getStatusColor = (status: ClientStatus) => {
   switch (status) {
@@ -56,6 +59,7 @@ const ClientDetail = () => {
 
   const [editMode, setEditMode] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [quickSessionDayPickerOpen, setQuickSessionDayPickerOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [formData, setFormData] = useState({
     first_name: "",
@@ -68,6 +72,8 @@ const ClientDetail = () => {
 
   const { data: clientPlans = [], isLoading: plansLoading } = useClientPlansQuery(id || "");
   const updatePlanMutation = useUpdateClientPlan();
+  const createEvent = useCreateEvent();
+  const createSession = useCreateSession();
 
   useEffect(() => {
     if (id) {
@@ -106,6 +112,50 @@ const ClientDetail = () => {
       toast.success("Stato aggiornato");
     } catch (error) {
       toast.error("Errore nell'aggiornamento");
+    }
+  };
+
+  const handleQuickSessionStart = () => {
+    setQuickSessionDayPickerOpen(true);
+  };
+
+  const handleQuickSessionConfirm = async (planId: string, dayId: string) => {
+    if (!id) return;
+    
+    try {
+      // 1. Create event "NOW" - this will scale packages
+      const now = new Date();
+      const endTime = new Date(now.getTime() + 60 * 60 * 1000); // +1h default
+      
+      const event = await createEvent.mutateAsync({
+        client_id: id,
+        title: "Sessione live",
+        start_at: now.toISOString(),
+        end_at: endTime.toISOString(),
+        linked_plan_id: planId,
+        linked_day_id: dayId,
+        session_status: "scheduled",
+        source: "manual",
+      });
+      
+      // 2. Create session linked to event
+      const session = await createSession.mutateAsync({
+        client_id: id,
+        plan_id: planId,
+        day_id: dayId,
+        event_id: event.id,
+        source: "with_coach",
+      });
+      
+      // 3. Navigate to LiveSession
+      navigate(`/session/live?sessionId=${session.id}`);
+      
+    } catch (error) {
+      toast.error("Errore", {
+        description: "Impossibile avviare la sessione. Riprova.",
+      });
+    } finally {
+      setQuickSessionDayPickerOpen(false);
     }
   };
 
@@ -375,7 +425,16 @@ const ClientDetail = () => {
 
           {/* Sessions Tab */}
           <TabsContent value="sessions">
-            <SessionHistoryTab clientId={id!} />
+            <SessionHistoryTab 
+              clientId={id!} 
+              onStartNewSession={handleQuickSessionStart}
+            />
+            <DayPicker
+              open={quickSessionDayPickerOpen}
+              onOpenChange={setQuickSessionDayPickerOpen}
+              onConfirm={handleQuickSessionConfirm}
+              clientId={id!}
+            />
           </TabsContent>
 
           {/* Measurements Tab */}

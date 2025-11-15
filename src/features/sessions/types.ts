@@ -1,4 +1,5 @@
 export type SessionStatus = "planned" | "in_progress" | "completed" | "no_show" | "interrupted" | "cancelled";
+export type SessionSource = "with_coach" | "autonomous";
 
 export interface ExerciseRef {
   dayId: string;
@@ -36,6 +37,7 @@ export interface TrainingSession {
   ended_at?: string;
   status: SessionStatus;
   notes?: string;
+  source: SessionSource;
   created_at: string;
   updated_at: string;
 }
@@ -50,6 +52,7 @@ export interface CreateSessionInput {
   day_id?: string;
   event_id?: string;
   scheduled_at?: string;
+  source?: SessionSource;
 }
 
 export interface UpdateSessionInput {
