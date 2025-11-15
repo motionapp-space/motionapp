@@ -615,6 +615,53 @@ export type Database = {
           },
         ]
       }
+      coach_notifications: {
+        Row: {
+          coach_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          read_at: string | null
+          related_id: string | null
+          related_type: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          read_at?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          read_at?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_notifications_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coaches: {
         Row: {
           avatar_url: string | null
@@ -1484,6 +1531,7 @@ export type Database = {
           notes: string | null
           plan_id: string | null
           scheduled_at: string | null
+          source: string
           started_at: string | null
           status: string
           updated_at: string
@@ -1499,6 +1547,7 @@ export type Database = {
           notes?: string | null
           plan_id?: string | null
           scheduled_at?: string | null
+          source?: string
           started_at?: string | null
           status: string
           updated_at?: string
@@ -1514,6 +1563,7 @@ export type Database = {
           notes?: string | null
           plan_id?: string | null
           scheduled_at?: string | null
+          source?: string
           started_at?: string | null
           status?: string
           updated_at?: string

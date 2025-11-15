@@ -90,6 +90,7 @@ export async function createSession(input: CreateSessionInput): Promise<Training
       coach_id: user.id,
       status: "in_progress",
       started_at: new Date().toISOString(),
+      source: input.source || "with_coach",
     })
     .select()
     .single();
