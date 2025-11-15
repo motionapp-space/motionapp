@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
-import { X, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, Repeat, AlertCircle } from "lucide-react";
+import { X, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, Repeat, AlertCircle, Play } from "lucide-react";
 import { useAvailableSlots } from "@/features/bookings/hooks/useAvailableSlots";
 import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useUpdateEvent } from "../hooks/useUpdateEvent";
@@ -157,7 +157,8 @@ export function UnifiedAppointmentModal({
   clientId: initialClientId,
   lockedClientId,
   durationMinutes,
-  event
+  event,
+  onStartSession
 }: UnifiedAppointmentModalProps) {
   const isEditMode = !!event;
   const today = useMemo(() => startOfDay(new Date()), []);
@@ -186,6 +187,8 @@ export function UnifiedAppointmentModal({
     endDate: undefined,
     occurrenceCount: 10
   });
+
+  const canStartSession = isEditMode && !!event && !!selectedClientId && !!onStartSession;
 
   // Initialize form with event data in edit mode
   useEffect(() => {
@@ -820,28 +823,56 @@ export function UnifiedAppointmentModal({
 
         {/* Footer - STICKY */}
         <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border/50 p-6 pt-4 shrink-0">
-          <div className="flex justify-end gap-3">
-            <Button 
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              className="px-6"
-            >
-              Annulla
-            </Button>
-            <Button 
-              onClick={handleSubmit}
-              disabled={!canSubmit || isPending}
-              className="px-6 shadow-sm"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {isEditMode ? "Aggiornamento..." : "Creazione..."}
-                </>
-              ) : (
-                isEditMode ? "Aggiorna appuntamento" : "Crea appuntamento"
-              )}
-            </Button>
+          <div className="flex justify-between items-center gap-3">
+            {/* Pulsante Avvia Sessione - Solo in edit mode con cliente */}
+            {canStartSession && (
+              <Button 
+                variant="default"
+                onClick={() => {
+                  if (event && onStartSession) {
+                    onStartSession(
+                      selectedClientId, 
+                      event.id,
+                      event.linked_plan_id,
+                      event.linked_day_id
+                    );
+                    onOpenChange(false);
+                  }
+                }}
+                className="gap-2"
+              >
+                <Play className="h-4 w-4" />
+                Avvia sessione
+              </Button>
+            )}
+            
+            {/* Spacer se non c'è il pulsante avvia sessione */}
+            {!canStartSession && <div />}
+            
+            {/* Bottoni esistenti a destra */}
+            <div className="flex gap-3">
+              <Button 
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+                className="px-6"
+              >
+                Annulla
+              </Button>
+              <Button 
+                onClick={handleSubmit}
+                disabled={!canSubmit || isPending}
+                className="px-6 shadow-sm"
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {isEditMode ? "Aggiornamento..." : "Creazione..."}
+                  </>
+                ) : (
+                  isEditMode ? "Aggiorna appuntamento" : "Crea appuntamento"
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </motion.div>
