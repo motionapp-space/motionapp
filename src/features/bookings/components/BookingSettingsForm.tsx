@@ -441,7 +441,7 @@ export function BookingSettingsForm() {
               Blocca date specifiche per vacanze o altri impegni
             </p>
           </div>
-          <OutOfOfficeManager />
+          <OutOfOfficeManager onChangeDetected={() => setHasUnsavedChanges(true)} />
         </div>
 
         {/* Global Save Bar */}
