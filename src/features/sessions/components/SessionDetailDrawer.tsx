@@ -11,6 +11,7 @@ import { getClientPlan } from "@/features/client-plans/api/client-plans.api";
 import { useEffect, useState } from "react";
 import type { Day, Phase } from "@/types/plan";
 import { migratePhaseToGroups } from "@/types/plan";
+import { cn } from "@/lib/utils";
 
 interface SessionDetailDrawerProps {
   open: boolean;
@@ -172,11 +173,35 @@ export function SessionDetailDrawer({ open, onOpenChange, sessionId }: SessionDe
 
                           return (
                             <div key={exercise.id} className="space-y-2 border-l-2 border-border pl-4">
+                              {/* Header con badge stato */}
                               <div className="flex items-center justify-between">
                                 <p className="font-medium">{exercise.name}</p>
-                                <Badge variant="outline">
-                                  {completedSets.length}/{plannedSets} serie
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                  {/* Badge serie */}
+                                  <Badge 
+                                    variant={
+                                      completedSets.length === 0 ? "destructive" :
+                                      completedSets.length < plannedSets ? "outline" :
+                                      completedSets.length === plannedSets ? "default" :
+                                      "secondary"
+                                    }
+                                  >
+                                    {completedSets.length === 0 ? "Saltato" :
+                                     completedSets.length < plannedSets ? `${completedSets.length}/${plannedSets} serie (meno)` :
+                                     completedSets.length === plannedSets ? `${completedSets.length}/${plannedSets} serie` :
+                                     `${completedSets.length}/${plannedSets} serie (extra)`}
+                                  </Badge>
+                                </div>
+                              </div>
+
+                              {/* Valori pianificati */}
+                              <div className="bg-muted/30 rounded-md px-3 py-2">
+                                <p className="text-xs font-medium text-muted-foreground mb-1">PIANIFICATO</p>
+                                <p className="text-sm">
+                                  {plannedSets} x {exercise.reps} reps
+                                  {exercise.load && ` × ${exercise.load}`}
+                                  {exercise.rest && ` · Rest: ${exercise.rest}`}
+                                </p>
                               </div>
 
                               {exercise.goal && (
@@ -185,41 +210,66 @@ export function SessionDetailDrawer({ open, onOpenChange, sessionId }: SessionDe
                                 </p>
                               )}
 
-                              {completedSets.length > 0 && (
+                              {/* Serie effettivamente eseguite */}
+                              {completedSets.length > 0 ? (
                                 <div className="space-y-1">
-                                  {completedSets.map((actual, idx) => (
-                                    <div 
-                                      key={actual.id}
-                                      className="flex items-center gap-4 text-sm bg-muted/50 rounded-md px-3 py-2"
-                                    >
-                                      <span className="font-medium">Serie {idx + 1}</span>
-                                      <Separator orientation="vertical" className="h-4" />
-                                      <span>
-                                        {actual.reps} reps
-                                        {actual.load && ` × ${actual.load}`}
-                                      </span>
-                                      {actual.rpe && (
-                                        <>
-                                          <Separator orientation="vertical" className="h-4" />
-                                          <span>RPE {actual.rpe}</span>
-                                        </>
-                                      )}
-                                      {actual.note && (
-                                        <>
-                                          <Separator orientation="vertical" className="h-4" />
-                                          <span className="text-muted-foreground italic">
-                                            {actual.note}
-                                          </span>
-                                        </>
-                                      )}
-                                    </div>
-                                  ))}
+                                  <p className="text-xs font-medium text-muted-foreground">ESEGUITO</p>
+                                  {completedSets.map((actual, idx) => {
+                                    // Calcola differenze
+                                    const repsDiff = actual.reps !== exercise.reps;
+                                    const loadDiff = actual.load && exercise.load && actual.load !== exercise.load;
+                                    const hasDifferences = repsDiff || loadDiff;
+                                    
+                                    return (
+                                      <div 
+                                        key={actual.id}
+                                        className={cn(
+                                          "flex items-center gap-4 text-sm rounded-md px-3 py-2",
+                                          hasDifferences ? "bg-orange-50 dark:bg-orange-950/30" : "bg-muted/50"
+                                        )}
+                                      >
+                                        <span className="font-medium">Serie {idx + 1}</span>
+                                        <Separator orientation="vertical" className="h-4" />
+                                        
+                                        {/* Ripetizioni con indicatore differenza */}
+                                        <span className={cn(repsDiff && "font-semibold text-orange-600 dark:text-orange-400")}>
+                                          {actual.reps} reps
+                                          {repsDiff && ` (${exercise.reps})`}
+                                        </span>
+                                        
+                                        {/* Carico con indicatore differenza */}
+                                        {actual.load && (
+                                          <>
+                                            <Separator orientation="vertical" className="h-4" />
+                                            <span className={cn(loadDiff && "font-semibold text-orange-600 dark:text-orange-400")}>
+                                              {actual.load}
+                                              {loadDiff && ` (${exercise.load})`}
+                                            </span>
+                                          </>
+                                        )}
+                                        
+                                        {actual.rpe && (
+                                          <>
+                                            <Separator orientation="vertical" className="h-4" />
+                                            <span>RPE {actual.rpe}</span>
+                                          </>
+                                        )}
+                                        
+                                        {actual.note && actual.note !== "SKIPPED" && (
+                                          <>
+                                            <Separator orientation="vertical" className="h-4" />
+                                            <span className="text-muted-foreground italic">
+                                              {actual.note}
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              )}
-
-                              {completedSets.length === 0 && (
+                              ) : (
                                 <p className="text-sm text-muted-foreground italic">
-                                  Esercizio non svolto
+                                  Esercizio saltato
                                 </p>
                               )}
                             </div>
