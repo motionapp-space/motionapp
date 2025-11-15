@@ -13,7 +13,11 @@ import {
 } from "../hooks/useOutOfOffice";
 import type { CreateOutOfOfficeBlockInput, OutOfOfficeBlock } from "../types";
 
-export function OutOfOfficeManager() {
+interface OutOfOfficeManagerProps {
+  onChangeDetected?: () => void;
+}
+
+export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps) {
   const { data: blocks = [], isLoading } = useOutOfOfficeBlocksQuery();
   const createMutation = useCreateOutOfOfficeBlock();
   const deleteMutation = useDeleteOutOfOfficeBlock();
@@ -45,6 +49,7 @@ export function OutOfOfficeManager() {
       end_at: block.end_at,
       reason: block.reason || "",
     });
+    onChangeDetected?.();
   };
 
   const cancelEdit = () => {
@@ -72,16 +77,16 @@ export function OutOfOfficeManager() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label htmlFor={`edit-start-${block.id}`} className="text-sm font-medium">Data inizio</Label>
-                      <Input id={`edit-start-${block.id}`} type="datetime-local" value={formData.start_at} onChange={(e) => setFormData({ ...formData, start_at: e.target.value })} />
+                      <Input id={`edit-start-${block.id}`} type="datetime-local" value={formData.start_at} onChange={(e) => { setFormData({ ...formData, start_at: e.target.value }); onChangeDetected?.(); }} />
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor={`edit-end-${block.id}`} className="text-sm font-medium">Data fine</Label>
-                      <Input id={`edit-end-${block.id}`} type="datetime-local" value={formData.end_at} onChange={(e) => setFormData({ ...formData, end_at: e.target.value })} />
+                      <Input id={`edit-end-${block.id}`} type="datetime-local" value={formData.end_at} onChange={(e) => { setFormData({ ...formData, end_at: e.target.value }); onChangeDetected?.(); }} />
                     </div>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor={`edit-reason-${block.id}`} className="text-sm font-medium">Motivo (facoltativo)</Label>
-                    <Textarea id={`edit-reason-${block.id}`} value={formData.reason || ""} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} placeholder="es. Vacanza, Conferenza..." rows={2} />
+                    <Textarea id={`edit-reason-${block.id}`} value={formData.reason || ""} onChange={(e) => { setFormData({ ...formData, reason: e.target.value }); onChangeDetected?.(); }} placeholder="es. Vacanza, Conferenza..." rows={2} />
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={handleCreate} disabled={!formData.start_at || !formData.end_at || createMutation.isPending}>Salva</Button>
@@ -111,16 +116,16 @@ export function OutOfOfficeManager() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="add-start" className="text-sm font-medium">Data inizio</Label>
-                <Input id="add-start" type="datetime-local" value={formData.start_at} onChange={(e) => setFormData({ ...formData, start_at: e.target.value })} />
+                <Input id="add-start" type="datetime-local" value={formData.start_at} onChange={(e) => { setFormData({ ...formData, start_at: e.target.value }); onChangeDetected?.(); }} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="add-end" className="text-sm font-medium">Data fine</Label>
-                <Input id="add-end" type="datetime-local" value={formData.end_at} onChange={(e) => setFormData({ ...formData, end_at: e.target.value })} />
+                <Input id="add-end" type="datetime-local" value={formData.end_at} onChange={(e) => { setFormData({ ...formData, end_at: e.target.value }); onChangeDetected?.(); }} />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="add-reason" className="text-sm font-medium">Motivo (facoltativo)</Label>
-              <Textarea id="add-reason" value={formData.reason || ""} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} placeholder="es. Vacanza, Conferenza..." rows={2} />
+              <Textarea id="add-reason" value={formData.reason || ""} onChange={(e) => { setFormData({ ...formData, reason: e.target.value }); onChangeDetected?.(); }} placeholder="es. Vacanza, Conferenza..." rows={2} />
             </div>
             <div className="flex gap-2">
               <Button size="sm" onClick={handleCreate} disabled={!formData.start_at || !formData.end_at || createMutation.isPending}>Crea</Button>
@@ -131,7 +136,7 @@ export function OutOfOfficeManager() {
       )}
 
       {!isAdding && (
-        <Button variant="outline" size="sm" onClick={() => setIsAdding(true)} className="w-full">
+        <Button variant="outline" size="sm" onClick={() => { setIsAdding(true); onChangeDetected?.(); }} className="w-full">
           <Plus className="h-4 w-4 mr-2" />Aggiungi periodo
         </Button>
       )}
