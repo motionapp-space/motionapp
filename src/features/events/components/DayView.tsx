@@ -144,13 +144,22 @@ export function DayView({
               const start = new Date(ev.start_at);
               const end = new Date(ev.end_at);
               
-              const dayStart = new Date(date);
-              dayStart.setHours(DAY_START_H, 0, 0, 0);
-              const dayEnd = new Date(date);
-              dayEnd.setHours(DAY_END_H, 0, 0, 0);
+              // Define visible interval (05:00 - 23:00)
+              const visibleStart = new Date(date);
+              visibleStart.setHours(DAY_START_H, 0, 0, 0);
               
-              const startClamped = start < dayStart ? dayStart : start;
-              const endClamped = end > dayEnd ? dayEnd : end;
+              const visibleEnd = new Date(date);
+              visibleEnd.setHours(DAY_END_H, 59, 59, 999);
+              
+              const dayStart = startOfDay(date);
+              const dayEnd = endOfDay(date);
+              
+              // Clamp to visible interval
+              const startClamped = start < visibleStart ? visibleStart : (start > dayEnd ? dayEnd : start);
+              const endClamped = end > visibleEnd ? visibleEnd : (end < dayStart ? dayStart : end);
+              
+              // Hide if completely outside visible interval
+              if (endClamped <= visibleStart || startClamped >= visibleEnd) return null;
 
               const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
               const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;
@@ -175,13 +184,22 @@ export function DayView({
               const start = new Date(req.requested_start_at);
               const end = new Date(req.requested_end_at);
               
-              const dayStart = new Date(date);
-              dayStart.setHours(DAY_START_H, 0, 0, 0);
-              const dayEnd = new Date(date);
-              dayEnd.setHours(DAY_END_H, 0, 0, 0);
+              // Define visible interval (05:00 - 23:00)
+              const visibleStart = new Date(date);
+              visibleStart.setHours(DAY_START_H, 0, 0, 0);
               
-              const startClamped = start < dayStart ? dayStart : start;
-              const endClamped = end > dayEnd ? dayEnd : end;
+              const visibleEnd = new Date(date);
+              visibleEnd.setHours(DAY_END_H, 59, 59, 999);
+              
+              const dayStart = startOfDay(date);
+              const dayEnd = endOfDay(date);
+              
+              // Clamp to visible interval
+              const startClamped = start < visibleStart ? visibleStart : (start > dayEnd ? dayEnd : start);
+              const endClamped = end > visibleEnd ? visibleEnd : (end < dayStart ? dayStart : end);
+              
+              // Hide if completely outside visible interval
+              if (endClamped <= visibleStart || startClamped >= visibleEnd) return null;
 
               const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
               const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;

@@ -228,9 +228,19 @@ export function WeekView({
                     const start = new Date(ev.start_at);
                     const end = new Date(ev.end_at);
                     
-                    // Clamp to visible window
-                    const startClamped = start < dayStart ? dayStart : start;
-                    const endClamped = end > dayEnd ? dayEnd : end;
+                    // Define visible interval (05:00 - 23:00)
+                    const visibleStart = new Date(dayStart);
+                    visibleStart.setHours(DAY_START_H, 0, 0, 0);
+                    
+                    const visibleEnd = new Date(dayStart);
+                    visibleEnd.setHours(DAY_END_H, 59, 59, 999);
+                    
+                    // Clamp to visible interval
+                    const startClamped = start < visibleStart ? visibleStart : (start > dayEnd ? dayEnd : start);
+                    const endClamped = end > visibleEnd ? visibleEnd : (end < dayStart ? dayStart : end);
+                    
+                    // Hide if completely outside visible interval
+                    if (endClamped <= visibleStart || startClamped >= visibleEnd) return null;
 
                     const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
                     const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;
@@ -255,8 +265,21 @@ export function WeekView({
                     
                     const start = new Date(req.requested_start_at);
                     const end = new Date(req.requested_end_at);
-                    const startClamped = start < dayStart ? dayStart : start;
-                    const endClamped = end > dayEnd ? dayEnd : end;
+                    
+                    // Define visible interval (05:00 - 23:00)
+                    const visibleStart = new Date(dayStart);
+                    visibleStart.setHours(DAY_START_H, 0, 0, 0);
+                    
+                    const visibleEnd = new Date(dayStart);
+                    visibleEnd.setHours(DAY_END_H, 59, 59, 999);
+                    
+                    // Clamp to visible interval
+                    const startClamped = start < visibleStart ? visibleStart : (start > dayEnd ? dayEnd : start);
+                    const endClamped = end > visibleEnd ? visibleEnd : (end < dayStart ? dayStart : end);
+                    
+                    // Hide if completely outside visible interval
+                    if (endClamped <= visibleStart || startClamped >= visibleEnd) return null;
+                    
                     const top = minutesFromDayStart(startClamped) * MINUTE_HEIGHT;
                     const height = (toMinutes(endClamped) - toMinutes(startClamped)) * MINUTE_HEIGHT;
                     const widthPercent = 1 / p.columns;
