@@ -15,6 +15,7 @@ interface EventModalProps {
   };
   lockedClientId?: string;
   onStartSession?: (clientId: string, eventId: string, linkedPlanId?: string, linkedDayId?: string) => void;
+  mode?: 'coach-create' | 'client-booking';
 }
 
 export function EventModal({ 
@@ -23,7 +24,8 @@ export function EventModal({
   event, 
   prefillData, 
   lockedClientId,
-  onStartSession 
+  onStartSession,
+  mode = 'client-booking'
 }: EventModalProps) {
   const { data: bookingSettings } = useBookingSettingsQuery();
   const [coachId, setCoachId] = useState<string>("");
@@ -48,6 +50,7 @@ export function EventModal({
       durationMinutes={defaultDuration}
       event={event}
       onStartSession={onStartSession}
+      mode={mode}
     />
   );
 }
