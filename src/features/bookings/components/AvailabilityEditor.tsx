@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TimePicker } from "@/components/ui/time-picker";
 import { Plus, MoreVertical, Copy, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
@@ -224,24 +225,18 @@ export function AvailabilityEditor({
                     ) : (
                       ranges.map((range, index) => (
                       <div key={range.temp_id || index} className="flex items-center gap-3">
-                        <input
-                          type="time"
+                        <TimePicker
                           value={range.start_time}
-                          onChange={(e) =>
-                            updateTimeRange(day.key, index, "start_time", e.target.value)
+                          onChange={(value) =>
+                            updateTimeRange(day.key, index, "start_time", value)
                           }
-                          className="flex h-9 w-32 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                          step="300"
                         />
                         <span className="text-muted-foreground">—</span>
-                        <input
-                          type="time"
+                        <TimePicker
                           value={range.end_time}
-                          onChange={(e) =>
-                            updateTimeRange(day.key, index, "end_time", e.target.value)
+                          onChange={(value) =>
+                            updateTimeRange(day.key, index, "end_time", value)
                           }
-                          className="flex h-9 w-32 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                          step="300"
                         />
                         <Button
                           variant="ghost"
