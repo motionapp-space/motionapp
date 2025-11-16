@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
 import { X, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, Repeat, AlertCircle, Play } from "lucide-react";
 import { useAvailableSlots } from "@/features/bookings/hooks/useAvailableSlots";
-import { useOccupiedSlots } from "../hooks/useOccupiedSlots";
 import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useUpdateEvent } from "../hooks/useUpdateEvent";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
@@ -21,7 +20,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Calendar } from "@/components/ui/calendar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FlexibleSlotSelector } from "./FlexibleSlotSelector";
 import { RecurrenceSection, type RecurrenceConfig } from "./RecurrenceSection";
 import { generateRecurrenceOccurrences } from "../utils/recurrence";
 import { toast } from "sonner";
@@ -278,14 +276,7 @@ export function UnifiedAppointmentModal({
     bypassEnabledCheck: isCoachMode // Coach can see slots even if booking is disabled
   });
 
-  const { data: occupiedSlots = [] } = useOccupiedSlots({
-    coachId,
-    startDate: rangeStart,
-    endDate: rangeEnd,
-    enabled: open && !!coachId && isCoachMode // Only fetch for coach mode
-  });
-
-  const { data: clientsData } = useClientsQuery({ 
+  const { data: clientsData } = useClientsQuery({
     q: "", 
     status: ["ATTIVO", "POTENZIALE"], 
     page: 1, 
@@ -603,113 +594,91 @@ export function UnifiedAppointmentModal({
 
         {/* Main Content - SCROLLABLE */}
         <div className="flex-1 overflow-y-auto p-6 pt-4 space-y-6">
-          {/* Day Selection & Navigation (only for client booking mode) */}
-          {!isCoachMode && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-foreground/90">Seleziona giorno e orario</h3>
-                <div className="flex gap-1.5">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={goToPrevRange}
-                    className="h-8 w-8 shrink-0"
-                    aria-label="Settimana precedente"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 text-xs">
-                        <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
-                        Vai a data
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                      <Calendar
-                        mode="single"
-                        selected={new Date(selectedDay + "T00:00:00")}
-                        onSelect={(date) => {
-                          if (date) {
-                            setSelectedDay(toISODate(date));
-                            setCalendarOpen(false);
-                          }
-                        }}
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={goToNextRange}
-                    className="h-8 w-8 shrink-0"
-                    aria-label="Settimana successiva"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={goNextAvailable}
-                    className="h-8 text-xs bg-primary/5 text-primary hover:bg-primary/10"
-                  >
-                    Prossimo disponibile
-                  </Button>
-                </div>
-              </div>
-
-              <DayPills 
-                days={dayAvailability} 
-                selected={selectedDay} 
-                onSelect={setSelectedDay}
-                scrollRef={scrollRef}
-              />
-            </div>
-          )}
-
-          {/* Coach Mode: Flexible Slot Selector */}
-          {isCoachMode && (
-            <div className="space-y-3">
+          {/* Day Selection & Navigation */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground/90">Seleziona giorno e orario</h3>
-              <FlexibleSlotSelector
-                date={new Date(selectedDay + "T00:00:00")}
-                availableSlots={selectedDaySlots}
-                occupiedSlots={occupiedSlots}
-                selectedSlot={selectedSlot || undefined}
-                durationMinutes={durationMinutes}
-                onSlotSelect={handlePickSlot}
-                onCustomTimeSelect={(start, end) => {
-                  setSelectedSlot({ start: start.toISOString(), end: end.toISOString() });
-                }}
-              />
-            </div>
-          )}
+              <div className="flex gap-1.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={goToPrevRange}
+                  className="h-8 w-8 shrink-0"
+                  aria-label="Settimana precedente"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 text-xs">
+                      <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                      Vai a data
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="single"
+                      selected={new Date(selectedDay + "T00:00:00")}
+                      onSelect={(date) => {
+                        if (date) {
+                          setSelectedDay(toISODate(date));
+                          setCalendarOpen(false);
+                        }
+                      }}
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
 
-          {/* Selected Date & All-day toggle (only for client booking mode) */}
-          {!isCoachMode && (
-            <div className="flex items-center justify-between py-2">
-              <h4 className="text-base font-medium">
-                {fmtDateLong(new Date(selectedDay + "T00:00:00"))}
-              </h4>
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="all-day"
-                  checked={isAllDay}
-                  onCheckedChange={setIsAllDay}
-                />
-                <Label htmlFor="all-day" className="text-sm cursor-pointer">
-                  Giornata intera
-                </Label>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={goToNextRange}
+                  className="h-8 w-8 shrink-0"
+                  aria-label="Settimana successiva"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={goNextAvailable}
+                  className="h-8 text-xs bg-primary/5 text-primary hover:bg-primary/10"
+                >
+                  Prossimo disponibile
+                </Button>
               </div>
             </div>
-          )}
 
-          {/* Slot grid (hidden if all-day or coach mode) */}
-          {!isAllDay && !isCoachMode && (
+            <DayPills 
+              days={dayAvailability} 
+              selected={selectedDay} 
+              onSelect={setSelectedDay}
+              scrollRef={scrollRef}
+            />
+          </div>
+
+          {/* Selected Date & All-day toggle */}
+          <div className="flex items-center justify-between py-2">
+            <h4 className="text-base font-medium">
+              {fmtDateLong(new Date(selectedDay + "T00:00:00"))}
+            </h4>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="all-day"
+                checked={isAllDay}
+                onCheckedChange={setIsAllDay}
+              />
+              <Label htmlFor="all-day" className="text-sm cursor-pointer">
+                Giornata intera
+              </Label>
+            </div>
+          </div>
+
+          {/* Slot grid (hidden if all-day) */}
+          {!isAllDay && (
             <div className="min-h-[140px]">
               <AnimatePresence mode="wait">
                 <motion.div
