@@ -22,14 +22,14 @@ export function MonthView({ date, events, onEventClick }: MonthViewProps) {
     const el = gridRef.current;
     if (!el) return;
     const ro = new ResizeObserver(() => {
-      const rows = 6;
+      const rows = Math.max(5, Math.ceil(monthDays.length / 7));
       const gap = 0;
       const h = Math.max(90, (el.clientHeight - gap * (rows - 1)) / rows);
       setCellHeight(h);
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [monthDays]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
