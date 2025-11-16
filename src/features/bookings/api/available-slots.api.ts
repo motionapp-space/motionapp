@@ -7,6 +7,7 @@ interface GetAvailableSlotsParams {
   startDate: string; // ISO date string
   endDate: string;   // ISO date string
   isCoachView?: boolean;
+  bypassEnabledCheck?: boolean; // For coach mode - allows slots even if booking is disabled
 }
 
 /**
@@ -19,17 +20,85 @@ export async function getAvailableSlots({
   startDate,
   endDate,
   isCoachView = true,
+  bypassEnabledCheck = false,
 }: GetAvailableSlotsParams): Promise<AvailableSlot[]> {
   // Fetch booking settings
-  const { data: settings, error: settingsError } = await supabase
+  const query = supabase
     .from("booking_settings")
     .select("*")
-    .eq("coach_id", coachId)
-    .eq("enabled", true)
-    .maybeSingle();
+    .eq("coach_id", coachId);
+
+  // Only check 'enabled' status for client booking mode
+  if (!bypassEnabledCheck) {
+    query.eq("enabled", true);
+  }
+
+  const { data: settings, error: settingsError } = await query.maybeSingle();
 
   if (settingsError) throw settingsError;
-  if (!settings) return []; // Booking not enabled
+  
+  // If no settings and we're in coach mode, use defaults
+  if (!settings) {
+    if (bypassEnabledCheck) {
+      // Use default settings for coach mode
+      const defaultSettings = {
+        slot_duration_minutes: 45,
+        buffer_between_minutes: 0,
+        min_advance_notice_hours: 0,
+      };
+      
+      // Still need availability windows to generate slots
+      const { data: windows, error: windowsError } = await supabase
+        .from("availability_windows")
+        .select("*")
+        .eq("coach_id", coachId)
+        .eq("is_active", true);
+
+      if (windowsError) throw windowsError;
+      if (!windows || windows.length === 0) return [];
+
+      // Fetch existing events
+      const { data: events, error: eventsError } = await supabase
+        .from("events")
+        .select("*, clients!events_client_id_fkey(first_name, last_name)")
+        .eq("coach_id", coachId)
+        .gte("end_at", startDate)
+        .lte("start_at", endDate);
+
+      if (eventsError) throw eventsError;
+
+      const mappedEvents = events?.map(event => ({
+        ...event,
+        client_name: event.clients
+          ? `${event.clients.first_name} ${event.clients.last_name}`.trim()
+          : "",
+      })) || [];
+
+      // Generate slots with defaults
+      const allSlots: AvailableSlot[] = [];
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      let currentDate = new Date(start);
+      while (currentDate <= end) {
+        const daySlots = generateAvailableSlots({
+          date: currentDate,
+          slotDurationMinutes: defaultSettings.slot_duration_minutes,
+          bufferBetweenMinutes: defaultSettings.buffer_between_minutes,
+          minAdvanceNoticeHours: defaultSettings.min_advance_notice_hours,
+          availabilityWindows: windows,
+          outOfOfficeBlocks: [],
+          existingEvents: mappedEvents,
+        });
+        
+        allSlots.push(...daySlots);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      return allSlots;
+    }
+    return []; // Booking not enabled for client mode
+  }
 
   // Fetch availability windows
   const { data: windows, error: windowsError } = await supabase

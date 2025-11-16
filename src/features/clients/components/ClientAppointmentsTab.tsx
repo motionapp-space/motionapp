@@ -162,6 +162,7 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
             : undefined
         }
         lockedClientId={clientId}
+        mode="coach-create"
       />
     </div>
   );
