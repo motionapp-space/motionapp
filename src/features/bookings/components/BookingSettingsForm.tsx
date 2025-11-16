@@ -226,7 +226,10 @@ export function BookingSettingsForm() {
                         </div>
                         <Select
                           value={field.value.toString()}
-                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          onValueChange={(value) => {
+                            field.onChange(parseInt(value));
+                            setHasUnsavedChanges(true);
+                          }}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -267,7 +270,10 @@ export function BookingSettingsForm() {
                         </div>
                         <Select
                           value={field.value.toString()}
-                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          onValueChange={(value) => {
+                            field.onChange(parseInt(value));
+                            setHasUnsavedChanges(true);
+                          }}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -308,7 +314,10 @@ export function BookingSettingsForm() {
                         </div>
                         <Select
                           value={field.value.toString()}
-                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          onValueChange={(value) => {
+                            field.onChange(parseInt(value));
+                            setHasUnsavedChanges(true);
+                          }}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -349,7 +358,10 @@ export function BookingSettingsForm() {
                         </div>
                         <Select
                           value={field.value.toString()}
-                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          onValueChange={(value) => {
+                            field.onChange(parseInt(value));
+                            setHasUnsavedChanges(true);
+                          }}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -389,7 +401,13 @@ export function BookingSettingsForm() {
                           </TooltipContent>
                         </Tooltip>
                       </div>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select 
+                        value={field.value} 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setHasUnsavedChanges(true);
+                        }}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue />
