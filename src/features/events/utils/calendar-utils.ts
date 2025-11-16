@@ -9,19 +9,9 @@ export function getWeekDays(date: Date): Date[] {
 }
 
 export function getMonthDays(date: Date): Date[] {
-  const start = startOfMonth(date);
-  const end = endOfMonth(date);
-  const days = eachDayOfInterval({ start, end });
-
-  // Add days from previous month to fill first week
-  const firstDay = startOfWeek(days[0], { locale: it, weekStartsOn: 1 });
-  const prefixDays = eachDayOfInterval({ start: firstDay, end: addDays(days[0], -1) });
-
-  // Add days from next month to fill last week
-  const lastDay = endOfWeek(days[days.length - 1], { locale: it, weekStartsOn: 1 });
-  const suffixDays = eachDayOfInterval({ start: addDays(days[days.length - 1], 1), end: lastDay });
-
-  return [...prefixDays, ...days, ...suffixDays];
+  const start = startOfWeek(startOfMonth(date), { locale: it, weekStartsOn: 1 });
+  const end = endOfWeek(endOfMonth(date), { locale: it, weekStartsOn: 1 });
+  return eachDayOfInterval({ start, end });
 }
 
 export function getEventsForDay(events: EventWithClient[], day: Date): EventWithClient[] {
