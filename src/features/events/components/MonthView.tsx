@@ -51,7 +51,7 @@ export function MonthView({ date, events, onEventClick }: MonthViewProps) {
 
           return (
             <div
-              key={day.toISOString()}
+              key={format(day, 'yyyy-MM-dd')}
               className={cn(
                 "min-h-[100px] border-r border-b last:border-r-0",
                 !isCurrentMonth && "bg-muted/30",
