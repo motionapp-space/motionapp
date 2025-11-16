@@ -261,6 +261,7 @@ const Calendar = () => {
       <EventModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
+        mode="coach-create"
         prefillData={{
           start: new Date(currentDate.setHours(9, 0)),
           end: new Date(currentDate.setHours(10, 0)),
@@ -271,6 +272,7 @@ const Calendar = () => {
       <EventModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
+        mode="coach-create"
         event={selectedEvent}
         onStartSession={handleStartSession}
       />
