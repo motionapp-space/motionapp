@@ -33,7 +33,12 @@ interface AvailabilityEditorProps {
   localChangesRef?: React.MutableRefObject<Record<number, TimeRange[]>>;
 }
 
-export function AvailabilityEditor({ 
+// Helper to format time without seconds (HH:mm:ss → HH:mm)
+const formatTimeDisplay = (time: string): string => {
+  return time.substring(0, 5);
+};
+
+export function AvailabilityEditor({
   onChangeDetected, 
   onResetRequested,
   localChangesRef 
@@ -167,7 +172,7 @@ export function AvailabilityEditor({
                           variant="secondary"
                           className="font-mono text-xs"
                         >
-                          {range.start_time}–{range.end_time}
+                          {formatTimeDisplay(range.start_time)}–{formatTimeDisplay(range.end_time)}
                         </Badge>
                       ))
                     )}
