@@ -64,9 +64,9 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
 
   const formatDisplayDate = (dateStr: string, isAllDay: boolean) => {
     if (isAllDay) {
-      return format(new Date(dateStr), "dd MMM yyyy", { locale: it });
+      return format(new Date(dateStr), "dd/MM/yyyy", { locale: it });
     }
-    return `${format(new Date(dateStr), "dd MMM yyyy", { locale: it })} alle ${format(new Date(dateStr), "HH:mm")}`;
+    return format(new Date(dateStr), "dd/MM/yyyy, HH:mm", { locale: it });
   };
 
   if (isLoading) {
@@ -85,21 +85,6 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
             <div key={block.id} className="border rounded-lg p-3">
               {editingId === block.id ? (
                 <div className="space-y-3">
-                  {/* Checkbox Tutto il giorno */}
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`edit-all-day-${block.id}`}
-                      checked={formData.is_all_day}
-                      onCheckedChange={(checked) => {
-                        setFormData({ ...formData, is_all_day: checked === true });
-                        onChangeDetected?.();
-                      }}
-                    />
-                    <Label htmlFor={`edit-all-day-${block.id}`} className="text-sm font-medium cursor-pointer">
-                      Tutto il giorno
-                    </Label>
-                  </div>
-
                   {/* Date pickers */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
@@ -152,6 +137,21 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                     </div>
                   </div>
 
+                  {/* Checkbox Tutto il giorno */}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`edit-all-day-${block.id}`}
+                      checked={formData.is_all_day}
+                      onCheckedChange={(checked) => {
+                        setFormData({ ...formData, is_all_day: checked === true });
+                        onChangeDetected?.();
+                      }}
+                    />
+                    <Label htmlFor={`edit-all-day-${block.id}`} className="text-sm font-medium cursor-pointer">
+                      Tutto il giorno
+                    </Label>
+                  </div>
+
                   {/* Motivo */}
                   <div className="space-y-1.5">
                     <Label htmlFor={`edit-reason-${block.id}`} className="text-sm font-medium">
@@ -164,8 +164,8 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                         setFormData({ ...formData, reason: e.target.value });
                         onChangeDetected?.();
                       }}
-                      placeholder="es. Vacanza, Conferenza..."
-                      rows={2}
+                      placeholder="Inserisci il motivo dell'assenza"
+                      className="min-h-[80px] resize-none"
                     />
                   </div>
                 </div>
@@ -203,21 +203,6 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
       {isAdding && (
         <div className="border rounded-lg p-3">
           <div className="space-y-3">
-            {/* Checkbox Tutto il giorno */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="add-all-day"
-                checked={formData.is_all_day}
-                onCheckedChange={(checked) => {
-                  setFormData({ ...formData, is_all_day: checked === true });
-                  onChangeDetected?.();
-                }}
-              />
-              <Label htmlFor="add-all-day" className="text-sm font-medium cursor-pointer">
-                Tutto il giorno
-              </Label>
-            </div>
-
             {/* Date pickers */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -270,6 +255,21 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
               </div>
             </div>
 
+            {/* Checkbox Tutto il giorno */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="add-all-day"
+                checked={formData.is_all_day}
+                onCheckedChange={(checked) => {
+                  setFormData({ ...formData, is_all_day: checked === true });
+                  onChangeDetected?.();
+                }}
+              />
+              <Label htmlFor="add-all-day" className="text-sm font-medium cursor-pointer">
+                Tutto il giorno
+              </Label>
+            </div>
+
             {/* Motivo */}
             <div className="space-y-1.5">
               <Label htmlFor="add-reason" className="text-sm font-medium">
@@ -282,8 +282,8 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                   setFormData({ ...formData, reason: e.target.value });
                   onChangeDetected?.();
                 }}
-                placeholder="es. Vacanza, Conferenza..."
-                rows={2}
+                placeholder="Inserisci il motivo dell'assenza"
+                className="min-h-[80px] resize-none"
               />
             </div>
 
