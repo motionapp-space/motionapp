@@ -112,13 +112,13 @@ export function PackageSettingsForm() {
 
   return (
     <Card>
-      <CardHeader className="pb-6">
+      <CardHeader className="pb-5">
         <CardTitle className="text-2xl">Impostazioni Pacchetti</CardTitle>
         <CardDescription className="text-base">
           Definisci prezzi e durate di default per ciascun tipo di pacchetto
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-8">
+      <CardContent className="p-6">
         {singleSessionPrice === 0 && (
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
@@ -130,7 +130,7 @@ export function PackageSettingsForm() {
         
         <Form {...form}>
           <TooltipProvider>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             {packageTypes.map(({ sessions, priceField, durationField }) => {
               const totalPrice = watchedValues[priceField] || 0;
               const unitPrice = calculateUnitPrice(totalPrice, sessions);
@@ -138,8 +138,8 @@ export function PackageSettingsForm() {
               const discountPct = sessions === 1 ? 0 : calculateDiscountPct(discountAbs, singleSessionPrice);
               
               return (
-              <div key={sessions} className="space-y-6 pb-8 border-b last:border-0 last:pb-0">
-                <div className="flex items-center gap-3 mb-6">
+              <div key={sessions} className="space-y-5 pb-6 border-b last:border-0 last:pb-0">
+                <div className="flex items-center gap-3 mb-5">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <Package className="h-5 w-5 text-primary" />
                   </div>
@@ -148,7 +148,7 @@ export function PackageSettingsForm() {
           </Badge>
                 </div>
                 
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-5 md:grid-cols-2">
                   <FormField
                     control={form.control}
                     name={priceField}
@@ -201,7 +201,7 @@ export function PackageSettingsForm() {
                 </div>
 
                 {/* Calcoli derivati */}
-                <div className="grid gap-6 md:grid-cols-2 pt-4 mt-4 p-4 rounded-lg bg-muted/20 border">
+                <div className="grid gap-5 md:grid-cols-2 pt-3 mt-3 p-3 rounded-lg bg-muted/20 border">
                   <div className="space-y-2">
                     <FormLabel className="text-sm font-medium text-foreground/70">Prezzo per sessione</FormLabel>
             <div className="text-lg font-bold">
@@ -237,13 +237,13 @@ export function PackageSettingsForm() {
               );
             })}
 
-            <div className="pt-8 pb-6 px-6 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+            <div className="pt-6 pb-5 px-5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
               <FormField
                 control={form.control}
                 name="lock_window_hours"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center gap-3 mb-3">
                       <div className="p-2 rounded-lg bg-amber-500/10">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600 dark:text-amber-400">
                           <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
@@ -293,8 +293,8 @@ export function PackageSettingsForm() {
               />
             </div>
 
-            <div className="pt-6 border-t">
-              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+            <div className="pt-5 border-t">
+              <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
                 💡 Questi valori vengono proposti automaticamente quando crei un nuovo pacchetto.
                 Puoi modificarli liberamente nella scheda cliente o mantenerli come default.
               </p>
