@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import {
   useOutOfOfficeBlocksQuery,
@@ -76,12 +77,26 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label htmlFor={`edit-start-${block.id}`} className="text-sm font-medium">Data inizio</Label>
-                      <Input id={`edit-start-${block.id}`} type="datetime-local" value={formData.start_at} onChange={(e) => { setFormData({ ...formData, start_at: e.target.value }); onChangeDetected?.(); }} />
+                      <Label className="text-sm font-medium">Data inizio</Label>
+                      <DateTimePicker 
+                        value={formData.start_at} 
+                        onChange={(value) => { 
+                          setFormData({ ...formData, start_at: value }); 
+                          onChangeDetected?.(); 
+                        }} 
+                        placeholder="Seleziona data e ora inizio"
+                      />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor={`edit-end-${block.id}`} className="text-sm font-medium">Data fine</Label>
-                      <Input id={`edit-end-${block.id}`} type="datetime-local" value={formData.end_at} onChange={(e) => { setFormData({ ...formData, end_at: e.target.value }); onChangeDetected?.(); }} />
+                      <Label className="text-sm font-medium">Data fine</Label>
+                      <DateTimePicker 
+                        value={formData.end_at} 
+                        onChange={(value) => { 
+                          setFormData({ ...formData, end_at: value }); 
+                          onChangeDetected?.(); 
+                        }} 
+                        placeholder="Seleziona data e ora fine"
+                      />
                     </div>
                   </div>
                   <div className="space-y-1.5">
@@ -115,12 +130,26 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
           <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="add-start" className="text-sm font-medium">Data inizio</Label>
-                <Input id="add-start" type="datetime-local" value={formData.start_at} onChange={(e) => { setFormData({ ...formData, start_at: e.target.value }); onChangeDetected?.(); }} />
+                <Label className="text-sm font-medium">Data inizio</Label>
+                <DateTimePicker 
+                  value={formData.start_at} 
+                  onChange={(value) => { 
+                    setFormData({ ...formData, start_at: value }); 
+                    onChangeDetected?.(); 
+                  }} 
+                  placeholder="Seleziona data e ora inizio"
+                />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="add-end" className="text-sm font-medium">Data fine</Label>
-                <Input id="add-end" type="datetime-local" value={formData.end_at} onChange={(e) => { setFormData({ ...formData, end_at: e.target.value }); onChangeDetected?.(); }} />
+                <Label className="text-sm font-medium">Data fine</Label>
+                <DateTimePicker 
+                  value={formData.end_at} 
+                  onChange={(value) => { 
+                    setFormData({ ...formData, end_at: value }); 
+                    onChangeDetected?.(); 
+                  }} 
+                  placeholder="Seleziona data e ora fine"
+                />
               </div>
             </div>
             <div className="space-y-1.5">
