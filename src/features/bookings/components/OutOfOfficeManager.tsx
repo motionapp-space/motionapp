@@ -8,6 +8,7 @@ import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Pencil } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   useOutOfOfficeBlocksQuery,
   useCreateOutOfOfficeBlock,
@@ -79,6 +80,11 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
       return format(new Date(dateStr), "dd/MM/yyyy", { locale: it });
     }
     return format(new Date(dateStr), "dd/MM/yyyy, HH:mm", { locale: it });
+  };
+
+  const isEndBeforeStart = (start: string, end: string): boolean => {
+    if (!start || !end) return false;
+    return new Date(end) < new Date(start);
   };
 
   if (isLoading) {
