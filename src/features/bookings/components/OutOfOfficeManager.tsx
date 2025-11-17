@@ -12,6 +12,7 @@ import {
   useOutOfOfficeBlocksQuery,
   useCreateOutOfOfficeBlock,
   useDeleteOutOfOfficeBlock,
+  useUpdateOutOfOfficeBlock,
 } from "../hooks/useOutOfOffice";
 import type { CreateOutOfOfficeBlockInput, OutOfOfficeBlock } from "../types";
 
@@ -23,6 +24,7 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
   const { data: blocks = [], isLoading } = useOutOfOfficeBlocksQuery();
   const createMutation = useCreateOutOfOfficeBlock();
   const deleteMutation = useDeleteOutOfOfficeBlock();
+  const updateMutation = useUpdateOutOfOfficeBlock();
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -62,6 +64,16 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
     setFormData({ start_at: "", end_at: "", reason: "", is_all_day: false });
   };
 
+  const handleUpdate = async () => {
+    if (!editingId) return;
+    await updateMutation.mutateAsync({
+      id: editingId,
+      input: formData,
+    });
+    setEditingId(null);
+    setFormData({ start_at: "", end_at: "", reason: "", is_all_day: false });
+  };
+
   const formatDisplayDate = (dateStr: string, isAllDay: boolean) => {
     if (isAllDay) {
       return format(new Date(dateStr), "dd/MM/yyyy", { locale: it });
@@ -93,9 +105,13 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                         <DatePicker
                           value={formData.start_at ? format(new Date(formData.start_at), "yyyy-MM-dd") : ""}
                           onChange={(value) => {
-                            const date = new Date(value);
-                            date.setHours(0, 0, 0, 0);
-                            setFormData({ ...formData, start_at: date.toISOString() });
+                            if (!value) {
+                              setFormData({ ...formData, start_at: "" });
+                            } else {
+                              const date = new Date(value);
+                              date.setHours(0, 0, 0, 0);
+                              setFormData({ ...formData, start_at: date.toISOString() });
+                            }
                             onChangeDetected?.();
                           }}
                           placeholder="Seleziona data inizio"
@@ -117,9 +133,13 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                         <DatePicker
                           value={formData.end_at ? format(new Date(formData.end_at), "yyyy-MM-dd") : ""}
                           onChange={(value) => {
-                            const date = new Date(value);
-                            date.setHours(23, 59, 59, 999);
-                            setFormData({ ...formData, end_at: date.toISOString() });
+                            if (!value) {
+                              setFormData({ ...formData, end_at: "" });
+                            } else {
+                              const date = new Date(value);
+                              date.setHours(23, 59, 59, 999);
+                              setFormData({ ...formData, end_at: date.toISOString() });
+                            }
                             onChangeDetected?.();
                           }}
                           placeholder="Seleziona data fine"
@@ -168,6 +188,20 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                       className="min-h-[80px] resize-none"
                     />
                   </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      onClick={handleUpdate} 
+                      disabled={!formData.start_at || !formData.end_at || updateMutation.isPending}
+                    >
+                      Salva
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelEdit}>
+                      Annulla
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-start justify-between gap-3">
@@ -211,9 +245,13 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                   <DatePicker
                     value={formData.start_at ? format(new Date(formData.start_at), "yyyy-MM-dd") : ""}
                     onChange={(value) => {
-                      const date = new Date(value);
-                      date.setHours(0, 0, 0, 0);
-                      setFormData({ ...formData, start_at: date.toISOString() });
+                      if (!value) {
+                        setFormData({ ...formData, start_at: "" });
+                      } else {
+                        const date = new Date(value);
+                        date.setHours(0, 0, 0, 0);
+                        setFormData({ ...formData, start_at: date.toISOString() });
+                      }
                       onChangeDetected?.();
                     }}
                     placeholder="Seleziona data inizio"
@@ -235,9 +273,13 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                   <DatePicker
                     value={formData.end_at ? format(new Date(formData.end_at), "yyyy-MM-dd") : ""}
                     onChange={(value) => {
-                      const date = new Date(value);
-                      date.setHours(23, 59, 59, 999);
-                      setFormData({ ...formData, end_at: date.toISOString() });
+                      if (!value) {
+                        setFormData({ ...formData, end_at: "" });
+                      } else {
+                        const date = new Date(value);
+                        date.setHours(23, 59, 59, 999);
+                        setFormData({ ...formData, end_at: date.toISOString() });
+                      }
                       onChangeDetected?.();
                     }}
                     placeholder="Seleziona data fine"

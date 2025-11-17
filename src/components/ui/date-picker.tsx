@@ -45,6 +45,7 @@ export function DatePicker({ value, onChange, placeholder = "Seleziona data", di
     setDate(selectedDate);
     setDisplayMonth(selectedDate);
     onChange(format(selectedDate, "yyyy-MM-dd"));
+    setOpen(false);
   };
 
   const handleToday = () => {
@@ -106,6 +107,9 @@ export function DatePicker({ value, onChange, placeholder = "Seleziona data", di
           initialFocus
           locale={it}
           className={cn("p-3 pointer-events-auto")}
+          classNames={{
+            caption: "hidden"
+          }}
         />
         <div className="flex gap-2 px-3 pb-3 border-t pt-2">
           <Button
