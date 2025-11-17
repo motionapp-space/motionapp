@@ -149,8 +149,9 @@ const Settings = () => {
                 <Select
                   value={profile.locale}
                   onValueChange={(value) => setProfile({ ...profile, locale: value })}
+                  disabled={true}
                 >
-                  <SelectTrigger id="locale">
+                  <SelectTrigger id="locale" className="bg-muted">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -159,7 +160,7 @@ const Settings = () => {
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
-                  La lingua scelta verrà applicata a tutta l'interfaccia. Potrai cambiarla in qualsiasi momento.
+                  Al momento la piattaforma è disponibile solo in italiano. La traduzione inglese sarà disponibile prossimamente.
                 </p>
               </div>
               <Button onClick={updateProfile} disabled={loading}>
