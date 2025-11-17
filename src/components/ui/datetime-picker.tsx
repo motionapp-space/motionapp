@@ -112,7 +112,7 @@ const handleToday = () => {
           {displayValue}
         </Button>
       </PopoverTrigger>
-<PopoverContent className="w-auto p-0 z-[60]" align="start">
+<PopoverContent className="w-auto p-0 z-[60]" align="start" sideOffset={4}>
   <div className="flex">
     {/* Calendar section */}
     <div className="border-r">
@@ -145,20 +145,21 @@ const handleToday = () => {
     </div>
 
     {/* Time section */}
-    <div className="w-28">
+    <div className="w-[180px]">
       <ScrollArea hoverScrollbars className="h-[340px]">
-        <div className="p-2 space-y-1">
+        <div className="p-2">
           {TIME_OPTIONS.map((timeOption) => (
-            <button
+            <Button
               key={timeOption}
+              variant="ghost"
               onClick={() => handleTimeSelect(timeOption)}
               className={cn(
-                "w-full text-center py-2 rounded text-sm hover:bg-muted transition-colors",
-                time === timeOption && "bg-primary text-primary-foreground font-semibold"
+                "w-full justify-center font-mono text-sm px-2 mb-1",
+                time === timeOption && "bg-accent"
               )}
             >
               {timeOption}
-            </button>
+            </Button>
           ))}
         </div>
       </ScrollArea>
