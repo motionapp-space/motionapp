@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { PriceInput } from "@/components/ui/price-input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -156,18 +157,11 @@ export function PackageSettingsForm() {
                       <FormItem>
                         <FormLabel>Prezzo totale (€)</FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={formatPrice(field.value)}
-                              onChange={(e) => field.onChange(Math.round(parseFloat(e.target.value) * 100))}
-                              className="pr-8"
-                            />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                              €
-                            </span>
-                          </div>
+                          <PriceInput
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                          />
                         </FormControl>
                       </FormItem>
                     )}
