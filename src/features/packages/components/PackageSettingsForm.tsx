@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePackageSettings, useUpdatePackageSettings } from "../hooks/usePackageSettings";
-import { Loader2, Package, AlertCircle } from "lucide-react";
+import { Loader2, Package, AlertCircle, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PackageSettingsFormValues {
   sessions_1_price: number;
@@ -110,13 +112,13 @@ export function PackageSettingsForm() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Impostazioni Pacchetti</CardTitle>
-        <CardDescription>
+      <CardHeader className="pb-6">
+        <CardTitle className="text-2xl">Impostazioni Pacchetti</CardTitle>
+        <CardDescription className="text-base">
           Definisci prezzi e durate di default per ciascun tipo di pacchetto
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-8">
         {singleSessionPrice === 0 && (
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
@@ -127,7 +129,8 @@ export function PackageSettingsForm() {
         )}
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <TooltipProvider>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
             {packageTypes.map(({ sessions, priceField, durationField }) => {
               const totalPrice = watchedValues[priceField] || 0;
               const unitPrice = calculateUnitPrice(totalPrice, sessions);
@@ -135,15 +138,17 @@ export function PackageSettingsForm() {
               const discountPct = sessions === 1 ? 0 : calculateDiscountPct(discountAbs, singleSessionPrice);
               
               return (
-              <div key={sessions} className="space-y-4 pb-6 border-b last:border-0">
-                <div className="flex items-center gap-2 mb-4">
-                  <Package className="h-5 w-5 text-primary" />
-                  <Badge variant="secondary" className="text-base">
+              <div key={sessions} className="space-y-6 pb-8 border-b last:border-0 last:pb-0">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Package className="h-5 w-5 text-primary" />
+                  </div>
+                  <Badge variant="secondary" className="text-lg font-semibold px-4 py-1.5">
                     {sessions} {sessions === 1 ? 'Sessione' : 'Sessioni'}
                   </Badge>
                 </div>
                 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2">
                   <FormField
                     control={form.control}
                     name={priceField}
@@ -196,27 +201,30 @@ export function PackageSettingsForm() {
                 </div>
 
                 {/* Calcoli derivati */}
-                <div className="grid gap-4 md:grid-cols-2 pt-2">
-                  <div className="space-y-1">
-                    <FormLabel className="text-muted-foreground">Prezzo per sessione</FormLabel>
-                    <div className="text-lg font-semibold">
+                <div className="grid gap-6 md:grid-cols-2 pt-4 mt-4 p-4 rounded-lg bg-muted/20 border">
+                  <div className="space-y-2">
+                    <FormLabel className="text-sm font-medium text-foreground/70">Prezzo per sessione</FormLabel>
+                    <div className="text-xl font-bold">
                       {formatCurrency(unitPrice)}
                     </div>
                   </div>
 
                   {sessions > 1 && (
-                    <div className="space-y-1">
-                      <FormLabel className="text-muted-foreground">
+                    <div className="space-y-2">
+                      <FormLabel className="text-sm font-medium text-foreground/70">
                         Sconto rispetto alla singola
                       </FormLabel>
-                      <div className="flex items-center gap-2">
-                        <div className="text-lg font-semibold">
+                      <div className="flex items-center gap-3">
+                        <div className="text-xl font-bold">
                           {discountAbs > 0 ? '−' : discountAbs < 0 ? '+' : ''}
                           {formatCurrency(Math.abs(discountAbs))}
                         </div>
                         <Badge 
                           variant={discountAbs > 0 ? "default" : discountAbs < 0 ? "destructive" : "secondary"}
-                          className={discountAbs > 0 ? "bg-green-600 hover:bg-green-700" : ""}
+                          className={cn(
+                            "text-base px-3 py-1 transition-all",
+                            discountAbs > 0 && "bg-green-600 hover:bg-green-700 hover:scale-105"
+                          )}
                         >
                           {discountPct > 0 ? '−' : discountPct < 0 ? '+' : ''}
                           {Math.abs(discountPct).toFixed(2)}%
@@ -229,51 +237,80 @@ export function PackageSettingsForm() {
               );
             })}
 
-            <FormField
-              control={form.control}
-              name="lock_window_hours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Lock window post evento</FormLabel>
-                  <Select
-                    value={field.value.toString()}
-                    onValueChange={(value) => field.onChange(parseInt(value))}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="12">12 ore</SelectItem>
-                      <SelectItem value="24">24 ore</SelectItem>
-                      <SelectItem value="48">48 ore</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Tempo entro cui è possibile modificare le sessioni dopo l'evento
-                  </FormDescription>
-                </FormItem>
-              )}
-            />
+            <div className="pt-8 pb-6 px-6 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+              <FormField
+                control={form.control}
+                name="lock_window_hours"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 rounded-lg bg-amber-500/10">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600 dark:text-amber-400">
+                          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FormLabel className="text-lg font-semibold m-0">Lock Window Post Evento</FormLabel>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className="inline-flex">
+                              <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p>
+                              Periodo di tempo dopo un evento durante il quale le sessioni del pacchetto 
+                              vengono automaticamente "congelate". Previene modifiche retroattive che 
+                              potrebbero alterare il conteggio delle sessioni consumate.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+                    <Select
+                      value={field.value.toString()}
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="12">12 ore</SelectItem>
+                        <SelectItem value="24">24 ore</SelectItem>
+                        <SelectItem value="48">48 ore</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className="text-sm leading-relaxed mt-3">
+                      Tempo dopo un evento entro cui è possibile modificare le sessioni nel pacchetto. 
+                      Trascorso questo periodo, le modifiche all'evento non influenzeranno il conteggio 
+                      delle sessioni consumate. <span className="font-medium text-foreground/80">Protegge l'integrità dei consumi.</span>
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
+            </div>
 
-            <div className="pt-4 border-t">
-              <p className="text-sm text-muted-foreground mb-4">
-                Questi valori vengono proposti automaticamente quando crei un nuovo pacchetto.
+            <div className="pt-6 border-t">
+              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                💡 Questi valori vengono proposti automaticamente quando crei un nuovo pacchetto.
                 Puoi modificarli liberamente nella scheda cliente o mantenerli come default.
               </p>
-              <Button type="submit" disabled={isPending} className="w-full md:w-auto">
+              <Button type="submit" disabled={isPending} className="w-full md:w-auto min-w-[200px] h-11 text-base font-semibold">
                 {isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Salvataggio...
                   </>
                 ) : (
-                  "Salva Tutte"
+                  "Salva Tutte le Impostazioni"
                 )}
               </Button>
             </div>
-          </form>
+            </form>
+          </TooltipProvider>
         </Form>
       </CardContent>
     </Card>
