@@ -12,9 +12,10 @@ interface DatePickerProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  className?: string;
 }
 
-export function DatePicker({ value, onChange, placeholder = "Seleziona data", disabled }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder = "Seleziona data", disabled, className }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
   
   // Parse the input value correctly
@@ -73,7 +74,8 @@ export function DatePicker({ value, onChange, placeholder = "Seleziona data", di
           disabled={disabled}
           className={cn(
             "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground"
+            !date && "text-muted-foreground",
+            className
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />

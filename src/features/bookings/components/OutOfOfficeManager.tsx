@@ -127,34 +127,43 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                         />
                       )}
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">Data fine</Label>
-                      {formData.is_all_day ? (
-                        <DatePicker
-                          value={formData.end_at ? format(new Date(formData.end_at), "yyyy-MM-dd") : ""}
-                          onChange={(value) => {
-                            if (!value) {
-                              setFormData({ ...formData, end_at: "" });
-                            } else {
-                              const date = new Date(value);
-                              date.setHours(23, 59, 59, 999);
-                              setFormData({ ...formData, end_at: date.toISOString() });
-                            }
-                            onChangeDetected?.();
-                          }}
-                          placeholder="Seleziona data fine"
-                        />
-                      ) : (
-                        <DateTimePicker
-                          value={formData.end_at}
-                          onChange={(value) => {
-                            setFormData({ ...formData, end_at: value });
-                            onChangeDetected?.();
-                          }}
-                          placeholder="Seleziona data e ora fine"
-                        />
-                      )}
-                    </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Data fine</Label>
+                {formData.is_all_day ? (
+                  <DatePicker
+                    value={formData.end_at ? format(new Date(formData.end_at), "yyyy-MM-dd") : ""}
+                    onChange={(value) => {
+                      if (!value) {
+                        setFormData({ ...formData, end_at: "" });
+                      } else {
+                        const date = new Date(value);
+                        date.setHours(23, 59, 59, 999);
+                        setFormData({ ...formData, end_at: date.toISOString() });
+                      }
+                      onChangeDetected?.();
+                    }}
+                    placeholder="Seleziona data fine"
+                    className={cn(
+                      isEndBeforeStart(formData.start_at, formData.end_at) && "border-red-500 focus-visible:ring-red-500"
+                    )}
+                  />
+                ) : (
+                  <DateTimePicker
+                    value={formData.end_at}
+                    onChange={(value) => {
+                      setFormData({ ...formData, end_at: value });
+                      onChangeDetected?.();
+                    }}
+                    placeholder="Seleziona data e ora fine"
+                    className={cn(
+                      isEndBeforeStart(formData.start_at, formData.end_at) && "border-red-500 focus-visible:ring-red-500"
+                    )}
+                  />
+                )}
+                {isEndBeforeStart(formData.start_at, formData.end_at) && (
+                  <p className="text-xs text-red-500 mt-1">La data di fine deve essere successiva alla data di inizio</p>
+                )}
+              </div>
                   </div>
 
                   {/* Checkbox Tutto il giorno */}
