@@ -206,11 +206,11 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
 
                   {/* Buttons */}
                   <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      onClick={handleUpdate} 
-                      disabled={!formData.start_at || !formData.end_at || updateMutation.isPending}
-                    >
+                  <Button 
+                    size="sm" 
+                    onClick={handleUpdate} 
+                    disabled={!formData.start_at || !formData.end_at || isEndBeforeStart(formData.start_at, formData.end_at) || updateMutation.isPending}
+                  >
                       Salva
                     </Button>
                     <Button size="sm" variant="outline" onClick={cancelEdit}>
@@ -219,14 +219,11 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm">
                       {formatDisplayDate(block.start_at, block.is_all_day)} – {formatDisplayDate(block.end_at, block.is_all_day)}
                     </div>
-                    {block.is_all_day && (
-                      <span className="text-xs text-muted-foreground">Tutto il giorno</span>
-                    )}
                     {block.reason && <p className="text-sm text-muted-foreground mt-1 truncate">{block.reason}</p>}
                   </div>
                   <div className="flex items-center gap-1">
@@ -298,6 +295,9 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                       onChangeDetected?.();
                     }}
                     placeholder="Seleziona data fine"
+                    className={cn(
+                      isEndBeforeStart(formData.start_at, formData.end_at) && "border-red-500 focus-visible:ring-red-500"
+                    )}
                   />
                 ) : (
                   <DateTimePicker
@@ -307,7 +307,13 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
                       onChangeDetected?.();
                     }}
                     placeholder="Seleziona data e ora fine"
+                    className={cn(
+                      isEndBeforeStart(formData.start_at, formData.end_at) && "border-red-500 focus-visible:ring-red-500"
+                    )}
                   />
+                )}
+                {isEndBeforeStart(formData.start_at, formData.end_at) && (
+                  <p className="text-xs text-red-500 mt-1">La data di fine deve essere successiva alla data di inizio</p>
                 )}
               </div>
             </div>
@@ -349,7 +355,7 @@ export function OutOfOfficeManager({ onChangeDetected }: OutOfOfficeManagerProps
               <Button 
                 size="sm" 
                 onClick={handleCreate} 
-                disabled={!formData.start_at || !formData.end_at || createMutation.isPending}
+                disabled={!formData.start_at || !formData.end_at || isEndBeforeStart(formData.start_at, formData.end_at) || createMutation.isPending}
               >
                 Crea
               </Button>
