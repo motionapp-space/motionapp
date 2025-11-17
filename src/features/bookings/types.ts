@@ -84,6 +84,7 @@ export interface OutOfOfficeBlock {
   start_at: string;
   end_at: string;
   reason?: string;
+  is_all_day: boolean;
   is_recurring: boolean;
   recurrence_rule?: string;
   created_at: string;
@@ -93,6 +94,7 @@ export interface CreateOutOfOfficeBlockInput {
   start_at: string;
   end_at: string;
   reason?: string;
+  is_all_day?: boolean;
   is_recurring?: boolean;
   recurrence_rule?: string;
 }
@@ -101,6 +103,7 @@ export interface UpdateOutOfOfficeBlockInput {
   start_at?: string;
   end_at?: string;
   reason?: string;
+  is_all_day?: boolean;
   is_recurring?: boolean;
   recurrence_rule?: string;
 }

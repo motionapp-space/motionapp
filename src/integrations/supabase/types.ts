@@ -923,6 +923,7 @@ export type Database = {
           created_at: string
           end_at: string
           id: string
+          is_all_day: boolean
           is_recurring: boolean
           reason: string | null
           recurrence_rule: string | null
@@ -933,6 +934,7 @@ export type Database = {
           created_at?: string
           end_at: string
           id?: string
+          is_all_day?: boolean
           is_recurring?: boolean
           reason?: string | null
           recurrence_rule?: string | null
@@ -943,6 +945,7 @@ export type Database = {
           created_at?: string
           end_at?: string
           id?: string
+          is_all_day?: boolean
           is_recurring?: boolean
           reason?: string | null
           recurrence_rule?: string | null
