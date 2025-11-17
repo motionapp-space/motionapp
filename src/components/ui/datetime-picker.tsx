@@ -13,6 +13,7 @@ interface DateTimePickerProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  className?: string;
 }
 
 // Generate time options in 5-minute intervals
@@ -28,7 +29,7 @@ const generateTimeOptions = () => {
 
 const TIME_OPTIONS = generateTimeOptions();
 
-export function DateTimePicker({ value, onChange, placeholder = "Seleziona data e ora", disabled }: DateTimePickerProps) {
+export function DateTimePicker({ value, onChange, placeholder = "Seleziona data e ora", disabled, className }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
   
   // Parse the input value correctly
@@ -106,7 +107,8 @@ const handleToday = () => {
           disabled={disabled}
           className={cn(
             "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground"
+            !date && "text-muted-foreground",
+            className
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
