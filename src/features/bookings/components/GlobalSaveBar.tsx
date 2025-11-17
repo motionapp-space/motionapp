@@ -14,8 +14,8 @@ export function GlobalSaveBar({ show, onSave, onCancel, isSaving, error }: Globa
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex items-center justify-between py-3 px-4 md:px-6">
+    <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+      <div className="container flex items-center justify-between py-4 px-4 md:px-6">
         <div className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
           <span className="text-sm font-medium">

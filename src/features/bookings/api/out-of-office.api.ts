@@ -45,6 +45,7 @@ export async function createOutOfOfficeBlock(
     .insert({
       coach_id: user.id,
       is_recurring: false,
+      is_all_day: input.is_all_day ?? false,
       ...input,
     })
     .select()
