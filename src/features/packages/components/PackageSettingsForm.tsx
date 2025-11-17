@@ -143,9 +143,9 @@ export function PackageSettingsForm() {
                   <div className="p-2 rounded-lg bg-primary/10">
                     <Package className="h-5 w-5 text-primary" />
                   </div>
-                  <Badge variant="secondary" className="text-lg font-semibold px-4 py-1.5">
-                    {sessions} {sessions === 1 ? 'Sessione' : 'Sessioni'}
-                  </Badge>
+          <Badge variant="secondary" className="text-base font-semibold px-3 py-1">
+            {sessions} {sessions === 1 ? 'Sessione' : 'Sessioni'}
+          </Badge>
                 </div>
                 
                 <div className="grid gap-6 md:grid-cols-2">
@@ -204,9 +204,9 @@ export function PackageSettingsForm() {
                 <div className="grid gap-6 md:grid-cols-2 pt-4 mt-4 p-4 rounded-lg bg-muted/20 border">
                   <div className="space-y-2">
                     <FormLabel className="text-sm font-medium text-foreground/70">Prezzo per sessione</FormLabel>
-                    <div className="text-xl font-bold">
-                      {formatCurrency(unitPrice)}
-                    </div>
+            <div className="text-lg font-bold">
+              {formatCurrency(unitPrice)}
+            </div>
                   </div>
 
                   {sessions > 1 && (
@@ -219,13 +219,13 @@ export function PackageSettingsForm() {
                           {discountAbs > 0 ? '−' : discountAbs < 0 ? '+' : ''}
                           {formatCurrency(Math.abs(discountAbs))}
                         </div>
-                        <Badge 
-                          variant={discountAbs > 0 ? "default" : discountAbs < 0 ? "destructive" : "secondary"}
-                          className={cn(
-                            "text-base px-3 py-1 transition-all",
-                            discountAbs > 0 && "bg-green-600 hover:bg-green-700 hover:scale-105"
-                          )}
-                        >
+              <Badge 
+                variant={discountAbs > 0 ? "default" : discountAbs < 0 ? "destructive" : "secondary"}
+                className={cn(
+                  "text-sm px-2.5 py-0.5 transition-all",
+                  discountAbs > 0 && "bg-green-600 hover:bg-green-700 hover:scale-105"
+                )}
+              >
                           {discountPct > 0 ? '−' : discountPct < 0 ? '+' : ''}
                           {Math.abs(discountPct).toFixed(2)}%
                         </Badge>
@@ -251,7 +251,7 @@ export function PackageSettingsForm() {
                         </svg>
                       </div>
                       <div className="flex items-center gap-2">
-                        <FormLabel className="text-lg font-semibold m-0">Lock Window Post Evento</FormLabel>
+                        <FormLabel className="text-base font-medium m-0">Lock Window Post Evento</FormLabel>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button type="button" className="inline-flex">
