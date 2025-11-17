@@ -62,7 +62,7 @@ export function TimePicker({
           {displayValue || placeholder}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-[180px] p-0" align="start" sideOffset={4}>
         <ScrollArea className="h-[280px]">
           <div className="p-2">
             {TIME_OPTIONS.map((time) => (
@@ -70,7 +70,7 @@ export function TimePicker({
                 key={time}
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start font-mono text-sm",
+                  "w-full justify-center font-mono text-sm px-2",
                   time === displayValue && "bg-accent"
                 )}
                 onClick={() => handleTimeSelect(time)}
