@@ -66,6 +66,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
   const combined = new Date(selectedDate);
   combined.setHours(hours, minutes, 0, 0);
   onChange(combined.toISOString());
+  setOpen(false);
 };
 
 const handleTimeSelect = (selectedTime: string) => {
