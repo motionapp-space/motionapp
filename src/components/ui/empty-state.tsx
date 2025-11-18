@@ -15,7 +15,7 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center space-y-4">
       <div className="rounded-full bg-muted p-6">
-        <Icon className="h-12 w-12 text-muted-foreground" />
+        <Icon className="h-20 w-20 text-muted-foreground" />
       </div>
       
       <div className="space-y-2">

@@ -50,7 +50,7 @@ export function BookingRequestCard({
       aria-label={`Pending booking request: ${request.client_name}`}
     >
       <div className="flex items-center gap-1 mb-1">
-        <Clock className="h-3 w-3" />
+        <Clock className="h-4 w-4" />
         <span className="font-semibold truncate text-xs">In attesa</span>
       </div>
       <div className="text-[11px] opacity-90 truncate">{request.client_name}</div>

@@ -184,7 +184,7 @@ export const GroupCard = ({
                       className="h-6 w-6 min-w-[44px] min-h-[44px]"
                       aria-label="Modifica nome gruppo"
                     >
-                      <Edit2 className="h-3 w-3" />
+                      <Edit2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
