@@ -25,6 +25,7 @@ export function useAvailableSlots({
       coachId,
       format(startDate, "yyyy-MM-dd"),
       format(endDate, "yyyy-MM-dd"),
+      isCoachView,
       bypassEnabledCheck,
     ],
     queryFn: () =>
