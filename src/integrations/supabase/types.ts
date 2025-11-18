@@ -822,6 +822,53 @@ export type Database = {
           },
         ]
       }
+      library_media: {
+        Row: {
+          coach_id: string
+          created_at: string
+          file_size_bytes: number | null
+          file_type: string
+          file_url: string
+          filename: string
+          id: string
+          mime_type: string | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          file_size_bytes?: number | null
+          file_type: string
+          file_url: string
+          filename: string
+          id?: string
+          mime_type?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          file_size_bytes?: number | null
+          file_type?: string
+          file_url?: string
+          filename?: string
+          id?: string
+          mime_type?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_media_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       measurement_types: {
         Row: {
           code: string
