@@ -68,7 +68,7 @@ export function AppSidebar() {
         </nav>
       </div>
 
-      <div className="px-5 py-4">
+      <div className="px-3 py-4">
         <button
           type="button"
           onClick={handleLogout}
