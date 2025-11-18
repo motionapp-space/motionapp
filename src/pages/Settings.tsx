@@ -87,7 +87,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl pb-8">
+    <div className="container mx-auto p-6 max-w-4xl">
       <div className="mb-6">
         <PageHeading className="mb-2">Impostazioni</PageHeading>
         <p className="text-muted-foreground">Gestisci il tuo account e le preferenze</p>
