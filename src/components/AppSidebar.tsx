@@ -26,7 +26,7 @@ export function AppSidebar() {
 
   return (
     <aside 
-      className="h-full w-64 shrink-0 border-r bg-background flex flex-col" 
+      className="sticky top-0 h-screen w-64 shrink-0 border-r bg-background flex flex-col" 
       data-testid="sidebar"
     >
       <div className="px-5 py-4">
