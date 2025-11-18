@@ -10,7 +10,7 @@ type NavItem = { label: string; to: string; icon: React.ElementType };
 const NAV_ITEMS: NavItem[] = [
   { label: "Clienti", to: "/", icon: Users },
   { label: "Appuntamenti", to: "/calendar", icon: Calendar },
-  { label: "Template", to: "/templates", icon: FileText },
+  { label: "Library", to: "/library", icon: FileText },
   { label: "Impostazioni", to: "/settings", icon: Settings },
 ];
 

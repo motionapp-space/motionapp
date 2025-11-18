@@ -8,6 +8,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
 import Plans from "./pages/Plans";
+import Library from "./pages/Library";
 import TemplateEditor from "./pages/TemplateEditor";
 import TemplateDetail from "./pages/TemplateDetail";
 import TemplateMissing from "./pages/TemplateMissing";
@@ -70,7 +71,8 @@ const App = () => {
               <main className="flex-1 bg-background">
                 <Routes>
                   <Route path="/" element={<Clients />} />
-                  <Route path="/templates" element={<Plans />} />
+                  <Route path="/library" element={<Library />} />
+                  <Route path="/templates" element={<Navigate to="/library?tab=templates" replace />} />
                   <Route path="/templates/:id" element={<TemplateDetail />} />
                   <Route path="/templates/:id/edit" element={<TemplateEditor />} />
                   <Route path="/templates/:id/missing" element={<TemplateMissing />} />
