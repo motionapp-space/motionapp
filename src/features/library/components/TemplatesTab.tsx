@@ -117,14 +117,6 @@ export default function TemplatesTab() {
 
   return (
     <div className="space-y-6 pb-24 md:pb-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-1">Template</h2>
-        <p className="text-sm text-muted-foreground">
-          I tuoi template di allenamento riutilizzabili
-        </p>
-      </div>
-
       {/* Control Bar */}
       <div className="space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
         {/* Search Input */}
