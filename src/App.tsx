@@ -67,7 +67,7 @@ const App = () => {
           {user ? (
             <div className="flex h-screen w-full overflow-hidden">
               <AppSidebar />
-              <main className="flex-1 h-full overflow-y-auto bg-background">
+              <main className="flex-1 overflow-y-auto bg-background">
                 <Routes>
                   <Route path="/" element={<Clients />} />
                   <Route path="/templates" element={<Plans />} />
