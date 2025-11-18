@@ -1,81 +1,187 @@
-import { Card } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Image, Video, Trash2, Eye } from "lucide-react";
+import { FileText, Image, Video, Trash2, Eye, Download, MoreVertical, FolderOpen, Upload, Search } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useDeleteMedia } from "../hooks/useDeleteMedia";
 import { toast } from "sonner";
-import { toSentenceCase } from "@/lib/text";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 import type { LibraryMedia } from "../types";
 
 interface MediaGridProps {
   media: LibraryMedia[];
+  search?: string;
+  fileType?: string;
+  onClearFilters?: () => void;
+  onUploadClick?: () => void;
 }
 
-export default function MediaGrid({ media }: MediaGridProps) {
+export default function MediaGrid({ media, search, fileType, onClearFilters, onUploadClick }: MediaGridProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const deleteMutation = useDeleteMedia();
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(toSentenceCase("eliminare questo file?"))) return;
+  const handleDeleteClick = (id: string) => {
+    setItemToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      await deleteMutation.mutateAsync(id);
-      toast.success(toSentenceCase("file eliminato"));
+      await deleteMutation.mutateAsync(itemToDelete);
+      toast.success("File eliminato");
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
     } catch (error) {
-      toast.error(toSentenceCase("errore nell'eliminazione"));
+      toast.error("Errore nell'eliminazione");
     }
   };
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'video': return <Video className="h-8 w-8" />;
-      case 'image': return <Image className="h-8 w-8" />;
-      default: return <FileText className="h-8 w-8" />;
+      case 'video': return <Video className="h-12 w-12 text-primary/40" />;
+      case 'image': return <Image className="h-12 w-12 text-primary/40" />;
+      default: return <FileText className="h-12 w-12 text-primary/40" />;
     }
   };
 
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), "dd/MM/yyyy", { locale: it });
+  };
+
   if (media.length === 0) {
+    if (search || fileType) {
+      // No results state
+      return (
+        <Card className="p-12 text-center">
+          <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+          <h3 className="text-xl font-semibold mb-2">Nessun risultato</h3>
+          <p className="text-muted-foreground mb-6">
+            Nessun file corrisponde ai tuoi filtri
+          </p>
+          <Button variant="outline" onClick={onClearFilters}>
+            Cancella filtri
+          </Button>
+        </Card>
+      );
+    }
+
+    // True empty state
     return (
       <Card className="p-12 text-center">
-        <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-xl font-semibold mb-2">{toSentenceCase("nessun file caricato")}</h3>
-        <p className="text-muted-foreground">{toSentenceCase("inizia caricando il tuo primo file multimediale")}</p>
+        <div className="mb-6">
+          <FolderOpen className="h-20 w-20 mx-auto text-primary/20" />
+        </div>
+        <h3 className="text-2xl font-semibold mb-3">
+          Nessun file caricato
+        </h3>
+        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+          Carica video, immagini o documenti per iniziare a costruire la tua libreria multimediale.
+        </p>
+        <Button onClick={onUploadClick} size="lg" className="gap-2">
+          <Upload className="h-5 w-5" />
+          Carica File
+        </Button>
       </Card>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {media.map((item) => (
-        <Card key={item.id} className="p-4 hover:shadow-lg transition-shadow">
-          <div className="flex items-start justify-between mb-3">
-            <div className="text-primary">{getIcon(item.file_type)}</div>
-            <div className="flex gap-2">
-              <Button
-                size="icon"
-                variant="ghost"
+    <>
+      <div 
+        className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        data-testid="media-grid"
+      >
+        {media.map((item) => (
+          <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            {/* Mini Preview Area */}
+            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background h-32 flex items-center justify-center border-b">
+              {getIcon(item.file_type)}
+            </div>
+            
+            <CardContent className="p-4 space-y-3">
+              {/* Filename */}
+              <h3 className="font-semibold text-lg line-clamp-1" title={item.filename}>
+                {item.filename}
+              </h3>
+              
+              {/* Upload Date */}
+              <p className="text-sm text-muted-foreground">
+                Caricato: {formatDate(item.created_at)}
+              </p>
+              
+              {/* Tags */}
+              {item.tags && item.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {item.tags.map((tag) => (
+                    <span key={tag} className="text-xs bg-muted px-2 py-1 rounded">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              
+              {/* Primary Action Button */}
+              <Button 
                 onClick={() => window.open(item.file_url, '_blank')}
+                className="w-full gap-2"
               >
                 <Eye className="h-4 w-4" />
+                Visualizza File
               </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => handleDelete(item.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          <h4 className="font-semibold truncate mb-2">{item.filename}</h4>
-          {item.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {item.tags.map((tag) => (
-                <span key={tag} className="text-xs bg-muted px-2 py-1 rounded">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </Card>
-      ))}
-    </div>
+              
+              {/* Kebab Menu */}
+              <div className="flex justify-end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => window.open(item.file_url, '_blank')}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Scarica
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => handleDeleteClick(item.id)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Elimina
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Elimina File</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questo file? Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
