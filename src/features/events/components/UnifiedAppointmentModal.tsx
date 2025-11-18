@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
 import { X, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, Repeat, AlertCircle, Play } from "lucide-react";
 import { useAvailableSlots } from "@/features/bookings/hooks/useAvailableSlots";
+import { getAvailableSlots } from "@/features/bookings/api/available-slots.api";
 import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useUpdateEvent } from "../hooks/useUpdateEvent";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
@@ -332,15 +333,55 @@ export function UnifiedAppointmentModal({
     setRangeStart((prev) => addDays(prev, 14));
   };
 
-  const goNextAvailable = () => {
-    const firstAvail = dayAvailability.find(d => d.slots.length > 0);
-    if (firstAvail) {
-      setSelectedDay(firstAvail.date);
-      setSelectedSlot(firstAvail.slots[0]);
+  const goNextAvailable = async () => {
+    let searchStart = startOfDay(new Date());
+    const maxSearchDays = 90;
+    let daysSearched = 0;
+    
+    while (daysSearched < maxSearchDays) {
+      const searchEnd = addDays(searchStart, 14);
       
-      const dayElem = scrollRef.current?.querySelector(`[role="tab"][aria-selected="true"]`);
-      dayElem?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      try {
+        // Fetch slots per questo range
+        const response = await getAvailableSlots({
+          coachId,
+          startDate: searchStart.toISOString(),
+          endDate: searchEnd.toISOString(),
+          isCoachView: isCoachMode,
+          bypassEnabledCheck: isCoachMode,
+        });
+        
+        if (response.length > 0) {
+          // Trovato! Organizza gli slot per data
+          const firstSlot = response[0];
+          const firstDate = toISODate(new Date(firstSlot.start));
+          
+          // Imposta il range corretto per mostrare gli slot
+          setRangeStart(searchStart);
+          setSelectedDay(firstDate);
+          setSelectedSlot(firstSlot);
+          
+          // Scroll alla posizione dopo un breve delay per permettere il rendering
+          setTimeout(() => {
+            const dayElem = scrollRef.current?.querySelector(`[role="tab"][aria-selected="true"]`);
+            dayElem?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+          }, 100);
+          
+          return;
+        }
+        
+        // Continua la ricerca
+        searchStart = addDays(searchStart, 14);
+        daysSearched += 14;
+      } catch (error) {
+        console.error("Errore durante la ricerca degli slot:", error);
+        toast.error("Errore durante la ricerca degli slot disponibili");
+        return;
+      }
     }
+    
+    // Nessuno slot trovato nei prossimi 90 giorni
+    toast.error("Nessuno slot disponibile nei prossimi 90 giorni");
   };
 
   const handleSubmit = async () => {
