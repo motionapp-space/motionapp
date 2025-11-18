@@ -1,5 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams } from "react-router-dom";
+import { FileText, FolderOpen } from "lucide-react";
+import { PageHeading } from "@/components/ui/page-heading";
 import TemplatesTab from "@/features/library/components/TemplatesTab";
 import MediaTab from "@/features/library/components/MediaTab";
 
@@ -12,32 +14,31 @@ export default function Library() {
   };
 
   return (
-    <div className="w-full">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <div className="border-b bg-background sticky top-0 z-10">
-          <div className="container mx-auto px-6 max-w-7xl">
-            <TabsList className="h-14 bg-transparent border-0 p-0">
-              <TabsTrigger 
-                value="templates"
-                className="h-14 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-              >
-                Template
-              </TabsTrigger>
-              <TabsTrigger 
-                value="media"
-                className="h-14 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-              >
-                Media & File
-              </TabsTrigger>
-            </TabsList>
-          </div>
-        </div>
+    <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mb-6">
+        <PageHeading className="mb-2">Libreria</PageHeading>
+        <p className="text-muted-foreground">
+          Gestisci i tuoi template e contenuti multimediali
+        </p>
+      </div>
 
-        <TabsContent value="templates" className="mt-0">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="templates" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Template
+          </TabsTrigger>
+          <TabsTrigger value="media" className="gap-2">
+            <FolderOpen className="h-4 w-4" />
+            Media & File
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="templates">
           <TemplatesTab />
         </TabsContent>
 
-        <TabsContent value="media" className="mt-0">
+        <TabsContent value="media">
           <MediaTab />
         </TabsContent>
       </Tabs>
