@@ -65,9 +65,9 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           {user ? (
-            <div className="flex h-screen w-full overflow-hidden">
+            <div className="flex min-h-screen w-full bg-background">
               <AppSidebar />
-              <main className="flex-1 overflow-y-auto bg-background">
+              <main className="flex-1 bg-background">
                 <Routes>
                   <Route path="/" element={<Clients />} />
                   <Route path="/templates" element={<Plans />} />
