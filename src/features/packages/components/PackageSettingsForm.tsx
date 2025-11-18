@@ -113,13 +113,13 @@ export function PackageSettingsForm() {
 
   return (
     <Card>
-      <CardHeader className="pb-5">
+      <CardHeader className="pb-3">
         <CardTitle className="text-2xl">Impostazioni Pacchetti</CardTitle>
         <CardDescription className="text-base">
           Definisci prezzi e durate di default per ciascun tipo di pacchetto
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="px-6 pt-4 pb-6">
         {singleSessionPrice === 0 && (
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
@@ -231,7 +231,7 @@ export function PackageSettingsForm() {
               );
             })}
 
-            <div className="pt-6 pb-5 px-5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+            <div className="pt-4 pb-5 px-5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
               <FormField
                 control={form.control}
                 name="lock_window_hours"
@@ -287,7 +287,7 @@ export function PackageSettingsForm() {
               />
             </div>
 
-            <div className="pt-5 border-t">
+            <div className="pt-4 border-t">
               <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
                 💡 Questi valori vengono proposti automaticamente quando crei un nuovo pacchetto.
                 Puoi modificarli liberamente nella scheda cliente o mantenerli come default.
