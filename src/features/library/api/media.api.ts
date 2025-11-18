@@ -71,6 +71,18 @@ export async function uploadMedia(input: UploadMediaInput): Promise<LibraryMedia
   return data as LibraryMedia;
 }
 
+export async function renameMedia(id: string, newFilename: string): Promise<LibraryMedia> {
+  const { data, error } = await supabase
+    .from("library_media")
+    .update({ filename: newFilename })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as LibraryMedia;
+}
+
 export async function deleteMedia(id: string): Promise<void> {
   const { data: media, error: fetchError } = await supabase
     .from("library_media")
