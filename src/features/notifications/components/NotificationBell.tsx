@@ -59,7 +59,7 @@ export function NotificationBell() {
               onClick={() => markAll.mutate()}
               className="h-8 text-xs"
             >
-              <Check className="h-3 w-3 mr-1" />
+              <Check className="h-4 w-4 mr-1" />
               Segna tutte
             </Button>
           )}

@@ -103,7 +103,7 @@ export const DayCardCompact = ({
                 </Badge>
                 {summary.estimatedMinutes > 0 && (
                   <Badge variant="outline" className="text-xs font-medium gap-1">
-                    <Clock className="h-3 w-3" />
+                    <Clock className="h-4 w-4" />
                     ~{summary.estimatedMinutes} min
                   </Badge>
                 )}
