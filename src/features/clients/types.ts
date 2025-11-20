@@ -40,6 +40,10 @@ export interface ClientWithDetails extends ClientWithTags {
   package_sessions_used?: number;
   package_sessions_total?: number;
   last_session_date?: string;
+  plan_weeks_since_assignment?: number | null;
+  package_status?: 'active' | 'low' | 'expired' | 'none';
+  appointment_status?: 'planned' | 'unplanned';
+  activity_status?: 'active' | 'low' | 'inactive';
 }
 
 export interface CreateClientInput {

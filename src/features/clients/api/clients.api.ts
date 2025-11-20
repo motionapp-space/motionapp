@@ -1,6 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Client, ClientWithTags, ClientWithDetails, CreateClientInput, UpdateClientInput, ClientsFilters, ClientsPageResult } from "../types";
 
+interface ComputedClientData {
+  client_id: string;
+  plan_weeks_since_assignment: number | null;
+  package_status: 'active' | 'low' | 'expired' | 'none';
+  appointment_status: 'planned' | 'unplanned';
+  activity_status: 'active' | 'low' | 'inactive';
+}
+
 export async function listClients(filters: ClientsFilters): Promise<ClientsPageResult> {
   const { 
     q = "", 
@@ -89,12 +97,38 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
 
   if (error) throw error;
 
+  // Get client IDs for batch computation
+  const clientIds = (data || []).map((c: any) => c.id);
+
+  // Compute additional data via edge function
+  let computedDataMap: Record<string, ComputedClientData> = {};
+  if (clientIds.length > 0) {
+    try {
+      const { data: computedData, error: computeError } = await supabase.functions.invoke(
+        'compute-client-data',
+        { body: { clientIds } }
+      );
+
+      if (!computeError && computedData?.data) {
+        computedDataMap = computedData.data.reduce((acc: Record<string, ComputedClientData>, item: ComputedClientData) => {
+          acc[item.client_id] = item;
+          return acc;
+        }, {});
+      }
+    } catch (err) {
+      console.error('Failed to compute client data:', err);
+      // Continue without computed data
+    }
+  }
+
   // Transform data structure
   let items: ClientWithDetails[] = (data || []).map((client: any) => {
     const activePackage = client.packages?.find((p: any) => p.consumed_sessions < p.total_sessions);
     const lastSession = client.sessions?.sort((a: any, b: any) => 
       new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
     )[0];
+
+    const computed = computedDataMap[client.id];
 
     return {
       ...client,
@@ -103,6 +137,10 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       package_sessions_used: activePackage?.consumed_sessions,
       package_sessions_total: activePackage?.total_sessions,
       last_session_date: lastSession?.started_at,
+      plan_weeks_since_assignment: computed?.plan_weeks_since_assignment,
+      package_status: computed?.package_status,
+      appointment_status: computed?.appointment_status,
+      activity_status: computed?.activity_status,
       packages: undefined,
       sessions: undefined,
       current_plan: undefined,
