@@ -13,6 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toSentenceCase } from "@/lib/text";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useCreateClient } from "@/features/clients/hooks/useCreateClient";
@@ -149,14 +153,10 @@ const Clients = () => {
   ];
 
   const hasActiveFilters =
-    filters.withActivePlan ||
-    filters.withActivePackage ||
     filters.withoutPlan ||
     filters.packageToRenew ||
     filters.withoutAppointment ||
     filters.lowActivity ||
-    filters.includeArchived ||
-    filters.lastAccessDays ||
     filters.planWeeksRange ||
     (filters.packageStatuses && filters.packageStatuses.length > 0) ||
     (filters.appointmentStatuses && filters.appointmentStatuses.length > 0) ||
@@ -164,15 +164,10 @@ const Clients = () => {
 
   const clearFilters = () => {
     setFilters({
-      q: "",
-      withActivePlan: undefined,
-      withActivePackage: undefined,
       withoutPlan: undefined,
       packageToRenew: undefined,
       withoutAppointment: undefined,
       lowActivity: undefined,
-      includeArchived: undefined,
-      lastAccessDays: undefined,
       planWeeksRange: undefined,
       packageStatuses: undefined,
       appointmentStatuses: undefined,
@@ -218,306 +213,393 @@ const Clients = () => {
 
       {/* Filters Section */}
       <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-6 max-w-7xl py-4 space-y-4">
+        <div className="container mx-auto px-6 max-w-7xl py-4 space-y-3">
 
-          {/* Quick Filters - con scroll orizzontale smooth */}
-          <div className="relative">
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-              {/* Filtro: Piano attivo */}
-              <Toggle
-                pressed={filters.withActivePlan || false}
-                onPressedChange={(pressed) => setFilters({ withActivePlan: pressed ? true : undefined })}
-                variant="outline"
-                aria-pressed={filters.withActivePlan || false}
-                className={cn(
-                  "rounded-full h-9 px-4 text-sm font-medium transition-all border",
-                  "hover:bg-accent/40",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
-                )}
-              >
-                Piano attivo
-              </Toggle>
+          {/* Quick Filters Pills */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Toggle
+              pressed={filters.withoutPlan || false}
+              onPressedChange={(pressed) => setFilters({ withoutPlan: pressed ? true : undefined })}
+              variant="outline"
+              size="sm"
+              className="h-9"
+            >
+              Senza piano
+            </Toggle>
+            
+            <Toggle
+              pressed={filters.packageToRenew || false}
+              onPressedChange={(pressed) => setFilters({ packageToRenew: pressed ? true : undefined })}
+              variant="outline"
+              size="sm"
+              className="h-9"
+            >
+              Pacchetto da rinnovare
+            </Toggle>
+            
+            <Toggle
+              pressed={filters.withoutAppointment || false}
+              onPressedChange={(pressed) => setFilters({ withoutAppointment: pressed ? true : undefined })}
+              variant="outline"
+              size="sm"
+              className="h-9"
+            >
+              Senza appuntamento futuro
+            </Toggle>
 
-              <Toggle
-                pressed={filters.withActivePackage || false}
-                onPressedChange={(pressed) => setFilters({ withActivePackage: pressed ? true : undefined })}
-                variant="outline"
-                aria-pressed={filters.withActivePackage || false}
-                className={cn(
-                  "rounded-full h-9 px-4 text-sm font-medium transition-all border",
-                  "hover:bg-accent/40",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
-                )}
-              >
-                Pacchetto attivo
-              </Toggle>
-
-              <Toggle
-                pressed={filters.withoutPlan || false}
-                onPressedChange={(pressed) => setFilters({ withoutPlan: pressed ? true : undefined })}
-                variant="outline"
-                aria-pressed={filters.withoutPlan || false}
-                className={cn(
-                  "rounded-full h-9 px-4 text-sm font-medium transition-all border",
-                  "hover:bg-accent/40",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
-                )}
-              >
-                Senza piano
-              </Toggle>
-
-              <Toggle
-                pressed={filters.packageToRenew || false}
-                onPressedChange={(pressed) => setFilters({ packageToRenew: pressed ? true : undefined })}
-                variant="outline"
-                aria-pressed={filters.packageToRenew || false}
-                className={cn(
-                  "rounded-full h-9 px-4 text-sm font-medium transition-all border",
-                  "hover:bg-accent/40",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
-                )}
-              >
-                Pacchetto da rinnovare
-              </Toggle>
-
-              <Toggle
-                pressed={filters.withoutAppointment || false}
-                onPressedChange={(pressed) => setFilters({ withoutAppointment: pressed ? true : undefined })}
-                variant="outline"
-                aria-pressed={filters.withoutAppointment || false}
-                className={cn(
-                  "rounded-full h-9 px-4 text-sm font-medium transition-all border",
-                  "hover:bg-accent/40",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
-                )}
-              >
-                Senza appuntamento futuro
-              </Toggle>
-
-              <Toggle
-                pressed={filters.lowActivity || false}
-                onPressedChange={(pressed) => setFilters({ lowActivity: pressed ? true : undefined })}
-                variant="outline"
-                aria-pressed={filters.lowActivity || false}
-                className={cn(
-                  "rounded-full h-9 px-4 text-sm font-medium transition-all border",
-                  "hover:bg-accent/40",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
-                )}
-              >
-                Clienti non attivi
-              </Toggle>
-
-              <Toggle
-                pressed={filters.includeArchived || false}
-                onPressedChange={(pressed) => setFilters({ includeArchived: pressed ? true : undefined })}
-                variant="outline"
-                aria-pressed={filters.includeArchived || false}
-                className={cn(
-                  "rounded-full h-9 px-4 text-sm font-medium transition-all border",
-                  "hover:bg-accent/40",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
-                )}
-              >
-                Mostra archiviati
-              </Toggle>
-
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 px-3 text-sm ml-2">
-                  <X className="h-3 w-3 mr-1" />
-                  Pulisci filtri
-                </Button>
-              )}
-            </div>
-            {/* Gradient fade per indicare scroll su mobile */}
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
+            <Toggle
+              pressed={filters.lowActivity || false}
+              onPressedChange={(pressed) => setFilters({ lowActivity: pressed ? true : undefined })}
+              variant="outline"
+              size="sm"
+              className="h-9"
+            >
+              Clienti non attivi
+            </Toggle>
           </div>
 
-          {/* Separatore visivo */}
-          <Separator className="my-0.5" />
+          {/* Control Bar: Sort + Show Archived + Advanced Filters */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">Ordina per:</span>
+              <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
+                <SelectTrigger className="h-9 w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          {/* Advanced Filters */}
-          <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-            <CollapsibleTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-2 h-9"
-                aria-expanded={advancedOpen}
-                aria-controls="advanced-filters"
+              <Popover open={advancedOpen} onOpenChange={setAdvancedOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-3 text-muted-foreground hover:text-foreground"
+                  >
+                    Filtri avanzati
+                    <ChevronDown className={cn("ml-2 h-4 w-4 transition-transform", advancedOpen && "rotate-180")} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[600px] p-0" align="start">
+                  <div className="p-5">
+                    <div className="grid grid-cols-2 gap-6">
+                      {/* Left Column: Relazione / Attività */}
+                      <div className="space-y-5">
+                        {/* Appuntamenti */}
+                        <div>
+                          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">
+                            Appuntamenti
+                          </Label>
+                          <RadioGroup
+                            value={
+                              !filters.appointmentStatuses || filters.appointmentStatuses.length === 0
+                                ? "all"
+                                : filters.appointmentStatuses.includes("planned") && filters.appointmentStatuses.includes("unplanned")
+                                ? "all"
+                                : filters.appointmentStatuses[0]
+                            }
+                            onValueChange={(value) => {
+                              if (value === "all") {
+                                setFilters({ appointmentStatuses: undefined });
+                              } else {
+                                setFilters({ appointmentStatuses: [value as any] });
+                              }
+                            }}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="all" id="appointment-all" />
+                              <Label htmlFor="appointment-all" className="cursor-pointer font-normal">Tutti</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="planned" id="appointment-planned" />
+                              <Label htmlFor="appointment-planned" className="cursor-pointer font-normal">Pianificato</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="unplanned" id="appointment-unplanned" />
+                              <Label htmlFor="appointment-unplanned" className="cursor-pointer font-normal">Da pianificare</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {/* Attività */}
+                        <div>
+                          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">
+                            Attività
+                          </Label>
+                          <RadioGroup
+                            value={
+                              !filters.activityStatuses || filters.activityStatuses.length === 0
+                                ? "all"
+                                : filters.activityStatuses.includes("active") && filters.activityStatuses.includes("low") && filters.activityStatuses.includes("inactive")
+                                ? "all"
+                                : filters.activityStatuses[0]
+                            }
+                            onValueChange={(value) => {
+                              if (value === "all") {
+                                setFilters({ activityStatuses: undefined });
+                              } else {
+                                setFilters({ activityStatuses: [value as any] });
+                              }
+                            }}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="all" id="activity-all" />
+                              <Label htmlFor="activity-all" className="cursor-pointer font-normal">Tutti</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="active" id="activity-active" />
+                              <Label htmlFor="activity-active" className="cursor-pointer font-normal">Attivo</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="low" id="activity-low" />
+                              <Label htmlFor="activity-low" className="cursor-pointer font-normal">Bassa</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="inactive" id="activity-inactive" />
+                              <Label htmlFor="activity-inactive" className="cursor-pointer font-normal">Assente</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                      </div>
+
+                      {/* Right Column: Piano & Pacchetto */}
+                      <div className="space-y-5">
+                        {/* Ultimo piano */}
+                        <div>
+                          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">
+                            Ultimo Piano
+                          </Label>
+                          <RadioGroup
+                            value={filters.planWeeksRange || "all"}
+                            onValueChange={(value) => setFilters({ planWeeksRange: value === "all" ? undefined : value as ClientsFilters['planWeeksRange'] })}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="all" id="plan-all" />
+                              <Label htmlFor="plan-all" className="cursor-pointer font-normal">Tutti</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="0-4" id="plan-0-4" />
+                              <Label htmlFor="plan-0-4" className="cursor-pointer font-normal">0–4 settimane</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="4-8" id="plan-4-8" />
+                              <Label htmlFor="plan-4-8" className="cursor-pointer font-normal">4–8 settimane</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="8+" id="plan-8plus" />
+                              <Label htmlFor="plan-8plus" className="cursor-pointer font-normal">8+ settimane</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="none" id="plan-none" />
+                              <Label htmlFor="plan-none" className="cursor-pointer font-normal">Nessun piano</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {/* Stato pacchetto */}
+                        <div>
+                          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">
+                            Stato Pacchetto
+                          </Label>
+                          <RadioGroup
+                            value={
+                              !filters.packageStatuses || filters.packageStatuses.length === 0
+                                ? "all"
+                                : filters.packageStatuses.length > 1
+                                ? "all"
+                                : filters.packageStatuses[0]
+                            }
+                            onValueChange={(value) => {
+                              if (value === "all") {
+                                setFilters({ packageStatuses: undefined });
+                              } else {
+                                setFilters({ packageStatuses: [value as any] });
+                              }
+                            }}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="all" id="package-all" />
+                              <Label htmlFor="package-all" className="cursor-pointer font-normal">Tutti</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="active" id="package-active" />
+                              <Label htmlFor="package-active" className="cursor-pointer font-normal">Attivo</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="low" id="package-low" />
+                              <Label htmlFor="package-low" className="cursor-pointer font-normal">In esaurimento</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="expired" id="package-expired" />
+                              <Label htmlFor="package-expired" className="cursor-pointer font-normal">Da rinnovare</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="none" id="package-none" />
+                              <Label htmlFor="package-none" className="cursor-pointer font-normal">Nessuno</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setFilters({
+                            appointmentStatuses: undefined,
+                            activityStatuses: undefined,
+                            planWeeksRange: undefined,
+                            packageStatuses: undefined,
+                          });
+                        }}
+                      >
+                        Reimposta
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => setAdvancedOpen(false)}
+                      >
+                        Applica filtri
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="show-archived"
+                checked={filters.includeArchived === true}
+                onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
+              />
+              <Label htmlFor="show-archived" className="cursor-pointer text-sm">
+                Mostra archiviati
+              </Label>
+            </div>
+          </div>
+
+          {/* Active Filters Summary */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <span className="text-xs text-muted-foreground">Filtri attivi:</span>
+              
+              {filters.withoutPlan && (
+                <Badge variant="secondary" className="gap-1">
+                  Senza piano
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ withoutPlan: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.packageToRenew && (
+                <Badge variant="secondary" className="gap-1">
+                  Pacchetto da rinnovare
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ packageToRenew: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.withoutAppointment && (
+                <Badge variant="secondary" className="gap-1">
+                  Senza appuntamento futuro
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ withoutAppointment: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.lowActivity && (
+                <Badge variant="secondary" className="gap-1">
+                  Clienti non attivi
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ lowActivity: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.planWeeksRange && (
+                <Badge variant="secondary" className="gap-1">
+                  Piano: {
+                    filters.planWeeksRange === "none" ? "Nessun piano" :
+                    filters.planWeeksRange === "0-4" ? "0-4 sett" :
+                    filters.planWeeksRange === "4-8" ? "4-8 sett" :
+                    "8+ sett"
+                  }
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ planWeeksRange: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.packageStatuses && filters.packageStatuses.length > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  Pacchetto: {
+                    filters.packageStatuses[0] === "active" ? "Attivo" :
+                    filters.packageStatuses[0] === "low" ? "In esaurimento" :
+                    filters.packageStatuses[0] === "expired" ? "Da rinnovare" :
+                    "Nessuno"
+                  }
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ packageStatuses: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.appointmentStatuses && filters.appointmentStatuses.length > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  Appuntamenti: {
+                    filters.appointmentStatuses[0] === "planned" ? "Pianificato" : "Da pianificare"
+                  }
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ appointmentStatuses: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.activityStatuses && filters.activityStatuses.length > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  Attività: {
+                    filters.activityStatuses[0] === "active" ? "Attivo" :
+                    filters.activityStatuses[0] === "low" ? "Bassa" :
+                    "Assente"
+                  }
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ activityStatuses: undefined })}
+                  />
+                </Badge>
+              )}
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs"
+                onClick={clearFilters}
               >
-                <ChevronDown
-                  className={cn("h-4 w-4 transition-transform duration-200", advancedOpen && "rotate-180")}
-                />
-                Filtri avanzati
+                Pulisci tutti
               </Button>
-            </CollapsibleTrigger>
-          <CollapsibleContent 
-            id="advanced-filters"
-            className="mt-3 p-5 rounded-xl bg-muted/40 border border-muted-foreground/10 shadow-sm animate-in slide-in-from-top-2 duration-200"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
-              {/* Filtro: Ordina per */}
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2.5 block">Ordina per</Label>
-                  <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
-                    <SelectTrigger className="h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sortOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            </div>
+          )}
 
-              {/* Filtro: Ultimo accesso */}
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2.5 block">Ultimo accesso</Label>
-                  <Select
-                    value={filters.lastAccessDays?.toString() || "all"}
-                    onValueChange={(value) => setFilters({ lastAccessDays: value === "all" ? undefined : parseInt(value) })}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Tutti" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tutti</SelectItem>
-                      <SelectItem value="7">Ultimi 7 giorni</SelectItem>
-                      <SelectItem value="30">Ultimi 30 giorni</SelectItem>
-                      <SelectItem value="90">Ultimi 90 giorni</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-              {/* NUOVO: Filtro Ultimo Piano (range settimane) */}
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2.5 block">Ultimo Piano</Label>
-                  <Select
-                    value={filters.planWeeksRange || "all"}
-                    onValueChange={(value) => setFilters({ planWeeksRange: value === "all" ? undefined : value as ClientsFilters['planWeeksRange'] })}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Tutti" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tutti</SelectItem>
-                      <SelectItem value="none">Nessun piano</SelectItem>
-                      <SelectItem value="0-4">0-4 settimane</SelectItem>
-                      <SelectItem value="4-8">4-8 settimane</SelectItem>
-                      <SelectItem value="8+">8+ settimane</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-              {/* NUOVO: Filtro Pacchetto (multi-select) */}
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">Stato Pacchetto</Label>
-                  <div className="space-y-2">
-                  {[
-                    { value: 'active', label: 'Attivo' },
-                    { value: 'low', label: 'In esaurimento' },
-                    { value: 'expired', label: 'Da rinnovare' },
-                    { value: 'none', label: 'Nessuno' }
-                  ].map(option => (
-                      <div key={option.value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`package-${option.value}`}
-                        checked={filters.packageStatuses?.includes(option.value as any) || false}
-                        onCheckedChange={(checked) => {
-                          const current = filters.packageStatuses || [];
-                          const updated = checked
-                            ? [...current, option.value as any]
-                            : current.filter(s => s !== option.value);
-                          setFilters({ packageStatuses: updated.length > 0 ? updated : undefined });
-                        }}
-                      />
-                      <label 
-                        htmlFor={`package-${option.value}`} 
-                        className="text-sm cursor-pointer select-none transition-colors hover:text-foreground"
-                      >
-                        {option.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* NUOVO: Filtro Appuntamenti */}
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">Appuntamenti</Label>
-                  <div className="space-y-2">
-                  {[
-                    { value: 'planned', label: 'Pianificato' },
-                    { value: 'unplanned', label: 'Da pianificare' }
-                  ].map(option => (
-                      <div key={option.value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`appointment-${option.value}`}
-                        checked={filters.appointmentStatuses?.includes(option.value as any) || false}
-                        onCheckedChange={(checked) => {
-                          const current = filters.appointmentStatuses || [];
-                          const updated = checked
-                            ? [...current, option.value as any]
-                            : current.filter(s => s !== option.value);
-                          setFilters({ appointmentStatuses: updated.length > 0 ? updated : undefined });
-                        }}
-                      />
-                      <label 
-                        htmlFor={`appointment-${option.value}`} 
-                        className="text-sm cursor-pointer select-none transition-colors hover:text-foreground"
-                      >
-                        {option.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* NUOVO: Filtro Attività */}
-              <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">Attività</Label>
-                <div className="space-y-2">
-                  {[
-                    { value: 'active', label: 'Attivo' },
-                    { value: 'low', label: 'Bassa' },
-                    { value: 'inactive', label: 'Assente' }
-                  ].map(option => (
-                    <div key={option.value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`activity-${option.value}`}
-                        checked={filters.activityStatuses?.includes(option.value as any) || false}
-                        onCheckedChange={(checked) => {
-                          const current = filters.activityStatuses || [];
-                          const updated = checked
-                            ? [...current, option.value as any]
-                            : current.filter(s => s !== option.value);
-                          setFilters({ activityStatuses: updated.length > 0 ? updated : undefined });
-                        }}
-                      />
-                      <label 
-                        htmlFor={`activity-${option.value}`} 
-                        className="text-sm cursor-pointer select-none transition-colors hover:text-foreground"
-                      >
-                        {option.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
         </div>
       </div>
 
