@@ -1,13 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Package, AlertTriangle, XCircle } from "lucide-react";
+import { Package, AlertTriangle, XCircle, MinusCircle } from "lucide-react";
 
 interface PackageStatusBadgeProps {
   status: "active" | "low" | "expired" | "none" | undefined;
 }
 
 export function PackageStatusBadge({ status }: PackageStatusBadgeProps) {
-  if (!status || status === "none") {
+  if (!status) {
     return <span className="text-muted-foreground text-sm">—</span>;
   }
 
@@ -18,14 +18,19 @@ export function PackageStatusBadge({ status }: PackageStatusBadgeProps) {
       className: "border-green-500/50 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
     },
     low: {
-      label: "Basso",
+      label: "In esaurimento",
       icon: AlertTriangle,
       className: "border-yellow-500/50 bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300"
     },
     expired: {
-      label: "Scaduto",
+      label: "Da rinnovare",
       icon: XCircle,
       className: "border-red-500/50 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"
+    },
+    none: {
+      label: "Nessuno",
+      icon: MinusCircle,
+      className: "border-gray-300 bg-gray-50 text-gray-600 dark:bg-gray-900 dark:text-gray-400"
     }
   };
 
