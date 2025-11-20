@@ -361,12 +361,12 @@ const Clients = () => {
             </CollapsibleTrigger>
           <CollapsibleContent 
             id="advanced-filters"
-            className="mt-3 p-6 rounded-xl bg-muted/40 border border-muted-foreground/10 shadow-sm animate-in slide-in-from-top-2 duration-200"
+            className="mt-3 p-5 rounded-xl bg-muted/40 border border-muted-foreground/10 shadow-sm animate-in slide-in-from-top-2 duration-200"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
               {/* Filtro: Ordina per */}
               <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">Ordina per</Label>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2.5 block">Ordina per</Label>
                   <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
                     <SelectTrigger className="h-10">
                       <SelectValue />
@@ -383,7 +383,7 @@ const Clients = () => {
 
               {/* Filtro: Ultimo accesso */}
               <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">Ultimo accesso</Label>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2.5 block">Ultimo accesso</Label>
                   <Select
                     value={filters.lastAccessDays?.toString() || "all"}
                     onValueChange={(value) => setFilters({ lastAccessDays: value === "all" ? undefined : parseInt(value) })}
@@ -402,7 +402,7 @@ const Clients = () => {
 
               {/* NUOVO: Filtro Ultimo Piano (range settimane) */}
               <div>
-                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">Ultimo Piano</Label>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2.5 block">Ultimo Piano</Label>
                   <Select
                     value={filters.planWeeksRange || "all"}
                     onValueChange={(value) => setFilters({ planWeeksRange: value === "all" ? undefined : value as ClientsFilters['planWeeksRange'] })}
@@ -423,14 +423,14 @@ const Clients = () => {
               {/* NUOVO: Filtro Pacchetto (multi-select) */}
               <div>
                 <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">Stato Pacchetto</Label>
-                <div className="space-y-2.5">
+                  <div className="space-y-2">
                   {[
                     { value: 'active', label: 'Attivo' },
                     { value: 'low', label: 'In esaurimento' },
                     { value: 'expired', label: 'Da rinnovare' },
                     { value: 'none', label: 'Nessuno' }
                   ].map(option => (
-                    <div key={option.value} className="flex items-center space-x-2.5">
+                      <div key={option.value} className="flex items-center space-x-2">
                       <Checkbox
                         id={`package-${option.value}`}
                         checked={filters.packageStatuses?.includes(option.value as any) || false}
@@ -456,12 +456,12 @@ const Clients = () => {
               {/* NUOVO: Filtro Appuntamenti */}
               <div>
                 <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">Appuntamenti</Label>
-                <div className="space-y-2.5">
+                  <div className="space-y-2">
                   {[
                     { value: 'planned', label: 'Pianificato' },
                     { value: 'unplanned', label: 'Da pianificare' }
                   ].map(option => (
-                    <div key={option.value} className="flex items-center space-x-2.5">
+                      <div key={option.value} className="flex items-center space-x-2">
                       <Checkbox
                         id={`appointment-${option.value}`}
                         checked={filters.appointmentStatuses?.includes(option.value as any) || false}
@@ -487,13 +487,13 @@ const Clients = () => {
               {/* NUOVO: Filtro Attività */}
               <div>
                 <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">Attività</Label>
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   {[
                     { value: 'active', label: 'Attivo' },
                     { value: 'low', label: 'Bassa' },
                     { value: 'inactive', label: 'Assente' }
                   ].map(option => (
-                    <div key={option.value} className="flex items-center space-x-2.5">
+                    <div key={option.value} className="flex items-center space-x-2">
                       <Checkbox
                         id={`activity-${option.value}`}
                         checked={filters.activityStatuses?.includes(option.value as any) || false}
