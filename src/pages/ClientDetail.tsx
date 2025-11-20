@@ -14,7 +14,6 @@ import { ArrowLeft, Edit, Plus, X, FileText, Play } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
-import type { ClientStatus } from "@/types/client";
 import { useClientPlansQuery } from "@/features/client-plans/hooks/useClientPlansQuery";
 import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClientPlan";
 import { AssignPlanDialog } from "@/features/client-plans/components/AssignPlanDialog";
@@ -25,21 +24,6 @@ import { PackageTab } from "@/features/packages/components/PackageTab";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateEvent } from "@/features/events/hooks/useCreateEvent";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
-
-const getStatusColor = (status: ClientStatus) => {
-  switch (status) {
-    case "ATTIVO":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
-    case "POTENZIALE":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
-    case "INATTIVO":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
-    case "ARCHIVIATO":
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -189,14 +173,9 @@ const ClientDetail = () => {
             <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <PageHeading>
-                {currentClient.last_name} {currentClient.first_name}
-              </PageHeading>
-              <Badge className={`mt-1 ${getStatusColor(currentClient.status)}`} variant="secondary">
-                {currentClient.status}
-              </Badge>
-            </div>
+            <PageHeading>
+              {currentClient.last_name} {currentClient.first_name}
+            </PageHeading>
           </div>
           <Button onClick={() => setEditMode(!editMode)} variant="outline" className="gap-2">
             <Edit className="h-4 w-4" />
@@ -289,10 +268,6 @@ const ClientDetail = () => {
                     ) : (
                       <p className="text-sm">{currentClient.fiscal_code || "-"}</p>
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{toSentenceCase("Stato")}</Label>
-                    <p className="text-sm">{currentClient.status}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
