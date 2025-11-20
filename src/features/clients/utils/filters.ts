@@ -9,7 +9,6 @@ export function getDefaultFilters(sp: URLSearchParams): ClientsFilters {
   const withActivePlan = sp.get("withActivePlan");
   const withActivePackage = sp.get("withActivePackage");
   const lastAccessDays = sp.get("lastAccessDays");
-  const quickFiltersParam = sp.getAll("quickFilter");
 
   return {
     q: sp.get("q") || "",
@@ -21,7 +20,6 @@ export function getDefaultFilters(sp: URLSearchParams): ClientsFilters {
     withActivePlan: withActivePlan ? withActivePlan === "true" : undefined,
     withActivePackage: withActivePackage ? withActivePackage === "true" : undefined,
     lastAccessDays: lastAccessDays ? Number(lastAccessDays) : undefined,
-    quickFilters: quickFiltersParam.length > 0 ? quickFiltersParam as any : undefined,
   };
 }
 
@@ -39,9 +37,6 @@ export function filtersToSearchParams(filters: ClientsFilters): URLSearchParams 
   if (filters.withActivePlan !== undefined) sp.set("withActivePlan", String(filters.withActivePlan));
   if (filters.withActivePackage !== undefined) sp.set("withActivePackage", String(filters.withActivePackage));
   if (filters.lastAccessDays !== undefined) sp.set("lastAccessDays", String(filters.lastAccessDays));
-  if (filters.quickFilters && filters.quickFilters.length > 0) {
-    filters.quickFilters.forEach(f => sp.append("quickFilter", f));
-  }
   
   return sp;
 }

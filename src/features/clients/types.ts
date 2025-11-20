@@ -76,7 +76,6 @@ export interface ClientsFilters {
   withActivePlan?: boolean;
   withActivePackage?: boolean;
   lastAccessDays?: number;
-  quickFilters?: Array<"plan_expiring" | "package_low" | "package_expired" | "no_appointments" | "inactive">;
 }
 
 export interface ClientsPageResult {
