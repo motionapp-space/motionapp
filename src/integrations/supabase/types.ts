@@ -14,6 +14,131 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_actions_log: {
+        Row: {
+          action_payload: Json
+          action_type: string
+          coach_id: string
+          conversation_id: string
+          created_at: string
+          error_message: string | null
+          executed_at: string | null
+          id: string
+          message_id: string | null
+          status: string
+        }
+        Insert: {
+          action_payload: Json
+          action_type: string
+          coach_id: string
+          conversation_id: string
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          message_id?: string | null
+          status: string
+        }
+        Update: {
+          action_payload?: Json
+          action_type?: string
+          coach_id?: string
+          conversation_id?: string
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          message_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_actions_log_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_actions_log_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_conversations: {
+        Row: {
+          coach_id: string
+          context_page: string | null
+          created_at: string
+          id: string
+          last_message_at: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          context_page?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          context_page?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          context_snapshot: Json | null
+          conversation_id: string
+          created_at: string
+          id: string
+          intent_payload: Json | null
+          intent_type: string | null
+          role: string
+        }
+        Insert: {
+          content: string
+          context_snapshot?: Json | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          intent_payload?: Json | null
+          intent_type?: string | null
+          role: string
+        }
+        Update: {
+          content?: string
+          context_snapshot?: Json | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          intent_payload?: Json | null
+          intent_type?: string | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       availability_windows: {
         Row: {
           capacity: number | null
