@@ -18,7 +18,6 @@ import { useArchiveClient } from "@/features/clients/hooks/useArchiveClient";
 import { useUnarchiveClient } from "@/features/clients/hooks/useUnarchiveClient";
 import { getDefaultFilters, filtersToSearchParams } from "@/features/clients/utils/filters";
 import { ClientsTable } from "@/features/clients/components/ClientsTable";
-import { QuickFilters, type QuickFilterType } from "@/features/clients/components/QuickFilters";
 import { getClientById } from "@/features/clients/api/clients.api";
 import type { ClientStatus, ClientsFilters } from "@/features/clients/types";
 import { cn } from "@/lib/utils";
@@ -86,21 +85,12 @@ const Clients = () => {
       newFilters.withActivePlan !== undefined ||
       newFilters.withActivePackage !== undefined ||
       newFilters.lastAccessDays !== undefined ||
-      newFilters.quickFilters !== undefined ||
       newFilters.sort !== undefined
     ) {
       updated.page = 1;
     }
     setFiltersState(updated);
     setSp(filtersToSearchParams(updated));
-  };
-
-  const handleQuickFilterToggle = (filter: QuickFilterType) => {
-    const current = filters.quickFilters || [];
-    const updated = current.includes(filter)
-      ? current.filter(f => f !== filter)
-      : [...current, filter];
-    setFilters({ quickFilters: updated.length > 0 ? updated : undefined });
   };
 
   const isFormValid =
@@ -152,8 +142,7 @@ const Clients = () => {
     filters.withActivePlan ||
     filters.withActivePackage ||
     (filters.status && filters.status.length > 0 && filters.status.length < 3) ||
-    filters.lastAccessDays ||
-    (filters.quickFilters && filters.quickFilters.length > 0);
+    filters.lastAccessDays;
 
   const clearFilters = () => {
     setFilters({
@@ -162,7 +151,6 @@ const Clients = () => {
       withActivePlan: undefined,
       withActivePackage: undefined,
       lastAccessDays: undefined,
-      quickFilters: undefined,
     });
   };
 
@@ -295,14 +283,6 @@ const Clients = () => {
                 Pulisci filtri
               </Button>
             )}
-          </div>
-
-          {/* Quick Filters */}
-          <div className="mt-4">
-            <QuickFilters 
-              activeFilters={filters.quickFilters || []} 
-              onToggleFilter={handleQuickFilterToggle}
-            />
           </div>
 
           {/* Advanced Filters */}

@@ -1,12 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Eye, Archive, RotateCcw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 import { toSentenceCase } from "@/lib/text";
-import { format, parseISO } from "date-fns";
-import { it } from "date-fns/locale";
-import type { ClientWithDetails, ClientStatus } from "../types";
+import type { ClientWithDetails } from "../types";
 import { PlanWeeksBadge } from "./badges/PlanWeeksBadge";
 import { PackageStatusBadge } from "./badges/PackageStatusBadge";
 import { AppointmentStatusBadge } from "./badges/AppointmentStatusBadge";
@@ -18,21 +15,6 @@ interface ClientsTableProps {
   onArchive: (id: string, name: string) => void;
   onUnarchive: (id: string, name: string) => void;
 }
-
-const getStatusColor = (status: ClientStatus) => {
-  switch (status) {
-    case "ATTIVO":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
-    case "POTENZIALE":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
-    case "INATTIVO":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
-    case "ARCHIVIATO":
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
 
 function ClientRow({
   client,
@@ -52,12 +34,6 @@ function ClientRow({
       <TableCell className="font-medium">
         {client.first_name} {client.last_name}
       </TableCell>
-      <TableCell>
-        <Badge className={getStatusColor(client.status)} variant="secondary">
-          {client.status}
-        </Badge>
-      </TableCell>
-      <TableCell>{client.current_plan_name || "—"}</TableCell>
       <TableCell>
         <PlanWeeksBadge weeks={client.plan_weeks_since_assignment} />
       </TableCell>
@@ -109,10 +85,9 @@ export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: Clie
         <TableHeader>
           <TableRow>
             <TableHead>{toSentenceCase("Cliente")}</TableHead>
-            <TableHead>{toSentenceCase("Stato")}</TableHead>
-            <TableHead>{toSentenceCase("Piano")}</TableHead>
+            <TableHead>{toSentenceCase("Ultimo Piano")}</TableHead>
             <TableHead>{toSentenceCase("Pacchetto")}</TableHead>
-            <TableHead>{toSentenceCase("Prossimo App.")}</TableHead>
+            <TableHead>{toSentenceCase("Appuntamenti")}</TableHead>
             <TableHead>{toSentenceCase("Attività")}</TableHead>
             <TableHead className="text-right">{toSentenceCase("Azioni")}</TableHead>
           </TableRow>
