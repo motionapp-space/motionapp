@@ -1758,6 +1758,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      compute_client_table_data_batch: {
+        Args: { p_client_ids: string[] }
+        Returns: {
+          activity_status: string
+          appointment_status: string
+          client_id: string
+          package_status: string
+          plan_weeks_since_assignment: number
+        }[]
+      }
       get_shared_plan: {
         Args: { share_token: string }
         Returns: {
