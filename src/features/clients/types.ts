@@ -68,14 +68,26 @@ export interface UpdateClientInput {
 
 export interface ClientsFilters {
   q?: string;
-  status?: ClientStatus[];
   tag?: string;
   sort?: "updated_desc" | "updated_asc" | "name_asc" | "name_desc" | "created_desc" | "created_asc" | "plan_weeks_asc" | "plan_weeks_desc" | "package_status" | "appointment_status" | "activity_status";
   page?: number;
   limit?: number;
+  
+  // Filtri veloci
   withActivePlan?: boolean;
   withActivePackage?: boolean;
+  withoutPlan?: boolean;              // "Senza piano"
+  packageToRenew?: boolean;           // "Pacchetto da rinnovare"
+  withoutAppointment?: boolean;       // "Senza appuntamento futuro"
+  lowActivity?: boolean;              // "Clienti non attivi" (low OR inactive)
+  includeArchived?: boolean;          // Sostituisce il vecchio status
+  
+  // Filtri avanzati
   lastAccessDays?: number;
+  planWeeksRange?: 'none' | '0-4' | '4-8' | '8+';
+  packageStatuses?: ('active' | 'low' | 'expired' | 'none')[];
+  appointmentStatuses?: ('planned' | 'unplanned')[];
+  activityStatuses?: ('active' | 'low' | 'inactive')[];
 }
 
 export interface ClientsPageResult {

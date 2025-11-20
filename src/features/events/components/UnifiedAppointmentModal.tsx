@@ -279,7 +279,6 @@ export function UnifiedAppointmentModal({
 
   const { data: clientsData } = useClientsQuery({
     q: "", 
-    status: ["ATTIVO", "POTENZIALE"], 
     page: 1, 
     limit: 100 
   });

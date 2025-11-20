@@ -79,7 +79,6 @@ const Clients = () => {
     // Reset to page 1 when filters change (except page itself)
     if (
       newFilters.q !== undefined ||
-      newFilters.status !== undefined ||
       newFilters.tag !== undefined ||
       newFilters.sort !== undefined
     ) {
@@ -120,17 +119,10 @@ const Clients = () => {
     }
   };
 
-  const currentStatusLabel = useMemo(
-    () => statusLabel(filters.status || ["ATTIVO", "POTENZIALE", "INATTIVO"]),
-    [filters.status],
-  );
+  const currentStatusLabel = "Tutti";
 
   const statusOptions: { value: string; label: string }[] = [
-    { value: encodeStatus(["ATTIVO", "POTENZIALE", "INATTIVO"]), label: "Tutti (non archiviati)" },
-    { value: encodeStatus(["ATTIVO"]), label: "Solo Attivi" },
-    { value: encodeStatus(["POTENZIALE"]), label: "Solo Potenziali" },
-    { value: encodeStatus(["INATTIVO"]), label: "Solo Inattivi" },
-    { value: encodeStatus(["ARCHIVIATO"]), label: "Solo Archiviati" },
+    { value: "all", label: "Tutti (non archiviati)" },
   ];
 
   const sortOptions = [
@@ -204,11 +196,8 @@ const Clients = () => {
             </div>
             <div className="flex gap-2">
               <Select
-                value={encodeStatus(filters.status || ["ATTIVO", "POTENZIALE", "INATTIVO"])}
-                onValueChange={(value) => {
-                  const decoded = decodeStatus(value);
-                  setFilters({ status: decoded });
-                }}
+                value="all"
+                onValueChange={() => {}}
               >
                 <SelectTrigger className="w-full md:w-[200px] h-11">
                   <span className="truncate">{currentStatusLabel}</span>
@@ -248,7 +237,7 @@ const Clients = () => {
           <div className="text-center py-16 border border-dashed rounded-lg">
             <UserPlus className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-muted-foreground mb-4">
-              {filters.q || (filters.status && filters.status.length < 3)
+              {filters.q
                 ? toSentenceCase("Nessun cliente trovato con questi filtri")
                 : toSentenceCase("Nessun cliente ancora")}
             </p>

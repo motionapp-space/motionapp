@@ -81,10 +81,18 @@ const Clients = () => {
     // Reset to page 1 when filters change (except page itself)
     if (
       newFilters.q !== undefined ||
-      newFilters.status !== undefined ||
       newFilters.withActivePlan !== undefined ||
       newFilters.withActivePackage !== undefined ||
+      newFilters.withoutPlan !== undefined ||
+      newFilters.packageToRenew !== undefined ||
+      newFilters.withoutAppointment !== undefined ||
+      newFilters.lowActivity !== undefined ||
+      newFilters.includeArchived !== undefined ||
       newFilters.lastAccessDays !== undefined ||
+      newFilters.planWeeksRange !== undefined ||
+      newFilters.packageStatuses !== undefined ||
+      newFilters.appointmentStatuses !== undefined ||
+      newFilters.activityStatuses !== undefined ||
       newFilters.sort !== undefined
     ) {
       updated.page = 1;
@@ -141,16 +149,32 @@ const Clients = () => {
   const hasActiveFilters =
     filters.withActivePlan ||
     filters.withActivePackage ||
-    (filters.status && filters.status.length > 0 && filters.status.length < 3) ||
-    filters.lastAccessDays;
+    filters.withoutPlan ||
+    filters.packageToRenew ||
+    filters.withoutAppointment ||
+    filters.lowActivity ||
+    filters.includeArchived ||
+    filters.lastAccessDays ||
+    filters.planWeeksRange ||
+    (filters.packageStatuses && filters.packageStatuses.length > 0) ||
+    (filters.appointmentStatuses && filters.appointmentStatuses.length > 0) ||
+    (filters.activityStatuses && filters.activityStatuses.length > 0);
 
   const clearFilters = () => {
     setFilters({
       q: "",
-      status: ["ATTIVO", "POTENZIALE", "INATTIVO"],
       withActivePlan: undefined,
       withActivePackage: undefined,
+      withoutPlan: undefined,
+      packageToRenew: undefined,
+      withoutAppointment: undefined,
+      lowActivity: undefined,
+      includeArchived: undefined,
       lastAccessDays: undefined,
+      planWeeksRange: undefined,
+      packageStatuses: undefined,
+      appointmentStatuses: undefined,
+      activityStatuses: undefined,
     });
   };
 
@@ -227,12 +251,10 @@ const Clients = () => {
             </Toggle>
 
             <Toggle
-              pressed={filters.status?.includes("ATTIVO") && filters.status.length === 1}
-              onPressedChange={(pressed) =>
-                setFilters({ status: pressed ? ["ATTIVO"] : ["ATTIVO", "POTENZIALE", "INATTIVO"] })
-              }
+              pressed={filters.withoutPlan || false}
+              onPressedChange={(pressed) => setFilters({ withoutPlan: pressed ? true : undefined })}
               variant="outline"
-              aria-pressed={filters.status?.includes("ATTIVO") && filters.status.length === 1}
+              aria-pressed={filters.withoutPlan || false}
               className={cn(
                 "rounded-full h-9 px-4 text-sm font-medium transition-all border",
                 "hover:bg-accent/40",
@@ -240,16 +262,14 @@ const Clients = () => {
                 "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
               )}
             >
-              Attivi
+              Senza piano
             </Toggle>
 
             <Toggle
-              pressed={filters.status?.includes("POTENZIALE") && filters.status.length === 1}
-              onPressedChange={(pressed) =>
-                setFilters({ status: pressed ? ["POTENZIALE"] : ["ATTIVO", "POTENZIALE", "INATTIVO"] })
-              }
+              pressed={filters.packageToRenew || false}
+              onPressedChange={(pressed) => setFilters({ packageToRenew: pressed ? true : undefined })}
               variant="outline"
-              aria-pressed={filters.status?.includes("POTENZIALE") && filters.status.length === 1}
+              aria-pressed={filters.packageToRenew || false}
               className={cn(
                 "rounded-full h-9 px-4 text-sm font-medium transition-all border",
                 "hover:bg-accent/40",
@@ -257,16 +277,14 @@ const Clients = () => {
                 "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
               )}
             >
-              Potenziali
+              Pacchetto da rinnovare
             </Toggle>
 
             <Toggle
-              pressed={filters.status?.includes("ARCHIVIATO") && filters.status.length === 1}
-              onPressedChange={(pressed) =>
-                setFilters({ status: pressed ? ["ARCHIVIATO"] : ["ATTIVO", "POTENZIALE", "INATTIVO"] })
-              }
+              pressed={filters.withoutAppointment || false}
+              onPressedChange={(pressed) => setFilters({ withoutAppointment: pressed ? true : undefined })}
               variant="outline"
-              aria-pressed={filters.status?.includes("ARCHIVIATO") && filters.status.length === 1}
+              aria-pressed={filters.withoutAppointment || false}
               className={cn(
                 "rounded-full h-9 px-4 text-sm font-medium transition-all border",
                 "hover:bg-accent/40",
@@ -274,7 +292,37 @@ const Clients = () => {
                 "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
               )}
             >
-              Archiviati
+              Senza appuntamento futuro
+            </Toggle>
+
+            <Toggle
+              pressed={filters.lowActivity || false}
+              onPressedChange={(pressed) => setFilters({ lowActivity: pressed ? true : undefined })}
+              variant="outline"
+              aria-pressed={filters.lowActivity || false}
+              className={cn(
+                "rounded-full h-9 px-4 text-sm font-medium transition-all border",
+                "hover:bg-accent/40",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
+              )}
+            >
+              Clienti non attivi
+            </Toggle>
+
+            <Toggle
+              pressed={filters.includeArchived || false}
+              onPressedChange={(pressed) => setFilters({ includeArchived: pressed ? true : undefined })}
+              variant="outline"
+              aria-pressed={filters.includeArchived || false}
+              className={cn(
+                "rounded-full h-9 px-4 text-sm font-medium transition-all border",
+                "hover:bg-accent/40",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary data-[state=on]:hover:bg-primary/90"
+              )}
+            >
+              Mostra archiviati
             </Toggle>
 
             {hasActiveFilters && (
@@ -305,8 +353,8 @@ const Clients = () => {
               id="advanced-filters"
               className="mt-3 p-4 rounded-xl bg-muted/30 border animate-in slide-in-from-top-2 duration-200"
             >
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
                   <Label className="text-xs font-medium text-muted-foreground mb-2 block">Ordina per</Label>
                   <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
                     <SelectTrigger className="h-10">
@@ -322,7 +370,7 @@ const Clients = () => {
                   </Select>
                 </div>
 
-                <div className="flex-1">
+                <div>
                   <Label className="text-xs font-medium text-muted-foreground mb-2 block">Ultimo accesso</Label>
                   <Select
                     value={filters.lastAccessDays?.toString() || "all"}
@@ -338,6 +386,115 @@ const Clients = () => {
                       <SelectItem value="90">Ultimi 90 giorni</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground mb-2 block">Ultimo Piano</Label>
+                  <Select
+                    value={filters.planWeeksRange || "all"}
+                    onValueChange={(value) => setFilters({ planWeeksRange: value === "all" ? undefined : value as ClientsFilters['planWeeksRange'] })}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Tutti" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tutti</SelectItem>
+                      <SelectItem value="none">Nessun piano</SelectItem>
+                      <SelectItem value="0-4">0-4 settimane</SelectItem>
+                      <SelectItem value="4-8">4-8 settimane</SelectItem>
+                      <SelectItem value="8+">8+ settimane</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground mb-2 block">Stato Pacchetto</Label>
+                  <div className="space-y-2 pt-1">
+                    {[
+                      { value: 'active', label: 'Attivo' },
+                      { value: 'low', label: 'In esaurimento' },
+                      { value: 'expired', label: 'Da rinnovare' },
+                      { value: 'none', label: 'Nessuno' }
+                    ].map(option => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`package-${option.value}`}
+                          checked={filters.packageStatuses?.includes(option.value as any) || false}
+                          onChange={(e) => {
+                            const current = filters.packageStatuses || [];
+                            const updated = e.target.checked
+                              ? [...current, option.value as any]
+                              : current.filter(s => s !== option.value);
+                            setFilters({ packageStatuses: updated.length > 0 ? updated : undefined });
+                          }}
+                          className="h-4 w-4 rounded border-input"
+                        />
+                        <label htmlFor={`package-${option.value}`} className="text-sm cursor-pointer">
+                          {option.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground mb-2 block">Appuntamenti</Label>
+                  <div className="space-y-2 pt-1">
+                    {[
+                      { value: 'planned', label: 'Pianificato' },
+                      { value: 'unplanned', label: 'Da pianificare' }
+                    ].map(option => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`appointment-${option.value}`}
+                          checked={filters.appointmentStatuses?.includes(option.value as any) || false}
+                          onChange={(e) => {
+                            const current = filters.appointmentStatuses || [];
+                            const updated = e.target.checked
+                              ? [...current, option.value as any]
+                              : current.filter(s => s !== option.value);
+                            setFilters({ appointmentStatuses: updated.length > 0 ? updated : undefined });
+                          }}
+                          className="h-4 w-4 rounded border-input"
+                        />
+                        <label htmlFor={`appointment-${option.value}`} className="text-sm cursor-pointer">
+                          {option.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground mb-2 block">Attività</Label>
+                  <div className="space-y-2 pt-1">
+                    {[
+                      { value: 'active', label: 'Attivo' },
+                      { value: 'low', label: 'Bassa' },
+                      { value: 'inactive', label: 'Assente' }
+                    ].map(option => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`activity-${option.value}`}
+                          checked={filters.activityStatuses?.includes(option.value as any) || false}
+                          onChange={(e) => {
+                            const current = filters.activityStatuses || [];
+                            const updated = e.target.checked
+                              ? [...current, option.value as any]
+                              : current.filter(s => s !== option.value);
+                            setFilters({ activityStatuses: updated.length > 0 ? updated : undefined });
+                          }}
+                          className="h-4 w-4 rounded border-input"
+                        />
+                        <label htmlFor={`activity-${option.value}`} className="text-sm cursor-pointer">
+                          {option.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </CollapsibleContent>

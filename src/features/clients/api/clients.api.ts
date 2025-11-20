@@ -12,14 +12,22 @@ interface ComputedClientData {
 export async function listClients(filters: ClientsFilters): Promise<ClientsPageResult> {
   const { 
     q = "", 
-    status = ["ATTIVO", "POTENZIALE", "INATTIVO"], 
     tag = "", 
     sort = "updated_desc", 
     page = 1, 
     limit = 25,
     withActivePlan,
     withActivePackage,
-    lastAccessDays
+    lastAccessDays,
+    includeArchived = false,
+    withoutPlan,
+    packageToRenew,
+    withoutAppointment,
+    lowActivity,
+    planWeeksRange,
+    packageStatuses,
+    appointmentStatuses,
+    activityStatuses
   } = filters;
   
   let query = supabase
@@ -34,9 +42,9 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       sessions:training_sessions(id, started_at)
     `, { count: "exact" });
 
-  // Status filter (default excludes ARCHIVIATO)
-  if (status.length > 0) {
-    query = query.in("status", status);
+  // Archive filter (default excludes archived)
+  if (!includeArchived) {
+    query = query.is("archived_at", null);
   }
 
   // Search filter
@@ -157,9 +165,68 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
     });
   }
 
+  // Client-side filtering based on computed data
+  
+  // Filter: Senza piano
+  if (withoutPlan) {
+    items = items.filter(c => c.plan_weeks_since_assignment === null);
+  }
+  
+  // Filter: Pacchetto da rinnovare
+  if (packageToRenew) {
+    items = items.filter(c => c.package_status === 'expired');
+  }
+  
+  // Filter: Senza appuntamento futuro
+  if (withoutAppointment) {
+    items = items.filter(c => c.appointment_status === 'unplanned');
+  }
+  
+  // Filter: Clienti non attivi (low OR inactive)
+  if (lowActivity) {
+    items = items.filter(c => 
+      c.activity_status === 'low' || c.activity_status === 'inactive'
+    );
+  }
+  
+  // Advanced Filter: Plan weeks range
+  if (planWeeksRange) {
+    items = items.filter(c => {
+      const weeks = c.plan_weeks_since_assignment;
+      switch (planWeeksRange) {
+        case 'none': return weeks === null;
+        case '0-4': return weeks !== null && weeks >= 0 && weeks < 4;
+        case '4-8': return weeks !== null && weeks >= 4 && weeks < 8;
+        case '8+': return weeks !== null && weeks >= 8;
+        default: return true;
+      }
+    });
+  }
+  
+  // Advanced Filter: Package statuses
+  if (packageStatuses && packageStatuses.length > 0) {
+    items = items.filter(c => 
+      packageStatuses.includes(c.package_status!)
+    );
+  }
+  
+  // Advanced Filter: Appointment statuses
+  if (appointmentStatuses && appointmentStatuses.length > 0) {
+    items = items.filter(c => 
+      appointmentStatuses.includes(c.appointment_status!)
+    );
+  }
+  
+  // Advanced Filter: Activity statuses
+  if (activityStatuses && activityStatuses.length > 0) {
+    items = items.filter(c => 
+      activityStatuses.includes(c.activity_status!)
+    );
+  }
+
   return {
     items,
-    total: withActivePackage !== undefined ? items.length : (count || 0),
+    total: items.length,
     page,
     limit,
   };
