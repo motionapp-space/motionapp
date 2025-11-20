@@ -7,6 +7,10 @@ import { toSentenceCase } from "@/lib/text";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import type { ClientWithDetails, ClientStatus } from "../types";
+import { PlanWeeksBadge } from "./badges/PlanWeeksBadge";
+import { PackageStatusBadge } from "./badges/PackageStatusBadge";
+import { AppointmentStatusBadge } from "./badges/AppointmentStatusBadge";
+import { ActivityStatusBadge } from "./badges/ActivityStatusBadge";
 
 interface ClientsTableProps {
   rows: ClientWithDetails[];
@@ -55,15 +59,16 @@ function ClientRow({
       </TableCell>
       <TableCell>{client.current_plan_name || "—"}</TableCell>
       <TableCell>
-        {client.package_sessions_total !== undefined && client.package_sessions_used !== undefined
-          ? `${client.package_sessions_used}/${client.package_sessions_total}`
-          : "—"}
+        <PlanWeeksBadge weeks={client.plan_weeks_since_assignment} />
       </TableCell>
       <TableCell>
-        {client.last_session_date ? format(parseISO(client.last_session_date), "dd/MM/yy", { locale: it }) : "—"}
+        <PackageStatusBadge status={client.package_status} />
       </TableCell>
       <TableCell>
-        {client.last_access_at ? format(parseISO(client.last_access_at), "dd/MM/yy", { locale: it }) : "—"}
+        <AppointmentStatusBadge status={client.appointment_status} />
+      </TableCell>
+      <TableCell>
+        <ActivityStatusBadge status={client.activity_status} />
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
@@ -105,10 +110,10 @@ export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: Clie
           <TableRow>
             <TableHead>{toSentenceCase("Cliente")}</TableHead>
             <TableHead>{toSentenceCase("Stato")}</TableHead>
-            <TableHead>{toSentenceCase("Piano corrente")}</TableHead>
+            <TableHead>{toSentenceCase("Piano")}</TableHead>
             <TableHead>{toSentenceCase("Pacchetto")}</TableHead>
-            <TableHead>{toSentenceCase("Ultima sessione")}</TableHead>
-            <TableHead>{toSentenceCase("Ultimo accesso")}</TableHead>
+            <TableHead>{toSentenceCase("Prossimo App.")}</TableHead>
+            <TableHead>{toSentenceCase("Attività")}</TableHead>
             <TableHead className="text-right">{toSentenceCase("Azioni")}</TableHead>
           </TableRow>
         </TableHeader>

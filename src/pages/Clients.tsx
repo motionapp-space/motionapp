@@ -18,6 +18,7 @@ import { useArchiveClient } from "@/features/clients/hooks/useArchiveClient";
 import { useUnarchiveClient } from "@/features/clients/hooks/useUnarchiveClient";
 import { getDefaultFilters, filtersToSearchParams } from "@/features/clients/utils/filters";
 import { ClientsTable } from "@/features/clients/components/ClientsTable";
+import { QuickFilters, type QuickFilterType } from "@/features/clients/components/QuickFilters";
 import { getClientById } from "@/features/clients/api/clients.api";
 import type { ClientStatus, ClientsFilters } from "@/features/clients/types";
 import { cn } from "@/lib/utils";
@@ -85,12 +86,21 @@ const Clients = () => {
       newFilters.withActivePlan !== undefined ||
       newFilters.withActivePackage !== undefined ||
       newFilters.lastAccessDays !== undefined ||
+      newFilters.quickFilters !== undefined ||
       newFilters.sort !== undefined
     ) {
       updated.page = 1;
     }
     setFiltersState(updated);
     setSp(filtersToSearchParams(updated));
+  };
+
+  const handleQuickFilterToggle = (filter: QuickFilterType) => {
+    const current = filters.quickFilters || [];
+    const updated = current.includes(filter)
+      ? current.filter(f => f !== filter)
+      : [...current, filter];
+    setFilters({ quickFilters: updated.length > 0 ? updated : undefined });
   };
 
   const isFormValid =
@@ -131,13 +141,19 @@ const Clients = () => {
     { value: "name_desc", label: "Nome Z-A" },
     { value: "created_desc", label: "Creato di recente" },
     { value: "created_asc", label: "Creato meno recente" },
+    { value: "plan_weeks_asc", label: "Piano (recente → scaduto)" },
+    { value: "plan_weeks_desc", label: "Piano (scaduto → recente)" },
+    { value: "package_status", label: "Pacchetto (critico → ok)" },
+    { value: "appointment_status", label: "Appuntamenti (da pianificare)" },
+    { value: "activity_status", label: "Attività (inattivi → attivi)" },
   ];
 
   const hasActiveFilters =
     filters.withActivePlan ||
     filters.withActivePackage ||
     (filters.status && filters.status.length > 0 && filters.status.length < 3) ||
-    filters.lastAccessDays;
+    filters.lastAccessDays ||
+    (filters.quickFilters && filters.quickFilters.length > 0);
 
   const clearFilters = () => {
     setFilters({
@@ -146,6 +162,7 @@ const Clients = () => {
       withActivePlan: undefined,
       withActivePackage: undefined,
       lastAccessDays: undefined,
+      quickFilters: undefined,
     });
   };
 
@@ -278,6 +295,14 @@ const Clients = () => {
                 Pulisci filtri
               </Button>
             )}
+          </div>
+
+          {/* Quick Filters */}
+          <div className="mt-4">
+            <QuickFilters 
+              activeFilters={filters.quickFilters || []} 
+              onToggleFilter={handleQuickFilterToggle}
+            />
           </div>
 
           {/* Advanced Filters */}
