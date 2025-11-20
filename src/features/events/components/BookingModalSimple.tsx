@@ -187,7 +187,6 @@ export function BookingModalSimple({
 
   const { data: clientsData } = useClientsQuery({ 
     q: "", 
-    status: ["ATTIVO", "POTENZIALE"], 
     page: 1, 
     limit: 100 
   });
