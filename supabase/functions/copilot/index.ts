@@ -13,64 +13,112 @@ serve(async (req) => {
   try {
     const { messages, context } = await req.json();
 
-    if (!Array.isArray(messages) || !context) {
+    if (!Array.isArray(messages)) {
       return new Response(
-        JSON.stringify({ error: "Bad request" }),
+        JSON.stringify({ error: "Messages must be an array" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Mock response for MVP - replace with actual AI call
-    const lastUserMessage = messages[messages.length - 1]?.content || "";
-    
-    // Simple keyword detection for demo
-    if (lastUserMessage.toLowerCase().includes("suggerisci") || 
-        lastUserMessage.toLowerCase().includes("proponi")) {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY not configured");
       return new Response(
-        JSON.stringify({
-          payload: {
-            type: "suggestion",
-            summary: "Esempio di suggerimento AI",
-            preview: [
-              "Aggiungi riscaldamento articolare 5 minuti",
-              "Riduci recuperi a 90 secondi per migliorare densità"
-            ],
-            patch: [
-              {
-                op: "add",
-                target: {
-                  dayId: context?.plan?.days?.[0]?.id || "",
-                  phaseType: "Warm-up"
-                },
-                data: {
-                  name: "Riscaldamento articolare",
-                  sets: 1,
-                  reps: "5 min",
-                  order: "auto"
-                }
-              }
-            ]
-          }
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "AI service not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Default text response
-    return new Response(
-      JSON.stringify({
-        payload: {
-          type: "text",
-          content: "Ciao! Sono il Copilot AI di Studio AI. Come posso aiutarti a migliorare il tuo piano di allenamento?"
-        }
+    // System prompt specializzato per Personal Trainer
+    const systemPrompt = `Sei un assistente AI specializzato per Personal Trainer professionisti.
+
+Il tuo compito è aiutare i PT a creare e ottimizzare programmi di allenamento personalizzati.
+
+Regole di comportamento:
+- Rispondi SEMPRE in italiano
+- Sii conciso ma completo
+- Fornisci suggerimenti pratici e applicabili
+- Quando suggerisci esercizi, specifica serie, ripetizioni e recuperi
+- Adatta le risposte al contesto del piano di allenamento corrente
+
+Contesto piano corrente:
+${context ? JSON.stringify(context, null, 2) : "Nessun piano attivo"}
+
+Quando l'utente chiede suggerimenti, rispondi con un JSON structured output seguendo questo schema:
+{
+  "type": "suggestion",
+  "summary": "Titolo del suggerimento",
+  "preview": ["Punto 1", "Punto 2", "Punto 3"],
+  "patch": [
+    {
+      "op": "add",
+      "target": { "dayId": "...", "phaseType": "..." },
+      "data": { "name": "...", "sets": 3, "reps": "12", "rest": "60s" }
+    }
+  ]
+}
+
+Quando rispondi a domande generali, usa:
+{
+  "type": "text",
+  "content": "La tua risposta in italiano"
+}`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages,
+        ],
+        stream: true,
+        temperature: 0.7,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Lovable AI error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Limite richieste superato. Riprova tra un minuto." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Crediti AI esauriti. Contatta l'amministratore." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ error: "Errore servizio AI" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Return the streaming response directly
+    return new Response(response.body, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
+    });
 
   } catch (error) {
     console.error("Copilot error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Errore interno" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

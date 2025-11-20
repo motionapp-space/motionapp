@@ -6,9 +6,10 @@ import { isSuggestionResponse } from "@/copilot/schema";
 import { applySuggestion } from "@/copilot/patcher";
 import { track } from "@/copilot/telemetry";
 import { usePlanStore } from "@/stores/usePlanStore";
+import { useConversation } from "@/features/ai/hooks/useConversation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { X } from "lucide-react";
+import { X, RotateCcw } from "lucide-react";
 
 interface CopilotPanelProps {
   open: boolean;
@@ -18,11 +19,26 @@ interface CopilotPanelProps {
 export default function CopilotPanel({ open, onClose }: CopilotPanelProps) {
   const { plan, save } = usePlanStore();
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: any }>>([]);
+  const {
+    messages: dbMessages,
+    loading: convLoading,
+    error: convError,
+    addMessage,
+    clearConversation,
+    setMessages: setDbMessages,
+  } = useConversation("plan_editor");
+  
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [streamingContent, setStreamingContent] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
+
+  // Convert DB messages to display format
+  const messages = dbMessages.map(m => ({
+    role: m.role,
+    content: m.intent_payload || { type: "text", content: m.content },
+  }));
 
   useEffect(() => {
     if (open) track("copilot.opened");
@@ -30,25 +46,47 @@ export default function CopilotPanel({ open, onClose }: CopilotPanelProps) {
 
   useEffect(() => {
     scroller.current?.scrollTo(0, scroller.current.scrollHeight);
-  }, [messages]);
+  }, [messages, streamingContent]);
 
   if (!open) return null;
 
   const onSend = async () => {
     if (!input.trim() || loading) return;
     setError(null);
-    const userMsg = { role: "user" as const, content: input.trim() };
-    setMessages(prev => [...prev, userMsg]);
+    setStreamingContent("");
+    const userInput = input.trim();
     setInput("");
     setLoading(true);
-    track("copilot.prompt.sent", { chars: input.length });
+    track("copilot.prompt.sent", { chars: userInput.length });
 
     try {
+      // Save user message
+      await addMessage("user", userInput);
+
+      // Build context and send to AI
       const ctx = buildPlanContext(plan);
-      const res = await sendCopilot({ messages: [...messages, userMsg], context: ctx });
-      track("copilot.response", { type: res.type });
-      const assistantMsg = { role: "assistant" as const, content: res };
-      setMessages(prev => [...prev, assistantMsg]);
+      const allMessages = [
+        ...messages.map(m => ({
+          role: m.role,
+          content: typeof m.content === "string" ? m.content : m.content.content || JSON.stringify(m.content),
+        })),
+        { role: "user", content: userInput },
+      ];
+
+      let fullResponse = "";
+      
+      await sendCopilot(
+        { messages: allMessages, context: ctx },
+        (chunk) => {
+          fullResponse += chunk;
+          setStreamingContent(fullResponse);
+        }
+      );
+
+      // Save assistant message
+      await addMessage("assistant", fullResponse);
+      setStreamingContent("");
+      track("copilot.response", { type: "text" });
     } catch (e: any) {
       setError(e.message || "Si è verificato un errore. Riprova.");
       track("copilot.error", { error: e.message });
@@ -96,17 +134,31 @@ export default function CopilotPanel({ open, onClose }: CopilotPanelProps) {
       <header className="px-6 py-4 border-b flex items-center justify-between">
         <div>
           <div className="text-lg font-semibold">Copilot AI</div>
-          <div className="text-sm text-muted-foreground">Suggerimenti contestuali</div>
+          <div className="text-sm text-muted-foreground">
+            {convLoading ? "Caricamento..." : "Suggerimenti contestuali"}
+          </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="h-11 w-11"
-          aria-label="Chiudi Copilot"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={clearConversation}
+            className="h-11 w-11"
+            aria-label="Nuova conversazione"
+            title="Nuova conversazione"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-11 w-11"
+            aria-label="Chiudi Copilot"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </header>
 
       <div ref={scroller} className="flex-1 overflow-auto px-6 py-4 space-y-4">
@@ -131,8 +183,18 @@ export default function CopilotPanel({ open, onClose }: CopilotPanelProps) {
           <Message key={i} m={m} onApply={onApply} />
         ))}
 
-        {loading && <div className="text-sm text-muted-foreground">AI sta scrivendo…</div>}
-        {error && <div className="text-sm text-destructive">{error}</div>}
+        {streamingContent && (
+          <div className="max-w-[600px] rounded-lg bg-muted/30 p-3 text-sm">
+            {streamingContent}
+          </div>
+        )}
+
+        {loading && !streamingContent && (
+          <div className="text-sm text-muted-foreground">AI sta scrivendo…</div>
+        )}
+        {(error || convError) && (
+          <div className="text-sm text-destructive">{error || convError}</div>
+        )}
       </div>
 
       <footer className="px-6 py-4 border-t">
