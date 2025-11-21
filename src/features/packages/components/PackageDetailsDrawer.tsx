@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { Edit2, FileText, CreditCard, Check, X, TrendingUp } from "lucide-react";
+import { Edit2, FileText, CreditCard, Check, X, TrendingUp, History } from "lucide-react";
 import { Package, PackagePaymentStatus } from "../types";
 import { useUpdatePackage } from "../hooks/useUpdatePackage";
+import { usePackageLedger } from "../hooks/usePackageLedger";
 import { formatCurrency } from "../utils/kpi";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -43,6 +44,7 @@ export function PackageDetailsDrawer({
   const [partialPaymentEuros, setPartialPaymentEuros] = useState("");
 
   const updateMutation = useUpdatePackage();
+  const { data: ledgerEntries = [] } = usePackageLedger(pkg?.package_id);
 
   useEffect(() => {
     if (pkg) {
@@ -198,6 +200,19 @@ export function PackageDetailsDrawer({
   const pricePerSession = effectivePriceTotalCents && pkg.total_sessions > 0
     ? effectivePriceTotalCents / pkg.total_sessions
     : null;
+
+  // Helper per label ledger minimali
+  const getSimpleLabel = (type: string, reason: string) => {
+    const key = `${type}-${reason}`;
+    const labels: Record<string, string> = {
+      'HOLD_CREATE-CONFIRM': '📅 Credito prenotato',
+      'HOLD_RELEASE-CANCEL_GT_24H': '↩️ Credito restituito',
+      'CONSUME-COMPLETE': '✅ Sessione completata',
+      'CONSUME-CANCEL_LT_24H': '⚠️ Cancellazione tardiva',
+      'CORRECTION-ADMIN_CORRECTION': '✏️ Correzione manuale',
+    };
+    return labels[key] || `${type} (${reason})`;
+  };
 
   return (
     <>
@@ -469,6 +484,60 @@ export function PackageDetailsDrawer({
                         </p>
                       </div>
                     </>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Storico Movimenti */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <History className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold text-foreground">Storico Movimenti</h3>
+              </div>
+
+              <Card className="border-border">
+                <CardContent className="p-0">
+                  {ledgerEntries.length === 0 ? (
+                    <p className="p-6 text-sm text-muted-foreground text-center">
+                      Nessun movimento registrato
+                    </p>
+                  ) : (
+                    <div className="divide-y divide-border">
+                      {ledgerEntries.slice(0, 15).map((entry) => (
+                        <div key={entry.ledger_id} className="p-4 space-y-1">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground">
+                                {getSimpleLabel(entry.type, entry.reason)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(entry.created_at), "dd MMM yyyy · HH:mm", { locale: it })}
+                              </p>
+                              {entry.note && (
+                                <p className="text-xs text-muted-foreground italic mt-1">
+                                  {entry.note}
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              {entry.delta_consumed !== 0 && (
+                                <p className="text-sm font-medium text-foreground">
+                                  {entry.delta_consumed > 0 ? '+' : ''}{entry.delta_consumed}
+                                </p>
+                              )}
+                              {entry.delta_hold !== 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  {entry.delta_hold > 0 ? '+' : ''}{entry.delta_hold} attesa
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </CardContent>
               </Card>
