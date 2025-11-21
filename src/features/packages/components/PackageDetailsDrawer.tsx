@@ -259,7 +259,7 @@ export function PackageDetailsDrawer({
                     </div>
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground mb-2">In attesa</p>
-                      <p className="text-3xl font-bold" style={{ color: 'hsl(30, 80%, 55%)' }}>
+                      <p className="text-3xl font-bold text-muted-foreground">
                         {pkg.on_hold_sessions}
                       </p>
                     </div>
@@ -280,10 +280,9 @@ export function PackageDetailsDrawer({
                       )}
                       {pkg.on_hold_sessions > 0 && (
                         <div 
-                          className="h-full transition-all"
+                          className="h-full bg-muted-foreground/60 transition-all"
                           style={{ 
-                            width: `${(pkg.on_hold_sessions / pkg.total_sessions) * 100}%`,
-                            backgroundColor: 'hsl(30, 80%, 55%)'
+                            width: `${(pkg.on_hold_sessions / pkg.total_sessions) * 100}%`
                           }}
                           title={`In attesa: ${pkg.on_hold_sessions}`}
                         />
