@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logClientActivity } from "@/features/clients/api/activities.api";
 import type { 
   Package, 
   PackageWithClient, 
@@ -120,6 +121,14 @@ export async function createPackage(input: CreatePackageInput): Promise<Package>
     .single();
 
   if (error) throw error;
+  
+  // Log activity
+  await logClientActivity(
+    data.client_id,
+    "PACKAGE_CREATED",
+    `Pacchetto "${data.name}" creato`
+  );
+  
   return data;
 }
 
