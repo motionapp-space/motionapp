@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Edit, Plus, X, FileText, Play } from "lucide-react";
+import { ArrowLeft, Edit, Plus, X, FileText, Play, Pencil } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
@@ -177,10 +177,6 @@ const ClientDetail = () => {
               {currentClient.last_name} {currentClient.first_name}
             </PageHeading>
           </div>
-          <Button onClick={() => setEditMode(!editMode)} variant="outline" className="gap-2">
-            <Edit className="h-4 w-4" />
-            {editMode ? toSentenceCase("Annulla") : toSentenceCase("Modifica")}
-          </Button>
         </div>
       </header>
 
@@ -208,8 +204,19 @@ const ClientDetail = () => {
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                 <CardTitle>{toSentenceCase("Informazioni personali")}</CardTitle>
+                {!editMode && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setEditMode(true)}
+                    className="h-8 w-8"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    <span className="sr-only">{toSentenceCase("Modifica informazioni personali")}</span>
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
