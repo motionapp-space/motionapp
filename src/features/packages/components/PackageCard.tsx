@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -15,7 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Package } from "../types";
+import { Package, PackagePaymentStatus } from "../types";
 import { 
   calculatePackageKPI, 
   formatCurrency, 
@@ -23,7 +24,8 @@ import {
   getPaymentStatusInfo 
 } from "../utils/kpi";
 import { PackageStatsBar } from "./PackageStatsBar";
-import { MoreVertical, Pause, Play, Archive, Copy, Eye, AlertCircle, Info } from "lucide-react";
+import { PaymentStatusDialog } from "./PaymentStatusDialog";
+import { MoreVertical, Pause, Play, Archive, Copy, Eye, AlertCircle, Info, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -33,6 +35,7 @@ interface PackageCardProps {
   onToggleSuspension: () => void;
   onArchive: () => void;
   onDuplicate: () => void;
+  onUpdatePaymentStatus: (newStatus: PackagePaymentStatus, note?: string) => void;
 }
 
 export function PackageCard({
@@ -41,7 +44,10 @@ export function PackageCard({
   onToggleSuspension,
   onArchive,
   onDuplicate,
+  onUpdatePaymentStatus,
 }: PackageCardProps) {
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  
   const kpi = calculatePackageKPI(pkg);
   const usageInfo = getUsageStatusInfo(pkg.usage_status as any);
   const paymentInfo = getPaymentStatusInfo(pkg.payment_status as any);
@@ -115,6 +121,10 @@ export function PackageCard({
               <DropdownMenuItem onClick={onViewDetails}>
                 <Eye className="h-4 w-4 mr-2" />
                 Dettagli completi
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPaymentDialogOpen(true)}>
+                <CreditCard className="h-4 w-4 mr-2" />
+                Modifica stato pagamento
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onToggleSuspension}>
                 {pkg.usage_status === 'suspended' ? (
@@ -235,6 +245,13 @@ export function PackageCard({
           </AlertDescription>
         </Alert>
       )}
+
+      <PaymentStatusDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        currentStatus={pkg.payment_status as PackagePaymentStatus}
+        onSave={onUpdatePaymentStatus}
+      />
     </Card>
   );
 }

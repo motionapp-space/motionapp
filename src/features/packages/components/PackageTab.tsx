@@ -10,12 +10,13 @@ import { PackageDialog } from "./PackageDialog";
 import { PackageEmptyState } from "./PackageEmptyState";
 import { useClientPackages } from "../hooks/useClientPackages";
 import { useCreatePackage } from "../hooks/useCreatePackage";
+import { useUpdatePackage } from "../hooks/useUpdatePackage";
 import { 
   useArchivePackage, 
   useToggleSuspension, 
   useDuplicatePackage 
 } from "../hooks/usePackageActions";
-import type { CreatePackageInput } from "../types";
+import type { CreatePackageInput, PackagePaymentStatus } from "../types";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 
 interface PackageTabProps {
@@ -28,6 +29,7 @@ export function PackageTab({ clientId }: PackageTabProps) {
   const { data: packages, isLoading, error } = useClientPackages(clientId);
   const { data: clients } = useClientsQuery({});
   const createMutation = useCreatePackage();
+  const updateMutation = useUpdatePackage();
   const archiveMutation = useArchivePackage();
   const suspensionMutation = useToggleSuspension();
   const duplicateMutation = useDuplicatePackage();
@@ -42,6 +44,13 @@ export function PackageTab({ clientId }: PackageTabProps) {
   const handleCreate = (data: CreatePackageInput) => {
     createMutation.mutate(data, {
       onSuccess: () => setDialogOpen(false),
+    });
+  };
+
+  const handleUpdatePaymentStatus = (packageId: string) => (newStatus: PackagePaymentStatus, note?: string) => {
+    updateMutation.mutate({
+      packageId,
+      input: { payment_status: newStatus },
     });
   };
 
@@ -115,6 +124,7 @@ export function PackageTab({ clientId }: PackageTabProps) {
                   key={pkg.package_id}
                   package={pkg}
                   onViewDetails={() => {/* TODO: implement details drawer */}}
+                  onUpdatePaymentStatus={handleUpdatePaymentStatus(pkg.package_id)}
                   onToggleSuspension={() => suspensionMutation.mutate(pkg.package_id)}
                   onArchive={() => archiveMutation.mutate(pkg.package_id)}
                   onDuplicate={() => duplicateMutation.mutate(pkg.package_id)}
@@ -133,6 +143,7 @@ export function PackageTab({ clientId }: PackageTabProps) {
                     key={pkg.package_id}
                     package={pkg}
                     onViewDetails={() => {/* TODO: implement details drawer */}}
+                    onUpdatePaymentStatus={handleUpdatePaymentStatus(pkg.package_id)}
                     onToggleSuspension={() => {}}
                     onArchive={() => {}}
                     onDuplicate={() => duplicateMutation.mutate(pkg.package_id)}
