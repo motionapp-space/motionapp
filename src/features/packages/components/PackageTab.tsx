@@ -4,6 +4,16 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus, Info, AlertTriangle } from "lucide-react";
 import { PackageCard } from "./PackageCard";
 import { PackageDialog } from "./PackageDialog";
@@ -13,8 +23,7 @@ import { useCreatePackage } from "../hooks/useCreatePackage";
 import { useUpdatePackage } from "../hooks/useUpdatePackage";
 import { 
   useArchivePackage, 
-  useToggleSuspension, 
-  useDuplicatePackage 
+  useToggleSuspension
 } from "../hooks/usePackageActions";
 import type { CreatePackageInput, PackagePaymentStatus } from "../types";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
@@ -25,6 +34,8 @@ interface PackageTabProps {
 
 export function PackageTab({ clientId }: PackageTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+  const [packageToArchive, setPackageToArchive] = useState<string | null>(null);
   
   const { data: packages, isLoading, error } = useClientPackages(clientId);
   const { data: clients } = useClientsQuery({});
@@ -32,7 +43,6 @@ export function PackageTab({ clientId }: PackageTabProps) {
   const updateMutation = useUpdatePackage();
   const archiveMutation = useArchivePackage();
   const suspensionMutation = useToggleSuspension();
-  const duplicateMutation = useDuplicatePackage();
 
   const client = clients?.items.find(c => c.id === clientId);
   const activePackage = packages?.find(p => p.usage_status === 'active');
@@ -133,8 +143,10 @@ export function PackageTab({ clientId }: PackageTabProps) {
                   onViewDetails={() => {/* TODO: implement details drawer */}}
                   onUpdatePaymentStatus={handleUpdatePaymentStatus(pkg.package_id)}
                   onToggleSuspension={() => suspensionMutation.mutate(pkg.package_id)}
-                  onArchive={() => archiveMutation.mutate(pkg.package_id)}
-                  onDuplicate={() => duplicateMutation.mutate(pkg.package_id)}
+                  onArchive={() => {
+                    setPackageToArchive(pkg.package_id);
+                    setArchiveConfirmOpen(true);
+                  }}
                 />
               ))}
             </div>
@@ -153,7 +165,6 @@ export function PackageTab({ clientId }: PackageTabProps) {
                     onUpdatePaymentStatus={handleUpdatePaymentStatus(pkg.package_id)}
                     onToggleSuspension={() => {}}
                     onArchive={() => {}}
-                    onDuplicate={() => duplicateMutation.mutate(pkg.package_id)}
                   />
                 ))}
               </div>
@@ -169,6 +180,31 @@ export function PackageTab({ clientId }: PackageTabProps) {
         onSubmit={handleCreate}
         isLoading={createMutation.isPending}
       />
+
+      <AlertDialog open={archiveConfirmOpen} onOpenChange={setArchiveConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archiviare il pacchetto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Il pacchetto verrà archiviato e spostato nello storico. Questa azione è reversibile.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (packageToArchive) {
+                  archiveMutation.mutate(packageToArchive);
+                  setArchiveConfirmOpen(false);
+                  setPackageToArchive(null);
+                }
+              }}
+            >
+              Archivia
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

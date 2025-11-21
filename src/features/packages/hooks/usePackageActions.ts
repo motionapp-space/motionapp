@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   archivePackage, 
-  togglePackageSuspension, 
-  duplicatePackage 
+  togglePackageSuspension
 } from "../api/packages.api";
 import { toast } from "sonner";
 
@@ -43,19 +42,3 @@ export function useToggleSuspension() {
   });
 }
 
-export function useDuplicatePackage() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: duplicatePackage,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["packages"] });
-      toast.success("Pacchetto duplicato");
-    },
-    onError: (error: Error) => {
-      toast.error("Errore", {
-        description: error.message,
-      });
-    },
-  });
-}

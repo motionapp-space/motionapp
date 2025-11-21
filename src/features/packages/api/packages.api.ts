@@ -176,23 +176,6 @@ export async function togglePackageSuspension(packageId: string): Promise<Packag
   return updatePackage(packageId, { usage_status: newStatus });
 }
 
-/**
- * Duplicate a package (create new with same settings)
- */
-export async function duplicatePackage(packageId: string): Promise<Package> {
-  const original = await getPackage(packageId);
-  
-  return createPackage({
-    client_id: original.client_id,
-    name: `${original.name} (copia)`,
-    total_sessions: original.total_sessions,
-    price_total_cents: original.price_total_cents,
-    expires_at: original.expires_at,
-    payment_method: original.payment_method,
-    notes_internal: original.notes_internal,
-    payment_status: 'unpaid',
-  });
-}
 
 /**
  * Get or create package settings for the authenticated coach

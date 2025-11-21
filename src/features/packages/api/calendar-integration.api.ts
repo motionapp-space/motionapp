@@ -44,6 +44,13 @@ export async function handleEventConfirm(
     );
   }
 
+  // Check if package is suspended
+  if (pkg.usage_status === 'suspended') {
+    throw new Error(
+      "Il pacchetto è sospeso. Impossibile creare una prenotazione."
+    );
+  }
+
   // Check available credits (total - consumed - on_hold)
   const available = pkg.total_sessions - pkg.consumed_sessions - pkg.on_hold_sessions;
   if (available < 1) {
