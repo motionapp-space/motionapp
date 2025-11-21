@@ -7,6 +7,7 @@ interface ComputedClientData {
   package_status: 'active' | 'low' | 'expired' | 'none';
   appointment_status: 'planned' | 'unplanned';
   activity_status: 'active' | 'low' | 'inactive';
+  next_appointment_date: string | null;
 }
 
 export async function listClients(filters: ClientsFilters): Promise<ClientsPageResult> {
@@ -149,6 +150,7 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       package_status: computed?.package_status,
       appointment_status: computed?.appointment_status,
       activity_status: computed?.activity_status,
+      next_appointment_date: computed?.next_appointment_date,
       packages: undefined,
       sessions: undefined,
       current_plan: undefined,
