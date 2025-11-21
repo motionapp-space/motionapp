@@ -174,7 +174,7 @@ const ClientDetail = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <PageHeading>
-              {currentClient.last_name} {currentClient.first_name}
+              {currentClient.first_name} {currentClient.last_name}
             </PageHeading>
           </div>
         </div>
