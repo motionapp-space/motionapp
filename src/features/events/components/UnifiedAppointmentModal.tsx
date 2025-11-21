@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
-import { X, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, Repeat, AlertCircle, Play } from "lucide-react";
+import { X, Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, Repeat, AlertCircle, Play, Trash2 } from "lucide-react";
 import { useAvailableSlots } from "@/features/bookings/hooks/useAvailableSlots";
 import { getAvailableSlots } from "@/features/bookings/api/available-slots.api";
 import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useUpdateEvent } from "../hooks/useUpdateEvent";
+import { useCancelEvent } from "../hooks/useCancelEvent";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useClientPackages } from "@/features/packages/hooks/useClientPackages";
 import { calculatePackageKPI } from "@/features/packages/utils/kpi";
@@ -21,10 +22,21 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Calendar } from "@/components/ui/calendar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { RecurrenceSection, type RecurrenceConfig } from "./RecurrenceSection";
 import { generateRecurrenceOccurrences } from "../utils/recurrence";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import type { AvailableSlot } from "@/features/bookings/types";
 import type { EventWithClient } from "../types";
 
@@ -286,6 +298,9 @@ export function UnifiedAppointmentModal({
   const clients = clientsData?.items || [];
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
+  const cancelEvent = useCancelEvent();
+  
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   // Fetch client packages to check available sessions
   const { data: clientPackages } = useClientPackages(selectedClientId || "");
@@ -533,8 +548,28 @@ export function UnifiedAppointmentModal({
     }
   };
 
+  const handleCancelEvent = async () => {
+    if (!event) return;
+    
+    try {
+      // Determine if coach is cancelling
+      const { data: { user } } = await supabase.auth.getUser();
+      const isCoachCancelling = user?.id === event.coach_id;
+      
+      await cancelEvent.mutateAsync({
+        eventId: event.id,
+        isCoachCancelling
+      });
+      
+      onOpenChange(false);
+      setShowCancelDialog(false);
+    } catch (error) {
+      console.error("Error cancelling event:", error);
+    }
+  };
+
   const canSubmit = title && selectedClientId && (isAllDay || selectedSlot);
-  const isPending = createEvent.isPending || updateEvent.isPending;
+  const isPending = createEvent.isPending || updateEvent.isPending || cancelEvent.isPending;
 
   if (!open) return null;
 
@@ -868,32 +903,43 @@ export function UnifiedAppointmentModal({
         {/* Footer - STICKY */}
         <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border/50 p-6 pt-4 shrink-0">
           <div className="flex justify-between items-center gap-3">
-            {/* Pulsante Avvia Sessione - Solo in edit mode con cliente */}
-            {canStartSession && (
-              <Button 
-                variant="default"
-                onClick={() => {
-                  if (event && onStartSession) {
-                    onStartSession(
-                      selectedClientId, 
-                      event.id,
-                      event.linked_plan_id,
-                      event.linked_day_id
-                    );
-                    onOpenChange(false);
-                  }
-                }}
-                className="gap-2"
-              >
-                <Play className="h-4 w-4" />
-                Avvia sessione
-              </Button>
-            )}
+            {/* Left side - Start session or Cancel button */}
+            <div className="flex gap-2">
+              {canStartSession && (
+                <Button 
+                  variant="default"
+                  onClick={() => {
+                    if (event && onStartSession) {
+                      onStartSession(
+                        selectedClientId, 
+                        event.id,
+                        event.linked_plan_id,
+                        event.linked_day_id
+                      );
+                      onOpenChange(false);
+                    }
+                  }}
+                  className="gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  Avvia sessione
+                </Button>
+              )}
+              
+              {isEditMode && event && (
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowCancelDialog(true)}
+                  disabled={isPending}
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Cancella
+                </Button>
+              )}
+            </div>
             
-            {/* Spacer se non c'è il pulsante avvia sessione */}
-            {!canStartSession && <div />}
-            
-            {/* Bottoni esistenti a destra */}
+            {/* Right side - Save/Cancel buttons */}
             <div className="flex gap-3">
               <Button 
                 variant="ghost"
@@ -920,6 +966,30 @@ export function UnifiedAppointmentModal({
           </div>
         </div>
       </motion.div>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma cancellazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              {isCoachMode 
+                ? "Sei sicuro di voler cancellare questo appuntamento? Il credito sarà restituito al cliente."
+                : "Attenzione: se cancelli entro le 24 ore dall'appuntamento, il credito verrà consumato come penalità."
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelEvent}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Conferma cancellazione
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
