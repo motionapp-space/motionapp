@@ -25,7 +25,7 @@ import {
 } from "../utils/kpi";
 import { PackageStatsBar } from "./PackageStatsBar";
 import { PaymentStatusDialog } from "./PaymentStatusDialog";
-import { MoreVertical, Pause, Play, Archive, Copy, Eye, AlertCircle, Info, CreditCard } from "lucide-react";
+import { MoreVertical, Pause, Play, Archive, Eye, AlertCircle, Info, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -34,7 +34,6 @@ interface PackageCardProps {
   onViewDetails: () => void;
   onToggleSuspension: () => void;
   onArchive: () => void;
-  onDuplicate: () => void;
   onUpdatePaymentStatus: (newStatus: PackagePaymentStatus, partialPaymentCents?: number, note?: string) => void;
 }
 
@@ -43,7 +42,6 @@ export function PackageCard({
   onViewDetails,
   onToggleSuspension,
   onArchive,
-  onDuplicate,
   onUpdatePaymentStatus,
 }: PackageCardProps) {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -153,10 +151,6 @@ export function PackageCard({
               >
                 <Archive className="h-4 w-4 mr-2" />
                 Archivia
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDuplicate}>
-                <Copy className="h-4 w-4 mr-2" />
-                Duplica pacchetto
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
