@@ -38,10 +38,17 @@ function ClientRow({
         <PlanWeeksBadge weeks={client.plan_weeks_since_assignment} />
       </TableCell>
       <TableCell>
-        <PackageStatusBadge status={client.package_status} />
+        <PackageStatusBadge 
+          status={client.package_status}
+          sessionsUsed={client.package_sessions_used}
+          sessionsTotal={client.package_sessions_total}
+        />
       </TableCell>
       <TableCell>
-        <AppointmentStatusBadge status={client.appointment_status} />
+        <AppointmentStatusBadge 
+          status={client.appointment_status}
+          nextAppointmentDate={client.next_appointment_date}
+        />
       </TableCell>
       <TableCell>
         <ActivityStatusBadge status={client.activity_status} />

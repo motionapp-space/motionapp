@@ -1,12 +1,15 @@
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Package, AlertTriangle, XCircle, MinusCircle } from "lucide-react";
 
 interface PackageStatusBadgeProps {
   status: "active" | "low" | "expired" | "none" | undefined;
+  sessionsUsed?: number | null;
+  sessionsTotal?: number | null;
 }
 
-export function PackageStatusBadge({ status }: PackageStatusBadgeProps) {
+export function PackageStatusBadge({ status, sessionsUsed, sessionsTotal }: PackageStatusBadgeProps) {
   if (!status) {
     return <span className="text-muted-foreground text-sm">—</span>;
   }
@@ -36,10 +39,29 @@ export function PackageStatusBadge({ status }: PackageStatusBadgeProps) {
 
   const { label, icon: Icon, className } = config[status];
 
-  return (
+  const badge = (
     <Badge variant="outline" className={cn("font-medium gap-1", className)}>
       <Icon className="h-3 w-3" />
       {label}
     </Badge>
   );
+
+  // Se abbiamo i dati delle sessioni, mostriamo il tooltip
+  if (sessionsUsed != null && sessionsTotal != null && status !== 'none') {
+    const remaining = sessionsTotal - sessionsUsed;
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>{badge}</TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">
+              {remaining}/{sessionsTotal} sessioni rimanenti
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return badge;
 }

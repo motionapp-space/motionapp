@@ -44,6 +44,7 @@ export interface ClientWithDetails extends ClientWithTags {
   package_status?: 'active' | 'low' | 'expired' | 'none';
   appointment_status?: 'planned' | 'unplanned';
   activity_status?: 'active' | 'low' | 'inactive';
+  next_appointment_date?: string | null;
 }
 
 export interface CreateClientInput {
