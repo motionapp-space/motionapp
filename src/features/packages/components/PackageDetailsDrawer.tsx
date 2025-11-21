@@ -7,19 +7,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { Edit2, Calendar, FileText, CreditCard, Check, X, TrendingUp } from "lucide-react";
+import { Edit2, FileText, CreditCard, Check, X, TrendingUp } from "lucide-react";
 import { Package, PackagePaymentStatus } from "../types";
 import { useUpdatePackage } from "../hooks/useUpdatePackage";
 import { formatCurrency } from "../utils/kpi";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { PaymentStatusDialog } from "./PaymentStatusDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { logClientActivity } from "@/features/clients/api/activities.api";
 
 interface PackageDetailsDrawerProps {
   package: Package | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const PAYMENT_STATUS_OPTIONS = [
+  { value: "unpaid" as const, label: "Non pagato" },
+  { value: "partial" as const, label: "Parzialmente pagato" },
+  { value: "paid" as const, label: "Pagato" },
+  { value: "refunded" as const, label: "Rimborsato" },
+];
 
 export function PackageDetailsDrawer({
   package: pkg,
@@ -30,7 +38,8 @@ export function PackageDetailsDrawer({
   const [expiresAt, setExpiresAt] = useState("");
   const [priceTotal, setPriceTotal] = useState("");
   const [notesInternal, setNotesInternal] = useState("");
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<PackagePaymentStatus>("unpaid");
+  const [partialPaymentEuros, setPartialPaymentEuros] = useState("");
 
   const updateMutation = useUpdatePackage();
 
@@ -39,6 +48,8 @@ export function PackageDetailsDrawer({
       setExpiresAt(pkg.expires_at ? format(new Date(pkg.expires_at), "yyyy-MM-dd") : "");
       setPriceTotal(pkg.price_total_cents ? (pkg.price_total_cents / 100).toString() : "");
       setNotesInternal(pkg.notes_internal || "");
+      setPaymentStatus(pkg.payment_status as PackagePaymentStatus);
+      setPartialPaymentEuros(pkg.partial_payment_cents ? (pkg.partial_payment_cents / 100).toFixed(2) : "");
       setEditMode(false);
     }
   }, [pkg]);
@@ -53,6 +64,34 @@ export function PackageDetailsDrawer({
     if (newExpiresAt !== pkg.expires_at) changes.expires_at = newExpiresAt;
     if (newPriceCents !== pkg.price_total_cents) changes.price_total_cents = newPriceCents;
     if (notesInternal !== (pkg.notes_internal || "")) changes.notes_internal = notesInternal;
+    
+    // Payment status changes
+    if (paymentStatus !== pkg.payment_status) {
+      changes.payment_status = paymentStatus;
+      
+      // Log activity for payment status change
+      const statusLabels: Record<PackagePaymentStatus, string> = {
+        unpaid: "Non pagato",
+        partial: "Parzialmente pagato",
+        paid: "Pagato",
+        refunded: "Rimborsato"
+      };
+      
+      await logClientActivity(
+        pkg.client_id,
+        "PACKAGE_UPDATED",
+        `Stato pagamento pacchetto "${pkg.name}" modificato in: ${statusLabels[paymentStatus]}`
+      );
+    }
+    
+    if (paymentStatus === 'partial' && partialPaymentEuros) {
+      const newPartialPaymentCents = Math.round(parseFloat(partialPaymentEuros) * 100);
+      if (newPartialPaymentCents !== pkg.partial_payment_cents) {
+        changes.partial_payment_cents = newPartialPaymentCents;
+      }
+    } else if (paymentStatus !== 'partial') {
+      changes.partial_payment_cents = null;
+    }
 
     if (Object.keys(changes).length > 0) {
       await updateMutation.mutateAsync({
@@ -69,24 +108,10 @@ export function PackageDetailsDrawer({
       setExpiresAt(pkg.expires_at ? format(new Date(pkg.expires_at), "yyyy-MM-dd") : "");
       setPriceTotal(pkg.price_total_cents ? (pkg.price_total_cents / 100).toString() : "");
       setNotesInternal(pkg.notes_internal || "");
+      setPaymentStatus(pkg.payment_status as PackagePaymentStatus);
+      setPartialPaymentEuros(pkg.partial_payment_cents ? (pkg.partial_payment_cents / 100).toFixed(2) : "");
     }
     setEditMode(false);
-  };
-
-  const handlePaymentStatusChange = async (
-    newStatus: PackagePaymentStatus,
-    partialPaymentCents?: number,
-    note?: string
-  ) => {
-    if (!pkg) return;
-    
-    await updateMutation.mutateAsync({
-      packageId: pkg.package_id,
-      input: {
-        payment_status: newStatus as any,
-        partial_payment_cents: partialPaymentCents,
-      },
-    });
   };
 
   if (!pkg) return null;
@@ -304,11 +329,26 @@ export function PackageDetailsDrawer({
 
               <Card className="border-border">
                 <CardContent className="p-6 space-y-4">
-                  <div className="flex justify-between items-center py-2">
-                    <Label className="text-sm text-muted-foreground">Stato</Label>
-                    <Badge variant={paymentStatusMap[pkg.payment_status]?.variant || "default"} className="rounded-md">
-                      {paymentStatusMap[pkg.payment_status]?.label || pkg.payment_status}
-                    </Badge>
+                  <div>
+                    <Label className="text-sm text-muted-foreground mb-2 block">Stato pagamento</Label>
+                    {editMode ? (
+                      <Select value={paymentStatus} onValueChange={(value) => setPaymentStatus(value as PackagePaymentStatus)}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PAYMENT_STATUS_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant={paymentStatusMap[pkg.payment_status]?.variant || "default"} className="rounded-md">
+                        {paymentStatusMap[pkg.payment_status]?.label || pkg.payment_status}
+                      </Badge>
+                    )}
                   </div>
 
                   <Separator />
@@ -320,7 +360,26 @@ export function PackageDetailsDrawer({
                     </p>
                   </div>
 
-                  {pkg.payment_status === 'partial' && pkg.partial_payment_cents && (
+                  {editMode && paymentStatus === 'partial' && (
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-2 block">Importo pagato (€)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={partialPaymentEuros}
+                        onChange={(e) => setPartialPaymentEuros(e.target.value)}
+                        placeholder="Es: 200.00"
+                        className="h-10"
+                      />
+                      {partialPaymentEuros && pkg.price_total_cents && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Rimanente: {formatCurrency((pkg.price_total_cents) - Math.round(parseFloat(partialPaymentEuros) * 100))}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {!editMode && pkg.payment_status === 'partial' && pkg.partial_payment_cents && (
                     <>
                       <div className="flex justify-between items-center py-2">
                         <Label className="text-sm text-muted-foreground">Importo pagato</Label>
@@ -336,14 +395,6 @@ export function PackageDetailsDrawer({
                       </div>
                     </>
                   )}
-
-                  <Button 
-                    variant="outline" 
-                    className="w-full mt-4"
-                    onClick={() => setPaymentDialogOpen(true)}
-                  >
-                    Modifica stato pagamento
-                  </Button>
                 </CardContent>
               </Card>
             </section>
@@ -384,18 +435,6 @@ export function PackageDetailsDrawer({
           </div>
         </SheetContent>
       </Sheet>
-
-      <PaymentStatusDialog
-        open={paymentDialogOpen}
-        onOpenChange={setPaymentDialogOpen}
-        currentStatus={pkg.payment_status as PackagePaymentStatus}
-        currentPartialPayment={pkg.partial_payment_cents || 0}
-        totalPrice={pkg.price_total_cents}
-        packageId={pkg.package_id}
-        clientId={pkg.client_id}
-        packageName={pkg.name}
-        onSave={handlePaymentStatusChange}
-      />
     </>
   );
 }
