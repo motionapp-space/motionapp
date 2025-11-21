@@ -1,49 +1,18 @@
 import { useState, useEffect } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Package } from "../types";
-import { usePackageLedger } from "../hooks/usePackageLedger";
+import { Edit2, Calendar, Euro, FileText, CreditCard, TrendingUp } from "lucide-react";
+import { Package, PackagePaymentStatus } from "../types";
 import { useUpdatePackage } from "../hooks/useUpdatePackage";
-import { calculatePackageKPI, formatCurrency, getUsageStatusInfo, getPaymentStatusInfo } from "../utils/kpi";
-import { PackageStatsBar } from "./PackageStatsBar";
+import { formatCurrency } from "../utils/kpi";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { 
-  Calendar, 
-  Clock, 
-  CreditCard, 
-  FileText, 
-  Info, 
-  Save,
-  TrendingUp,
-  ArrowUp,
-  ArrowDown,
-  Minus
-} from "lucide-react";
-import { toast } from "sonner";
+import { PaymentStatusDialog } from "./PaymentStatusDialog";
 
 interface PackageDetailsDrawerProps {
   package: Package | null;
@@ -56,419 +25,321 @@ export function PackageDetailsDrawer({
   open,
   onOpenChange,
 }: PackageDetailsDrawerProps) {
-  const { data: ledgerEntries, isLoading: ledgerLoading } = usePackageLedger(pkg?.package_id);
-  const updateMutation = useUpdatePackage();
-  
+  const [editMode, setEditMode] = useState(false);
   const [expiresAt, setExpiresAt] = useState("");
   const [priceTotal, setPriceTotal] = useState("");
   const [notesInternal, setNotesInternal] = useState("");
-  
-  // Initialize form when package changes
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+
+  const updateMutation = useUpdatePackage();
+
   useEffect(() => {
     if (pkg) {
       setExpiresAt(pkg.expires_at ? format(new Date(pkg.expires_at), "yyyy-MM-dd") : "");
       setPriceTotal(pkg.price_total_cents ? (pkg.price_total_cents / 100).toString() : "");
       setNotesInternal(pkg.notes_internal || "");
+      setEditMode(false);
     }
   }, [pkg]);
 
-  if (!pkg) return null;
+  const handleSave = async () => {
+    if (!pkg) return;
 
-  const kpi = calculatePackageKPI(pkg);
-  const usageInfo = getUsageStatusInfo(pkg.usage_status as any);
-  const paymentInfo = getPaymentStatusInfo(pkg.payment_status as any);
+    const changes: any = {};
+    const newExpiresAt = expiresAt ? new Date(expiresAt).toISOString() : null;
+    const newPriceCents = priceTotal ? Math.round(parseFloat(priceTotal) * 100) : null;
 
-  const handleSave = () => {
-    const updates: any = {};
-    
-    if (expiresAt && expiresAt !== (pkg.expires_at ? format(new Date(pkg.expires_at), "yyyy-MM-dd") : "")) {
-      updates.expires_at = new Date(expiresAt).toISOString();
+    if (newExpiresAt !== pkg.expires_at) changes.expires_at = newExpiresAt;
+    if (newPriceCents !== pkg.price_total_cents) changes.price_total_cents = newPriceCents;
+    if (notesInternal !== (pkg.notes_internal || "")) changes.notes_internal = notesInternal;
+
+    if (Object.keys(changes).length > 0) {
+      await updateMutation.mutateAsync({
+        packageId: pkg.package_id,
+        input: changes,
+      });
     }
     
-    if (priceTotal) {
-      const priceCents = Math.round(parseFloat(priceTotal) * 100);
-      if (priceCents !== pkg.price_total_cents) {
-        updates.price_total_cents = priceCents;
-      }
-    }
+    setEditMode(false);
+  };
+
+  const handlePaymentStatusChange = async (
+    newStatus: PackagePaymentStatus,
+    partialPaymentCents?: number,
+    note?: string
+  ) => {
+    if (!pkg) return;
     
-    if (notesInternal !== pkg.notes_internal) {
-      updates.notes_internal = notesInternal;
-    }
-
-    if (Object.keys(updates).length === 0) {
-      toast.info("Nessuna modifica da salvare");
-      return;
-    }
-
-    updateMutation.mutate({
+    await updateMutation.mutateAsync({
       packageId: pkg.package_id,
-      input: updates,
-    }, {
-      onSuccess: () => {
-        toast.success("Modifiche salvate");
+      input: {
+        payment_status: newStatus as any,
+        partial_payment_cents: partialPaymentCents,
       },
     });
   };
 
-  const getLedgerIcon = (type: string, deltaConsumed: number, deltaHold: number) => {
-    if (deltaConsumed > 0) return <ArrowDown className="h-4 w-4 text-destructive" />;
-    if (deltaConsumed < 0) return <ArrowUp className="h-4 w-4 text-success" />;
-    if (deltaHold > 0) return <Clock className="h-4 w-4 text-info" />;
-    if (deltaHold < 0) return <Minus className="h-4 w-4 text-muted-foreground" />;
-    return <FileText className="h-4 w-4 text-muted-foreground" />;
+  if (!pkg) return null;
+
+  const usageStatusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    active: { label: "Attivo", variant: "default" },
+    completed: { label: "Completato", variant: "secondary" },
+    suspended: { label: "Sospeso", variant: "destructive" },
+    archived: { label: "Archiviato", variant: "outline" },
   };
 
-  const getLedgerTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      HOLD_CREATE: "Prenotazione",
-      HOLD_RELEASE: "Rilascio",
-      CONSUME: "Consumo",
-      CORRECTION: "Correzione",
-      PRICE_UPDATE: "Modifica prezzo",
-    };
-    return labels[type] || type;
+  const paymentStatusMap: Record<PackagePaymentStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    unpaid: { label: "Non pagato", variant: "destructive" },
+    partial: { label: "Parziale", variant: "secondary" },
+    paid: { label: "Pagato", variant: "default" },
+    refunded: { label: "Rimborsato", variant: "outline" },
   };
 
-  const getLedgerReasonLabel = (reason: string) => {
-    const labels: Record<string, string> = {
-      CONFIRM: "Conferma appuntamento",
-      CANCEL_GT_24H: "Cancellazione >24h",
-      CANCEL_LT_24H: "Cancellazione <24h",
-      COMPLETE: "Completamento",
-      ADMIN_CORRECTION: "Correzione manuale",
-      RECONCILE: "Riconciliazione",
-    };
-    return labels[reason] || reason;
-  };
+  const availableSessions = pkg.total_sessions - pkg.consumed_sessions - pkg.on_hold_sessions;
+  const pricePerSession = pkg.price_total_cents && pkg.total_sessions > 0 
+    ? pkg.price_total_cents / pkg.total_sessions 
+    : null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            {pkg.name}
-            <Badge variant={pkg.usage_status === 'active' ? 'default' : 'secondary'}>
-              {usageInfo.label}
-            </Badge>
-            <Badge variant={pkg.payment_status === 'paid' ? 'default' : 'outline'}>
-              {paymentInfo.label}
-            </Badge>
-          </SheetTitle>
-          <SheetDescription>
-            Dettagli completi del pacchetto e storico transazioni
-          </SheetDescription>
-        </SheetHeader>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="overflow-y-auto w-full sm:max-w-2xl">
+          <SheetHeader className="flex flex-row items-start justify-between space-y-0">
+            <div className="space-y-1">
+              <SheetTitle>{pkg.name}</SheetTitle>
+              <div className="flex gap-2 mt-2">
+                <Badge variant={usageStatusMap[pkg.usage_status]?.variant || "default"}>
+                  {usageStatusMap[pkg.usage_status]?.label || pkg.usage_status}
+                </Badge>
+                <Badge variant={paymentStatusMap[pkg.payment_status]?.variant || "default"}>
+                  {paymentStatusMap[pkg.payment_status]?.label || pkg.payment_status}
+                </Badge>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditMode(!editMode)}
+              className="shrink-0"
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+          </SheetHeader>
 
-        <Tabs defaultValue="overview" className="mt-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Generale</TabsTrigger>
-            <TabsTrigger value="ledger">Ledger</TabsTrigger>
-            <TabsTrigger value="payments">Pagamenti</TabsTrigger>
-            <TabsTrigger value="edit">Modifica</TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  Informazioni generali
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Data creazione</p>
-                    <p className="font-medium">{format(new Date(pkg.created_at), "d MMM yyyy", { locale: it })}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Data scadenza</p>
-                    <p className="font-medium">
-                      {pkg.expires_at ? format(new Date(pkg.expires_at), "d MMM yyyy", { locale: it }) : "Nessuna"}
+          <div className="space-y-6 mt-6">
+            {/* Informazioni Generali */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold">Informazioni Generali</h3>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <Label className="text-muted-foreground">Data creazione</Label>
+                  <p className="mt-1">
+                    {format(new Date(pkg.created_at), "dd MMM yyyy", { locale: it })}
+                  </p>
+                </div>
+                
+                <div>
+                  <Label className="text-muted-foreground">Data scadenza</Label>
+                  {editMode ? (
+                    <Input
+                      type="date"
+                      value={expiresAt}
+                      onChange={(e) => setExpiresAt(e.target.value)}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="mt-1">
+                      {pkg.expires_at 
+                        ? format(new Date(pkg.expires_at), "dd MMM yyyy", { locale: it })
+                        : "—"}
                     </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Durata</p>
-                    <p className="font-medium">{pkg.duration_months} {pkg.duration_months === 1 ? 'mese' : 'mesi'}</p>
-                  </div>
-                  {pkg.price_total_cents !== null && (
-                    <>
-                      <div>
-                        <p className="text-muted-foreground">Prezzo totale</p>
-                        <p className="font-medium">{formatCurrency(pkg.price_total_cents)}</p>
-                      </div>
-                      {kpi.price_per_session !== null && (
-                        <div>
-                          <p className="text-muted-foreground">Prezzo unitario</p>
-                          <p className="font-medium">{formatCurrency(kpi.price_per_session)}</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-muted-foreground">Fonte prezzo</p>
-                        <p className="font-medium">
-                          {pkg.price_source === 'custom' ? 'Personalizzato' : 'Da impostazioni'}
-                        </p>
-                      </div>
-                    </>
-                  )}
-                  {pkg.payment_method && (
-                    <div>
-                      <p className="text-muted-foreground">Metodo pagamento</p>
-                      <p className="font-medium">{pkg.payment_method}</p>
-                    </div>
                   )}
                 </div>
 
-                {pkg.is_single_technical && (
-                  <Alert className="bg-info/10 border-info">
-                    <Info className="h-4 w-4 text-info" />
-                    <AlertDescription className="text-sm">
-                      Questo è un pacchetto tecnico creato automaticamente per una singola sessione.
-                    </AlertDescription>
-                  </Alert>
-                )}
+                <div>
+                  <Label className="text-muted-foreground">Durata</Label>
+                  <p className="mt-1">{pkg.duration_months} {pkg.duration_months === 1 ? 'mese' : 'mesi'}</p>
+                </div>
 
-                {pkg.notes_internal && (
-                  <div>
-                    <Label className="text-muted-foreground">Note interne</Label>
-                    <p className="mt-1 text-sm p-3 bg-muted rounded-lg">{pkg.notes_internal}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Statistiche di utilizzo
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PackageStatsBar
-                  stats={[
-                    { label: "Totali", value: kpi.total },
-                    { label: "Completate", value: kpi.consumed },
-                    { 
-                      label: "Prenotate", 
-                      value: kpi.on_hold,
-                      highlight: kpi.on_hold > 0 ? 'info' : undefined
-                    },
-                    { 
-                      label: "Disponibili", 
-                      value: kpi.available,
-                      highlight: kpi.available > 0 ? 'success' : undefined
-                    },
-                  ]}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Ledger Tab */}
-          <TabsContent value="ledger" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Storico transazioni</CardTitle>
-                <CardDescription>
-                  Tutte le operazioni effettuate sul pacchetto
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {ledgerLoading ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">Caricamento...</p>
-                ) : !ledgerEntries || ledgerEntries.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">Nessuna transazione</p>
-                ) : (
-                  <ScrollArea className="h-[400px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Data</TableHead>
-                          <TableHead>Tipo</TableHead>
-                          <TableHead>Motivo</TableHead>
-                          <TableHead className="text-right">Δ Consumate</TableHead>
-                          <TableHead className="text-right">Δ In attesa</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {ledgerEntries.map((entry) => (
-                          <TableRow key={entry.ledger_id}>
-                            <TableCell className="text-sm">
-                              {format(new Date(entry.created_at), "d MMM yyyy HH:mm", { locale: it })}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {getLedgerIcon(entry.type, entry.delta_consumed, entry.delta_hold)}
-                                <span className="text-sm">{getLedgerTypeLabel(entry.type)}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              <div>
-                                {getLedgerReasonLabel(entry.reason)}
-                                {entry.event_title && (
-                                  <p className="text-xs text-muted-foreground">{entry.event_title}</p>
-                                )}
-                                {entry.note && (
-                                  <p className="text-xs text-muted-foreground italic">{entry.note}</p>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {entry.delta_consumed !== 0 && (
-                                <span className={entry.delta_consumed > 0 ? "text-destructive" : "text-success"}>
-                                  {entry.delta_consumed > 0 ? '+' : ''}{entry.delta_consumed}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {entry.delta_hold !== 0 && (
-                                <span className={entry.delta_hold > 0 ? "text-info" : "text-muted-foreground"}>
-                                  {entry.delta_hold > 0 ? '+' : ''}{entry.delta_hold}
-                                </span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Payments Tab */}
-          <TabsContent value="payments" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Stato pagamento
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Stato</p>
-                    <Badge variant={pkg.payment_status === 'paid' ? 'default' : 'outline'} className="mt-1">
-                      {paymentInfo.label}
-                    </Badge>
-                  </div>
-                  {pkg.price_total_cents !== null && (
-                    <>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Importo totale</p>
-                        <p className="font-semibold mt-1">{formatCurrency(pkg.price_total_cents)}</p>
-                      </div>
-                      {pkg.payment_status === 'partial' && pkg.partial_payment_cents !== null && (
-                        <>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Pagato</p>
-                            <p className="font-semibold mt-1 text-success">{formatCurrency(pkg.partial_payment_cents)}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Rimanente</p>
-                            <p className="font-semibold mt-1 text-destructive">
-                              {formatCurrency(pkg.price_total_cents - pkg.partial_payment_cents)}
-                            </p>
-                          </div>
-                        </>
-                      )}
-                    </>
+                <div>
+                  <Label className="text-muted-foreground">Prezzo totale</Label>
+                  {editMode ? (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={priceTotal}
+                      onChange={(e) => setPriceTotal(e.target.value)}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="mt-1 font-semibold">
+                      {pkg.price_total_cents ? formatCurrency(pkg.price_total_cents) : "—"}
+                    </p>
                   )}
                 </div>
 
-                <Alert className="bg-info/10 border-info">
-                  <Info className="h-4 w-4 text-info" />
-                  <AlertDescription className="text-sm">
-                    Per modificare lo stato di pagamento, utilizza il menu azioni nella card del pacchetto.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Edit Tab */}
-          <TabsContent value="edit" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Modifica informazioni</CardTitle>
-                <CardDescription>
-                  Modifica scadenza, prezzo e note interne del pacchetto
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="expires_at" className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Data di scadenza
-                  </Label>
-                  <Input
-                    id="expires_at"
-                    type="date"
-                    value={expiresAt}
-                    onChange={(e) => setExpiresAt(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Dopo questa data non sarà possibile creare nuove prenotazioni
+                <div>
+                  <Label className="text-muted-foreground">Prezzo unitario</Label>
+                  <p className="mt-1">
+                    {pricePerSession ? formatCurrency(Math.round(pricePerSession)) : "—"}
                   </p>
                 </div>
 
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label htmlFor="price_total" className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" />
-                    Prezzo totale (€)
-                  </Label>
-                  <Input
-                    id="price_total"
-                    type="number"
-                    step="0.01"
-                    value={priceTotal}
-                    onChange={(e) => setPriceTotal(e.target.value)}
-                    placeholder="Es: 250.00"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Modifica il prezzo totale del pacchetto
-                  </p>
+                <div>
+                  <Label className="text-muted-foreground">Fonte prezzo</Label>
+                  <p className="mt-1">{pkg.price_source === 'settings' ? 'Listino' : 'Personalizzato'}</p>
                 </div>
 
-                <Separator />
+                {pkg.payment_method && (
+                  <div>
+                    <Label className="text-muted-foreground">Metodo pagamento</Label>
+                    <p className="mt-1 capitalize">{pkg.payment_method}</p>
+                  </div>
+                )}
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="notes_internal" className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Note interne
-                  </Label>
+              <div>
+                <Label className="text-muted-foreground">Note interne</Label>
+                {editMode ? (
                   <Textarea
-                    id="notes_internal"
                     value={notesInternal}
                     onChange={(e) => setNotesInternal(e.target.value)}
-                    placeholder="Aggiungi note private sul pacchetto..."
-                    rows={4}
+                    placeholder="Aggiungi note interne..."
+                    rows={3}
+                    className="mt-1"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Queste note sono visibili solo a te
+                ) : (
+                  <p className="mt-1 text-sm whitespace-pre-wrap">
+                    {pkg.notes_internal || "—"}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Statistiche Utilizzo */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold">Statistiche Utilizzo</h3>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Totali</Label>
+                  <p className="text-2xl font-bold">{pkg.total_sessions}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Completate</Label>
+                  <p className="text-2xl font-bold text-green-600">{pkg.consumed_sessions}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">In attesa</Label>
+                  <p className="text-2xl font-bold text-orange-600">{pkg.on_hold_sessions}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Disponibili</Label>
+                  <p className="text-2xl font-bold text-blue-600">{availableSessions}</p>
+                </div>
+              </div>
+
+              <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                <div className="h-full flex">
+                  {pkg.consumed_sessions > 0 && (
+                    <div 
+                      className="bg-green-600 h-full"
+                      style={{ width: `${(pkg.consumed_sessions / pkg.total_sessions) * 100}%` }}
+                    />
+                  )}
+                  {pkg.on_hold_sessions > 0 && (
+                    <div 
+                      className="bg-orange-600 h-full"
+                      style={{ width: `${(pkg.on_hold_sessions / pkg.total_sessions) * 100}%` }}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Pagamento */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold">Pagamento</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <Label className="text-muted-foreground">Stato</Label>
+                  <Badge variant={paymentStatusMap[pkg.payment_status]?.variant || "default"}>
+                    {paymentStatusMap[pkg.payment_status]?.label || pkg.payment_status}
+                  </Badge>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <Label className="text-muted-foreground">Importo totale</Label>
+                  <p className="font-semibold">
+                    {pkg.price_total_cents ? formatCurrency(pkg.price_total_cents) : "—"}
                   </p>
                 </div>
 
-                <Button
-                  onClick={handleSave}
-                  disabled={updateMutation.isPending}
-                  className="w-full gap-2"
+                {pkg.payment_status === 'partial' && pkg.partial_payment_cents && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <Label className="text-muted-foreground">Importo pagato</Label>
+                      <p className="text-green-600 font-semibold">
+                        {formatCurrency(pkg.partial_payment_cents)}
+                      </p>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <Label className="text-muted-foreground">Rimanente</Label>
+                      <p className="text-orange-600 font-semibold">
+                        {formatCurrency((pkg.price_total_cents || 0) - pkg.partial_payment_cents)}
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setPaymentDialogOpen(true)}
                 >
-                  <Save className="h-4 w-4" />
+                  Modifica stato pagamento
+                </Button>
+              </div>
+            </div>
+
+            {editMode && (
+              <>
+                <Separator />
+                <Button onClick={handleSave} className="w-full" disabled={updateMutation.isPending}>
                   {updateMutation.isPending ? "Salvataggio..." : "Salva modifiche"}
                 </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </SheetContent>
-    </Sheet>
+              </>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <PaymentStatusDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        currentStatus={pkg.payment_status as PackagePaymentStatus}
+        currentPartialPayment={pkg.partial_payment_cents || 0}
+        totalPrice={pkg.price_total_cents}
+        packageId={pkg.package_id}
+        clientId={pkg.client_id}
+        packageName={pkg.name}
+        onSave={handlePaymentStatusChange}
+      />
+    </>
   );
 }

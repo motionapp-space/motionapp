@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { PackagePaymentStatus } from "../types";
 import { formatCurrency } from "../utils/kpi";
+import { logClientActivity } from "@/features/clients/api/activities.api";
 
 interface PaymentStatusDialogProps {
   open: boolean;
@@ -27,6 +28,9 @@ interface PaymentStatusDialogProps {
   currentStatus: PackagePaymentStatus;
   currentPartialPayment?: number;
   totalPrice?: number | null;
+  packageId?: string;
+  clientId?: string;
+  packageName?: string;
   onSave: (newStatus: PackagePaymentStatus, partialPaymentCents?: number, note?: string) => void;
 }
 
@@ -43,6 +47,9 @@ export function PaymentStatusDialog({
   currentStatus,
   currentPartialPayment = 0,
   totalPrice = null,
+  packageId,
+  clientId,
+  packageName,
   onSave,
 }: PaymentStatusDialogProps) {
   const [selectedStatus, setSelectedStatus] = useState<PackagePaymentStatus>(currentStatus);
@@ -57,12 +64,29 @@ export function PaymentStatusDialog({
     }
   }, [open, currentStatus, currentPartialPayment]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const partialCents = selectedStatus === 'partial' && partialPaymentEuros
       ? Math.round(parseFloat(partialPaymentEuros) * 100)
       : 0;
     
     onSave(selectedStatus, partialCents, note.trim() || undefined);
+    
+    // Log activity
+    if (clientId && packageName) {
+      const statusLabels: Record<PackagePaymentStatus, string> = {
+        unpaid: "Non pagato",
+        partial: "Parzialmente pagato",
+        paid: "Pagato",
+        refunded: "Rimborsato",
+      };
+      
+      await logClientActivity(
+        clientId,
+        "PACKAGE_UPDATED",
+        `Stato pagamento pacchetto "${packageName}" cambiato in: ${statusLabels[selectedStatus]}`
+      );
+    }
+    
     onOpenChange(false);
   };
 
