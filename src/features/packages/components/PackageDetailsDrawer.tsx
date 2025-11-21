@@ -194,8 +194,9 @@ export function PackageDetailsDrawer({
   };
 
   const availableSessions = pkg.total_sessions - pkg.consumed_sessions - pkg.on_hold_sessions;
-  const pricePerSession = pkg.price_total_cents && pkg.total_sessions > 0 
-    ? pkg.price_total_cents / pkg.total_sessions 
+  const effectivePriceTotalCents = priceTotal ? Math.round(parseFloat(priceTotal) * 100) : pkg.price_total_cents;
+  const pricePerSession = effectivePriceTotalCents && pkg.total_sessions > 0
+    ? effectivePriceTotalCents / pkg.total_sessions
     : null;
 
   return (
@@ -212,8 +213,8 @@ export function PackageDetailsDrawer({
                 <Badge variant={usageStatusMap[pkg.usage_status]?.variant || "default"} className="rounded-md">
                   {usageStatusMap[pkg.usage_status]?.label || pkg.usage_status}
                 </Badge>
-                <Badge variant={paymentStatusMap[pkg.payment_status]?.variant || "default"} className="rounded-md">
-                  {paymentStatusMap[pkg.payment_status]?.label || pkg.payment_status}
+                <Badge variant={paymentStatusMap[paymentStatus]?.variant || "default"} className="rounded-md">
+                  {paymentStatusMap[paymentStatus]?.label || paymentStatus}
                 </Badge>
               </div>
             </SheetHeader>
@@ -249,8 +250,8 @@ export function PackageDetailsDrawer({
                         />
                       ) : (
                         <p className="text-base text-foreground">
-                          {pkg.expires_at 
-                            ? format(new Date(pkg.expires_at), "dd MMM yyyy", { locale: it })
+                          {expiresAt
+                            ? format(new Date(expiresAt), "dd MMM yyyy", { locale: it })
                             : "—"}
                         </p>
                       )}
@@ -276,7 +277,7 @@ export function PackageDetailsDrawer({
                         />
                       ) : (
                         <p className="text-base font-semibold text-foreground">
-                          {pkg.price_total_cents ? formatCurrency(pkg.price_total_cents) : "—"}
+                          {effectivePriceTotalCents ? formatCurrency(effectivePriceTotalCents) : "—"}
                         </p>
                       )}
                     </div>
@@ -317,7 +318,7 @@ export function PackageDetailsDrawer({
                       />
                     ) : (
                       <p className="text-sm text-foreground whitespace-pre-wrap bg-muted/50 rounded-md p-3 min-h-[60px]">
-                        {pkg.notes_internal || "Nessuna nota"}
+                        {notesInternal || "Nessuna nota"}
                       </p>
                     )}
                   </div>
@@ -408,8 +409,8 @@ export function PackageDetailsDrawer({
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge variant={paymentStatusMap[pkg.payment_status]?.variant || "default"} className="rounded-md">
-                        {paymentStatusMap[pkg.payment_status]?.label || pkg.payment_status}
+                      <Badge variant={paymentStatusMap[paymentStatus]?.variant || "default"} className="rounded-md">
+                        {paymentStatusMap[paymentStatus]?.label || paymentStatus}
                       </Badge>
                     )}
                   </div>
@@ -419,7 +420,7 @@ export function PackageDetailsDrawer({
                   <div className="flex justify-between items-center py-2">
                     <Label className="text-sm text-muted-foreground">Importo totale</Label>
                     <p className="text-lg font-semibold text-foreground">
-                      {pkg.price_total_cents ? formatCurrency(pkg.price_total_cents) : "—"}
+                      {effectivePriceTotalCents ? formatCurrency(effectivePriceTotalCents) : "—"}
                     </p>
                   </div>
 
@@ -448,18 +449,23 @@ export function PackageDetailsDrawer({
                     </div>
                   )}
 
-                  {!editMode && pkg.payment_status === 'partial' && pkg.partial_payment_cents && (
+                  {!editMode && paymentStatus === 'partial' && partialPaymentEuros && parseFloat(partialPaymentEuros) > 0 && (
                     <>
                       <div className="flex justify-between items-center py-2">
                         <Label className="text-sm text-muted-foreground">Importo pagato</Label>
                         <p className="text-lg font-semibold text-accent">
-                          {formatCurrency(pkg.partial_payment_cents)}
+                          {formatCurrency(Math.round(parseFloat(partialPaymentEuros) * 100))}
                         </p>
                       </div>
                       <div className="flex justify-between items-center py-2">
                         <Label className="text-sm text-muted-foreground">Rimanente</Label>
                         <p className="text-lg font-semibold text-destructive">
-                          {formatCurrency((pkg.price_total_cents || 0) - pkg.partial_payment_cents)}
+                          {formatCurrency(
+                            Math.max(
+                              0,
+                              (effectivePriceTotalCents || 0) - Math.round(parseFloat(partialPaymentEuros) * 100)
+                            )
+                          )}
                         </p>
                       </div>
                     </>
