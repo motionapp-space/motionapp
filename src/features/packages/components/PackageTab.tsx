@@ -18,6 +18,7 @@ import { Plus, Info, AlertTriangle } from "lucide-react";
 import { PackageCard } from "./PackageCard";
 import { PackageDialog } from "./PackageDialog";
 import { PackageEmptyState } from "./PackageEmptyState";
+import { PackageDetailsDrawer } from "./PackageDetailsDrawer";
 import { useClientPackages } from "../hooks/useClientPackages";
 import { useCreatePackage } from "../hooks/useCreatePackage";
 import { useUpdatePackage } from "../hooks/useUpdatePackage";
@@ -25,7 +26,7 @@ import {
   useArchivePackage, 
   useToggleSuspension
 } from "../hooks/usePackageActions";
-import type { CreatePackageInput, PackagePaymentStatus } from "../types";
+import type { CreatePackageInput, PackagePaymentStatus, Package } from "../types";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 
 interface PackageTabProps {
@@ -36,6 +37,8 @@ export function PackageTab({ clientId }: PackageTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
   const [packageToArchive, setPackageToArchive] = useState<string | null>(null);
+  const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   
   const { data: packages, isLoading, error } = useClientPackages(clientId);
   const { data: clients } = useClientsQuery({});
@@ -140,7 +143,10 @@ export function PackageTab({ clientId }: PackageTabProps) {
                 <PackageCard
                   key={pkg.package_id}
                   package={pkg}
-                  onViewDetails={() => {/* TODO: implement details drawer */}}
+                  onViewDetails={() => {
+                    setSelectedPackage(pkg);
+                    setDetailsDrawerOpen(true);
+                  }}
                   onUpdatePaymentStatus={handleUpdatePaymentStatus(pkg.package_id)}
                   onToggleSuspension={() => suspensionMutation.mutate(pkg.package_id)}
                   onArchive={() => {
@@ -161,7 +167,10 @@ export function PackageTab({ clientId }: PackageTabProps) {
                   <PackageCard
                     key={pkg.package_id}
                     package={pkg}
-                    onViewDetails={() => {/* TODO: implement details drawer */}}
+                    onViewDetails={() => {
+                      setSelectedPackage(pkg);
+                      setDetailsDrawerOpen(true);
+                    }}
                     onUpdatePaymentStatus={handleUpdatePaymentStatus(pkg.package_id)}
                     onToggleSuspension={() => {}}
                     onArchive={() => {}}
@@ -205,6 +214,12 @@ export function PackageTab({ clientId }: PackageTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PackageDetailsDrawer
+        package={selectedPackage}
+        open={detailsDrawerOpen}
+        onOpenChange={setDetailsDrawerOpen}
+      />
     </div>
   );
 }
