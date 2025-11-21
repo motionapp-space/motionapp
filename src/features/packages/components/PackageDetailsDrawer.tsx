@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Edit2, Calendar, Euro, FileText, CreditCard, TrendingUp } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Edit2, Calendar, FileText, CreditCard, Check, X, TrendingUp } from "lucide-react";
 import { Package, PackagePaymentStatus } from "../types";
 import { useUpdatePackage } from "../hooks/useUpdatePackage";
 import { formatCurrency } from "../utils/kpi";
@@ -63,6 +64,15 @@ export function PackageDetailsDrawer({
     setEditMode(false);
   };
 
+  const handleCancel = () => {
+    if (pkg) {
+      setExpiresAt(pkg.expires_at ? format(new Date(pkg.expires_at), "yyyy-MM-dd") : "");
+      setPriceTotal(pkg.price_total_cents ? (pkg.price_total_cents / 100).toString() : "");
+      setNotesInternal(pkg.notes_internal || "");
+    }
+    setEditMode(false);
+  };
+
   const handlePaymentStatusChange = async (
     newStatus: PackagePaymentStatus,
     partialPaymentCents?: number,
@@ -103,227 +113,274 @@ export function PackageDetailsDrawer({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="overflow-y-auto w-full sm:max-w-2xl">
-          <SheetHeader className="flex flex-row items-start justify-between space-y-0">
-            <div className="space-y-1">
-              <SheetTitle>{pkg.name}</SheetTitle>
-              <div className="flex gap-2 mt-2">
-                <Badge variant={usageStatusMap[pkg.usage_status]?.variant || "default"}>
+        <SheetContent className="overflow-y-auto w-full sm:max-w-2xl p-0">
+          {/* Header con padding personalizzato */}
+          <div className="px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
+            <SheetHeader>
+              <SheetTitle className="text-2xl font-semibold text-foreground">
+                {pkg.name}
+              </SheetTitle>
+              <div className="flex gap-2 mt-3">
+                <Badge variant={usageStatusMap[pkg.usage_status]?.variant || "default"} className="rounded-md">
                   {usageStatusMap[pkg.usage_status]?.label || pkg.usage_status}
                 </Badge>
-                <Badge variant={paymentStatusMap[pkg.payment_status]?.variant || "default"}>
+                <Badge variant={paymentStatusMap[pkg.payment_status]?.variant || "default"} className="rounded-md">
                   {paymentStatusMap[pkg.payment_status]?.label || pkg.payment_status}
                 </Badge>
               </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setEditMode(!editMode)}
-              className="shrink-0"
-            >
-              <Edit2 className="h-4 w-4" />
-            </Button>
-          </SheetHeader>
+            </SheetHeader>
+          </div>
 
-          <div className="space-y-6 mt-6">
+          {/* Content */}
+          <div className="px-6 py-6 space-y-8">
             {/* Informazioni Generali */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <h3 className="font-semibold">Informazioni Generali</h3>
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <FileText className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold text-foreground">Informazioni Generali</h3>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <Label className="text-muted-foreground">Data creazione</Label>
-                  <p className="mt-1">
-                    {format(new Date(pkg.created_at), "dd MMM yyyy", { locale: it })}
-                  </p>
-                </div>
-                
-                <div>
-                  <Label className="text-muted-foreground">Data scadenza</Label>
-                  {editMode ? (
-                    <Input
-                      type="date"
-                      value={expiresAt}
-                      onChange={(e) => setExpiresAt(e.target.value)}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1">
-                      {pkg.expires_at 
-                        ? format(new Date(pkg.expires_at), "dd MMM yyyy", { locale: it })
-                        : "—"}
-                    </p>
-                  )}
-                </div>
+              <Card className="border-border">
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-1.5 block">Data creazione</Label>
+                      <p className="text-base text-foreground">
+                        {format(new Date(pkg.created_at), "dd MMM yyyy", { locale: it })}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-1.5 block">Data scadenza</Label>
+                      {editMode ? (
+                        <Input
+                          type="date"
+                          value={expiresAt}
+                          onChange={(e) => setExpiresAt(e.target.value)}
+                          className="h-10"
+                        />
+                      ) : (
+                        <p className="text-base text-foreground">
+                          {pkg.expires_at 
+                            ? format(new Date(pkg.expires_at), "dd MMM yyyy", { locale: it })
+                            : "—"}
+                        </p>
+                      )}
+                    </div>
 
-                <div>
-                  <Label className="text-muted-foreground">Durata</Label>
-                  <p className="mt-1">{pkg.duration_months} {pkg.duration_months === 1 ? 'mese' : 'mesi'}</p>
-                </div>
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-1.5 block">Durata</Label>
+                      <p className="text-base text-foreground">
+                        {pkg.duration_months} {pkg.duration_months === 1 ? 'mese' : 'mesi'}
+                      </p>
+                    </div>
 
-                <div>
-                  <Label className="text-muted-foreground">Prezzo totale</Label>
-                  {editMode ? (
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={priceTotal}
-                      onChange={(e) => setPriceTotal(e.target.value)}
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="mt-1 font-semibold">
-                      {pkg.price_total_cents ? formatCurrency(pkg.price_total_cents) : "—"}
-                    </p>
-                  )}
-                </div>
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-1.5 block">Prezzo totale</Label>
+                      {editMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={priceTotal}
+                          onChange={(e) => setPriceTotal(e.target.value)}
+                          className="h-10"
+                          placeholder="Es: 400.00"
+                        />
+                      ) : (
+                        <p className="text-base font-semibold text-foreground">
+                          {pkg.price_total_cents ? formatCurrency(pkg.price_total_cents) : "—"}
+                        </p>
+                      )}
+                    </div>
 
-                <div>
-                  <Label className="text-muted-foreground">Prezzo unitario</Label>
-                  <p className="mt-1">
-                    {pricePerSession ? formatCurrency(Math.round(pricePerSession)) : "—"}
-                  </p>
-                </div>
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-1.5 block">Prezzo unitario</Label>
+                      <p className="text-base text-foreground">
+                        {pricePerSession ? formatCurrency(Math.round(pricePerSession)) : "—"}
+                      </p>
+                    </div>
 
-                <div>
-                  <Label className="text-muted-foreground">Fonte prezzo</Label>
-                  <p className="mt-1">{pkg.price_source === 'settings' ? 'Listino' : 'Personalizzato'}</p>
-                </div>
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-1.5 block">Fonte prezzo</Label>
+                      <p className="text-base text-foreground">
+                        {pkg.price_source === 'settings' ? 'Listino' : 'Personalizzato'}
+                      </p>
+                    </div>
 
-                {pkg.payment_method && (
-                  <div>
-                    <Label className="text-muted-foreground">Metodo pagamento</Label>
-                    <p className="mt-1 capitalize">{pkg.payment_method}</p>
+                    {pkg.payment_method && (
+                      <div className="col-span-2">
+                        <Label className="text-sm text-muted-foreground mb-1.5 block">Metodo pagamento</Label>
+                        <p className="text-base text-foreground capitalize">{pkg.payment_method}</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <div>
-                <Label className="text-muted-foreground">Note interne</Label>
-                {editMode ? (
-                  <Textarea
-                    value={notesInternal}
-                    onChange={(e) => setNotesInternal(e.target.value)}
-                    placeholder="Aggiungi note interne..."
-                    rows={3}
-                    className="mt-1"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm whitespace-pre-wrap">
-                    {pkg.notes_internal || "—"}
-                  </p>
-                )}
-              </div>
-            </div>
+                  <Separator className="my-6" />
+
+                  <div>
+                    <Label className="text-sm text-muted-foreground mb-2 block">Note interne</Label>
+                    {editMode ? (
+                      <Textarea
+                        value={notesInternal}
+                        onChange={(e) => setNotesInternal(e.target.value)}
+                        placeholder="Aggiungi note interne..."
+                        rows={3}
+                        className="resize-none"
+                      />
+                    ) : (
+                      <p className="text-sm text-foreground whitespace-pre-wrap bg-muted/50 rounded-md p-3 min-h-[60px]">
+                        {pkg.notes_internal || "Nessuna nota"}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
 
             <Separator />
 
             {/* Statistiche Utilizzo */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                <h3 className="font-semibold">Statistiche Utilizzo</h3>
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold text-foreground">Statistiche Utilizzo</h3>
               </div>
 
-              <div className="grid grid-cols-4 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Totali</Label>
-                  <p className="text-2xl font-bold">{pkg.total_sessions}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Completate</Label>
-                  <p className="text-2xl font-bold text-green-600">{pkg.consumed_sessions}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">In attesa</Label>
-                  <p className="text-2xl font-bold text-orange-600">{pkg.on_hold_sessions}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Disponibili</Label>
-                  <p className="text-2xl font-bold text-blue-600">{availableSessions}</p>
-                </div>
-              </div>
+              <Card className="border-border">
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-4 gap-6 mb-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-2">Totali</p>
+                      <p className="text-3xl font-bold text-foreground">{pkg.total_sessions}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-2">Completate</p>
+                      <p className="text-3xl font-bold text-accent">{pkg.consumed_sessions}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-2">In attesa</p>
+                      <p className="text-3xl font-bold" style={{ color: 'hsl(30, 80%, 55%)' }}>
+                        {pkg.on_hold_sessions}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-2">Disponibili</p>
+                      <p className="text-3xl font-bold text-primary">{availableSessions}</p>
+                    </div>
+                  </div>
 
-              <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-                <div className="h-full flex">
-                  {pkg.consumed_sessions > 0 && (
-                    <div 
-                      className="bg-green-600 h-full"
-                      style={{ width: `${(pkg.consumed_sessions / pkg.total_sessions) * 100}%` }}
-                    />
-                  )}
-                  {pkg.on_hold_sessions > 0 && (
-                    <div 
-                      className="bg-orange-600 h-full"
-                      style={{ width: `${(pkg.on_hold_sessions / pkg.total_sessions) * 100}%` }}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
+                  <div className="w-full bg-muted rounded-full h-4 overflow-hidden">
+                    <div className="h-full flex">
+                      {pkg.consumed_sessions > 0 && (
+                        <div 
+                          className="h-full bg-accent transition-all"
+                          style={{ width: `${(pkg.consumed_sessions / pkg.total_sessions) * 100}%` }}
+                          title={`Completate: ${pkg.consumed_sessions}`}
+                        />
+                      )}
+                      {pkg.on_hold_sessions > 0 && (
+                        <div 
+                          className="h-full transition-all"
+                          style={{ 
+                            width: `${(pkg.on_hold_sessions / pkg.total_sessions) * 100}%`,
+                            backgroundColor: 'hsl(30, 80%, 55%)'
+                          }}
+                          title={`In attesa: ${pkg.on_hold_sessions}`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
 
             <Separator />
 
             {/* Pagamento */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                <h3 className="font-semibold">Pagamento</h3>
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold text-foreground">Pagamento</h3>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <Label className="text-muted-foreground">Stato</Label>
-                  <Badge variant={paymentStatusMap[pkg.payment_status]?.variant || "default"}>
-                    {paymentStatusMap[pkg.payment_status]?.label || pkg.payment_status}
-                  </Badge>
-                </div>
+              <Card className="border-border">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex justify-between items-center py-2">
+                    <Label className="text-sm text-muted-foreground">Stato</Label>
+                    <Badge variant={paymentStatusMap[pkg.payment_status]?.variant || "default"} className="rounded-md">
+                      {paymentStatusMap[pkg.payment_status]?.label || pkg.payment_status}
+                    </Badge>
+                  </div>
 
-                <div className="flex justify-between items-center">
-                  <Label className="text-muted-foreground">Importo totale</Label>
-                  <p className="font-semibold">
-                    {pkg.price_total_cents ? formatCurrency(pkg.price_total_cents) : "—"}
-                  </p>
-                </div>
+                  <Separator />
 
-                {pkg.payment_status === 'partial' && pkg.partial_payment_cents && (
-                  <>
-                    <div className="flex justify-between items-center">
-                      <Label className="text-muted-foreground">Importo pagato</Label>
-                      <p className="text-green-600 font-semibold">
-                        {formatCurrency(pkg.partial_payment_cents)}
-                      </p>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <Label className="text-muted-foreground">Rimanente</Label>
-                      <p className="text-orange-600 font-semibold">
-                        {formatCurrency((pkg.price_total_cents || 0) - pkg.partial_payment_cents)}
-                      </p>
-                    </div>
-                  </>
-                )}
+                  <div className="flex justify-between items-center py-2">
+                    <Label className="text-sm text-muted-foreground">Importo totale</Label>
+                    <p className="text-lg font-semibold text-foreground">
+                      {pkg.price_total_cents ? formatCurrency(pkg.price_total_cents) : "—"}
+                    </p>
+                  </div>
 
+                  {pkg.payment_status === 'partial' && pkg.partial_payment_cents && (
+                    <>
+                      <div className="flex justify-between items-center py-2">
+                        <Label className="text-sm text-muted-foreground">Importo pagato</Label>
+                        <p className="text-lg font-semibold text-accent">
+                          {formatCurrency(pkg.partial_payment_cents)}
+                        </p>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <Label className="text-sm text-muted-foreground">Rimanente</Label>
+                        <p className="text-lg font-semibold text-destructive">
+                          {formatCurrency((pkg.price_total_cents || 0) - pkg.partial_payment_cents)}
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4"
+                    onClick={() => setPaymentDialogOpen(true)}
+                  >
+                    Modifica stato pagamento
+                  </Button>
+                </CardContent>
+              </Card>
+            </section>
+          </div>
+
+          {/* Footer con azioni - sticky bottom */}
+          <div className="px-6 py-4 border-t bg-background sticky bottom-0">
+            {editMode ? (
+              <div className="flex gap-3">
                 <Button 
                   variant="outline" 
-                  className="w-full"
-                  onClick={() => setPaymentDialogOpen(true)}
+                  onClick={handleCancel}
+                  className="flex-1"
+                  disabled={updateMutation.isPending}
                 >
-                  Modifica stato pagamento
+                  <X className="h-4 w-4 mr-2" />
+                  Annulla
                 </Button>
-              </div>
-            </div>
-
-            {editMode && (
-              <>
-                <Separator />
-                <Button onClick={handleSave} className="w-full" disabled={updateMutation.isPending}>
+                <Button 
+                  onClick={handleSave}
+                  className="flex-1"
+                  disabled={updateMutation.isPending}
+                >
+                  <Check className="h-4 w-4 mr-2" />
                   {updateMutation.isPending ? "Salvataggio..." : "Salva modifiche"}
                 </Button>
-              </>
+              </div>
+            ) : (
+              <Button 
+                variant="outline"
+                onClick={() => setEditMode(true)}
+                className="w-full"
+              >
+                <Edit2 className="h-4 w-4 mr-2" />
+                Modifica informazioni
+              </Button>
             )}
           </div>
         </SheetContent>
