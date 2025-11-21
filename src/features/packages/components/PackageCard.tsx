@@ -35,7 +35,7 @@ interface PackageCardProps {
   onToggleSuspension: () => void;
   onArchive: () => void;
   onDuplicate: () => void;
-  onUpdatePaymentStatus: (newStatus: PackagePaymentStatus, note?: string) => void;
+  onUpdatePaymentStatus: (newStatus: PackagePaymentStatus, partialPaymentCents?: number, note?: string) => void;
 }
 
 export function PackageCard({
@@ -95,7 +95,15 @@ export function PackageCard({
                 </Badge>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-xs">Stato di pagamento del pacchetto</p>
+                <div className="text-xs space-y-1">
+                  <p className="font-semibold">Stato di pagamento</p>
+                  {pkg.payment_status === 'partial' && pkg.price_total_cents && (
+                    <>
+                      <p>Pagato: {formatCurrency(pkg.partial_payment_cents)}</p>
+                      <p>Rimanente: {formatCurrency(pkg.price_total_cents - pkg.partial_payment_cents)}</p>
+                    </>
+                  )}
+                </div>
               </TooltipContent>
             </Tooltip>
 
@@ -250,6 +258,8 @@ export function PackageCard({
         open={paymentDialogOpen}
         onOpenChange={setPaymentDialogOpen}
         currentStatus={pkg.payment_status as PackagePaymentStatus}
+        currentPartialPayment={pkg.partial_payment_cents}
+        totalPrice={pkg.price_total_cents}
         onSave={onUpdatePaymentStatus}
       />
     </Card>

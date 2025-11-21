@@ -47,10 +47,17 @@ export function PackageTab({ clientId }: PackageTabProps) {
     });
   };
 
-  const handleUpdatePaymentStatus = (packageId: string) => (newStatus: PackagePaymentStatus, note?: string) => {
+  const handleUpdatePaymentStatus = (packageId: string) => (
+    newStatus: PackagePaymentStatus, 
+    partialPaymentCents?: number,
+    note?: string
+  ) => {
     updateMutation.mutate({
       packageId,
-      input: { payment_status: newStatus },
+      input: { 
+        payment_status: newStatus,
+        partial_payment_cents: partialPaymentCents 
+      },
     });
   };
 
