@@ -53,7 +53,7 @@ export function PackageDetailsDrawer({
       setPartialPaymentEuros(pkg.partial_payment_cents ? (pkg.partial_payment_cents / 100).toFixed(2) : "");
       setEditMode(false);
     }
-  }, [pkg]);
+  }, [pkg, pkg?.expires_at, pkg?.price_total_cents, pkg?.notes_internal, pkg?.payment_status, pkg?.partial_payment_cents]);
 
   // Gestisce il cambio di payment_status
   useEffect(() => {
@@ -137,6 +137,26 @@ export function PackageDetailsDrawer({
           "PACKAGE_UPDATED",
           `Stato pagamento pacchetto "${pkg.name}" modificato in: ${statusLabels[paymentStatus]}`
         );
+      }
+
+      // Aggiorna gli stati locali con i valori appena salvati per un feedback immediato
+      if (changes.expires_at !== undefined) {
+        setExpiresAt(changes.expires_at ? format(new Date(changes.expires_at), "yyyy-MM-dd") : "");
+      }
+      if (changes.price_total_cents !== undefined) {
+        setPriceTotal((changes.price_total_cents / 100).toString());
+      }
+      if (changes.notes_internal !== undefined) {
+        setNotesInternal(changes.notes_internal);
+      }
+      if (changes.payment_status !== undefined) {
+        setPaymentStatus(changes.payment_status);
+      }
+      if (changes.partial_payment_cents !== undefined) {
+        setPartialPaymentEuros(changes.partial_payment_cents ? (changes.partial_payment_cents / 100).toFixed(2) : "");
+      } else if (paymentStatus !== 'partial' && pkg.partial_payment_cents) {
+        // Se lo stato non è più partial, resetta l'importo parziale visualizzato
+        setPartialPaymentEuros("");
       }
 
       setEditMode(false);
