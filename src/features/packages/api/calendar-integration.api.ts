@@ -137,11 +137,13 @@ export async function handleEventComplete(
  * Handle event cancellation
  * - If >24h before start: release hold (CANCEL_GT_24H)
  * - If <24h before start: consume credit (CANCEL_LT_24H)
+ * - If forceFree: always release hold (professional cancellation)
  */
 export async function handleEventCancel(
   eventId: string,
   packageId: string,
-  startAt: string
+  startAt: string,
+  options?: { forceFree?: boolean }
 ): Promise<{ package: Package; penaltyApplied: boolean }> {
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new Error("Non autenticato");
@@ -149,8 +151,8 @@ export async function handleEventCancel(
   const settings = await getPackageSettings();
   const hoursUntilStart = (new Date(startAt).getTime() - Date.now()) / (1000 * 60 * 60);
 
-  // Determine if within cancel policy window
-  const isLateCancellation = hoursUntilStart < settings.lock_window_hours;
+  // Determine if within cancel policy window (skip if forceFree)
+  const isLateCancellation = !options?.forceFree && hoursUntilStart < settings.lock_window_hours;
 
   // Get package
   const { data: pkg, error: pkgError } = await supabase
