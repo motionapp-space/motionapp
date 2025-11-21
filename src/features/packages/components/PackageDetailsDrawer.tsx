@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logClientActivity } from "@/features/clients/api/activities.api";
+import { toast } from "sonner";
 
 interface PackageDetailsDrawerProps {
   package: Package | null;
@@ -54,53 +55,95 @@ export function PackageDetailsDrawer({
     }
   }, [pkg]);
 
+  // Gestisce il cambio di payment_status
+  useEffect(() => {
+    if (editMode && paymentStatus === 'partial' && !partialPaymentEuros && pkg) {
+      // Se passa a 'partial' e il campo è vuoto, inizializza con il valore del database
+      if (pkg.partial_payment_cents) {
+        setPartialPaymentEuros((pkg.partial_payment_cents / 100).toFixed(2));
+      }
+    }
+  }, [paymentStatus, editMode, pkg, partialPaymentEuros]);
+
   const handleSave = async () => {
     if (!pkg) return;
 
     const changes: any = {};
     const newExpiresAt = expiresAt ? new Date(expiresAt).toISOString() : null;
-    const newPriceCents = priceTotal ? Math.round(parseFloat(priceTotal) * 100) : null;
+    const newPriceCents = priceTotal ? Math.round(parseFloat(priceTotal) * 100) : pkg.price_total_cents;
 
     if (newExpiresAt !== pkg.expires_at) changes.expires_at = newExpiresAt;
-    if (newPriceCents !== pkg.price_total_cents) changes.price_total_cents = newPriceCents;
+    if (priceTotal && newPriceCents !== pkg.price_total_cents) changes.price_total_cents = newPriceCents;
     if (notesInternal !== (pkg.notes_internal || "")) changes.notes_internal = notesInternal;
     
-    // Payment status changes
+    // Gestione payment_status
     if (paymentStatus !== pkg.payment_status) {
       changes.payment_status = paymentStatus;
-      
-      // Log activity for payment status change
-      const statusLabels: Record<PackagePaymentStatus, string> = {
-        unpaid: "Non pagato",
-        partial: "Parzialmente pagato",
-        paid: "Pagato",
-        refunded: "Rimborsato"
-      };
-      
-      await logClientActivity(
-        pkg.client_id,
-        "PACKAGE_UPDATED",
-        `Stato pagamento pacchetto "${pkg.name}" modificato in: ${statusLabels[paymentStatus]}`
-      );
     }
-    
-    if (paymentStatus === 'partial' && partialPaymentEuros) {
-      const newPartialPaymentCents = Math.round(parseFloat(partialPaymentEuros) * 100);
+
+    // Gestione partial_payment SEMPRE quando status è 'partial'
+    if (paymentStatus === 'partial') {
+      const partialValue = partialPaymentEuros ? parseFloat(partialPaymentEuros) : 0;
+      const totalValue = newPriceCents / 100;
+      
+      // Validazione
+      if (partialValue < 0) {
+        toast.error("L'importo pagato non può essere negativo");
+        return;
+      }
+      if (partialValue > totalValue) {
+        toast.error("L'importo pagato non può superare il totale");
+        return;
+      }
+      if (partialValue === 0) {
+        toast.error("Inserisci un importo pagato valido");
+        return;
+      }
+      
+      const newPartialPaymentCents = Math.round(partialValue * 100);
       if (newPartialPaymentCents !== pkg.partial_payment_cents) {
         changes.partial_payment_cents = newPartialPaymentCents;
       }
-    } else if (paymentStatus !== 'partial') {
-      changes.partial_payment_cents = null;
+    } else {
+      // Se non è 'partial', azzera l'importo parziale
+      if (pkg.partial_payment_cents !== null) {
+        changes.partial_payment_cents = null;
+      }
     }
 
-    if (Object.keys(changes).length > 0) {
+    if (Object.keys(changes).length === 0) {
+      toast.info("Nessuna modifica da salvare");
+      setEditMode(false);
+      return;
+    }
+
+    try {
       await updateMutation.mutateAsync({
         packageId: pkg.package_id,
         input: changes,
       });
+
+      // Log activity for payment status change
+      if (changes.payment_status) {
+        const statusLabels: Record<PackagePaymentStatus, string> = {
+          unpaid: "Non pagato",
+          partial: "Parzialmente pagato",
+          paid: "Pagato",
+          refunded: "Rimborsato"
+        };
+        
+        await logClientActivity(
+          pkg.client_id,
+          "PACKAGE_UPDATED",
+          `Stato pagamento pacchetto "${pkg.name}" modificato in: ${statusLabels[paymentStatus]}`
+        );
+      }
+
+      setEditMode(false);
+      toast.success("Modifiche salvate con successo");
+    } catch (error) {
+      toast.error("Errore nel salvataggio delle modifiche");
     }
-    
-    setEditMode(false);
   };
 
   const handleCancel = () => {
@@ -361,21 +404,27 @@ export function PackageDetailsDrawer({
                   </div>
 
                   {editMode && paymentStatus === 'partial' && (
-                    <div>
-                      <Label className="text-sm text-muted-foreground mb-2 block">Importo pagato (€)</Label>
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">
+                        Importo pagato (€) <span className="text-destructive">*</span>
+                      </Label>
                       <Input
                         type="number"
                         step="0.01"
+                        min="0"
+                        max={priceTotal || (pkg.price_total_cents / 100)}
                         value={partialPaymentEuros}
                         onChange={(e) => setPartialPaymentEuros(e.target.value)}
                         placeholder="Es: 200.00"
                         className="h-10"
+                        required
                       />
-                      {partialPaymentEuros && pkg.price_total_cents && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Rimanente: {formatCurrency((pkg.price_total_cents) - Math.round(parseFloat(partialPaymentEuros) * 100))}
-                        </p>
-                      )}
+                      <p className="text-sm text-muted-foreground">
+                        Rimanente: {formatCurrency(
+                          Math.max(0, ((priceTotal ? Math.round(parseFloat(priceTotal) * 100) : pkg.price_total_cents) || 0) - 
+                          Math.round((parseFloat(partialPaymentEuros) || 0) * 100))
+                        )}
+                      </p>
                     </div>
                   )}
 
