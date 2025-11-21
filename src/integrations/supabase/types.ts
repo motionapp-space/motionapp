@@ -1764,6 +1764,7 @@ export type Database = {
           activity_status: string
           appointment_status: string
           client_id: string
+          next_appointment_date: string
           package_status: string
           plan_weeks_since_assignment: number
         }[]
