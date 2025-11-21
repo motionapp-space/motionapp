@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Calendar, CalendarX } from "lucide-react";
 import { format } from "date-fns";
@@ -40,19 +40,17 @@ export function AppointmentStatusBadge({ status, nextAppointmentDate }: Appointm
   // Se c'è una data e lo status è 'planned', mostriamo il tooltip
   if (status === 'planned' && nextAppointmentDate) {
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>{badge}</TooltipTrigger>
-          <TooltipContent>
-            <p className="text-xs">
-              Prossimo appuntamento:<br/>
-              <span className="font-semibold">
-                {format(new Date(nextAppointmentDate), "PPp", { locale: it })}
-              </span>
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{badge}</TooltipTrigger>
+        <TooltipContent>
+          <p className="text-xs">
+            Prossimo appuntamento:<br/>
+            <span className="font-semibold">
+              {format(new Date(nextAppointmentDate), "PPp", { locale: it })}
+            </span>
+          </p>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
