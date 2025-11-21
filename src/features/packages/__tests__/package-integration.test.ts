@@ -19,6 +19,7 @@ describe('Package Business Logic Tests', () => {
         consumed_sessions: 3,
         on_hold_sessions: 2,
         price_total_cents: 50000,
+        partial_payment_cents: 0,
         currency_code: 'EUR',
         price_source: 'settings',
         usage_status: 'active',
@@ -51,6 +52,7 @@ describe('Package Business Logic Tests', () => {
         consumed_sessions: 3,
         on_hold_sessions: 3, // This would make available negative
         price_total_cents: 25000,
+        partial_payment_cents: 0,
         currency_code: 'EUR',
         price_source: 'settings',
         usage_status: 'active',
@@ -82,6 +84,7 @@ describe('Package Business Logic Tests', () => {
         consumed_sessions: 5,
         on_hold_sessions: 0,
         price_total_cents: 25000,
+        partial_payment_cents: 0,
         currency_code: 'EUR',
         price_source: 'settings',
         usage_status: 'active', // Should be 'completed' by trigger
@@ -192,6 +195,7 @@ describe('Package Business Logic Tests', () => {
         consumed_sessions: 3,
         on_hold_sessions: 1,
         price_total_cents: 50000,
+        partial_payment_cents: 0,
         currency_code: 'EUR',
         price_source: 'settings',
         usage_status: 'active',
@@ -235,6 +239,7 @@ describe('Package Business Logic Tests', () => {
         consumed_sessions: 0,
         on_hold_sessions: 0,
         price_total_cents: 50000, // €500
+        partial_payment_cents: 0,
         currency_code: 'EUR',
         price_source: 'custom',
         usage_status: 'active',

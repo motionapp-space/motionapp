@@ -1147,6 +1147,7 @@ export type Database = {
           notes_internal: string | null
           on_hold_sessions: number
           package_id: string
+          partial_payment_cents: number | null
           payment_method: string | null
           payment_status: Database["public"]["Enums"]["package_payment_status"]
           price_source: string
@@ -1168,6 +1169,7 @@ export type Database = {
           notes_internal?: string | null
           on_hold_sessions?: number
           package_id?: string
+          partial_payment_cents?: number | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["package_payment_status"]
           price_source?: string
@@ -1189,6 +1191,7 @@ export type Database = {
           notes_internal?: string | null
           on_hold_sessions?: number
           package_id?: string
+          partial_payment_cents?: number | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["package_payment_status"]
           price_source?: string

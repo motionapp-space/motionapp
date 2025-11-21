@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,13 +17,17 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { PackagePaymentStatus } from "../types";
+import { formatCurrency } from "../utils/kpi";
 
 interface PaymentStatusDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentStatus: PackagePaymentStatus;
-  onSave: (newStatus: PackagePaymentStatus, note?: string) => void;
+  currentPartialPayment?: number;
+  totalPrice?: number | null;
+  onSave: (newStatus: PackagePaymentStatus, partialPaymentCents?: number, note?: string) => void;
 }
 
 const PAYMENT_STATUS_OPTIONS = [
@@ -37,24 +41,39 @@ export function PaymentStatusDialog({
   open,
   onOpenChange,
   currentStatus,
+  currentPartialPayment = 0,
+  totalPrice = null,
   onSave,
 }: PaymentStatusDialogProps) {
   const [selectedStatus, setSelectedStatus] = useState<PackagePaymentStatus>(currentStatus);
   const [note, setNote] = useState("");
+  const [partialPaymentEuros, setPartialPaymentEuros] = useState<string>("");
+
+  useEffect(() => {
+    if (open) {
+      setSelectedStatus(currentStatus);
+      setPartialPaymentEuros(currentPartialPayment ? (currentPartialPayment / 100).toFixed(2) : "");
+      setNote("");
+    }
+  }, [open, currentStatus, currentPartialPayment]);
 
   const handleSave = () => {
-    onSave(selectedStatus, note.trim() || undefined);
+    const partialCents = selectedStatus === 'partial' && partialPaymentEuros
+      ? Math.round(parseFloat(partialPaymentEuros) * 100)
+      : 0;
+    
+    onSave(selectedStatus, partialCents, note.trim() || undefined);
     onOpenChange(false);
-    setNote("");
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      setSelectedStatus(currentStatus);
-      setNote("");
-    }
     onOpenChange(newOpen);
   };
+
+  const partialPaymentValue = partialPaymentEuros ? parseFloat(partialPaymentEuros) * 100 : 0;
+  const remainingAmount = totalPrice ? totalPrice - partialPaymentValue : null;
+  const isPartialValid = selectedStatus !== 'partial' || 
+    (partialPaymentValue > 0 && (!totalPrice || partialPaymentValue < totalPrice));
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -86,6 +105,27 @@ export function PaymentStatusDialog({
             </Select>
           </div>
 
+          {selectedStatus === 'partial' && (
+            <div className="space-y-2">
+              <Label htmlFor="partial-payment">Importo pagato (€)</Label>
+              <Input
+                id="partial-payment"
+                type="number"
+                step="0.01"
+                min="0"
+                max={totalPrice ? (totalPrice / 100).toString() : undefined}
+                placeholder="Es: 150.00"
+                value={partialPaymentEuros}
+                onChange={(e) => setPartialPaymentEuros(e.target.value)}
+              />
+              {totalPrice && partialPaymentValue > 0 && remainingAmount !== null && (
+                <p className="text-sm text-muted-foreground">
+                  Rimanente: <span className="font-semibold">{formatCurrency(remainingAmount)}</span>
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="note">Note (opzionale)</Label>
             <Textarea
@@ -102,7 +142,7 @@ export function PaymentStatusDialog({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Annulla
           </Button>
-          <Button onClick={handleSave} disabled={selectedStatus === currentStatus}>
+          <Button onClick={handleSave} disabled={!isPartialValid}>
             Salva modifiche
           </Button>
         </DialogFooter>

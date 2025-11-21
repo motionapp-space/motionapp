@@ -14,6 +14,7 @@ export interface Package {
   consumed_sessions: number;
   on_hold_sessions: number;
   price_total_cents: number | null;
+  partial_payment_cents: number;
   currency_code: string;
   price_source: string; // 'settings' | 'custom' in DB
   usage_status: string; // PackageUsageStatus in DB
@@ -103,6 +104,7 @@ export interface CreatePackageInput {
 export interface UpdatePackageInput {
   name?: string;
   price_total_cents?: number | null;
+  partial_payment_cents?: number;
   expires_at?: string | null;
   payment_method?: string | null;
   notes_internal?: string | null;
