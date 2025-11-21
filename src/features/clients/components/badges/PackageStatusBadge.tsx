@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Package, AlertTriangle, XCircle, MinusCircle } from "lucide-react";
 
@@ -50,16 +50,14 @@ export function PackageStatusBadge({ status, sessionsUsed, sessionsTotal }: Pack
   if (sessionsUsed != null && sessionsTotal != null && status !== 'none') {
     const remaining = sessionsTotal - sessionsUsed;
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>{badge}</TooltipTrigger>
-          <TooltipContent>
-            <p className="text-xs">
-              {remaining}/{sessionsTotal} sessioni rimanenti
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{badge}</TooltipTrigger>
+        <TooltipContent>
+          <p className="text-xs">
+            {remaining}/{sessionsTotal} sessioni rimanenti
+          </p>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
