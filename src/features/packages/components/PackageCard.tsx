@@ -148,13 +148,13 @@ export function PackageCard({
       {/* Stats Bar */}
       <PackageStatsBar
         stats={[
-          { label: "Rimanenti", value: kpi.remaining },
-          { 
-            label: "In attesa", 
-            value: kpi.on_hold,
-            highlight: kpi.on_hold > 0 ? 'warning' : undefined
-          },
+          { label: "Totali", value: kpi.total },
           { label: "Completate", value: kpi.consumed },
+          { 
+            label: "Prenotate", 
+            value: kpi.on_hold,
+            highlight: kpi.on_hold > 0 ? 'info' : undefined
+          },
           { 
             label: "Disponibili", 
             value: kpi.available,
