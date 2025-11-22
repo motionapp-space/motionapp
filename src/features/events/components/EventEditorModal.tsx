@@ -342,7 +342,7 @@ export function EventEditorModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[860px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogContent className="max-w-[680px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
           {/* Header */}
           <DialogHeader className="border-b border-border/50 px-6 h-16 flex-row items-center gap-3 flex-shrink-0 space-y-0">
             <CalendarIcon className="h-5 w-5 text-primary" />
