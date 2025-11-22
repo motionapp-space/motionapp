@@ -285,8 +285,7 @@ export function UnifiedAppointmentModal({
     startDate: rangeStart,
     endDate: rangeEnd,
     enabled: open && !!coachId,
-    isCoachView: true,
-    bypassEnabledCheck: isCoachMode // Coach can see slots even if booking is disabled
+    calendarMode: isCoachMode ? 'coach' : 'client'
   });
 
   const { data: clientsData } = useClientsQuery({
@@ -361,8 +360,7 @@ export function UnifiedAppointmentModal({
           coachId,
           startDate: searchStart.toISOString(),
           endDate: searchEnd.toISOString(),
-          isCoachView: isCoachMode,
-          bypassEnabledCheck: isCoachMode,
+          calendarMode: isCoachMode ? 'coach' : 'client',
         });
         
         if (response.length > 0) {

@@ -6,9 +6,10 @@ import type { AvailabilityWindow } from "../types";
 interface AvailabilityOverlayProps {
   date: Date;
   windows: AvailabilityWindow[];
+  interactive?: boolean; // FASE 3: Se true, l'overlay è solo visivo
 }
 
-export function AvailabilityOverlay({ date, windows }: AvailabilityOverlayProps) {
+export function AvailabilityOverlay({ date, windows, interactive = false }: AvailabilityOverlayProps) {
   const dayOfWeek = useMemo(() => {
     return (getDay(date) + 6) % 7; // Convert Sunday=0 to Monday=0
   }, [date]);
@@ -43,7 +44,9 @@ export function AvailabilityOverlay({ date, windows }: AvailabilityOverlayProps)
       {overlayWindows.map((window) => (
         <div
           key={window.id}
-          className="absolute inset-x-0 bg-primary/5 border-l-2 border-primary/30 pointer-events-none"
+          className={`absolute inset-x-0 border-l-2 border-primary/30 ${
+            interactive ? 'bg-primary/5 pointer-events-none' : 'bg-primary/5 pointer-events-none'
+          }`}
           style={{
             top: window.top,
             height: window.height,

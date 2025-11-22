@@ -17,6 +17,8 @@ interface DayViewProps {
   oooBlocks?: OutOfOfficeBlock[];
   onEventClick: (event: EventWithClient) => void;
   onRequestClick?: (request: BookingRequestWithClient) => void;
+  mode?: 'coach' | 'client'; // FASE 3
+  onGridClick?: (date: Date, startTime: Date) => void; // FASE 3
 }
 
 export function DayView({
@@ -27,6 +29,8 @@ export function DayView({
   oooBlocks = [],
   onEventClick,
   onRequestClick,
+  mode = 'coach',
+  onGridClick,
 }: DayViewProps) {
   const hours = useMemo(() => hoursArray(), []);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -112,7 +116,25 @@ export function DayView({
           </div>
 
           {/* Event grid */}
-          <div className="flex-1 relative" style={{ height: gridHeight }}>
+          <div 
+            className="flex-1 relative" 
+            style={{ height: gridHeight }}
+            onClick={(e) => {
+              // FASE 3: Handle grid click for coach mode
+              if (mode === 'coach' && onGridClick && e.target === e.currentTarget) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+                const minutesFromStart = Math.floor(y / MINUTE_HEIGHT);
+                const hours = DAY_START_H + Math.floor(minutesFromStart / 60);
+                const minutes = Math.floor((minutesFromStart % 60) / 15) * 15; // Snap to 15min
+                
+                const clickTime = new Date(date);
+                clickTime.setHours(hours, minutes, 0, 0);
+                
+                onGridClick(date, clickTime);
+              }
+            }}
+          >
             {/* Hour lines */}
             {hours.map((_, i) => (
               <div 
@@ -123,7 +145,7 @@ export function DayView({
             ))}
 
             {/* Overlays */}
-            <AvailabilityOverlay date={date} windows={availabilityWindows} />
+            <AvailabilityOverlay date={date} windows={availabilityWindows} interactive={mode === 'coach'} />
             <OutOfOfficeOverlay date={date} blocks={oooBlocks} />
 
             {/* Current time line */}

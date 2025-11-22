@@ -1,6 +1,47 @@
-import { parseISO, startOfDay, addMinutes, format, isBefore, isAfter, addHours } from "date-fns";
+import { parseISO, startOfDay, addMinutes, format, isBefore, isAfter, addHours, setHours } from "date-fns";
 import type { AvailabilityWindow, OutOfOfficeBlock, AvailableSlot } from "../types";
 import type { EventWithClient } from "@/features/events/types";
+
+// FASE 2: Generate full day grid for coach mode
+export interface FullDayGridOptions {
+  date: Date;
+  startHour?: number; // default 6
+  endHour?: number; // default 22
+  granularityMinutes?: number; // default 15
+}
+
+/**
+ * Genera una griglia oraria completa per il coach mode
+ * Usato per renderizzare il calendario interattivo anche senza availability configurate
+ */
+export function generateFullDayGrid({
+  date,
+  startHour = 6,
+  endHour = 22,
+  granularityMinutes = 15
+}: FullDayGridOptions): AvailableSlot[] {
+  const slots: AvailableSlot[] = [];
+  const dayStart = startOfDay(date);
+  
+  let currentTime = setHours(dayStart, startHour);
+  currentTime.setMinutes(0, 0, 0);
+  
+  const endTime = setHours(dayStart, endHour);
+  endTime.setMinutes(0, 0, 0);
+  
+  while (isBefore(currentTime, endTime)) {
+    const slotEnd = addMinutes(currentTime, granularityMinutes);
+    
+    slots.push({
+      start: currentTime.toISOString(),
+      end: slotEnd.toISOString(),
+    });
+    
+    currentTime = slotEnd;
+  }
+  
+  return slots;
+}
 
 interface SlotGeneratorOptions {
   date: Date;

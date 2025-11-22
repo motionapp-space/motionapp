@@ -80,6 +80,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
     .insert({
       ...input,
       coach_id: user.id,
+      source: input.source || 'manual', // FASE 5: Default to manual (coach created)
     })
     .select()
     .single();

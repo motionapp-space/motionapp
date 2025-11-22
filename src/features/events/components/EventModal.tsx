@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettings";
 import { supabase } from "@/integrations/supabase/client";
-import { UnifiedAppointmentModal } from "./UnifiedAppointmentModal";
+import { CoachAppointmentModal } from "./CoachAppointmentModal";
+import { ClientAppointmentModal } from "./ClientAppointmentModal";
 import type { EventWithClient } from "../types";
 
 interface EventModalProps {
@@ -25,7 +26,7 @@ export function EventModal({
   prefillData, 
   lockedClientId,
   onStartSession,
-  mode = 'client-booking'
+  mode = 'coach-create'
 }: EventModalProps) {
   const { data: bookingSettings } = useBookingSettingsQuery();
   const [coachId, setCoachId] = useState<string>("");
@@ -40,17 +41,28 @@ export function EventModal({
 
   const defaultDuration = bookingSettings?.slot_duration_minutes || 45;
 
+  // FASE 4: Route to appropriate modal based on mode
+  if (mode === 'client-booking') {
+    return (
+      <ClientAppointmentModal
+        open={open}
+        onOpenChange={onOpenChange}
+        coachId={coachId}
+        clientId={lockedClientId || prefillData?.clientId || ""}
+        durationMinutes={defaultDuration}
+      />
+    );
+  }
+
+  // Coach mode - full freedom
   return (
-    <UnifiedAppointmentModal
+    <CoachAppointmentModal
       open={open}
       onOpenChange={onOpenChange}
-      coachId={coachId}
-      clientId={lockedClientId || prefillData?.clientId}
-      lockedClientId={lockedClientId}
-      durationMinutes={defaultDuration}
       event={event}
+      prefillData={prefillData}
+      lockedClientId={lockedClientId}
       onStartSession={onStartSession}
-      mode={mode}
     />
   );
 }
