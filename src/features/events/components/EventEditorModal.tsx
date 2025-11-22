@@ -353,7 +353,7 @@ export function EventEditorModal({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            <div className="space-y-5 px-6 py-4 pt-6">
+            <div className="space-y-5 px-6 py-4 pt-3">
             {/* Dettagli Principali */}
             <div className="space-y-4">
               <div className="space-y-2">
