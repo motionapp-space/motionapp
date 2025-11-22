@@ -68,3 +68,12 @@ export interface EventsFilters {
 }
 
 export type CalendarView = "day" | "week" | "month" | "year";
+
+// FASE 1: Calendar mode types
+export type CalendarMode = 'coach' | 'client';
+
+export interface CalendarContext {
+  mode: CalendarMode;
+  coachId: string;
+  clientId?: string; // Solo per mode='client'
+}

@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAvailableSlots } from "../api/available-slots.api";
 import { format } from "date-fns";
+import type { CalendarMode } from "@/features/events/types";
 
 interface UseAvailableSlotsOptions {
   coachId: string;
   startDate: Date;
   endDate: Date;
   enabled?: boolean;
-  isCoachView?: boolean;
-  bypassEnabledCheck?: boolean;
+  calendarMode?: CalendarMode; // FASE 2: Passare mode
 }
 
 export function useAvailableSlots({
@@ -16,8 +16,7 @@ export function useAvailableSlots({
   startDate,
   endDate,
   enabled = true,
-  isCoachView = true,
-  bypassEnabledCheck = false,
+  calendarMode = 'client',
 }: UseAvailableSlotsOptions) {
   return useQuery({
     queryKey: [
@@ -25,16 +24,14 @@ export function useAvailableSlots({
       coachId,
       format(startDate, "yyyy-MM-dd"),
       format(endDate, "yyyy-MM-dd"),
-      isCoachView,
-      bypassEnabledCheck,
+      calendarMode,
     ],
     queryFn: () =>
       getAvailableSlots({
         coachId,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        isCoachView,
-        bypassEnabledCheck,
+        calendarMode,
       }),
     enabled,
   });

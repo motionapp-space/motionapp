@@ -19,6 +19,8 @@ interface WeekViewProps {
   oooBlocks?: OutOfOfficeBlock[];
   onEventClick: (event: EventWithClient) => void;
   onRequestClick?: (request: BookingRequestWithClient) => void;
+  mode?: 'coach' | 'client'; // FASE 3
+  onGridClick?: (date: Date, startTime: Date) => void; // FASE 3
 }
 
 export function WeekView({
@@ -29,6 +31,8 @@ export function WeekView({
   oooBlocks = [],
   onEventClick,
   onRequestClick,
+  mode = 'coach',
+  onGridClick,
 }: WeekViewProps) {
   const weekDays = useMemo(() => getWeekDays(date), [date]);
   const hours = useMemo(() => hoursArray(), []);
@@ -196,7 +200,25 @@ export function WeekView({
               const isDayToday = isSameDay(day, new Date());
 
               return (
-                <div key={day.toISOString()} className="flex-1 relative border-r last:border-r-0 border-border/20">
+                <div 
+                  key={day.toISOString()} 
+                  className="flex-1 relative border-r last:border-r-0 border-border/20"
+                  onClick={(e) => {
+                    // FASE 3: Handle grid click for coach mode
+                    if (mode === 'coach' && onGridClick && e.target === e.currentTarget) {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const y = e.clientY - rect.top;
+                      const minutesFromStart = Math.floor(y / MINUTE_HEIGHT);
+                      const hours = DAY_START_H + Math.floor(minutesFromStart / 60);
+                      const minutes = Math.floor((minutesFromStart % 60) / 15) * 15; // Snap to 15min
+                      
+                      const clickTime = new Date(day);
+                      clickTime.setHours(hours, minutes, 0, 0);
+                      
+                      onGridClick(day, clickTime);
+                    }
+                  }}
+                >
                   {/* Hour lines */}
                   {hours.map((_, i) => (
                     <div 
@@ -207,7 +229,7 @@ export function WeekView({
                   ))}
 
                   {/* Overlays */}
-                  <AvailabilityOverlay date={day} windows={availabilityWindows} />
+                  <AvailabilityOverlay date={day} windows={availabilityWindows} interactive={mode === 'coach'} />
                   <OutOfOfficeOverlay date={day} blocks={oooBlocks} />
 
                   {/* Current time line */}

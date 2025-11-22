@@ -1,104 +1,64 @@
 import { supabase } from "@/integrations/supabase/client";
-import { generateAvailableSlots } from "../utils/slot-generator";
+import { generateAvailableSlots, generateFullDayGrid } from "../utils/slot-generator";
 import type { AvailableSlot } from "../types";
+import type { CalendarMode } from "@/features/events/types";
 
 interface GetAvailableSlotsParams {
   coachId: string;
   startDate: string; // ISO date string
   endDate: string;   // ISO date string
-  isCoachView?: boolean;
-  bypassEnabledCheck?: boolean; // For coach mode - allows slots even if booking is disabled
+  calendarMode?: CalendarMode; // FASE 2: Modalità calendario
+  bypassEnabledCheck?: boolean; // Deprecated, use calendarMode instead
 }
 
 /**
- * Fetches available slots for a coach within a date range.
- * This combines booking settings, availability windows, OOO blocks, and existing events
- * to generate only the slots that are actually bookable by clients.
+ * FASE 2: Fetches available slots with CalendarMode support
+ * - coach mode: Genera griglia completa 06:00-22:00 anche senza availability configurate
+ * - client mode: Genera solo slot prenotabili secondo le regole
  */
 export async function getAvailableSlots({
   coachId,
   startDate,
   endDate,
-  isCoachView = true,
+  calendarMode = 'client',
   bypassEnabledCheck = false,
 }: GetAvailableSlotsParams): Promise<AvailableSlot[]> {
+  const isCoachMode = calendarMode === 'coach' || bypassEnabledCheck;
+  
+  // COACH MODE: Generate full day grid regardless of availability
+  if (isCoachMode) {
+    const allSlots: AvailableSlot[] = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    let currentDate = new Date(start);
+    while (currentDate <= end) {
+      const daySlots = generateFullDayGrid({
+        date: currentDate,
+        startHour: 6,
+        endHour: 22,
+        granularityMinutes: 15
+      });
+      
+      allSlots.push(...daySlots);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return allSlots;
+  }
+  
+  // CLIENT MODE: Original logic with availability rules
   // Fetch booking settings
   const query = supabase
     .from("booking_settings")
     .select("*")
-    .eq("coach_id", coachId);
-
-  // Only check 'enabled' status for client booking mode
-  if (!bypassEnabledCheck) {
-    query.eq("enabled", true);
-  }
+    .eq("coach_id", coachId)
+    .eq("enabled", true);
 
   const { data: settings, error: settingsError } = await query.maybeSingle();
 
   if (settingsError) throw settingsError;
-  
-  // If no settings and we're in coach mode, use defaults
-  if (!settings) {
-    if (bypassEnabledCheck) {
-      // Use default settings for coach mode
-      const defaultSettings = {
-        slot_duration_minutes: 45,
-        buffer_between_minutes: 0,
-        min_advance_notice_hours: 0,
-      };
-      
-      // Still need availability windows to generate slots
-      const { data: windows, error: windowsError } = await supabase
-        .from("availability_windows")
-        .select("*")
-        .eq("coach_id", coachId)
-        .eq("is_active", true);
-
-      if (windowsError) throw windowsError;
-      if (!windows || windows.length === 0) return [];
-
-      // Fetch existing events
-      const { data: events, error: eventsError } = await supabase
-        .from("events")
-        .select("*, clients!events_client_id_fkey(first_name, last_name)")
-        .eq("coach_id", coachId)
-        .gte("end_at", startDate)
-        .lte("start_at", endDate);
-
-      if (eventsError) throw eventsError;
-
-      const mappedEvents = events?.map(event => ({
-        ...event,
-        client_name: event.clients
-          ? `${event.clients.first_name} ${event.clients.last_name}`.trim()
-          : "",
-      })) || [];
-
-      // Generate slots with defaults
-      const allSlots: AvailableSlot[] = [];
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      
-      let currentDate = new Date(start);
-      while (currentDate <= end) {
-        const daySlots = generateAvailableSlots({
-          date: currentDate,
-          slotDurationMinutes: defaultSettings.slot_duration_minutes,
-          bufferBetweenMinutes: defaultSettings.buffer_between_minutes,
-          minAdvanceNoticeHours: defaultSettings.min_advance_notice_hours,
-          availabilityWindows: windows,
-          outOfOfficeBlocks: [],
-          existingEvents: mappedEvents,
-        });
-        
-        allSlots.push(...daySlots);
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      return allSlots;
-    }
-    return []; // Booking not enabled for client mode
-  }
+  if (!settings) return []; // No booking enabled for client mode
 
   // Fetch availability windows
   const { data: windows, error: windowsError } = await supabase
@@ -175,7 +135,7 @@ export async function getAvailableSlots({
       date: currentDate,
       slotDurationMinutes: settings.slot_duration_minutes,
       bufferBetweenMinutes: settings.buffer_between_minutes || 0,
-      minAdvanceNoticeHours: isCoachView ? 0 : settings.min_advance_notice_hours,
+      minAdvanceNoticeHours: settings.min_advance_notice_hours,
       availabilityWindows: windows,
       outOfOfficeBlocks: oooBlocks || [],
       existingEvents: allEvents,

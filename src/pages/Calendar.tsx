@@ -226,6 +226,11 @@ const Calendar = () => {
                 oooBlocks={showOoo ? oooBlocks : []}
                 onEventClick={handleEventClick}
                 onRequestClick={handleRequestClick}
+                mode="coach"
+                onGridClick={(date, startTime) => {
+                  setCreateModalOpen(true);
+                  // TODO: Pass prefill data to modal
+                }}
               />
             )}
             {view === "week" && (
@@ -237,6 +242,11 @@ const Calendar = () => {
                 oooBlocks={showOoo ? oooBlocks : []}
                 onEventClick={handleEventClick}
                 onRequestClick={handleRequestClick}
+                mode="coach"
+                onGridClick={(date, startTime) => {
+                  setCreateModalOpen(true);
+                  // TODO: Pass prefill data to modal
+                }}
               />
             )}
             {view === "month" && (
