@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { parseISO, format } from "date-fns";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Search, Calendar as CalendarIcon, Plus, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { useEventsQuery } from "@/features/events/hooks/useEventsQuery";
 import { CalendarToolbar } from "@/features/events/components/CalendarToolbar";
@@ -19,11 +20,15 @@ import { useBookingRequestsQuery } from "@/features/bookings/hooks/useBookingReq
 import { useAvailabilityWindowsQuery } from "@/features/bookings/hooks/useAvailability";
 import { useOutOfOfficeBlocksQuery } from "@/features/bookings/hooks/useOutOfOffice";
 import { usePendingCount } from "@/features/bookings/hooks/usePendingCount";
-import type { CalendarView, EventWithClient } from "@/features/events/types";
+import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
+import type { CalendarView, EventWithClient, CalendarViewMode } from "@/features/events/types";
 import type { BookingRequestWithClient } from "@/features/bookings/types";
 import { EventModal } from "@/features/events/components/EventModal";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
+import { CalendarViewModeToggle } from "@/features/events/components/CalendarViewModeToggle";
+import { CalendarPreviewBanner } from "@/features/events/components/CalendarPreviewBanner";
+import { PREVIEW_MESSAGES } from "@/features/events/utils/preview-messages";
 
 type FilterOption = "all" | "approved" | "pending" | "ooo" | "availability";
 
@@ -47,6 +52,25 @@ const Calendar = () => {
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
 
+  // FASE 5: Preview mode state with localStorage persistence
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(() => {
+    const stored = localStorage.getItem('calendar-view-mode');
+    return (stored as CalendarViewMode) || 'coach';
+  });
+  const [previewClientId, setPreviewClientId] = useState<string | undefined>(() => {
+    return localStorage.getItem('calendar-preview-client-id') || undefined;
+  });
+
+  // FASE 5: Persist viewMode and previewClientId
+  useEffect(() => {
+    localStorage.setItem('calendar-view-mode', viewMode);
+    if (previewClientId) {
+      localStorage.setItem('calendar-preview-client-id', previewClientId);
+    } else {
+      localStorage.removeItem('calendar-preview-client-id');
+    }
+  }, [viewMode, previewClientId]);
+
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   // Fetch booking data
@@ -54,6 +78,17 @@ const Calendar = () => {
   const { data: availabilityWindows = [] } = useAvailabilityWindowsQuery();
   const { data: oooBlocks = [] } = useOutOfOfficeBlocksQuery();
   const { data: pendingCount = 0 } = usePendingCount();
+
+  // FASE 5: Fetch clients for dropdown and preview banner
+  const { data: clientsData } = useClientsQuery({});
+  const previewClientName = useMemo(() => {
+    if (viewMode === 'specific-client' && previewClientId) {
+      const clients = clientsData?.items || [];
+      const client = clients.find(c => c.id === previewClientId);
+      return client ? `${client.first_name} ${client.last_name}` : undefined;
+    }
+    return undefined;
+  }, [viewMode, previewClientId, clientsData]);
 
   // Update URL when view or date changes
   const handleViewChange = (newView: CalendarView) => {
@@ -116,7 +151,18 @@ const Calendar = () => {
     setRequestDrawerOpen(true);
   };
 
+  // FASE 5: Handle view mode change
+  const handleViewModeChange = (mode: CalendarViewMode, clientId?: string) => {
+    setViewMode(mode);
+    setPreviewClientId(clientId);
+  };
+
   const handleNewEvent = () => {
+    // FASE 5: Block modal opening in preview mode
+    if (viewMode !== 'coach') {
+      toast.error(PREVIEW_MESSAGES.BLOCKED_ACTION);
+      return;
+    }
     setCreateModalOpen(true);
   };
 
@@ -133,6 +179,10 @@ const Calendar = () => {
   const showPending = filterOption === "all" || filterOption === "pending";
   const showOoo = filterOption === "all" || filterOption === "ooo";
   const showAvailability = filterOption === "all" || filterOption === "availability";
+
+  // FASE 5: Determine calendar mode and preview state
+  const isPreviewMode = viewMode !== 'coach';
+  const calendarMode = viewMode === 'coach' ? 'coach' : 'client';
 
   return (
     <div className="min-h-screen flex flex-col bg-background w-full">
@@ -200,10 +250,24 @@ const Calendar = () => {
           onDateChange={handleDateChange}
           onToday={handleToday}
         />
+        
+        {/* FASE 5: View Mode Toggle */}
+        <div className="mt-4">
+          <CalendarViewModeToggle
+            viewMode={viewMode}
+            previewClientId={previewClientId}
+            onViewModeChange={handleViewModeChange}
+          />
+        </div>
       </div>
 
       {/* Calendar Views with lateral padding */}
       <div className="flex-1 overflow-auto mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
+        {/* FASE 5: Preview Banner */}
+        {isPreviewMode && (
+          <CalendarPreviewBanner viewMode={viewMode} clientName={previewClientName} />
+        )}
+
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -226,8 +290,13 @@ const Calendar = () => {
                 oooBlocks={showOoo ? oooBlocks : []}
                 onEventClick={handleEventClick}
                 onRequestClick={handleRequestClick}
-                mode="coach"
+                mode={calendarMode}
+                isPreviewMode={isPreviewMode}
                 onGridClick={(date, startTime) => {
+                  if (isPreviewMode) {
+                    toast.info(PREVIEW_MESSAGES.BLOCKED_ACTION);
+                    return;
+                  }
                   setCreateModalOpen(true);
                   // TODO: Pass prefill data to modal
                 }}
@@ -242,8 +311,13 @@ const Calendar = () => {
                 oooBlocks={showOoo ? oooBlocks : []}
                 onEventClick={handleEventClick}
                 onRequestClick={handleRequestClick}
-                mode="coach"
+                mode={calendarMode}
+                isPreviewMode={isPreviewMode}
                 onGridClick={(date, startTime) => {
+                  if (isPreviewMode) {
+                    toast.info(PREVIEW_MESSAGES.BLOCKED_ACTION);
+                    return;
+                  }
                   setCreateModalOpen(true);
                   // TODO: Pass prefill data to modal
                 }}

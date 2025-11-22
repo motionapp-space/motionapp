@@ -9,6 +9,8 @@ interface UseAvailableSlotsOptions {
   endDate: Date;
   enabled?: boolean;
   calendarMode?: CalendarMode; // FASE 2: Passare mode
+  clientId?: string; // FASE 3: ID cliente per regole specifiche
+  applyClientRules?: boolean; // FASE 3: Applica regole cliente
 }
 
 export function useAvailableSlots({
@@ -17,6 +19,8 @@ export function useAvailableSlots({
   endDate,
   enabled = true,
   calendarMode = 'client',
+  clientId,
+  applyClientRules = false,
 }: UseAvailableSlotsOptions) {
   return useQuery({
     queryKey: [
@@ -25,6 +29,8 @@ export function useAvailableSlots({
       format(startDate, "yyyy-MM-dd"),
       format(endDate, "yyyy-MM-dd"),
       calendarMode,
+      clientId,
+      applyClientRules,
     ],
     queryFn: () =>
       getAvailableSlots({
@@ -32,6 +38,8 @@ export function useAvailableSlots({
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         calendarMode,
+        clientId,
+        applyClientRules,
       }),
     enabled,
   });
