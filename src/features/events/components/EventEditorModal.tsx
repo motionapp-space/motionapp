@@ -352,7 +352,7 @@ export function EventEditorModal({
           </DialogHeader>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto flex-shrink-0">
+          <div className="flex-1 overflow-y-auto">
             <div className="space-y-5 px-6 py-4">
             {/* Dettagli Principali */}
             <div className="space-y-4">
@@ -390,24 +390,19 @@ export function EventEditorModal({
 
             </div>
 
-            {/* Quando */}
-            <div className="space-y-4 p-5 rounded-xl border border-border">
-              <div className="mb-3">
-                <h3 className="text-base md:text-lg font-semibold">Quando</h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Imposta data, orario e durata dell'appuntamento.
-                </p>
-              </div>
-              
+            {/* Data, Orari e Durata */}
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Data */}
                 <div className="space-y-2">
-                  <Label>Data</Label>
+                  <Label htmlFor="date">Data</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
+                        id="date"
                         variant="outline"
                         className={cn(
-                          "w-full justify-start text-left font-normal",
+                          "w-full justify-start text-left font-normal h-10",
                           !formData.date && "text-muted-foreground"
                         )}
                       >
@@ -419,22 +414,21 @@ export function EventEditorModal({
                       <Calendar
                         mode="single"
                         selected={formData.date}
-                        onSelect={(date) => date && setFormData(prev => ({ ...prev, date }))}
+                        onSelect={(newDate) => newDate && setFormData(prev => ({ ...prev, date: newDate }))}
                         initialFocus
+                        locale={it}
                         className="pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
                 </div>
 
+                {/* Dalle */}
                 <div className="space-y-2">
-                  <Label>Dalle</Label>
-                  <Select
-                    value={formData.startTime}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, startTime: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
+                  <Label htmlFor="start-time">Dalle</Label>
+                  <Select value={formData.startTime} onValueChange={(value) => setFormData(prev => ({ ...prev, startTime: value }))}>
+                    <SelectTrigger id="start-time" className="h-10">
+                      <SelectValue placeholder="Inizio" />
                     </SelectTrigger>
                     <SelectContent>
                       {TIME_SLOTS.map((time) => (
@@ -446,14 +440,12 @@ export function EventEditorModal({
                   </Select>
                 </div>
 
+                {/* Alle */}
                 <div className="space-y-2">
-                  <Label>Alle</Label>
-                  <Select
-                    value={formData.endTime}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, endTime: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
+                  <Label htmlFor="end-time">Alle</Label>
+                  <Select value={formData.endTime} onValueChange={(value) => setFormData(prev => ({ ...prev, endTime: value }))}>
+                    <SelectTrigger id="end-time" className="h-10">
+                      <SelectValue placeholder="Fine" />
                     </SelectTrigger>
                     <SelectContent>
                       {TIME_SLOTS.map((time) => (
@@ -466,7 +458,8 @@ export function EventEditorModal({
                 </div>
               </div>
 
-              <div className="text-xs text-muted-foreground mt-2">
+              {/* Durata calcolata */}
+              <div className="text-xs text-muted-foreground -mt-2">
                 Durata: {duration}
               </div>
             </div>
