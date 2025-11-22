@@ -27,7 +27,7 @@ import { EventModal } from "@/features/events/components/EventModal";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 import { CalendarViewModeToggle } from "@/features/events/components/CalendarViewModeToggle";
-import { CalendarPreviewBanner } from "@/features/events/components/CalendarPreviewBanner";
+
 import { PREVIEW_MESSAGES } from "@/features/events/utils/preview-messages";
 
 type FilterOption = "all" | "approved" | "pending" | "ooo" | "availability";
@@ -269,28 +269,23 @@ const Calendar = () => {
           onToday={handleToday}
         />
         
-        {/* FASE 5: View Mode Toggle - Redesigned */}
+        {/* FASE 5: View Mode Toggle - Unified with Preview */}
         <div className="mt-4">
           <CalendarViewModeToggle
             toggleValue={toggleValue}
             clientSelection={clientSelection}
             onToggleChange={handleToggleChange}
             onClientSelectionChange={handleClientSelectionChange}
+            showPreview={isPreviewMode}
+            isSpecificClient={viewMode === 'specific-client'}
+            clientName={previewClientName}
+            onBackToCoach={handleBackToCoach}
           />
         </div>
       </div>
 
       {/* Calendar Views with lateral padding */}
       <div className="flex-1 overflow-auto mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
-        {/* FASE 5: Preview Banner - Redesigned */}
-        {isPreviewMode && (
-          <CalendarPreviewBanner 
-            isSpecificClient={viewMode === 'specific-client'}
-            clientName={previewClientName}
-            onBackToCoach={handleBackToCoach}
-          />
-        )}
-
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>

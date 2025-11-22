@@ -1,8 +1,9 @@
 /**
- * FASE 2: Toggle per cambio modalità visualizzazione - Redesigned
+ * FASE 2: Toggle per cambio modalità visualizzazione - Redesigned + Unified
  */
 import { Eye } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
@@ -14,6 +15,11 @@ interface CalendarViewModeToggleProps {
   clientSelection: 'simulation' | string;
   onToggleChange: (value: 'coach' | 'client') => void;
   onClientSelectionChange: (value: 'simulation' | string) => void;
+  // Nuove props per la sezione preview unificata
+  showPreview: boolean;
+  isSpecificClient: boolean;
+  clientName?: string;
+  onBackToCoach: () => void;
 }
 
 export function CalendarViewModeToggle({
@@ -21,6 +27,10 @@ export function CalendarViewModeToggle({
   clientSelection,
   onToggleChange,
   onClientSelectionChange,
+  showPreview,
+  isSpecificClient,
+  clientName,
+  onBackToCoach,
 }: CalendarViewModeToggleProps) {
   const { data: clientsData } = useClientsQuery({});
   const clients = clientsData?.items || [];
@@ -41,12 +51,13 @@ export function CalendarViewModeToggle({
 
   return (
     <Card className="border border-border rounded-lg bg-card px-4 py-3 transition-opacity duration-200">
+      {/* RIGA SUPERIORE - Sempre visibile */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* Left side: Toggle */}
         <div className="flex items-center gap-3">
           <Eye className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <Label className="text-sm font-medium text-foreground whitespace-nowrap">
-            Vista calendario:
+            Tu stai usando il calendario come:
           </Label>
           <ToggleGroup
             type="single"
@@ -58,17 +69,17 @@ export function CalendarViewModeToggle({
           >
             <ToggleGroupItem
               value="coach"
-              aria-label="Modalità Professionista"
+              aria-label="Professionista"
               className="data-[state=on]:bg-primary/10 data-[state=on]:border-primary data-[state=on]:text-primary transition-all duration-150"
             >
               Professionista
             </ToggleGroupItem>
             <ToggleGroupItem
               value="client"
-              aria-label="Modalità Cliente"
+              aria-label="Cliente (simulazione)"
               className="data-[state=on]:bg-primary/10 data-[state=on]:border-primary data-[state=on]:text-primary transition-all duration-150"
             >
-              Cliente
+              Cliente (simulazione)
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
@@ -112,6 +123,28 @@ export function CalendarViewModeToggle({
           </Select>
         </div>
       </div>
+
+      {/* SEZIONE INFERIORE - Solo se showPreview === true */}
+      {showPreview && (
+        <div className="mt-3 pt-3 border-t border-border/40">
+          <p className="text-sm font-semibold text-foreground mb-1">
+            {isSpecificClient && clientName 
+              ? `Simulazione vista cliente – ${clientName}`
+              : 'Simulazione vista cliente attiva'}
+          </p>
+          <p className="text-sm text-muted-foreground mb-2">
+            Stai vedendo il calendario esattamente come lo vede {isSpecificClient ? 'questo cliente' : 'un tuo cliente quando prova a prenotare online'}. In questa modalità non puoi creare o modificare appuntamenti.
+          </p>
+          <Button
+            variant="link"
+            size="sm"
+            onClick={onBackToCoach}
+            className="h-auto p-0 text-sm text-primary hover:text-primary/80"
+          >
+            ← Torna alla vista Professionista
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }
