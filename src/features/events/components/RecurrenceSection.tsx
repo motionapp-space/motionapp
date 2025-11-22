@@ -70,9 +70,9 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
   return (
     <div className="space-y-4">
       {/* SINGLE CONTAINER with header + toggle */}
-      <div className="p-4 rounded-xl border border-border bg-muted/20">
+      <div className="p-3.5 rounded-xl border border-border bg-muted/20">
         <div className="flex items-center justify-between mb-2">
-          <Label htmlFor="recurrence-toggle" className="text-base font-semibold">
+          <Label htmlFor="recurrence-toggle" className="text-sm font-semibold leading-tight">
             Rendi ricorrente questo appuntamento
           </Label>
           <Switch
@@ -113,7 +113,7 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
             {config.frequency === "weekly" && (
               <div className="space-y-2">
                 <Label>Giorni della settimana</Label>
-                <div className="flex gap-1.5">
+                <div className="flex gap-1">
                   {weekDayLabels.map((label, idx) => {
                     const isActive = config.weekDays?.includes(idx);
                     return (
@@ -122,7 +122,7 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
                         type="button"
                         variant={isActive ? "default" : "outline"}
                         size="sm"
-                        className="w-9 h-9 p-0"
+                        className="w-8 h-8 p-0"
                         onClick={() => toggleWeekDay(idx)}
                       >
                         {label}
@@ -188,9 +188,9 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
             {previewDates.length > 0 && (
               <div className="pt-3 border-t border-border/30">
                 <Label className="text-xs text-muted-foreground mb-2 block">Anteprima prossime date</Label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   {previewDates.map((date, i) => (
-                    <Badge key={i} variant="secondary" className="text-xs">
+                    <Badge key={i} variant="secondary" className="text-xs h-6 px-2">
                       {format(date, "d MMM", { locale: it })}
                     </Badge>
                   ))}

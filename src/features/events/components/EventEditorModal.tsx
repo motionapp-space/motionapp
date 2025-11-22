@@ -344,8 +344,8 @@ export function EventEditorModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[680px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
           {/* Header */}
-          <DialogHeader className="border-b border-border/50 px-6 h-16 flex-row items-center gap-3 flex-shrink-0 space-y-0">
-            <CalendarIcon className="h-5 w-5 text-primary" />
+          <DialogHeader className="border-b border-border/50 px-6 py-3.5 min-h-[56px] flex-row items-center gap-3 flex-shrink-0 space-y-0">
+            <CalendarIcon className="h-[18px] w-[18px] text-primary" />
             <DialogTitle className="text-lg font-semibold">
               {isEditMode ? 'Modifica appuntamento' : 'Nuovo appuntamento'}
             </DialogTitle>
@@ -353,7 +353,7 @@ export function EventEditorModal({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            <div className="space-y-5 px-6 py-4">
+            <div className="space-y-5 px-6 py-4 pt-6">
             {/* Dettagli Principali */}
             <div className="space-y-4">
               <div className="space-y-2">
@@ -554,7 +554,7 @@ export function EventEditorModal({
           </div>
 
           {/* Footer */}
-          <div className="bg-card border-t border-border/50 px-6 py-3 flex-shrink-0">
+          <div className="bg-card border-t border-border/50 px-6 py-3 flex-shrink-0 shadow-sm">
             <div className="flex items-center justify-between">
               {isEditMode && (
                 <Button
