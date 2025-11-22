@@ -1,11 +1,18 @@
 /**
- * FASE 1: Preview mode messages and utilities
+ * FASE 1: Preview mode messages and utilities - Updated
  * Centralized messages for calendar preview functionality
  */
 
 export const PREVIEW_MESSAGES = {
   BLOCKED_ACTION: "Questa è una simulazione della vista cliente. Per creare un appuntamento passa alla modalità Professionista.",
-  BANNER_CLIENT_PREVIEW: "Stai visualizzando il calendario come un cliente generico. Le regole di prenotazione e disponibilità sono attive.",
-  BANNER_SPECIFIC_CLIENT: (clientName: string) => 
-    `Stai visualizzando il calendario come vedrebbe ${clientName}. Tutte le restrizioni e regole specifiche del cliente sono applicate.`,
+  
+  GENERIC_CLIENT_BANNER: {
+    title: "Modalità simulazione cliente",
+    description: "Stai visualizzando il calendario come cliente. Le regole di prenotazione e disponibilità sono attive.",
+  },
+  
+  SPECIFIC_CLIENT_BANNER: (clientName: string) => ({
+    title: `Vista Cliente – ${clientName}`,
+    description: `Stai visualizzando il calendario come ${clientName}. Tutte le restrizioni specifiche del cliente sono applicate.`,
+  }),
 } as const;
