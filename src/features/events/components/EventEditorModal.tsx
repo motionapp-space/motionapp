@@ -47,11 +47,11 @@ interface EventEditorModalProps {
   onStartSession?: (clientId: string, eventId: string, linkedPlanId?: string, linkedDayId?: string) => void;
 }
 
-// Generate time slots with 15-minute intervals
+// Generate time slots with 5-minute intervals
 function generateTimeSlots() {
   const slots: string[] = [];
   for (let hour = 0; hour < 24; hour++) {
-    for (let minute = 0; minute < 60; minute += 15) {
+    for (let minute = 0; minute < 60; minute += 5) {
       const h = hour.toString().padStart(2, '0');
       const m = minute.toString().padStart(2, '0');
       slots.push(`${h}:${m}`);
@@ -342,15 +342,18 @@ export function EventEditorModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[860px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
-            <DialogTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5" />
+        <DialogContent className="max-w-[860px] max-h-[90vh] flex flex-col p-0">
+          {/* Header */}
+          <div className="sticky top-0 bg-card z-10 border-b border-border/50 px-6 h-16 flex items-center gap-3">
+            <CalendarIcon className="h-5 w-5 text-primary" />
+            <DialogTitle className="text-lg font-semibold">
               {isEditMode ? 'Modifica appuntamento' : 'Nuovo appuntamento'}
             </DialogTitle>
-          </DialogHeader>
+          </div>
 
-          <div className="space-y-6 py-4">
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="space-y-5 px-6 py-4">
             {/* Dettagli Principali */}
             <div className="space-y-4">
               <div className="space-y-2">
@@ -385,20 +388,16 @@ export function EventEditorModal({
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="location">Luogo</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  placeholder="Es: Studio, Online, Palestra"
-                />
-              </div>
             </div>
 
             {/* Quando */}
-            <div className="space-y-4 p-4 rounded-lg border border-border">
-              <h3 className="font-semibold">Quando</h3>
+            <div className="space-y-4 p-5 rounded-xl border border-border">
+              <div className="mb-3">
+                <h3 className="text-base md:text-lg font-semibold">Quando</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Imposta data, orario e durata dell'appuntamento.
+                </p>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
@@ -467,8 +466,8 @@ export function EventEditorModal({
                 </div>
               </div>
 
-              <div className="text-sm text-muted-foreground">
-                Durata: <span className="font-medium">{duration}</span>
+              <div className="text-xs text-muted-foreground mt-2">
+                Durata: {duration}
               </div>
             </div>
 
@@ -488,14 +487,25 @@ export function EventEditorModal({
               />
             )}
 
+            {/* Luogo */}
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="location">Luogo</Label>
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                placeholder="Es: Studio, Online, Palestra"
+              />
+            </div>
+
             {/* Promemoria */}
             <div className="space-y-2">
-              <Label htmlFor="reminder">Promemoria</Label>
+              <Label htmlFor="reminder" className="text-sm font-medium">Promemoria</Label>
               <Select
                 value={formData.reminderOffset?.toString() || "0"}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, reminderOffset: parseInt(value) || undefined }))}
               >
-                <SelectTrigger id="reminder">
+                <SelectTrigger id="reminder" className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -508,15 +518,14 @@ export function EventEditorModal({
             </div>
 
             {/* Note Interne */}
-            <div className="space-y-2">
-              <Label htmlFor="notes">Note interne</Label>
+            <div className="space-y-2 mb-6">
+              <Label htmlFor="notes" className="text-sm font-medium">Note interne</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Aggiungi note per questa sessione..."
-                rows={3}
-                className="resize-none"
+                className="min-h-[80px] max-h-[160px] resize-y"
               />
             </div>
 
@@ -548,49 +557,47 @@ export function EventEditorModal({
                 </AlertDescription>
               </Alert>
             )}
+            </div>
           </div>
 
-          <DialogFooter className="sticky bottom-0 bg-background border-t pt-4">
-            {isEditMode ? (
-              <>
+          {/* Footer */}
+          <div className="sticky bottom-0 bg-card border-t border-border/50 px-6 py-3">
+            <div className="flex items-center justify-between">
+              {isEditMode && (
                 <Button
                   variant="destructive"
                   onClick={() => setShowDeleteDialog(true)}
-                  className="mr-auto"
+                  className="h-10"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Elimina
                 </Button>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
+              )}
+              {!isEditMode && <div />}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  className="h-10"
+                >
                   Annulla
                 </Button>
                 {canStartSession && (
-                  <Button onClick={handleStartSession}>
+                  <Button onClick={handleStartSession} className="h-10">
                     <Play className="h-4 w-4 mr-2" />
                     Avvia sessione
                   </Button>
                 )}
                 <Button
-                  onClick={handleUpdate}
-                  disabled={!isValid || updateEvent.isPending}
+                  onClick={isEditMode ? handleUpdate : handleCreate}
+                  disabled={!isValid || (isEditMode ? updateEvent.isPending : createEvent.isPending)}
+                  className="h-10 px-5"
                 >
-                  {updateEvent.isPending ? 'Salvataggio...' : 'Salva modifiche'}
+                  {(isEditMode ? updateEvent.isPending : createEvent.isPending) ? 'Salvataggio...' : (isEditMode ? 'Salva modifiche' : 'Crea appuntamento')}
                 </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Annulla
-                </Button>
-                <Button
-                  onClick={handleCreate}
-                  disabled={!isValid || createEvent.isPending}
-                >
-                  {createEvent.isPending ? 'Creazione...' : 'Crea appuntamento'}
-                </Button>
-              </>
-            )}
-          </DialogFooter>
+              </div>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
