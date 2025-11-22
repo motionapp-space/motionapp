@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { format, addMinutes, differenceInMinutes, isWithinInterval, startOfDay, setHours, setMinutes } from "date-fns";
 import { it } from "date-fns/locale";
-import { Calendar as CalendarIcon, AlertTriangle, Info, AlertCircle, Trash2, Play } from "lucide-react";
+import { Calendar as CalendarIcon, AlertTriangle, Info, AlertCircle, Trash2, Play, Pencil, MapPin, Clock } from "lucide-react";
 import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useUpdateEvent } from "../hooks/useUpdateEvent";
 import { useDeleteEvent } from "../hooks/useDeleteEvent";
@@ -106,6 +106,7 @@ export function EventEditorModal({
   });
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [viewMode, setViewMode] = useState<'new' | 'view' | 'edit'>(isNewMode ? 'new' : 'view');
 
   // Hooks
   const createEvent = useCreateEvent();
@@ -122,6 +123,9 @@ export function EventEditorModal({
   // Reset form when opening in new mode or event changes
   useEffect(() => {
     if (open) {
+      // Reset viewMode based on mode prop
+      setViewMode(isNewMode ? 'new' : 'view');
+      
       if (isNewMode) {
         setFormData({
           title: 'Allenamento',
@@ -344,16 +348,115 @@ export function EventEditorModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[680px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
           {/* Header */}
-          <DialogHeader className="border-b border-border/50 px-6 py-3.5 min-h-[56px] flex-row items-center gap-3 flex-shrink-0 space-y-0">
-            <CalendarIcon className="h-[18px] w-[18px] text-primary" />
-            <DialogTitle className="text-lg font-semibold">
-              {isEditMode ? 'Modifica appuntamento' : 'Nuovo appuntamento'}
-            </DialogTitle>
+          <DialogHeader className="border-b border-border/50 px-6 py-3.5 min-h-[56px] flex-row items-center justify-between gap-3 flex-shrink-0 space-y-0">
+            <div className="flex items-center gap-3">
+              <CalendarIcon className="h-[18px] w-[18px] text-primary" />
+              <DialogTitle className="text-lg font-semibold">
+                {viewMode === 'view' ? 'Dettagli appuntamento' : (viewMode === 'edit' ? 'Modifica appuntamento' : 'Nuovo appuntamento')}
+              </DialogTitle>
+            </div>
+            {viewMode === 'view' && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setViewMode('edit')}
+                  className="h-8 w-8"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </DialogHeader>
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
             <div className="space-y-5 px-6 py-4 pt-3">
+            
+            {/* READ-ONLY VIEW */}
+            {viewMode === 'view' && event && (
+              <div className="space-y-6 py-2">
+                {/* Titolo */}
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Titolo</p>
+                  <h3 className="text-xl font-semibold">{formData.title}</h3>
+                </div>
+
+                {/* Cliente */}
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Cliente</p>
+                  <p className="text-base font-medium">
+                    {clients.find(c => c.id === formData.clientId)?.first_name} {clients.find(c => c.id === formData.clientId)?.last_name}
+                  </p>
+                </div>
+
+                {/* Data e orario */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Data</p>
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-base">
+                        {format(formData.date, "EEEE, d MMMM yyyy", { locale: it })}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Orario</p>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-base">
+                        {formData.startTime} - {formData.endTime}
+                        <span className="text-muted-foreground ml-2">({duration})</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Luogo (se presente) */}
+                {formData.location && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Luogo</p>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-base">{formData.location}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Note interne (se presenti) */}
+                {formData.notes && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Note interne</p>
+                    <p className="text-base whitespace-pre-wrap">{formData.notes}</p>
+                  </div>
+                )}
+
+                {/* Promemoria (se presente) */}
+                {formData.reminderOffset && formData.reminderOffset > 0 && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Promemoria</p>
+                    <p className="text-base">
+                      {formData.reminderOffset === 15 && "15 minuti prima"}
+                      {formData.reminderOffset === 60 && "1 ora prima"}
+                      {formData.reminderOffset === 1440 && "1 giorno prima"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* EDIT/NEW FORM */}
+            {(viewMode === 'new' || viewMode === 'edit') && (
+              <>
             {/* Dettagli Principali */}
             <div className="space-y-4">
               <div className="space-y-2">
@@ -550,45 +653,94 @@ export function EventEditorModal({
                 </AlertDescription>
               </Alert>
             )}
+            </>
+            )}
             </div>
           </div>
 
           {/* Footer */}
           <div className="bg-card border-t border-border/50 px-6 py-3 flex-shrink-0 shadow-sm">
             <div className="flex items-center justify-between">
-              {isEditMode && (
-                <Button
-                  variant="destructive"
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="h-10"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Elimina
-                </Button>
+              {/* View Mode Footer */}
+              {viewMode === 'view' && (
+                <>
+                  <div />
+                  <div className="flex items-center gap-2">
+                    {canStartSession && (
+                      <Button onClick={handleStartSession} className="h-10">
+                        <Play className="h-4 w-4 mr-2" />
+                        Avvia sessione
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => onOpenChange(false)}
+                      className="h-10"
+                    >
+                      Chiudi
+                    </Button>
+                  </div>
+                </>
               )}
-              {!isEditMode && <div />}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  className="h-10"
-                >
-                  Annulla
-                </Button>
-                {canStartSession && (
-                  <Button onClick={handleStartSession} className="h-10">
-                    <Play className="h-4 w-4 mr-2" />
-                    Avvia sessione
+              
+              {/* Edit Mode Footer */}
+              {viewMode === 'edit' && (
+                <>
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="h-10"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Elimina
                   </Button>
-                )}
-                <Button
-                  onClick={isEditMode ? handleUpdate : handleCreate}
-                  disabled={!isValid || (isEditMode ? updateEvent.isPending : createEvent.isPending)}
-                  className="h-10 px-5"
-                >
-                  {(isEditMode ? updateEvent.isPending : createEvent.isPending) ? 'Salvataggio...' : (isEditMode ? 'Salva modifiche' : 'Crea appuntamento')}
-                </Button>
-              </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setViewMode('view')}
+                      className="h-10"
+                    >
+                      Annulla
+                    </Button>
+                    {canStartSession && (
+                      <Button onClick={handleStartSession} className="h-10">
+                        <Play className="h-4 w-4 mr-2" />
+                        Avvia sessione
+                      </Button>
+                    )}
+                    <Button
+                      onClick={handleUpdate}
+                      disabled={!isValid || updateEvent.isPending}
+                      className="h-10 px-5"
+                    >
+                      {updateEvent.isPending ? 'Salvataggio...' : 'Salva modifiche'}
+                    </Button>
+                  </div>
+                </>
+              )}
+              
+              {/* New Mode Footer */}
+              {viewMode === 'new' && (
+                <>
+                  <div />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => onOpenChange(false)}
+                      className="h-10"
+                    >
+                      Annulla
+                    </Button>
+                    <Button
+                      onClick={handleCreate}
+                      disabled={!isValid || createEvent.isPending}
+                      className="h-10 px-5"
+                    >
+                      {createEvent.isPending ? 'Salvataggio...' : 'Crea appuntamento'}
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </DialogContent>
