@@ -125,22 +125,22 @@ export function PackageCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="z-50 bg-background">
               <DropdownMenuItem onClick={onViewDetails}>
-                <Eye className="h-4 w-4 mr-2" />
+                <Eye className="h-4 w-4" />
                 Dettagli completi
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setPaymentDialogOpen(true)}>
-                <CreditCard className="h-4 w-4 mr-2" />
+                <CreditCard className="h-4 w-4" />
                 Modifica stato pagamento
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onToggleSuspension}>
                 {pkg.usage_status === 'suspended' ? (
                   <>
-                    <Play className="h-4 w-4 mr-2" />
+                    <Play className="h-4 w-4" />
                     Riattiva pacchetto
                   </>
                 ) : (
                   <>
-                    <Pause className="h-4 w-4 mr-2" />
+                    <Pause className="h-4 w-4" />
                     Sospendi pacchetto
                   </>
                 )}
@@ -149,7 +149,7 @@ export function PackageCard({
                 onClick={onArchive} 
                 disabled={!canArchive}
               >
-                <Archive className="h-4 w-4 mr-2" />
+                <Archive className="h-4 w-4" />
                 Archivia
               </DropdownMenuItem>
             </DropdownMenuContent>

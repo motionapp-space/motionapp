@@ -200,14 +200,14 @@ export function AvailabilityEditor({
                           onClick={() => copyToOtherDays(day.key)}
                           disabled={ranges.length === 0}
                         >
-                          <Copy className="h-4 w-4 mr-2" />
+                          <Copy className="h-4 w-4" />
                           Copia ad altri giorni
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => deleteAllSlots(day.key)}
                           disabled={ranges.length === 0}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
+                          <Trash2 className="h-4 w-4" />
                           Elimina tutte le fasce
                         </DropdownMenuItem>
                       </DropdownMenuContent>

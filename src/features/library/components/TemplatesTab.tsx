@@ -249,14 +249,14 @@ export default function TemplatesTab() {
                         onClick={() => navigate(`/templates/${template.id}?mode=read`)}
                         data-testid={`template-open-${template.id}`}
                       >
-                        <Eye className="h-4 w-4 mr-2" />
+                        <Eye className="h-4 w-4" />
                         Visualizza
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={(e) => duplicateTemplate(template.id, e as any)}
                         data-testid={`template-duplicate-${template.id}`}
                       >
-                        <Copy className="h-4 w-4 mr-2" />
+                        <Copy className="h-4 w-4" />
                         Duplica
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
@@ -265,7 +265,7 @@ export default function TemplatesTab() {
                         className="text-destructive focus:text-destructive"
                         data-testid={`template-delete-${template.id}`}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2 className="h-4 w-4" />
                         Elimina
                       </DropdownMenuItem>
                     </DropdownMenuContent>

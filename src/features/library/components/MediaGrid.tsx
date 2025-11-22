@@ -186,11 +186,11 @@ export default function MediaGrid({ media, search, fileType, onClearFilters, onU
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem onClick={() => handleDownload(item)}>
-                      <Download className="h-4 w-4 mr-2" />
+                      <Download className="h-4 w-4" />
                       Scarica
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleRenameClick(item)}>
-                      <Edit className="h-4 w-4 mr-2" />
+                      <Edit className="h-4 w-4" />
                       Rinomina
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -198,7 +198,7 @@ export default function MediaGrid({ media, search, fileType, onClearFilters, onU
                       onClick={() => handleDeleteClick(item.id)}
                       className="text-destructive focus:text-destructive"
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 className="h-4 w-4" />
                       Elimina
                     </DropdownMenuItem>
                   </DropdownMenuContent>
