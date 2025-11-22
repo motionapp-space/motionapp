@@ -1,6 +1,7 @@
 import { useMemo, useEffect, useRef, useState } from "react";
 import { format, isSameDay, startOfDay, endOfDay } from "date-fns";
 import { it } from "date-fns/locale";
+import { toast } from "sonner";
 import { getWeekDays, getEventsForDay } from "../utils/calendar-utils";
 import { layoutOverlaps } from "../utils/layout";
 import { minutesFromDayStart, toMinutes, MINUTE_HEIGHT, DAY_START_H, DAY_END_H, minutesVisible, hoursArray } from "../utils/time";
@@ -199,18 +200,22 @@ export function WeekView({
                   key={day.toISOString()} 
                   className={`flex-1 relative border-r last:border-r-0 border-border/20 ${isPreviewMode ? 'cursor-default' : ''}`}
                   onClick={(e) => {
-                    // FASE 4: Handle grid click - blocked in preview mode
                     if (isPreviewMode) {
-                      return; // No action in preview mode
+                      // PATCH 2: Toast solo su click grid vuota (non su eventi)
+                      if (e.target === e.currentTarget) {
+                        toast.error("Non puoi creare appuntamenti in modalità simulazione", {
+                          description: "Torna alla vista coach per creare eventi."
+                        });
+                      }
+                      return;
                     }
                     
-                    // FASE 3: Handle grid click for coach mode
                     if (mode === 'coach' && onGridClick && e.target === e.currentTarget) {
                       const rect = e.currentTarget.getBoundingClientRect();
                       const y = e.clientY - rect.top;
                       const minutesFromStart = Math.floor(y / MINUTE_HEIGHT);
                       const hours = DAY_START_H + Math.floor(minutesFromStart / 60);
-                      const minutes = Math.floor((minutesFromStart % 60) / 15) * 15; // Snap to 15min
+                      const minutes = Math.floor((minutesFromStart % 60) / 15) * 15;
                       
                       const clickTime = new Date(day);
                       clickTime.setHours(hours, minutes, 0, 0);
