@@ -390,16 +390,16 @@ export function EventEditorModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[680px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
           {/* Header */}
-          <DialogHeader className="border-b border-border/50 px-6 py-4 min-h-[72px] flex-row items-start justify-between gap-4 flex-shrink-0 space-y-0">
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <CalendarIcon className="h-5 w-5 text-primary flex-shrink-0" />
-                <DialogTitle className="text-2xl font-bold leading-tight">
+          <DialogHeader className="border-b border-border/50 px-8 py-3 min-h-[64px] flex-row items-start justify-between gap-4 flex-shrink-0 space-y-0">
+            <div className="flex-1 space-y-1.5">
+              <div className="flex items-center gap-2.5">
+                <CalendarIcon className="h-[18px] w-[18px] text-primary flex-shrink-0" />
+                <DialogTitle className="text-xl font-semibold leading-tight">
                   {viewMode === 'view' ? formData.title : (viewMode === 'edit' ? 'Modifica appuntamento' : 'Nuovo appuntamento')}
                 </DialogTitle>
               </div>
               {viewMode === 'view' && (
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap pl-[26px]">
                   {/* Badge Stato */}
                   {getEventStatusBadge()}
                   {/* Badge Ricorrente */}
@@ -420,7 +420,7 @@ export function EventEditorModal({
                   className="h-9 w-9"
                   aria-label="Modifica appuntamento"
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-[18px] w-[18px]" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -429,7 +429,7 @@ export function EventEditorModal({
                   className="h-9 w-9 text-destructive hover:text-destructive"
                   aria-label="Elimina appuntamento"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-[18px] w-[18px]" />
                 </Button>
               </div>
             )}
@@ -437,16 +437,17 @@ export function EventEditorModal({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            <div className="px-6 py-4">
+            <div className="px-8 py-4">
             
             {/* READ-ONLY VIEW */}
             {viewMode === 'view' && event && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {/* Data & Orario - UNA SOLA RIGA */}
-                <div className="flex items-start gap-3">
-                  <Clock className="h-[18px] w-[18px] text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm text-muted-foreground">Data e ora</p>
+                    <p className="text-base text-foreground">
                       {format(formData.date, "EEEE d MMMM", { locale: it })} • {formData.startTime} – {formData.endTime}
                       <span className="text-muted-foreground ml-1.5">({duration})</span>
                     </p>
@@ -454,15 +455,16 @@ export function EventEditorModal({
                 </div>
 
                 {/* Cliente - CLICCABILE */}
-                <div className="flex items-start gap-3">
-                  <User className="h-[18px] w-[18px] text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-2">
+                  <User className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
+                    <p className="text-sm text-muted-foreground">Cliente</p>
                     <button
                       onClick={() => {
                         onOpenChange(false);
                         window.location.href = `/clients/${formData.clientId}`;
                       }}
-                      className="text-sm font-semibold text-primary hover:underline text-left"
+                      className="text-base text-primary hover:underline text-left"
                     >
                       {clients.find(c => c.id === formData.clientId)?.first_name} {clients.find(c => c.id === formData.clientId)?.last_name}
                     </button>
@@ -470,30 +472,32 @@ export function EventEditorModal({
                 </div>
 
                 {/* Creato da */}
-                <div className="flex items-start gap-3">
-                  <UserCircle className="h-[18px] w-[18px] text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-2">
+                  <UserCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-muted-foreground">Creato da</p>
-                    <p className="text-base font-semibold">{getCreatedByText()}</p>
+                    <p className="text-base text-foreground">{getCreatedByText()}</p>
                   </div>
                 </div>
 
                 {/* Luogo (se presente) */}
                 {formData.location && (
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-[18px] w-[18px] text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-base font-semibold">{formData.location}</p>
+                      <p className="text-sm text-muted-foreground">Luogo</p>
+                      <p className="text-base text-foreground">{formData.location}</p>
                     </div>
                   </div>
                 )}
 
                 {/* Promemoria (se presente) */}
                 {formData.reminderOffset && formData.reminderOffset > 0 && (
-                  <div className="flex items-start gap-3">
-                    <Bell className="h-[18px] w-[18px] text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-2">
+                    <Bell className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-base font-semibold">
+                      <p className="text-sm text-muted-foreground">Promemoria</p>
+                      <p className="text-base text-foreground">
                         {formData.reminderOffset === 15 && "15 minuti prima"}
                         {formData.reminderOffset === 60 && "1 ora prima"}
                         {formData.reminderOffset === 1440 && "1 giorno prima"}
@@ -505,24 +509,25 @@ export function EventEditorModal({
 
                 {/* Pacchetto associato (se presente) */}
                 {activePackage && !activePackage.is_single_technical && (
-                  <div className="flex items-start gap-3">
-                    <Package className="h-[18px] w-[18px] text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-2">
+                    <Package className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-muted-foreground">Pacchetto</p>
-                      <p className="text-base font-semibold">
+                      <p className="text-base text-foreground">
                         {calculatePackageKPI(activePackage).available}/{activePackage.total_sessions} sessioni rimanenti
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* Note interne (se presenti) - BOX SOFT */}
+                {/* Note interne (se presenti) */}
                 {formData.notes && (
-                  <div className="flex items-start gap-3">
-                    <FileText className="h-[18px] w-[18px] text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="rounded-md bg-muted p-3">
-                        <p className="text-sm whitespace-pre-wrap">{formData.notes}</p>
+                      <p className="text-sm text-muted-foreground">Note interne</p>
+                      <div className="rounded-md bg-muted p-3 mt-1">
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{formData.notes}</p>
                       </div>
                     </div>
                   </div>
@@ -532,9 +537,9 @@ export function EventEditorModal({
 
             {/* EDIT/NEW FORM */}
             {(viewMode === 'new' || viewMode === 'edit') && (
-              <div className="space-y-5">
+              <div className="space-y-4">
             {/* Dettagli Principali */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="title">Titolo</Label>
                 <Input
@@ -735,11 +740,11 @@ export function EventEditorModal({
           </div>
 
           {/* Footer */}
-          <DialogFooter className="border-t px-6 py-3 bg-background sticky bottom-0 z-10 flex-shrink-0 min-h-[56px] flex items-center justify-between">
+          <DialogFooter className="border-t px-8 py-4 bg-background sticky bottom-0 z-10 flex-shrink-0 min-h-[64px] flex items-center justify-between">
             {viewMode === 'view' && (
               <div className="flex items-center justify-between w-full">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => onOpenChange(false)}
                   className="h-10"
                 >
@@ -753,7 +758,7 @@ export function EventEditorModal({
                     </Button>
                   )}
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => setViewMode('edit')}
                     className="h-10"
                   >
@@ -766,11 +771,11 @@ export function EventEditorModal({
               
               {/* Edit Mode Footer */}
               {viewMode === 'edit' && (
-                <>
+                <div className="flex items-center justify-between w-full">
                   <Button
-                    variant="destructive"
+                    variant="ghost"
                     onClick={() => setShowDeleteDialog(true)}
-                    className="h-10"
+                    className="h-10 text-destructive hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Elimina
@@ -784,7 +789,7 @@ export function EventEditorModal({
                       Annulla
                     </Button>
                     {canStartSession && (
-                      <Button onClick={handleStartSession} className="h-10">
+                      <Button onClick={handleStartSession} variant="secondary" className="h-10">
                         <Play className="h-4 w-4 mr-2" />
                         Avvia sessione
                       </Button>
@@ -792,17 +797,17 @@ export function EventEditorModal({
                     <Button
                       onClick={handleUpdate}
                       disabled={!isValid || updateEvent.isPending}
-                      className="h-10 px-5"
+                      className="h-10"
                     >
                       {updateEvent.isPending ? 'Salvataggio...' : 'Salva modifiche'}
                     </Button>
                   </div>
-                </>
+                </div>
               )}
               
               {/* New Mode Footer */}
               {viewMode === 'new' && (
-                <>
+                <div className="flex items-center justify-between w-full">
                   <div />
                   <div className="flex items-center gap-2">
                     <Button
@@ -815,12 +820,12 @@ export function EventEditorModal({
                     <Button
                       onClick={handleCreate}
                       disabled={!isValid || createEvent.isPending}
-                      className="h-10 px-5"
+                      className="h-10"
                     >
                       {createEvent.isPending ? 'Salvataggio...' : 'Crea appuntamento'}
                     </Button>
                   </div>
-                </>
+                </div>
               )}
           </DialogFooter>
         </DialogContent>
