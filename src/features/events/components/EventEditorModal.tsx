@@ -459,7 +459,7 @@ export function EventEditorModal({
               </div>
 
               {/* Durata calcolata */}
-              <div className="text-xs text-muted-foreground -mt-2">
+              <div className="text-xs text-muted-foreground">
                 Durata: {duration}
               </div>
             </div>
@@ -481,7 +481,7 @@ export function EventEditorModal({
             )}
 
             {/* Luogo */}
-            <div className="space-y-2 mb-4">
+            <div className="space-y-2">
               <Label htmlFor="location">Luogo</Label>
               <Input
                 id="location"
@@ -511,7 +511,7 @@ export function EventEditorModal({
             </div>
 
             {/* Note Interne */}
-            <div className="space-y-2 mb-6">
+            <div className="space-y-2">
               <Label htmlFor="notes" className="text-sm font-medium">Note interne</Label>
               <Textarea
                 id="notes"
