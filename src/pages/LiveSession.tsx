@@ -316,7 +316,7 @@ export default function LiveSession() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={handleInterruptSession}>
-                    <PauseCircle className="h-4 w-4 mr-2" />
+                    <PauseCircle className="h-4 w-4" />
                     Interrompi sessione
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -324,7 +324,7 @@ export default function LiveSession() {
                     onClick={() => setCancelDialogOpen(true)}
                     className="text-destructive focus:text-destructive"
                   >
-                    <XCircle className="h-4 w-4 mr-2" />
+                    <XCircle className="h-4 w-4" />
                     Annulla sessione
                   </DropdownMenuItem>
                 </DropdownMenuContent>

@@ -47,7 +47,7 @@ export const AddMenu = ({
                 onClick={onAddExercise}
                 className="cursor-pointer"
               >
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 Aggiungi esercizio
               </DropdownMenuItem>
             )}
@@ -56,7 +56,7 @@ export const AddMenu = ({
                 onClick={onAddSuperset}
                 className="cursor-pointer"
               >
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 Aggiungi superset (2-3 esercizi)
               </DropdownMenuItem>
             )}
@@ -65,7 +65,7 @@ export const AddMenu = ({
                 onClick={onAddCircuit}
                 className="cursor-pointer"
               >
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 Aggiungi circuit (3+ esercizi)
               </DropdownMenuItem>
             )}
@@ -76,7 +76,7 @@ export const AddMenu = ({
             onClick={onAddDay}
             className="cursor-pointer"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="h-4 w-4" />
             Aggiungi giorno
           </DropdownMenuItem>
         )}
