@@ -77,3 +77,11 @@ export interface CalendarContext {
   coachId: string;
   clientId?: string; // Solo per mode='client'
 }
+
+// FASE 1 Extended: View mode types per simulazione
+export type CalendarViewMode = 'coach' | 'client-preview' | 'specific-client';
+
+export interface CalendarPreviewState {
+  viewMode: CalendarViewMode;
+  previewClientId?: string;
+}

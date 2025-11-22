@@ -21,6 +21,7 @@ interface WeekViewProps {
   onRequestClick?: (request: BookingRequestWithClient) => void;
   mode?: 'coach' | 'client'; // FASE 3
   onGridClick?: (date: Date, startTime: Date) => void; // FASE 3
+  isPreviewMode?: boolean; // FASE 4: Disabilita interazioni in preview
 }
 
 export function WeekView({
@@ -33,6 +34,7 @@ export function WeekView({
   onRequestClick,
   mode = 'coach',
   onGridClick,
+  isPreviewMode = false,
 }: WeekViewProps) {
   const weekDays = useMemo(() => getWeekDays(date), [date]);
   const hours = useMemo(() => hoursArray(), []);
@@ -52,7 +54,7 @@ export function WeekView({
     return () => ro.disconnect();
   }, []);
   
-  // Position events per day with overlap layout
+  // FASE 6: Memoize event positioning per day
   const positionedByDay = useMemo(() => {
     const dayMap: Record<number, ReturnType<typeof layoutOverlaps>> = {};
     
@@ -60,25 +62,18 @@ export function WeekView({
       const dayStart = startOfDay(day);
       const dayEnd = endOfDay(day);
 
-      //modifica qui
       const dayEvents = events.filter((e) => {
-      const eventStart = new Date(e.start_at);
-      const eventEnd = new Date(e.end_at);
-    
-      // Se è all-day → lo mostri solo se corrisponde allo stesso giorno
-      if (e.is_all_day) {
-        return isSameDay(eventStart, day);
-      }
-    
-      // Altrimenti mantieni la logica normale di overlapping
-      return eventStart < dayEnd && eventEnd > dayStart;
-      });
+        const eventStart = new Date(e.start_at);
+        const eventEnd = new Date(e.end_at);
       
-      //const dayEvents = events.filter((e) => {
-        //const eventStart = new Date(e.start_at);
-        //const eventEnd = new Date(e.end_at);
-        //return eventStart < dayEnd && eventEnd > dayStart;
-      //});
+        // Se è all-day → lo mostri solo se corrisponde allo stesso giorno
+        if (e.is_all_day) {
+          return isSameDay(eventStart, day);
+        }
+      
+        // Altrimenti mantieni la logica normale di overlapping
+        return eventStart < dayEnd && eventEnd > dayStart;
+      });
       
       dayMap[index] = layoutOverlaps(
         dayEvents.map((e) => ({
@@ -202,8 +197,13 @@ export function WeekView({
               return (
                 <div 
                   key={day.toISOString()} 
-                  className="flex-1 relative border-r last:border-r-0 border-border/20"
+                  className={`flex-1 relative border-r last:border-r-0 border-border/20 ${isPreviewMode ? 'cursor-default' : ''}`}
                   onClick={(e) => {
+                    // FASE 4: Handle grid click - blocked in preview mode
+                    if (isPreviewMode) {
+                      return; // No action in preview mode
+                    }
+                    
                     // FASE 3: Handle grid click for coach mode
                     if (mode === 'coach' && onGridClick && e.target === e.currentTarget) {
                       const rect = e.currentTarget.getBoundingClientRect();

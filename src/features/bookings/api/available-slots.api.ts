@@ -9,12 +9,42 @@ interface GetAvailableSlotsParams {
   endDate: string;   // ISO date string
   calendarMode?: CalendarMode; // FASE 2: Modalità calendario
   bypassEnabledCheck?: boolean; // Deprecated, use calendarMode instead
+  clientId?: string; // FASE 3: ID cliente per regole specifiche
+  applyClientRules?: boolean; // FASE 3: Applica regole cliente
+}
+
+/**
+ * FASE 3 Extended: Client-specific rules check
+ */
+async function getClientSpecificRules(clientId: string, coachId: string) {
+  const { data: packages } = await supabase
+    .from("package")
+    .select("*")
+    .eq("client_id", clientId)
+    .eq("coach_id", coachId)
+    .eq("usage_status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const hasActivePackage = !!packages;
+  const hasAvailableSessions = packages
+    ? (packages.total_sessions - packages.consumed_sessions - packages.on_hold_sessions) > 0
+    : false;
+
+  return {
+    hasActivePackage,
+    hasAvailableSessions,
+    canBook: hasActivePackage && hasAvailableSessions,
+  };
 }
 
 /**
  * FASE 2: Fetches available slots with CalendarMode support
+ * FASE 3 Extended: Support for client-specific rules
  * - coach mode: Genera griglia completa 06:00-22:00 anche senza availability configurate
  * - client mode: Genera solo slot prenotabili secondo le regole
+ * - client-specific mode: Applica regole specifiche del cliente (pacchetti, sospensioni, etc.)
  */
 export async function getAvailableSlots({
   coachId,
@@ -22,6 +52,8 @@ export async function getAvailableSlots({
   endDate,
   calendarMode = 'client',
   bypassEnabledCheck = false,
+  clientId,
+  applyClientRules = false,
 }: GetAvailableSlotsParams): Promise<AvailableSlot[]> {
   const isCoachMode = calendarMode === 'coach' || bypassEnabledCheck;
   
@@ -48,6 +80,15 @@ export async function getAvailableSlots({
   }
   
   // CLIENT MODE: Original logic with availability rules
+  // FASE 3: Check client-specific rules first if requested
+  if (applyClientRules && clientId) {
+    const rules = await getClientSpecificRules(clientId, coachId);
+    if (!rules.canBook) {
+      // Cliente senza pacchetto attivo o sessioni esaurite → nessuno slot disponibile
+      return [];
+    }
+  }
+
   // Fetch booking settings
   const query = supabase
     .from("booking_settings")

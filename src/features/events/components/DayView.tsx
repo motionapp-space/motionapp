@@ -19,6 +19,7 @@ interface DayViewProps {
   onRequestClick?: (request: BookingRequestWithClient) => void;
   mode?: 'coach' | 'client'; // FASE 3
   onGridClick?: (date: Date, startTime: Date) => void; // FASE 3
+  isPreviewMode?: boolean; // FASE 4: Disabilita interazioni in preview
 }
 
 export function DayView({
@@ -31,6 +32,7 @@ export function DayView({
   onRequestClick,
   mode = 'coach',
   onGridClick,
+  isPreviewMode = false,
 }: DayViewProps) {
   const hours = useMemo(() => hoursArray(), []);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -50,6 +52,7 @@ export function DayView({
   }, []);
 
   // Position events with overlap layout
+  // FASE 6: Memoize event positioning
   const positioned = useMemo(() => {
     const dayStart = startOfDay(date);
     const dayEnd = endOfDay(date);
@@ -117,9 +120,14 @@ export function DayView({
 
           {/* Event grid */}
           <div 
-            className="flex-1 relative" 
+            className={`flex-1 relative ${isPreviewMode ? 'cursor-default' : ''}`}
             style={{ height: gridHeight }}
             onClick={(e) => {
+              // FASE 4: Handle grid click - blocked in preview mode
+              if (isPreviewMode) {
+                return; // No action in preview mode
+              }
+              
               // FASE 3: Handle grid click for coach mode
               if (mode === 'coach' && onGridClick && e.target === e.currentTarget) {
                 const rect = e.currentTarget.getBoundingClientRect();
