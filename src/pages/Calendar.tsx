@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { parseISO, format } from "date-fns";
 import { Input } from "@/components/ui/input";
-import { Search, Calendar as CalendarIcon, Plus, Settings } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Plus, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,12 +21,13 @@ import { useAvailabilityWindowsQuery } from "@/features/bookings/hooks/useAvaila
 import { useOutOfOfficeBlocksQuery } from "@/features/bookings/hooks/useOutOfOffice";
 import { usePendingCount } from "@/features/bookings/hooks/usePendingCount";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
+import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettings";
 import type { CalendarView, EventWithClient, CalendarViewMode } from "@/features/events/types";
 import type { BookingRequestWithClient } from "@/features/bookings/types";
 import { EventModal } from "@/features/events/components/EventModal";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
-import { CalendarViewModeToggle } from "@/features/events/components/CalendarViewModeToggle";
+import { ClientViewBanner } from "@/features/events/components/ClientViewBanner";
 
 import { PREVIEW_MESSAGES } from "@/features/events/utils/preview-messages";
 
@@ -52,21 +53,26 @@ const Calendar = () => {
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
 
-  // FASE 5: Simplified preview mode state with localStorage persistence
-  const [toggleValue, setToggleValue] = useState<'coach' | 'client'>(() => {
-    const stored = localStorage.getItem('calendar-toggle-view');
-    return (stored as 'coach' | 'client') || 'coach';
-  });
-  
-  const [clientSelection, setClientSelection] = useState<'simulation' | string>(() => {
-    return localStorage.getItem('calendar-client-selection') || 'simulation';
+  // Stato semplificato: un solo boolean per vista cliente
+  const [isClientView, setIsClientView] = useState<boolean>(() => {
+    return localStorage.getItem('calendar-client-view') === 'true';
   });
 
-  // FASE 5: Persist toggle and clientSelection
+  // Query booking settings
+  const { data: bookingSettings } = useBookingSettingsQuery();
+  const hasSelfServiceBooking = bookingSettings?.enabled === true;
+
+  // Persist isClientView in localStorage
   useEffect(() => {
-    localStorage.setItem('calendar-toggle-view', toggleValue);
-    localStorage.setItem('calendar-client-selection', clientSelection);
-  }, [toggleValue, clientSelection]);
+    localStorage.setItem('calendar-client-view', String(isClientView));
+  }, [isClientView]);
+
+  // PATCH 1: Force sync - se booking disabilitati, forza coach mode
+  useEffect(() => {
+    if (!hasSelfServiceBooking && isClientView) {
+      setIsClientView(false);
+    }
+  }, [hasSelfServiceBooking, isClientView]);
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -76,28 +82,9 @@ const Calendar = () => {
   const { data: oooBlocks = [] } = useOutOfOfficeBlocksQuery();
   const { data: pendingCount = 0 } = usePendingCount();
 
-  // FASE 5: Fetch clients and derive viewMode
-  const { data: clientsData } = useClientsQuery({});
-  
-  // Derive actual viewMode from toggle + clientSelection
-  const viewMode: CalendarViewMode = useMemo(() => {
-    if (toggleValue === 'coach') return 'coach';
-    if (clientSelection === 'simulation') return 'client-preview';
-    return 'specific-client';
-  }, [toggleValue, clientSelection]);
-
-  // Derive previewClientId and clientName
-  const { previewClientId, previewClientName } = useMemo(() => {
-    if (viewMode === 'specific-client' && clientSelection !== 'simulation') {
-      const clients = clientsData?.items || [];
-      const client = clients.find(c => c.id === clientSelection);
-      return {
-        previewClientId: clientSelection,
-        previewClientName: client ? `${client.first_name} ${client.last_name}` : undefined,
-      };
-    }
-    return { previewClientId: undefined, previewClientName: undefined };
-  }, [viewMode, clientSelection, clientsData]);
+  // Derivazione viewMode semplificata
+  const viewMode: CalendarViewMode = isClientView ? 'client-preview' : 'coach';
+  const isPreviewMode = isClientView;
 
   // Update URL when view or date changes
   const handleViewChange = (newView: CalendarView) => {
@@ -160,19 +147,13 @@ const Calendar = () => {
     setRequestDrawerOpen(true);
   };
 
-  // FASE 5: Handle toggle and client selection changes
-  const handleToggleChange = (value: 'coach' | 'client') => {
-    setToggleValue(value);
-    // When switching to coach, keep clientSelection for when user comes back
-  };
-
-  const handleClientSelectionChange = (value: 'simulation' | string) => {
-    setClientSelection(value);
+  const handleToggleClientView = () => {
+    if (!hasSelfServiceBooking) return; // Safety check
+    setIsClientView(prev => !prev);
   };
 
   const handleBackToCoach = () => {
-    setToggleValue('coach');
-    setClientSelection('simulation'); // Reset to simulation when going back
+    setIsClientView(false);
   };
 
   const handleNewEvent = () => {
@@ -198,8 +179,6 @@ const Calendar = () => {
   const showOoo = filterOption === "all" || filterOption === "ooo";
   const showAvailability = filterOption === "all" || filterOption === "availability";
 
-  // FASE 5: Determine calendar mode and preview state
-  const isPreviewMode = viewMode !== 'coach';
   const calendarMode = viewMode === 'coach' ? 'coach' : 'client';
 
   return (
@@ -239,14 +218,14 @@ const Calendar = () => {
           </div>
         }
         toolbarRight={
-          <Button
-            variant="outline"
-            onClick={() => navigate("/calendar/manage")}
-            className="gap-2 h-10 relative"
-          >
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Gestione prenotazioni</span>
-            <span className="sm:hidden">Gestione</span>
+        <Button
+          variant="outline"
+          onClick={() => navigate("/calendar/manage")}
+          className="gap-2 h-10 relative"
+        >
+          <Bell className="h-4 w-4" />
+          <span className="hidden sm:inline">Richieste clienti</span>
+          <span className="sm:hidden">Richieste</span>
             {pendingCount > 0 && (
               <Badge 
                 variant={pendingCount >= 10 ? "destructive" : "default"}
@@ -261,27 +240,21 @@ const Calendar = () => {
 
       {/* Toolbar with lateral padding */}
       <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
-        <CalendarToolbar
-          view={view}
-          currentDate={currentDate}
-          onViewChange={handleViewChange}
-          onDateChange={handleDateChange}
-          onToday={handleToday}
-        />
-        
-        {/* FASE 5: View Mode Toggle - Unified with Preview */}
+      <CalendarToolbar
+        view={view}
+        currentDate={currentDate}
+        onViewChange={handleViewChange}
+        onDateChange={handleDateChange}
+        onToday={handleToday}
+        showClientViewToggle={hasSelfServiceBooking}
+        isClientView={isClientView}
+        onToggleClientView={handleToggleClientView}
+      />
+      {isClientView && (
         <div className="mt-4">
-          <CalendarViewModeToggle
-            toggleValue={toggleValue}
-            clientSelection={clientSelection}
-            onToggleChange={handleToggleChange}
-            onClientSelectionChange={handleClientSelectionChange}
-            showPreview={isPreviewMode}
-            isSpecificClient={viewMode === 'specific-client'}
-            clientName={previewClientName}
-            onBackToCoach={handleBackToCoach}
-          />
+          <ClientViewBanner onBackToCoach={handleBackToCoach} />
         </div>
+      )}
       </div>
 
       {/* Calendar Views with lateral padding */}

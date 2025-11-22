@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useRef, useState } from "react";
 import { format, startOfDay, endOfDay } from "date-fns";
+import { toast } from "sonner";
 import { layoutOverlaps } from "../utils/layout";
 import { minutesFromDayStart, toMinutes, MINUTE_HEIGHT, DAY_START_H, DAY_END_H, minutesVisible, hoursArray } from "../utils/time";
 import { EventCard } from "./EventCard";
@@ -123,18 +124,22 @@ export function DayView({
             className={`flex-1 relative ${isPreviewMode ? 'cursor-default' : ''}`}
             style={{ height: gridHeight }}
             onClick={(e) => {
-              // FASE 4: Handle grid click - blocked in preview mode
               if (isPreviewMode) {
-                return; // No action in preview mode
+                // PATCH 2: Toast solo su click grid vuota (non su eventi)
+                if (e.target === e.currentTarget) {
+                  toast.error("Non puoi creare appuntamenti in modalità simulazione", {
+                    description: "Torna alla vista coach per creare eventi."
+                  });
+                }
+                return;
               }
               
-              // FASE 3: Handle grid click for coach mode
               if (mode === 'coach' && onGridClick && e.target === e.currentTarget) {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const y = e.clientY - rect.top;
                 const minutesFromStart = Math.floor(y / MINUTE_HEIGHT);
                 const hours = DAY_START_H + Math.floor(minutesFromStart / 60);
-                const minutes = Math.floor((minutesFromStart % 60) / 15) * 15; // Snap to 15min
+                const minutes = Math.floor((minutesFromStart % 60) / 15) * 15;
                 
                 const clickTime = new Date(date);
                 clickTime.setHours(hours, minutes, 0, 0);
