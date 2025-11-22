@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { z } from "zod";
 import PageHeader from "@/components/PageHeader";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,16 @@ import { getClientById } from "@/features/clients/api/clients.api";
 import type { ClientStatus, ClientsFilters } from "@/features/clients/types";
 import { cn } from "@/lib/utils";
 
+// Schema di validazione Zod
+const clientFormSchema = z.object({
+  first_name: z.string().trim().min(1, "Il nome è obbligatorio"),
+  last_name: z.string().trim().min(1, "Il cognome è obbligatorio"),
+  email: z.string().trim().email("Inserisci un indirizzo email valido (es. nome@dominio.com)"),
+  phone: z.string().optional(),
+  fiscal_code: z.string().trim().min(1, "Il codice fiscale è obbligatorio"),
+  notes: z.string().optional(),
+});
+
 const Clients = () => {
   const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
@@ -58,6 +69,7 @@ const Clients = () => {
     fiscal_code: "",
     notes: "",
   });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Handle return from create flow
   useEffect(() => {
@@ -121,14 +133,34 @@ const Clients = () => {
     formData.fiscal_code.trim() !== "";
 
   const handleCreateClient = () => {
-    if (!isFormValid) {
+    // Valida con Zod
+    const result = clientFormSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach(err => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setValidationErrors(errors);
       return;
     }
 
-    createMutation.mutate(formData, {
+    // Clear previous errors
+    setValidationErrors({});
+
+    // Normalizza email (lowercase + trim)
+    const normalizedData = {
+      ...formData,
+      email: formData.email.trim().toLowerCase(),
+    };
+
+    createMutation.mutate(normalizedData, {
       onSuccess: () => {
         setCreateDialogOpen(false);
         setFormData({ first_name: "", last_name: "", email: "", phone: "", fiscal_code: "", notes: "" });
+        setValidationErrors({});
       },
     });
   };
@@ -213,18 +245,36 @@ const Clients = () => {
                 <Input
                   id="first_name"
                   value={formData.first_name}
-                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, first_name: e.target.value });
+                    if (validationErrors.first_name) {
+                      setValidationErrors(prev => ({ ...prev, first_name: "" }));
+                    }
+                  }}
                   placeholder={toSentenceCase("Inserisci nome")}
+                  className={validationErrors.first_name ? "border-destructive" : ""}
                 />
+                {validationErrors.first_name && (
+                  <p className="text-sm text-destructive">{validationErrors.first_name}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="last_name">{toSentenceCase("Cognome")} *</Label>
                 <Input
                   id="last_name"
                   value={formData.last_name}
-                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, last_name: e.target.value });
+                    if (validationErrors.last_name) {
+                      setValidationErrors(prev => ({ ...prev, last_name: "" }));
+                    }
+                  }}
                   placeholder={toSentenceCase("Inserisci cognome")}
+                  className={validationErrors.last_name ? "border-destructive" : ""}
                 />
+                {validationErrors.last_name && (
+                  <p className="text-sm text-destructive">{validationErrors.last_name}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">{toSentenceCase("Email")} *</Label>
@@ -232,9 +282,18 @@ const Clients = () => {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    if (validationErrors.email) {
+                      setValidationErrors(prev => ({ ...prev, email: "" }));
+                    }
+                  }}
                   placeholder={toSentenceCase("Inserisci email")}
+                  className={validationErrors.email ? "border-destructive" : ""}
                 />
+                {validationErrors.email && (
+                  <p className="text-sm text-destructive">{validationErrors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">{toSentenceCase("Telefono")}</Label>
@@ -250,9 +309,18 @@ const Clients = () => {
                 <Input
                   id="fiscal_code"
                   value={formData.fiscal_code}
-                  onChange={(e) => setFormData({ ...formData, fiscal_code: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, fiscal_code: e.target.value });
+                    if (validationErrors.fiscal_code) {
+                      setValidationErrors(prev => ({ ...prev, fiscal_code: "" }));
+                    }
+                  }}
                   placeholder={toSentenceCase("Inserisci codice fiscale")}
+                  className={validationErrors.fiscal_code ? "border-destructive" : ""}
                 />
+                {validationErrors.fiscal_code && (
+                  <p className="text-sm text-destructive">{validationErrors.fiscal_code}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="notes">{toSentenceCase("Note")}</Label>
@@ -355,18 +423,36 @@ const Clients = () => {
                 <Input
                   id="first_name"
                   value={formData.first_name}
-                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, first_name: e.target.value });
+                    if (validationErrors.first_name) {
+                      setValidationErrors(prev => ({ ...prev, first_name: "" }));
+                    }
+                  }}
                   placeholder={toSentenceCase("Inserisci nome")}
+                  className={validationErrors.first_name ? "border-destructive" : ""}
                 />
+                {validationErrors.first_name && (
+                  <p className="text-sm text-destructive">{validationErrors.first_name}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="last_name">{toSentenceCase("Cognome")} *</Label>
                 <Input
                   id="last_name"
                   value={formData.last_name}
-                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, last_name: e.target.value });
+                    if (validationErrors.last_name) {
+                      setValidationErrors(prev => ({ ...prev, last_name: "" }));
+                    }
+                  }}
                   placeholder={toSentenceCase("Inserisci cognome")}
+                  className={validationErrors.last_name ? "border-destructive" : ""}
                 />
+                {validationErrors.last_name && (
+                  <p className="text-sm text-destructive">{validationErrors.last_name}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">{toSentenceCase("Email")} *</Label>
@@ -374,9 +460,18 @@ const Clients = () => {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    if (validationErrors.email) {
+                      setValidationErrors(prev => ({ ...prev, email: "" }));
+                    }
+                  }}
                   placeholder={toSentenceCase("Inserisci email")}
+                  className={validationErrors.email ? "border-destructive" : ""}
                 />
+                {validationErrors.email && (
+                  <p className="text-sm text-destructive">{validationErrors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">{toSentenceCase("Telefono")}</Label>
@@ -392,9 +487,18 @@ const Clients = () => {
                 <Input
                   id="fiscal_code"
                   value={formData.fiscal_code}
-                  onChange={(e) => setFormData({ ...formData, fiscal_code: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, fiscal_code: e.target.value });
+                    if (validationErrors.fiscal_code) {
+                      setValidationErrors(prev => ({ ...prev, fiscal_code: "" }));
+                    }
+                  }}
                   placeholder={toSentenceCase("Inserisci codice fiscale")}
+                  className={validationErrors.fiscal_code ? "border-destructive" : ""}
                 />
+                {validationErrors.fiscal_code && (
+                  <p className="text-sm text-destructive">{validationErrors.fiscal_code}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="notes">{toSentenceCase("Note")}</Label>
@@ -909,18 +1013,36 @@ const Clients = () => {
               <Input
                 id="first_name"
                 value={formData.first_name}
-                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, first_name: e.target.value });
+                  if (validationErrors.first_name) {
+                    setValidationErrors(prev => ({ ...prev, first_name: "" }));
+                  }
+                }}
                 placeholder={toSentenceCase("Inserisci nome")}
+                className={validationErrors.first_name ? "border-destructive" : ""}
               />
+              {validationErrors.first_name && (
+                <p className="text-sm text-destructive">{validationErrors.first_name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="last_name">{toSentenceCase("Cognome")} *</Label>
               <Input
                 id="last_name"
                 value={formData.last_name}
-                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, last_name: e.target.value });
+                  if (validationErrors.last_name) {
+                    setValidationErrors(prev => ({ ...prev, last_name: "" }));
+                  }
+                }}
                 placeholder={toSentenceCase("Inserisci cognome")}
+                className={validationErrors.last_name ? "border-destructive" : ""}
               />
+              {validationErrors.last_name && (
+                <p className="text-sm text-destructive">{validationErrors.last_name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">{toSentenceCase("Email")} *</Label>
@@ -928,9 +1050,18 @@ const Clients = () => {
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value });
+                  if (validationErrors.email) {
+                    setValidationErrors(prev => ({ ...prev, email: "" }));
+                  }
+                }}
                 placeholder={toSentenceCase("Inserisci email")}
+                className={validationErrors.email ? "border-destructive" : ""}
               />
+              {validationErrors.email && (
+                <p className="text-sm text-destructive">{validationErrors.email}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">{toSentenceCase("Telefono")}</Label>
@@ -946,9 +1077,18 @@ const Clients = () => {
               <Input
                 id="fiscal_code"
                 value={formData.fiscal_code}
-                onChange={(e) => setFormData({ ...formData, fiscal_code: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, fiscal_code: e.target.value });
+                  if (validationErrors.fiscal_code) {
+                    setValidationErrors(prev => ({ ...prev, fiscal_code: "" }));
+                  }
+                }}
                 placeholder={toSentenceCase("Inserisci codice fiscale")}
+                className={validationErrors.fiscal_code ? "border-destructive" : ""}
               />
+              {validationErrors.fiscal_code && (
+                <p className="text-sm text-destructive">{validationErrors.fiscal_code}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="notes">{toSentenceCase("Note")}</Label>
