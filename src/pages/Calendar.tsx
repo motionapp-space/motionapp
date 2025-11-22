@@ -52,24 +52,21 @@ const Calendar = () => {
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
 
-  // FASE 5: Preview mode state with localStorage persistence
-  const [viewMode, setViewMode] = useState<CalendarViewMode>(() => {
-    const stored = localStorage.getItem('calendar-view-mode');
-    return (stored as CalendarViewMode) || 'coach';
+  // FASE 5: Simplified preview mode state with localStorage persistence
+  const [toggleValue, setToggleValue] = useState<'coach' | 'client'>(() => {
+    const stored = localStorage.getItem('calendar-toggle-view');
+    return (stored as 'coach' | 'client') || 'coach';
   });
-  const [previewClientId, setPreviewClientId] = useState<string | undefined>(() => {
-    return localStorage.getItem('calendar-preview-client-id') || undefined;
+  
+  const [clientSelection, setClientSelection] = useState<'simulation' | string>(() => {
+    return localStorage.getItem('calendar-client-selection') || 'simulation';
   });
 
-  // FASE 5: Persist viewMode and previewClientId
+  // FASE 5: Persist toggle and clientSelection
   useEffect(() => {
-    localStorage.setItem('calendar-view-mode', viewMode);
-    if (previewClientId) {
-      localStorage.setItem('calendar-preview-client-id', previewClientId);
-    } else {
-      localStorage.removeItem('calendar-preview-client-id');
-    }
-  }, [viewMode, previewClientId]);
+    localStorage.setItem('calendar-toggle-view', toggleValue);
+    localStorage.setItem('calendar-client-selection', clientSelection);
+  }, [toggleValue, clientSelection]);
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -79,16 +76,28 @@ const Calendar = () => {
   const { data: oooBlocks = [] } = useOutOfOfficeBlocksQuery();
   const { data: pendingCount = 0 } = usePendingCount();
 
-  // FASE 5: Fetch clients for dropdown and preview banner
+  // FASE 5: Fetch clients and derive viewMode
   const { data: clientsData } = useClientsQuery({});
-  const previewClientName = useMemo(() => {
-    if (viewMode === 'specific-client' && previewClientId) {
+  
+  // Derive actual viewMode from toggle + clientSelection
+  const viewMode: CalendarViewMode = useMemo(() => {
+    if (toggleValue === 'coach') return 'coach';
+    if (clientSelection === 'simulation') return 'client-preview';
+    return 'specific-client';
+  }, [toggleValue, clientSelection]);
+
+  // Derive previewClientId and clientName
+  const { previewClientId, previewClientName } = useMemo(() => {
+    if (viewMode === 'specific-client' && clientSelection !== 'simulation') {
       const clients = clientsData?.items || [];
-      const client = clients.find(c => c.id === previewClientId);
-      return client ? `${client.first_name} ${client.last_name}` : undefined;
+      const client = clients.find(c => c.id === clientSelection);
+      return {
+        previewClientId: clientSelection,
+        previewClientName: client ? `${client.first_name} ${client.last_name}` : undefined,
+      };
     }
-    return undefined;
-  }, [viewMode, previewClientId, clientsData]);
+    return { previewClientId: undefined, previewClientName: undefined };
+  }, [viewMode, clientSelection, clientsData]);
 
   // Update URL when view or date changes
   const handleViewChange = (newView: CalendarView) => {
@@ -151,10 +160,19 @@ const Calendar = () => {
     setRequestDrawerOpen(true);
   };
 
-  // FASE 5: Handle view mode change
-  const handleViewModeChange = (mode: CalendarViewMode, clientId?: string) => {
-    setViewMode(mode);
-    setPreviewClientId(clientId);
+  // FASE 5: Handle toggle and client selection changes
+  const handleToggleChange = (value: 'coach' | 'client') => {
+    setToggleValue(value);
+    // When switching to coach, keep clientSelection for when user comes back
+  };
+
+  const handleClientSelectionChange = (value: 'simulation' | string) => {
+    setClientSelection(value);
+  };
+
+  const handleBackToCoach = () => {
+    setToggleValue('coach');
+    setClientSelection('simulation'); // Reset to simulation when going back
   };
 
   const handleNewEvent = () => {
@@ -251,21 +269,26 @@ const Calendar = () => {
           onToday={handleToday}
         />
         
-        {/* FASE 5: View Mode Toggle */}
+        {/* FASE 5: View Mode Toggle - Redesigned */}
         <div className="mt-4">
           <CalendarViewModeToggle
-            viewMode={viewMode}
-            previewClientId={previewClientId}
-            onViewModeChange={handleViewModeChange}
+            toggleValue={toggleValue}
+            clientSelection={clientSelection}
+            onToggleChange={handleToggleChange}
+            onClientSelectionChange={handleClientSelectionChange}
           />
         </div>
       </div>
 
       {/* Calendar Views with lateral padding */}
       <div className="flex-1 overflow-auto mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
-        {/* FASE 5: Preview Banner */}
+        {/* FASE 5: Preview Banner - Redesigned */}
         {isPreviewMode && (
-          <CalendarPreviewBanner viewMode={viewMode} clientName={previewClientName} />
+          <CalendarPreviewBanner 
+            isSpecificClient={viewMode === 'specific-client'}
+            clientName={previewClientName}
+            onBackToCoach={handleBackToCoach}
+          />
         )}
 
         {isLoading ? (
