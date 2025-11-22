@@ -1,12 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Toggle } from "@/components/ui/toggle";
-import { Plus, Search, UserPlus, ChevronDown, X } from "lucide-react";
+import { Plus, Search, UserPlus, ChevronDown, X, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,9 @@ import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useCreateClient } from "@/features/clients/hooks/useCreateClient";
 import { useArchiveClient } from "@/features/clients/hooks/useArchiveClient";
 import { useUnarchiveClient } from "@/features/clients/hooks/useUnarchiveClient";
+import { useOnboardingState } from "@/features/clients/hooks/useOnboardingState";
+import { ClientsEmptyOnboarding } from "@/features/clients/components/ClientsEmptyOnboarding";
+import { NextStepsPanel } from "@/features/clients/components/NextStepsPanel";
 import { getDefaultFilters, filtersToSearchParams } from "@/features/clients/utils/filters";
 import { ClientsTable } from "@/features/clients/components/ClientsTable";
 import { getClientById } from "@/features/clients/api/clients.api";
@@ -29,8 +32,12 @@ import type { ClientStatus, ClientsFilters } from "@/features/clients/types";
 import { cn } from "@/lib/utils";
 
 const Clients = () => {
+  const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
   const qc = useQueryClient();
+  
+  // Onboarding state
+  const onboarding = useOnboardingState();
 
   const highlight = sp.get("highlight");
   const from = sp.get("from");
@@ -175,6 +182,255 @@ const Clients = () => {
     });
   };
 
+  // Loading state - mostra spinner durante calcolo stato onboarding
+  if (onboarding.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // STATO 1: ZERO_CLIENTS - Nessun cliente, mostra solo empty state
+  if (onboarding.state === 'ZERO_CLIENTS') {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <PageHeader
+          title="Clienti"
+          subtitle="Gestisci tutti i tuoi clienti in un unico posto"
+        />
+        <ClientsEmptyOnboarding onCreateClient={() => setCreateDialogOpen(true)} />
+        
+        {/* Dialog creazione cliente */}
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>{toSentenceCase("Nuovo cliente")}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">{toSentenceCase("Nome")} *</Label>
+                <Input
+                  id="first_name"
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  placeholder={toSentenceCase("Inserisci nome")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name">{toSentenceCase("Cognome")} *</Label>
+                <Input
+                  id="last_name"
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  placeholder={toSentenceCase("Inserisci cognome")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">{toSentenceCase("Email")} *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder={toSentenceCase("Inserisci email")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">{toSentenceCase("Telefono")}</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder={toSentenceCase("Inserisci telefono")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fiscal_code">{toSentenceCase("Codice fiscale")} *</Label>
+                <Input
+                  id="fiscal_code"
+                  value={formData.fiscal_code}
+                  onChange={(e) => setFormData({ ...formData, fiscal_code: e.target.value })}
+                  placeholder={toSentenceCase("Inserisci codice fiscale")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">{toSentenceCase("Note")}</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder={toSentenceCase("Note aggiuntive...")}
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                {toSentenceCase("Annulla")}
+              </Button>
+              <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
+                {toSentenceCase("Crea cliente")}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // STATO 2: FIRST_CLIENT_NO_CONTENT - Primo cliente creato ma senza contenuti
+  if (onboarding.state === 'FIRST_CLIENT_NO_CONTENT') {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <PageHeader
+          title="Clienti"
+          subtitle="Gestisci tutti i tuoi clienti in un unico posto"
+          primaryCta={{
+            label: "Nuovo cliente",
+            onClick: () => setCreateDialogOpen(true),
+            icon: <Plus className="h-4 w-4" />,
+            testId: "clients-new-btn",
+          }}
+          toolbarLeft={
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Cerca clienti per nome o email..."
+                value={filters.q}
+                onChange={(e) => setFilters({ q: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setFilters({ q: "" });
+                }}
+                className="pl-10 pr-10 h-11"
+              />
+              {filters.q && (
+                <button
+                  onClick={() => setFilters({ q: "" })}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          }
+        />
+
+        <div className="container mx-auto px-6 py-6 max-w-7xl">
+          {/* Next Steps Panel - solo in questo stato */}
+          <NextStepsPanel
+            onCreatePlan={() => {
+              navigate('/library');
+            }}
+            onCreateAppointment={() => {
+              navigate('/calendar');
+            }}
+          />
+
+          {/* Tabella base senza filtri */}
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <ClientsTable
+              rows={data?.items || []}
+              highlightId={highlight || undefined}
+              onArchive={handleArchive}
+              onUnarchive={handleUnarchive}
+            />
+          )}
+        </div>
+
+        {/* Dialog creazione cliente */}
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>{toSentenceCase("Nuovo cliente")}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">{toSentenceCase("Nome")} *</Label>
+                <Input
+                  id="first_name"
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  placeholder={toSentenceCase("Inserisci nome")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name">{toSentenceCase("Cognome")} *</Label>
+                <Input
+                  id="last_name"
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  placeholder={toSentenceCase("Inserisci cognome")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">{toSentenceCase("Email")} *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder={toSentenceCase("Inserisci email")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">{toSentenceCase("Telefono")}</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder={toSentenceCase("Inserisci telefono")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fiscal_code">{toSentenceCase("Codice fiscale")} *</Label>
+                <Input
+                  id="fiscal_code"
+                  value={formData.fiscal_code}
+                  onChange={(e) => setFormData({ ...formData, fiscal_code: e.target.value })}
+                  placeholder={toSentenceCase("Inserisci codice fiscale")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">{toSentenceCase("Note")}</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder={toSentenceCase("Note aggiuntive...")}
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                {toSentenceCase("Annulla")}
+              </Button>
+              <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
+                {toSentenceCase("Crea cliente")}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Mobile FAB */}
+        <Button
+          onClick={() => setCreateDialogOpen(true)}
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg md:hidden"
+          size="icon"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
+    );
+  }
+
+  // STATO 3: ACTIVE_USER - Vista completa con tutti i filtri (codice esistente)
   return (
     <div className="min-h-screen flex flex-col bg-background w-full">
       <PageHeader
@@ -608,7 +864,7 @@ const Clients = () => {
         <div className="container mx-auto px-6 max-w-7xl py-6">
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : !data || data.items.length === 0 ? (
           <div className="text-center py-16 border border-dashed rounded-lg">
