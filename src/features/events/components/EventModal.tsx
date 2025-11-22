@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettings";
 import { supabase } from "@/integrations/supabase/client";
-import { UnifiedAppointmentModal } from "./UnifiedAppointmentModal";
+import { EventEditorModal } from "./EventEditorModal";
 import { ClientAppointmentModal } from "./ClientAppointmentModal";
 import type { EventWithClient } from "../types";
 
@@ -54,18 +54,19 @@ export function EventModal({
     );
   }
 
-  // Coach mode - full freedom with recurrence and reminder
+  // Coach mode - use EventEditorModal
   return (
-    <UnifiedAppointmentModal
+    <EventEditorModal
+      mode={event ? 'edit' : 'new'}
       open={open}
       onOpenChange={onOpenChange}
       coachId={coachId}
-      clientId={prefillData?.clientId}
-      lockedClientId={lockedClientId}
-      durationMinutes={defaultDuration}
       event={event}
+      initialDate={prefillData?.start}
+      initialStartTime={prefillData?.start}
+      initialEndTime={prefillData?.end}
+      lockedClientId={lockedClientId}
       onStartSession={onStartSession}
-      mode="coach-create"
     />
   );
 }
