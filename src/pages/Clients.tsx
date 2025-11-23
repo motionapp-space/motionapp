@@ -231,7 +231,30 @@ const Clients = () => {
           title="Clienti"
           subtitle="Gestisci tutti i tuoi clienti in un unico posto"
         />
-        <ClientsEmptyOnboarding onCreateClient={() => setCreateDialogOpen(true)} />
+        
+        {/* Filtro Mostra Archiviati - sempre visibile */}
+        <div className="container mx-auto px-6 py-4 max-w-7xl">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="show-archived-zero"
+              checked={filters.includeArchived === true}
+              onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
+            />
+            <Label htmlFor="show-archived-zero" className="cursor-pointer text-sm">
+              Mostra archiviati
+            </Label>
+          </div>
+        </div>
+
+        {filters.includeArchived && data?.items.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="text-center">
+              <p className="text-muted-foreground mb-4">Nessun cliente archiviato trovato</p>
+            </div>
+          </div>
+        ) : (
+          <ClientsEmptyOnboarding onCreateClient={() => setCreateDialogOpen(true)} />
+        )}
         
         {/* Dialog creazione cliente */}
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -383,18 +406,52 @@ const Clients = () => {
               )}
             </div>
           }
+          toolbarRight={
+            <div className="flex items-center gap-3">
+              {/* Sort */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Ordina:</span>
+                <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
+                  <SelectTrigger className="h-9 w-[200px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Mostra archiviati */}
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="show-archived-first"
+                  checked={filters.includeArchived === true}
+                  onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
+                />
+                <Label htmlFor="show-archived-first" className="cursor-pointer text-sm">
+                  Mostra archiviati
+                </Label>
+              </div>
+            </div>
+          }
         />
 
         <div className="container mx-auto px-6 py-6 max-w-7xl">
-          {/* Next Steps Panel - solo in questo stato */}
-          <NextStepsPanel
-            onCreatePlan={() => {
-              navigate('/library');
-            }}
-            onCreateAppointment={() => {
-              navigate('/calendar');
-            }}
-          />
+          {/* Next Steps Panel - solo in questo stato e se non si filtra per archiviati */}
+          {!filters.includeArchived && (
+            <NextStepsPanel
+              onCreatePlan={() => {
+                navigate('/library');
+              }}
+              onCreateAppointment={() => {
+                navigate('/calendar');
+              }}
+            />
+          )}
 
           {/* Tabella base senza filtri */}
           {isLoading ? (
