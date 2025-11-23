@@ -232,29 +232,47 @@ const Clients = () => {
           subtitle="Gestisci tutti i tuoi clienti in un unico posto"
         />
         
-        {/* Filtro Mostra Archiviati - sempre visibile */}
-        <div className="container mx-auto px-6 py-4 max-w-7xl">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="show-archived-zero"
-              checked={filters.includeArchived === true}
-              onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
-            />
-            <Label htmlFor="show-archived-zero" className="cursor-pointer text-sm">
-              Mostra archiviati
-            </Label>
-          </div>
-        </div>
-
-        {filters.includeArchived && data?.items.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="text-center">
-              <p className="text-muted-foreground mb-4">Nessun cliente archiviato trovato</p>
+        <div className="container mx-auto px-6 max-w-7xl">
+          {/* Filtro Mostra Archiviati - posizione coerente con ACTIVE_USER */}
+          <div className="flex items-center gap-4 py-4 border-b border-border">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="show-archived-zero"
+                checked={filters.includeArchived === true}
+                onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
+              />
+              <Label htmlFor="show-archived-zero" className="cursor-pointer text-sm">
+                Mostra archiviati
+              </Label>
             </div>
           </div>
-        ) : (
-          <ClientsEmptyOnboarding onCreateClient={() => setCreateDialogOpen(true)} />
-        )}
+
+          {/* Contenuto condizionale */}
+          {filters.includeArchived ? (
+            isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : data?.items.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center p-6">
+                <div className="text-center">
+                  <p className="text-muted-foreground mb-4">Nessun cliente archiviato trovato</p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-6">
+                <ClientsTable
+                  rows={data?.items || []}
+                  highlightId={highlight || undefined}
+                  onArchive={handleArchive}
+                  onUnarchive={handleUnarchive}
+                />
+              </div>
+            )
+          ) : (
+            <ClientsEmptyOnboarding onCreateClient={() => setCreateDialogOpen(true)} />
+          )}
+        </div>
         
         {/* Dialog creazione cliente */}
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -457,6 +475,10 @@ const Clients = () => {
           {isLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : data?.items.length === 0 && filters.includeArchived ? (
+            <div className="flex items-center justify-center py-12 text-center">
+              <p className="text-muted-foreground">Nessun cliente archiviato trovato</p>
             </div>
           ) : (
             <ClientsTable
