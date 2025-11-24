@@ -349,7 +349,7 @@ const ClientDetail = () => {
             {/* Bottone Dettaglio Attività */}
             <Card>
               <CardHeader>
-                <CardTitle>{toSentenceCase("Attività cliente")}</CardTitle>
+                <CardTitle>{toSentenceCase("Cronologia modifiche")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Button 
@@ -358,7 +358,7 @@ const ClientDetail = () => {
                   onClick={() => setActivityDialogOpen(true)}
                 >
                   <Activity className="h-4 w-4" />
-                  {toSentenceCase("Visualizza dettaglio attività")}
+                  {toSentenceCase("Visualizza cronologia")}
                 </Button>
                 {currentClient.activities && currentClient.activities.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-2">
