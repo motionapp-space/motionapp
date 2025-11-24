@@ -156,6 +156,13 @@ const Calendar = () => {
     setIsClientView(false);
   };
 
+  const handleEditModalOpenChange = (open: boolean) => {
+    setEditModalOpen(open);
+    if (!open) {
+      setSelectedEvent(undefined);
+    }
+  };
+
   const handleNewEvent = () => {
     // FASE 5: Block modal opening in preview mode
     if (viewMode !== 'coach') {
@@ -340,13 +347,15 @@ const Calendar = () => {
       />
 
       {/* Edit Event Modal */}
-      <EventModal
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        mode="coach-create"
-        event={selectedEvent}
-        onStartSession={handleStartSession}
-      />
+      {selectedEvent && (
+        <EventModal
+          open={editModalOpen}
+          onOpenChange={handleEditModalOpenChange}
+          mode="coach-create"
+          event={selectedEvent}
+          onStartSession={handleStartSession}
+        />
+      )}
 
 
       {/* Booking Request Drawer */}
