@@ -84,7 +84,10 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
                 <Card
                   key={event.id}
                   className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => handleEventClick(event)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEventClick(event);
+                  }}
                 >
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-3">
@@ -123,7 +126,10 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
                 <Card
                   key={event.id}
                   className="cursor-pointer hover:shadow-md transition-shadow opacity-75"
-                  onClick={() => handleEventClick(event)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEventClick(event);
+                  }}
                 >
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-3">
@@ -157,20 +163,27 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
         </>
       )}
 
-      <EventModal
-        open={modalOpen}
-        onOpenChange={handleModalOpenChange}
-        event={selectedEvent}
-        prefillData={
-          !selectedEvent
-            ? {
-                clientId,
-              }
-            : undefined
-        }
-        lockedClientId={clientId}
-        mode="coach-create"
-      />
+      {/* Create Modal - solo quando non c'è selectedEvent */}
+      {modalOpen && !selectedEvent && (
+        <EventModal
+          open={modalOpen}
+          onOpenChange={handleModalOpenChange}
+          prefillData={{ clientId }}
+          lockedClientId={clientId}
+          mode="coach-create"
+        />
+      )}
+
+      {/* Edit Modal - solo quando c'è selectedEvent */}
+      {selectedEvent && (
+        <EventModal
+          open={modalOpen}
+          onOpenChange={handleModalOpenChange}
+          event={selectedEvent}
+          lockedClientId={clientId}
+          mode="coach-create"
+        />
+      )}
     </div>
   );
 }
