@@ -119,3 +119,34 @@ export async function deleteSession(id: string): Promise<void> {
 
   if (error) throw error;
 }
+
+export async function getActiveSession(): Promise<TrainingSessionWithClient | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data, error } = await supabase
+    .from("training_sessions")
+    .select(`
+      *,
+      clients (
+        first_name,
+        last_name
+      )
+    `)
+    .eq("coach_id", user.id)
+    .eq("status", "in_progress")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const clients = (data as any).clients;
+  return {
+    ...data,
+    client_name: clients
+      ? `${clients.first_name} ${clients.last_name}`
+      : "Unknown",
+  } as TrainingSessionWithClient;
+}
