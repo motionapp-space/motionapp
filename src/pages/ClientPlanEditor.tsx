@@ -627,7 +627,7 @@ const ClientPlanEditor = () => {
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>{toSentenceCase("Nome piano*")}</Label>
+              <Label>{toSentenceCase("Nome piano")}</Label>
               <div className="space-y-1">
                 <Input
                   value={name}
