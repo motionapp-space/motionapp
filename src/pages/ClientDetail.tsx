@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Edit, Plus, X, FileText, Play, Pencil } from "lucide-react";
+import { ArrowLeft, Edit, Plus, X, FileText, Play, Pencil, Activity } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
@@ -24,6 +24,7 @@ import { PackageTab } from "@/features/packages/components/PackageTab";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateEvent } from "@/features/events/hooks/useCreateEvent";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
+import { ClientActivityDialog } from "@/features/clients/components/ClientActivityDialog";
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -44,6 +45,7 @@ const ClientDetail = () => {
   const [editMode, setEditMode] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [quickSessionDayPickerOpen, setQuickSessionDayPickerOpen] = useState(false);
+  const [activityDialogOpen, setActivityDialogOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [formData, setFormData] = useState({
     first_name: "",
@@ -191,14 +193,12 @@ const ClientDetail = () => {
           }}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="profile">{toSentenceCase("Profilo")}</TabsTrigger>
             <TabsTrigger value="plans">{toSentenceCase("Piani")}</TabsTrigger>
-            <TabsTrigger value="packages">{toSentenceCase("Pacchetti")}</TabsTrigger>
             <TabsTrigger value="appointments">{toSentenceCase("Appuntamenti")}</TabsTrigger>
             <TabsTrigger value="sessions">{toSentenceCase("Sessioni")}</TabsTrigger>
-            <TabsTrigger value="measurements">{toSentenceCase("Misurazioni")}</TabsTrigger>
-            <TabsTrigger value="activity">{toSentenceCase("Attività")}</TabsTrigger>
+            <TabsTrigger value="packages">{toSentenceCase("Pacchetti")}</TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
@@ -333,6 +333,40 @@ const ClientDetail = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Box Misurazioni */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{toSentenceCase("Misurazioni")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  {toSentenceCase("Funzionalità in sviluppo")}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Bottone Dettaglio Attività */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{toSentenceCase("Attività cliente")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2"
+                  onClick={() => setActivityDialogOpen(true)}
+                >
+                  <Activity className="h-4 w-4" />
+                  {toSentenceCase("Visualizza dettaglio attività")}
+                </Button>
+                {currentClient.activities && currentClient.activities.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {currentClient.activities.length} {currentClient.activities.length === 1 ? "attività" : "attività"}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Plans Tab */}
@@ -400,11 +434,6 @@ const ClientDetail = () => {
             <ClientAppointmentsTab clientId={id!} />
           </TabsContent>
 
-          {/* Packages Tab */}
-          <TabsContent value="packages">
-            <PackageTab clientId={id!} />
-          </TabsContent>
-
           {/* Sessions Tab */}
           <TabsContent value="sessions">
             <SessionHistoryTab 
@@ -419,50 +448,19 @@ const ClientDetail = () => {
             />
           </TabsContent>
 
-          {/* Measurements Tab */}
-          <TabsContent value="measurements">
-            <Card>
-              <CardHeader>
-                <CardTitle>{toSentenceCase("Misurazioni")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{toSentenceCase("Funzionalità in sviluppo")}</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Activity Tab */}
-          <TabsContent value="activity">
-            <Card>
-              <CardHeader>
-                <CardTitle>{toSentenceCase("Registro attività")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {currentClient.activities?.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{toSentenceCase("Nessuna attività")}</p>
-                ) : (
-                  <div className="space-y-3">
-                    {currentClient.activities?.map((activity) => (
-                      <div key={activity.id} className="border-l-2 pl-4 py-2">
-                        <p className="text-sm font-medium">{activity.message}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(activity.created_at).toLocaleDateString("it-IT", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          {/* Packages Tab */}
+          <TabsContent value="packages">
+            <PackageTab clientId={id!} />
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Activity Dialog */}
+      <ClientActivityDialog
+        open={activityDialogOpen}
+        onOpenChange={setActivityDialogOpen}
+        activities={currentClient.activities}
+      />
 
       {/* Assign Plan Dialog */}
       <AssignPlanDialog clientId={id || ""} open={assignDialogOpen} onOpenChange={setAssignDialogOpen} />
