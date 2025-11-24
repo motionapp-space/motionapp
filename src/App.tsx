@@ -23,6 +23,9 @@ import Settings from "./pages/Settings";
 import SharedPlan from "./pages/SharedPlan";
 import NotFound from "./pages/NotFound";
 import { AppSidebar } from "@/components/AppSidebar";
+import { Topbar } from "@/components/Topbar";
+import { StickySessionBar } from "@/components/StickySessionBar";
+import { useSessionStore } from "@/stores/useSessionStore";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -32,6 +35,7 @@ const queryClient = new QueryClient();
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { fetchActiveSession, fetchUpcomingEvent, startPolling, stopPolling } = useSessionStore();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -47,6 +51,21 @@ const App = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Initialize session store when user logs in
+  useEffect(() => {
+    if (user) {
+      fetchActiveSession();
+      fetchUpcomingEvent();
+      startPolling();
+    } else {
+      stopPolling();
+    }
+
+    return () => {
+      stopPolling();
+    };
+  }, [user, fetchActiveSession, fetchUpcomingEvent, startPolling, stopPolling]);
 
   if (loading) {
     return (
@@ -66,26 +85,30 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           {user ? (
-            <div className="flex min-h-screen w-full bg-background">
-              <AppSidebar />
-              <main className="flex-1 bg-background">
-                <Routes>
-                  <Route path="/" element={<Clients />} />
-                  <Route path="/library" element={<Library />} />
-                  <Route path="/templates" element={<Navigate to="/library?tab=templates" replace />} />
-                  <Route path="/templates/:id" element={<TemplateDetail />} />
-                  <Route path="/templates/:id/edit" element={<TemplateEditor />} />
-                  <Route path="/templates/:id/missing" element={<TemplateMissing />} />
-                  <Route path="/client-plans/new" element={<ClientPlanEditor />} />
-                  <Route path="/client-plans/:id/edit" element={<ClientPlanEditor />} />
-                  <Route path="/clients/:id" element={<ClientDetail />} />
-                  <Route path="/calendar" element={<Calendar />} />
-                  <Route path="/calendar/manage" element={<BookingManagement />} />
-                  <Route path="/session/live" element={<LiveSession />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
+            <div className="flex min-h-screen w-full flex-col">
+              <Topbar />
+              <div className="flex flex-1">
+                <AppSidebar />
+                <main className="flex-1 overflow-y-auto pb-16">
+                  <Routes>
+                    <Route path="/" element={<Clients />} />
+                    <Route path="/library" element={<Library />} />
+                    <Route path="/templates" element={<Navigate to="/library?tab=templates" replace />} />
+                    <Route path="/templates/:id" element={<TemplateDetail />} />
+                    <Route path="/templates/:id/edit" element={<TemplateEditor />} />
+                    <Route path="/templates/:id/missing" element={<TemplateMissing />} />
+                    <Route path="/client-plans/new" element={<ClientPlanEditor />} />
+                    <Route path="/client-plans/:id/edit" element={<ClientPlanEditor />} />
+                    <Route path="/clients/:id" element={<ClientDetail />} />
+                    <Route path="/calendar" element={<Calendar />} />
+                    <Route path="/calendar/manage" element={<BookingManagement />} />
+                    <Route path="/session/live" element={<LiveSession />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+              </div>
+              <StickySessionBar />
             </div>
           ) : (
             <Routes>

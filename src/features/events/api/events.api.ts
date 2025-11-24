@@ -207,3 +207,36 @@ export async function getLastAppointment(clientId: string): Promise<EventWithCli
       : "Unknown",
   } as EventWithClient;
 }
+
+export async function getUpcomingCoachEvent(): Promise<EventWithClient | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const now = new Date();
+  const fifteenMinutesLater = new Date(now.getTime() + 15 * 60 * 1000);
+  
+  const { data, error } = await supabase
+    .from("events")
+    .select(`
+      *,
+      clients!events_client_id_fkey (
+        first_name,
+        last_name
+      )
+    `)
+    .eq("coach_id", user.id)
+    .gte("start_at", now.toISOString())
+    .lte("start_at", fifteenMinutesLater.toISOString())
+    .order("start_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const client = (data as any).clients;
+  return {
+    ...data,
+    client_name: client ? `${client.first_name} ${client.last_name}` : "Unknown",
+  } as EventWithClient;
+}

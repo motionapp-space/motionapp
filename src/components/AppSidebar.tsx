@@ -1,7 +1,5 @@
-import { Users, FileText, Calendar, Settings, LogOut } from "lucide-react";
+import { Users, FileText, Calendar, Settings } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import React from "react";
 
@@ -16,13 +14,6 @@ const NAV_ITEMS: NavItem[] = [
 
 export function AppSidebar() {
   const { pathname } = useLocation();
-
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error("Errore durante il logout");
-    }
-  };
 
   return (
     <aside 
@@ -66,22 +57,6 @@ export function AppSidebar() {
             );
           })}
         </nav>
-      </div>
-
-      <div className="px-3 py-4">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className={cn(
-            "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-base leading-6",
-            "text-foreground hover:bg-muted transition-colors duration-200",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          )}
-          aria-label="Esci"
-        >
-          <LogOut className="h-5 w-5 text-muted-foreground" />
-          <span className="font-medium">Esci</span>
-        </button>
       </div>
     </aside>
   );
