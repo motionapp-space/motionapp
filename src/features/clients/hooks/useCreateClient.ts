@@ -14,8 +14,8 @@ export function useCreateClient() {
       // Invalidate all client list queries
       qc.invalidateQueries({ queryKey: ["clients"] });
       
-      // Redirect to list with deterministic state and highlight
-      navigate(`/?from=create&highlight=${created.id}&sort=updated_desc&page=1`);
+      // Redirect to client detail page
+      navigate(`/clients/${created.id}`);
       
       toast.success("Cliente creato con successo");
     },
