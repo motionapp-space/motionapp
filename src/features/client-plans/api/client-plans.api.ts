@@ -79,6 +79,32 @@ export async function assignTemplateToClient(clientId: string, input: AssignTemp
   throw new Error("Failed to assign plan");
 }
 
+export async function createClientPlanFromScratch(
+  clientId: string,
+  input: { name: string; description?: string; data: any }
+) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error("Not authenticated");
+
+  const { data, error } = await supabase
+    .from("client_plans")
+    .insert({
+      client_id: clientId,
+      coach_id: auth.user.id,
+      name: input.name,
+      description: input.description,
+      data: input.data,
+      status: "IN_CORSO",
+      is_visible: true,
+      is_in_use: false,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as ClientPlan;
+}
+
 export async function updateClientPlan(id: string, updates: Partial<ClientPlan>) {
   // Simple update without auto-completion logic
   const { data, error } = await supabase

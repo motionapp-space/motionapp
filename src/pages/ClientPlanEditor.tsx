@@ -18,6 +18,7 @@ import { getClientPlan } from "@/features/client-plans/api/client-plans.api";
 import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClientPlan";
 import { useSaveAsTemplate } from "@/features/client-plans/hooks/useSaveAsTemplate";
 import { useAssignTemplate } from "@/features/client-plans/hooks/useAssignTemplate";
+import { useCreateClientPlan } from "@/features/client-plans/hooks/useCreateClientPlan";
 import { useTemplate } from "@/features/templates/hooks/useTemplate";
 import type { ClientPlan } from "@/types/template";
 import { makeDay, makeGroup, type Day, type PhaseType, type GroupType, type Exercise, type ExerciseGroup, migratePhaseToGroups } from "@/types/plan";
@@ -43,6 +44,7 @@ const ClientPlanEditor = () => {
   const updateMutation = useUpdateClientPlan();
   const saveAsTemplateMutation = useSaveAsTemplate();
   const assignMutation = useAssignTemplate();
+  const createPlanMutation = useCreateClientPlan();
   const createSession = useCreateSession();
 
   const clientId = searchParams.get("clientId");
@@ -66,6 +68,12 @@ const ClientPlanEditor = () => {
         phases: day.phases.map(migratePhaseToGroups),
       }));
       setDays(migratedDays);
+      setLoading(false);
+    } else {
+      // New plan from scratch
+      setName("");
+      setDescription("");
+      setDays([]);
       setLoading(false);
     }
   }, [id, isNewFromTemplate]);
@@ -125,6 +133,22 @@ const ClientPlanEditor = () => {
         navigate(`/clients/${clientId}?${sp.toString()}`, { replace: true });
       } catch (error) {
         toast.error("Errore nell'assegnazione");
+      }
+    } else if (clientId) {
+      // Create new plan from scratch
+      try {
+        await createPlanMutation.mutateAsync({
+          clientId,
+          name,
+          description,
+          days,
+        });
+        toast.success("Piano creato");
+        const sp = new URLSearchParams();
+        sp.set("tab", "plans");
+        navigate(`/clients/${clientId}?${sp.toString()}`, { replace: true });
+      } catch (error) {
+        toast.error("Errore nella creazione del piano");
       }
     }
   };
