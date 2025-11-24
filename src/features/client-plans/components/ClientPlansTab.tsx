@@ -94,10 +94,12 @@ export function ClientPlansTab({
               {toSentenceCase("Gestisci i piani assegnati a questo cliente.")}
             </p>
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 shrink-0">
-            <Plus className="h-4 w-4" />
-            {toSentenceCase("Nuovo piano")}
-          </Button>
+          {plans.length > 0 && (
+            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 shrink-0">
+              <Plus className="h-4 w-4" />
+              {toSentenceCase("Nuovo piano")}
+            </Button>
+          )}
         </div>
 
         {/* Filters */}

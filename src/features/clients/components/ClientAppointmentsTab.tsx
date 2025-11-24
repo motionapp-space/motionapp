@@ -46,10 +46,12 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Appuntamenti</h3>
-        <Button onClick={handleNewEvent} size="sm" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nuovo appuntamento
-        </Button>
+        {(upcomingEvents.length > 0 || pastEvents.length > 0) && (
+          <Button onClick={handleNewEvent} size="sm" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nuovo appuntamento
+          </Button>
+        )}
       </div>
 
       {upcomingEvents.length === 0 && pastEvents.length === 0 ? (

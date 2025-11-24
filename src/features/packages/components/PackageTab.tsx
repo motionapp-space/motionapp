@@ -117,15 +117,17 @@ export function PackageTab({ clientId }: PackageTabProps) {
       {/* Section Header with Button */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Pacchetti attivi</h3>
-        <Button 
-          onClick={() => setDialogOpen(true)}
-          disabled={hasActivePackage}
-          size="sm"
-          className="gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Nuovo pacchetto
-        </Button>
+        {(activePackages.length > 0 || completedPackages.length > 0) && (
+          <Button 
+            onClick={() => setDialogOpen(true)}
+            disabled={hasActivePackage}
+            size="sm"
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Nuovo pacchetto
+          </Button>
+        )}
       </div>
 
       {/* Active Packages */}
