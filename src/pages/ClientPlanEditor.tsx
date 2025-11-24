@@ -645,7 +645,7 @@ const ClientPlanEditor = () => {
             <div className="space-y-2">
               <Label>
                 {toSentenceCase("Nome piano")}
-                {!id && <span className="text-destructive ml-1">*</span>}
+                {!id && <span className="ml-1">*</span>}
               </Label>
               <div className="space-y-1">
                 <Input
