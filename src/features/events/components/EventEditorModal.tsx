@@ -49,6 +49,14 @@ interface EventEditorModalProps {
   onStartSession?: (clientId: string, eventId: string, linkedPlanId?: string, linkedDayId?: string) => void;
 }
 
+// Helper function to round time to nearest 5 minutes
+function roundToNearest5Minutes(date: Date): string {
+  const minutes = Math.ceil(date.getMinutes() / 5) * 5;
+  const hours = date.getHours() + Math.floor(minutes / 60);
+  const roundedMinutes = minutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${roundedMinutes.toString().padStart(2, '0')}`;
+}
+
 // Generate time slots with 5-minute intervals
 function generateTimeSlots() {
   const slots: string[] = [];
@@ -130,13 +138,35 @@ export function EventEditorModal({
       setViewMode(isNewMode ? 'new' : 'view');
       
       if (isNewMode) {
+        const now = new Date();
+        const defaultDate = initialDate || now;
+        
+        // Calculate start and end times based on current time or initialStartTime
+        let defaultStart: string;
+        let defaultEnd: string;
+        
+        if (initialStartTime && initialEndTime) {
+          defaultStart = format(initialStartTime, 'HH:mm');
+          defaultEnd = format(initialEndTime, 'HH:mm');
+        } else {
+          // Round current time to nearest 5 minutes
+          defaultStart = roundToNearest5Minutes(now);
+          
+          // Calculate end time by adding duration from settings
+          const [h, m] = defaultStart.split(':').map(Number);
+          const startDate = setMinutes(setHours(now, h), m);
+          const defaultDuration = bookingSettings?.slot_duration_minutes || 45;
+          const endDate = addMinutes(startDate, defaultDuration);
+          defaultEnd = format(endDate, 'HH:mm');
+        }
+        
         setFormData({
           title: 'Allenamento',
           clientId: lockedClientId || '',
           location: '',
-          date: initialDate || new Date(),
-          startTime: format(initialStartTime || new Date(), 'HH:mm'),
-          endTime: format(initialEndTime || addMinutes(new Date(), 45), 'HH:mm'),
+          date: defaultDate,
+          startTime: defaultStart,
+          endTime: defaultEnd,
           reminderOffset: 15,
           notes: ''
         });
@@ -552,7 +582,7 @@ export function EventEditorModal({
 
               <div className="space-y-2">
                 <Label htmlFor="client">
-                  Cliente <span className="text-destructive">*</span>
+                  Cliente <span className="ml-1">*</span>
                 </Label>
                 <Select
                   value={formData.clientId}
@@ -610,7 +640,23 @@ export function EventEditorModal({
                 {/* Dalle */}
                 <div className="space-y-2">
                   <Label htmlFor="start-time">Dalle</Label>
-                  <Select value={formData.startTime} onValueChange={(value) => setFormData(prev => ({ ...prev, startTime: value }))}>
+                  <Select 
+                    value={formData.startTime} 
+                    onValueChange={(value) => {
+                      // When start time changes, automatically update end time based on duration
+                      const duration = bookingSettings?.slot_duration_minutes || 45;
+                      const [h, m] = value.split(':').map(Number);
+                      const startDate = setMinutes(setHours(new Date(), h), m);
+                      const endDate = addMinutes(startDate, duration);
+                      const endTime = format(endDate, 'HH:mm');
+                      
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        startTime: value,
+                        endTime: endTime
+                      }));
+                    }}
+                  >
                     <SelectTrigger id="start-time" className="h-10">
                       <SelectValue placeholder="Inizio" />
                     </SelectTrigger>
