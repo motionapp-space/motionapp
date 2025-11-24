@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Download, CheckCircle, Loader2, Save, FileText } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ArrowLeft, Download, CheckCircle, Loader2, Save, FileText, MoreVertical, Eye, EyeOff, Lock, Unlock, Star } from "lucide-react";
 import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
@@ -17,8 +18,11 @@ import { getClientPlan } from "@/features/client-plans/api/client-plans.api";
 import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClientPlan";
 import { useSaveAsTemplate } from "@/features/client-plans/hooks/useSaveAsTemplate";
 import { useAssignTemplate } from "@/features/client-plans/hooks/useAssignTemplate";
+import { useTemplate } from "@/features/templates/hooks/useTemplate";
 import type { ClientPlan } from "@/types/template";
 import { makeDay, makeGroup, type Day, type PhaseType, type GroupType, type Exercise, type ExerciseGroup, migratePhaseToGroups } from "@/types/plan";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 
 const ClientPlanEditor = () => {
   const { id } = useParams();
@@ -45,6 +49,8 @@ const ClientPlanEditor = () => {
   const templateId = searchParams.get("templateId");
   const template = location.state?.template;
   const isNewFromTemplate = !id && templateId && template;
+  
+  const { data: derivedTemplate } = useTemplate(plan?.derived_from_template_id || undefined);
 
   // Migrate days to use groups on load
   useEffect(() => {
@@ -388,7 +394,7 @@ const ClientPlanEditor = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4 mb-3">
+          <div className="flex items-center justify-between gap-4 mb-2">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <Button
                 variant="ghost"
@@ -398,9 +404,24 @@ const ClientPlanEditor = () => {
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-h4 font-semibold truncate">{name || "Piano Cliente"}</h1>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-h4 font-semibold truncate">{name || "Piano Cliente"}</h1>
+                {id && !isNewFromTemplate && (
+                  <p className="text-sm text-muted-foreground">
+                    {plan?.derived_from_template_id && derivedTemplate
+                      ? `${toSentenceCase("Derivato da template")}: ${derivedTemplate.name}`
+                      : `${toSentenceCase("Piano creato da zero il")} ${plan?.created_at ? format(new Date(plan.created_at), "dd/MM/yyyy", { locale: it }) : ""}`
+                    }
+                  </p>
+                )}
+                {isNewFromTemplate && (
+                  <p className="text-sm text-muted-foreground">
+                    {toSentenceCase("Creato da template")}: {template.name}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               {updateMutation.isPending || assignMutation.isPending ? (
                 <Button disabled size="sm">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -410,17 +431,6 @@ const ClientPlanEditor = () => {
                 <Button onClick={handleSave} size="sm" className="gap-2">
                   <CheckCircle className="h-4 w-4" />
                   {id ? toSentenceCase("Salva") : toSentenceCase("Assegna")}
-                </Button>
-              )}
-              {id && (
-                <Button
-                  onClick={() => setSaveAsTemplateOpen(true)}
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  {toSentenceCase("Salva come template")}
                 </Button>
               )}
               {id && clientId && plan?.status === "IN_CORSO" && (
@@ -434,16 +444,96 @@ const ClientPlanEditor = () => {
                   {toSentenceCase("Usa in sessione")}
                 </Button>
               )}
-              <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2">{" "}
+              <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" />
                 PDF
               </Button>
+              {id && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        if (!plan) return;
+                        updateMutation.mutate({ 
+                          id: plan.id, 
+                          updates: { is_visible: !plan.is_visible } 
+                        });
+                      }}
+                    >
+                      {plan?.is_visible ? (
+                        <>
+                          <EyeOff className="h-4 w-4 mr-2" />
+                          {toSentenceCase("Nascondi al cliente")}
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4 mr-2" />
+                          {toSentenceCase("Rendi visibile")}
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (!plan) return;
+                        updateMutation.mutate({
+                          id: plan.id,
+                          updates: { locked_at: plan.locked_at ? null : new Date().toISOString() }
+                        });
+                      }}
+                    >
+                      {plan?.locked_at ? (
+                        <>
+                          <Unlock className="h-4 w-4 mr-2" />
+                          {toSentenceCase("Sblocca pianificazione")}
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="h-4 w-4 mr-2" />
+                          {toSentenceCase("Blocca pianificazione")}
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (!plan) return;
+                        updateMutation.mutate({
+                          id: plan.id,
+                          updates: { is_in_use: !plan.is_in_use }
+                        });
+                      }}
+                    >
+                      <Star className={`h-4 w-4 mr-2 ${plan?.is_in_use ? 'fill-current' : ''}`} />
+                      {plan?.is_in_use
+                        ? toSentenceCase("Rimuovi da In Uso")
+                        : toSentenceCase("Imposta come In Uso")
+                      }
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setSaveAsTemplateOpen(true)}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      {toSentenceCase("Salva come template")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
           {isNewFromTemplate && (
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm">
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mt-3">
               <p className="text-blue-900 dark:text-blue-100">
-                Stai personalizzando un piano per {clientName} basato sul template "{template.name}"
+                {toSentenceCase("Stai personalizzando un piano basato sul template")} "{template.name}". {toSentenceCase("Le modifiche non influiscono sul template originale")}.
+              </p>
+            </div>
+          )}
+          {id && !isNewFromTemplate && plan?.derived_from_template_id && derivedTemplate && (
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mt-3">
+              <p className="text-blue-900 dark:text-blue-100">
+                {toSentenceCase("Questo piano è stato creato a partire dal template")} "{derivedTemplate.name}". {toSentenceCase("Le modifiche non influiscono sul template originale")}.
               </p>
             </div>
           )}

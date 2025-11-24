@@ -50,6 +50,7 @@ export interface ClientPlanWithTemplate {
   data: any;
   status: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO';
   is_visible: boolean;
+  is_in_use: boolean;
   locked_at?: string;
   completed_at?: string;
   deleted_at?: string;

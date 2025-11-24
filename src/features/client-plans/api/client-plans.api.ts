@@ -80,24 +80,7 @@ export async function assignTemplateToClient(clientId: string, input: AssignTemp
 }
 
 export async function updateClientPlan(id: string, updates: Partial<ClientPlan>) {
-  // Get the plan and client info first
-  const { data: plan, error: planError } = await supabase
-    .from("client_plans")
-    .select("client_id, status")
-    .eq("id", id)
-    .single();
-
-  if (planError) throw planError;
-
-  let autoCompletedCount = 0;
-  
-  // If status is being changed to IN_CORSO, auto-complete other active plans
-  if (updates.status === "IN_CORSO") {
-    const { autoCompleteOtherActivePlans } = await import("./auto-complete-plans.api");
-    autoCompletedCount = await autoCompleteOtherActivePlans(plan.client_id, id);
-  }
-
-  // Update the plan
+  // Simple update without auto-completion logic
   const { data, error } = await supabase
     .from("client_plans")
     .update(updates)
@@ -106,42 +89,7 @@ export async function updateClientPlan(id: string, updates: Partial<ClientPlan>)
     .single();
 
   if (error) throw error;
-
-  // If the plan was IN_CORSO and is now COMPLETATO or ELIMINATO, check client status
-  if (plan.status === "IN_CORSO" && (updates.status === "COMPLETATO" || updates.status === "ELIMINATO")) {
-    // Check if this was the active plan for the client
-    const { data: client } = await supabase
-      .from("clients")
-      .select("id, status, active_plan_id")
-      .eq("id", plan.client_id)
-      .single();
-
-    if (client && client.active_plan_id === id && client.status === "ATTIVO") {
-      // Check if there are any other IN_CORSO plans for this client
-      const { data: otherActivePlans } = await supabase
-        .from("client_plans")
-        .select("id")
-        .eq("client_id", plan.client_id)
-        .eq("status", "IN_CORSO")
-        .neq("id", id);
-
-      // If no other IN_CORSO plans, transition client to POTENZIALE
-      if (!otherActivePlans || otherActivePlans.length === 0) {
-        await supabase
-          .from("clients")
-          .update({
-            status: "POTENZIALE",
-            active_plan_id: null,
-          })
-          .eq("id", plan.client_id);
-      }
-    }
-  }
-  
-  return { 
-    ...data as ClientPlan, 
-    _autoCompletedCount: autoCompletedCount 
-  };
+  return data as ClientPlan;
 }
 
 export async function updateClientPlanStatus(id: string, status: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO') {
