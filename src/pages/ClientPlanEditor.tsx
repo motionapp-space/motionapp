@@ -35,6 +35,7 @@ const ClientPlanEditor = () => {
   const [days, setDays] = useState<Day[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [nameError, setNameError] = useState(false);
   const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
@@ -136,11 +137,18 @@ const ClientPlanEditor = () => {
       }
     } else if (clientId) {
       // Create new plan from scratch
+      // Validazione nome
+      if (!name || name.trim().length === 0) {
+        setNameError(true);
+        toast.error("Inserisci un nome per il piano");
+        return;
+      }
+
       try {
         await createPlanMutation.mutateAsync({
           clientId,
-          name,
-          description,
+          name: name.trim(),
+          description: description?.trim(),
           days,
         });
         toast.success("Piano creato");
@@ -148,7 +156,7 @@ const ClientPlanEditor = () => {
         sp.set("tab", "plans");
         navigate(`/clients/${clientId}?${sp.toString()}`, { replace: true });
       } catch (error) {
-        toast.error("Errore nella creazione del piano");
+        console.error("Error creating plan:", error);
       }
     }
   };
@@ -455,10 +463,15 @@ const ClientPlanEditor = () => {
                   {toSentenceCase("Salvataggio...")}
                 </Button>
               ) : (
-                <Button onClick={handleSave} size="sm" className="gap-2">
-                  <CheckCircle className="h-4 w-4" />
-                  {id ? toSentenceCase("Salva") : toSentenceCase("Assegna")}
-                </Button>
+              <Button 
+                onClick={handleSave} 
+                size="sm" 
+                className="gap-2"
+                disabled={!id && !name?.trim()}
+              >
+                <CheckCircle className="h-4 w-4" />
+                {id ? toSentenceCase("Salva") : toSentenceCase("Assegna")}
+              </Button>
               )}
               {id && clientId && plan?.status === "IN_CORSO" && (
                 <Button
@@ -572,11 +585,20 @@ const ClientPlanEditor = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>{toSentenceCase("Nome piano")}</Label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Es: Piano Forza Personalizzato"
-              />
+              <div className="space-y-1">
+                <Input
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (nameError) setNameError(false);
+                  }}
+                  placeholder="Es: Piano Forza Personalizzato"
+                  className={nameError ? "border-destructive" : ""}
+                />
+                {nameError && (
+                  <p className="text-sm text-destructive">Il nome del piano è obbligatorio</p>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>{toSentenceCase("Descrizione")}</Label>
