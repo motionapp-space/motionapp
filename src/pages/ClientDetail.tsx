@@ -20,8 +20,7 @@ import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClie
 import { useToggleInUse } from "@/features/client-plans/hooks/useToggleInUse";
 import { useDuplicatePlan } from "@/features/client-plans/hooks/useDuplicatePlan";
 import { useSaveAsTemplate } from "@/features/client-plans/hooks/useSaveAsTemplate";
-import { CreatePlanDialog } from "@/features/client-plans/components/CreatePlanDialog";
-import { ClientPlanCard } from "@/features/client-plans/components/ClientPlanCard";
+import { ClientPlansTab } from "@/features/client-plans/components/ClientPlansTab";
 import { ClientAppointmentsTab } from "@/features/clients/components/ClientAppointmentsTab";
 import { SessionHistoryTab } from "@/features/sessions/components/SessionHistoryTab";
 import { PackageTab } from "@/features/packages/components/PackageTab";
@@ -47,7 +46,6 @@ const ClientDetail = () => {
   } = useClientStore();
 
   const [editMode, setEditMode] = useState(false);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [quickSessionDayPickerOpen, setQuickSessionDayPickerOpen] = useState(false);
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
   const [saveAsTemplateDialogOpen, setSaveAsTemplateDialogOpen] = useState(false);
@@ -457,61 +455,19 @@ const ClientDetail = () => {
           </TabsContent>
 
           {/* Plans Tab */}
-          <TabsContent value="plans" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">{toSentenceCase("Piani assegnati")}</h3>
-              <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="gap-2">
-                <Plus className="h-4 w-4" />
-                {toSentenceCase("Nuovo piano")}
-              </Button>
-            </div>
-
-            {plansLoading ? (
-              <div className="text-center py-12">
-                <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
-              </div>
-            ) : clientPlans.length === 0 ? (
-              <Card>
-                <CardContent className="p-0">
-                  <EmptyState
-                    icon={FileText}
-                    title="Nessun piano ancora"
-                    description="Questo cliente non ha ancora un piano di allenamento. Puoi crearne uno da zero o partire da un template."
-                    action={{
-                      label: "Crea nuovo piano",
-                      onClick: () => setCreateDialogOpen(true)
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {clientPlans
-                  .sort((a, b) => {
-                    // Prima i piani In Uso
-                    if (a.is_in_use && !b.is_in_use) return -1;
-                    if (!a.is_in_use && b.is_in_use) return 1;
-                    
-                    // Poi per status: IN_CORSO > COMPLETATO > ELIMINATO
-                    const statusOrder = { IN_CORSO: 0, COMPLETATO: 1, ELIMINATO: 2 };
-                    return statusOrder[a.status] - statusOrder[b.status];
-                  })
-                  .map((plan) => (
-                    <ClientPlanCard
-                      key={plan.id}
-                      plan={plan}
-                      onEdit={() => navigate(`/client-plans/${plan.id}/edit`)}
-                      onDuplicate={() => handleDuplicatePlan(plan.id)}
-                      onToggleInUse={() => handleToggleInUse(plan.id, plan.is_in_use)}
-                      onComplete={() => handleCompletePlan(plan.id)}
-                      onArchive={() => handleArchivePlan(plan.id)}
-                      onDelete={() => handleDeletePlan(plan.id)}
-                      onToggleVisibility={() => handleToggleVisibility(plan.id, plan.is_visible)}
-                      onSaveAsTemplate={() => handleSaveAsTemplate(plan.id)}
-                    />
-                  ))}
-              </div>
-            )}
+          <TabsContent value="plans">
+            <ClientPlansTab
+              clientId={id!}
+              plans={clientPlans}
+              isLoading={plansLoading}
+              onDuplicate={handleDuplicatePlan}
+              onToggleInUse={handleToggleInUse}
+              onComplete={handleCompletePlan}
+              onArchive={handleArchivePlan}
+              onDelete={handleDeletePlan}
+              onToggleVisibility={handleToggleVisibility}
+              onSaveAsTemplate={handleSaveAsTemplate}
+            />
           </TabsContent>
 
           {/* Appointments Tab */}
@@ -545,13 +501,6 @@ const ClientDetail = () => {
         open={activityDialogOpen}
         onOpenChange={setActivityDialogOpen}
         activities={currentClient.activities}
-      />
-
-      {/* Create Plan Dialog */}
-      <CreatePlanDialog 
-        clientId={id || ""} 
-        open={createDialogOpen} 
-        onOpenChange={setCreateDialogOpen} 
       />
 
       {/* Save As Template Dialog */}
