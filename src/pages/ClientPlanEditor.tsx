@@ -4,9 +4,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, Download, CheckCircle, Loader2, Save, FileText, MoreVertical, Eye, EyeOff, Lock, Unlock, Star } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  ArrowLeft,
+  Download,
+  CheckCircle,
+  Loader2,
+  Save,
+  FileText,
+  MoreVertical,
+  Eye,
+  EyeOff,
+  Lock,
+  Unlock,
+  Star,
+} from "lucide-react";
 import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
@@ -21,7 +47,16 @@ import { useAssignTemplate } from "@/features/client-plans/hooks/useAssignTempla
 import { useCreateClientPlan } from "@/features/client-plans/hooks/useCreateClientPlan";
 import { useTemplate } from "@/features/templates/hooks/useTemplate";
 import type { ClientPlan } from "@/types/template";
-import { makeDay, makeGroup, type Day, type PhaseType, type GroupType, type Exercise, type ExerciseGroup, migratePhaseToGroups } from "@/types/plan";
+import {
+  makeDay,
+  makeGroup,
+  type Day,
+  type PhaseType,
+  type GroupType,
+  type Exercise,
+  type ExerciseGroup,
+  migratePhaseToGroups,
+} from "@/types/plan";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -52,7 +87,7 @@ const ClientPlanEditor = () => {
   const templateId = searchParams.get("templateId");
   const template = location.state?.template;
   const isNewFromTemplate = !id && templateId && template;
-  
+
   const { data: derivedTemplate } = useTemplate(plan?.derived_from_template_id || undefined);
 
   // Migrate days to use groups on load
@@ -192,224 +227,244 @@ const ClientPlanEditor = () => {
   };
 
   const handleUpdateDayTitle = (dayId: string, title: string) => {
-    setDays(days.map(d => d.id === dayId ? { ...d, title } : d));
+    setDays(days.map((d) => (d.id === dayId ? { ...d, title } : d)));
   };
 
   const handleDuplicateDay = (dayId: string) => {
-    const dayToDup = days.find(d => d.id === dayId);
+    const dayToDup = days.find((d) => d.id === dayId);
     if (!dayToDup) return;
     const newDay = { ...dayToDup, id: crypto.randomUUID(), order: days.length + 1 };
     setDays([...days, newDay]);
   };
 
   const handleDeleteDay = (dayId: string) => {
-    setDays(days.filter(d => d.id !== dayId));
+    setDays(days.filter((d) => d.id !== dayId));
   };
 
   const handleAddGroup = (dayId: string, phaseType: PhaseType, groupType: GroupType) => {
-    setDays(days.map(day => {
-      if (day.id === dayId) {
-        return {
-          ...day,
-          phases: day.phases.map(phase => {
-            if (phase.type === phaseType) {
-              const migratedPhase = migratePhaseToGroups(phase);
-              const newGroup = makeGroup(groupType, migratedPhase.groups.length + 1);
-              return { ...phase, groups: [...migratedPhase.groups, newGroup] };
-            }
-            return phase;
-          }),
-        };
-      }
-      return day;
-    }));
+    setDays(
+      days.map((day) => {
+        if (day.id === dayId) {
+          return {
+            ...day,
+            phases: day.phases.map((phase) => {
+              if (phase.type === phaseType) {
+                const migratedPhase = migratePhaseToGroups(phase);
+                const newGroup = makeGroup(groupType, migratedPhase.groups.length + 1);
+                return { ...phase, groups: [...migratedPhase.groups, newGroup] };
+              }
+              return phase;
+            }),
+          };
+        }
+        return day;
+      }),
+    );
   };
 
   const handleUpdateGroup = (dayId: string, phaseType: PhaseType, groupId: string, updates: Partial<ExerciseGroup>) => {
-    setDays(days.map(day => {
-      if (day.id === dayId) {
-        return {
-          ...day,
-          phases: day.phases.map(phase => {
-            if (phase.type === phaseType) {
-              const migratedPhase = migratePhaseToGroups(phase);
-              return {
-                ...phase,
-                groups: migratedPhase.groups.map(g => g.id === groupId ? { ...g, ...updates } : g),
-              };
-            }
-            return phase;
-          }),
-        };
-      }
-      return day;
-    }));
+    setDays(
+      days.map((day) => {
+        if (day.id === dayId) {
+          return {
+            ...day,
+            phases: day.phases.map((phase) => {
+              if (phase.type === phaseType) {
+                const migratedPhase = migratePhaseToGroups(phase);
+                return {
+                  ...phase,
+                  groups: migratedPhase.groups.map((g) => (g.id === groupId ? { ...g, ...updates } : g)),
+                };
+              }
+              return phase;
+            }),
+          };
+        }
+        return day;
+      }),
+    );
   };
 
   const handleDuplicateGroup = (dayId: string, phaseType: PhaseType, groupId: string) => {
-    setDays(days.map(day => {
-      if (day.id === dayId) {
-        return {
-          ...day,
-          phases: day.phases.map(phase => {
-            if (phase.type === phaseType) {
-              const migratedPhase = migratePhaseToGroups(phase);
-              const groupToDup = migratedPhase.groups.find(g => g.id === groupId);
-              if (!groupToDup) return phase;
-              const newGroup = {
-                ...groupToDup,
-                id: crypto.randomUUID(),
-                exercises: groupToDup.exercises.map(ex => ({ ...ex, id: crypto.randomUUID() })),
-                order: migratedPhase.groups.length + 1,
-              };
-              return { ...phase, groups: [...migratedPhase.groups, newGroup] };
-            }
-            return phase;
-          }),
-        };
-      }
-      return day;
-    }));
+    setDays(
+      days.map((day) => {
+        if (day.id === dayId) {
+          return {
+            ...day,
+            phases: day.phases.map((phase) => {
+              if (phase.type === phaseType) {
+                const migratedPhase = migratePhaseToGroups(phase);
+                const groupToDup = migratedPhase.groups.find((g) => g.id === groupId);
+                if (!groupToDup) return phase;
+                const newGroup = {
+                  ...groupToDup,
+                  id: crypto.randomUUID(),
+                  exercises: groupToDup.exercises.map((ex) => ({ ...ex, id: crypto.randomUUID() })),
+                  order: migratedPhase.groups.length + 1,
+                };
+                return { ...phase, groups: [...migratedPhase.groups, newGroup] };
+              }
+              return phase;
+            }),
+          };
+        }
+        return day;
+      }),
+    );
   };
 
   const handleDeleteGroup = (dayId: string, phaseType: PhaseType, groupId: string) => {
-    setDays(days.map(day => {
-      if (day.id === dayId) {
-        return {
-          ...day,
-          phases: day.phases.map(phase => {
-            if (phase.type === phaseType) {
-              const migratedPhase = migratePhaseToGroups(phase);
-              return { ...phase, groups: migratedPhase.groups.filter(g => g.id !== groupId) };
-            }
-            return phase;
-          }),
-        };
-      }
-      return day;
-    }));
+    setDays(
+      days.map((day) => {
+        if (day.id === dayId) {
+          return {
+            ...day,
+            phases: day.phases.map((phase) => {
+              if (phase.type === phaseType) {
+                const migratedPhase = migratePhaseToGroups(phase);
+                return { ...phase, groups: migratedPhase.groups.filter((g) => g.id !== groupId) };
+              }
+              return phase;
+            }),
+          };
+        }
+        return day;
+      }),
+    );
   };
 
   const handleAddExerciseToGroup = (dayId: string, phaseType: PhaseType, groupId: string) => {
-    setDays(days.map(day => {
-      if (day.id === dayId) {
-        return {
-          ...day,
-          phases: day.phases.map(phase => {
-            if (phase.type === phaseType) {
-              const migratedPhase = migratePhaseToGroups(phase);
-              return {
-                ...phase,
-                groups: migratedPhase.groups.map(group => {
-                  if (group.id === groupId) {
-                    const newExercise = {
-                      id: crypto.randomUUID(),
-                      name: "",
-                      sets: 3,
-                      reps: "10",
-                      load: "",
-                      rest: "01:00",
-                      notes: "",
-                      order: group.exercises.length + 1,
-                    };
-                    return { ...group, exercises: [...group.exercises, newExercise] };
-                  }
-                  return group;
-                }),
-              };
-            }
-            return phase;
-          }),
-        };
-      }
-      return day;
-    }));
+    setDays(
+      days.map((day) => {
+        if (day.id === dayId) {
+          return {
+            ...day,
+            phases: day.phases.map((phase) => {
+              if (phase.type === phaseType) {
+                const migratedPhase = migratePhaseToGroups(phase);
+                return {
+                  ...phase,
+                  groups: migratedPhase.groups.map((group) => {
+                    if (group.id === groupId) {
+                      const newExercise = {
+                        id: crypto.randomUUID(),
+                        name: "",
+                        sets: 3,
+                        reps: "10",
+                        load: "",
+                        rest: "01:00",
+                        notes: "",
+                        order: group.exercises.length + 1,
+                      };
+                      return { ...group, exercises: [...group.exercises, newExercise] };
+                    }
+                    return group;
+                  }),
+                };
+              }
+              return phase;
+            }),
+          };
+        }
+        return day;
+      }),
+    );
   };
 
-  const handleUpdateExercise = (dayId: string, phaseType: PhaseType, groupId: string, exerciseId: string, updates: Partial<Exercise>) => {
-    setDays(days.map(day => {
-      if (day.id === dayId) {
-        return {
-          ...day,
-          phases: day.phases.map(phase => {
-            if (phase.type === phaseType) {
-              const migratedPhase = migratePhaseToGroups(phase);
-              return {
-                ...phase,
-                groups: migratedPhase.groups.map(group => {
-                  if (group.id === groupId) {
-                    return {
-                      ...group,
-                      exercises: group.exercises.map(ex =>
-                        ex.id === exerciseId ? { ...ex, ...updates } : ex
-                      ),
-                    };
-                  }
-                  return group;
-                }),
-              };
-            }
-            return phase;
-          }),
-        };
-      }
-      return day;
-    }));
+  const handleUpdateExercise = (
+    dayId: string,
+    phaseType: PhaseType,
+    groupId: string,
+    exerciseId: string,
+    updates: Partial<Exercise>,
+  ) => {
+    setDays(
+      days.map((day) => {
+        if (day.id === dayId) {
+          return {
+            ...day,
+            phases: day.phases.map((phase) => {
+              if (phase.type === phaseType) {
+                const migratedPhase = migratePhaseToGroups(phase);
+                return {
+                  ...phase,
+                  groups: migratedPhase.groups.map((group) => {
+                    if (group.id === groupId) {
+                      return {
+                        ...group,
+                        exercises: group.exercises.map((ex) => (ex.id === exerciseId ? { ...ex, ...updates } : ex)),
+                      };
+                    }
+                    return group;
+                  }),
+                };
+              }
+              return phase;
+            }),
+          };
+        }
+        return day;
+      }),
+    );
   };
 
   const handleDuplicateExercise = (dayId: string, phaseType: PhaseType, groupId: string, exerciseId: string) => {
-    setDays(days.map(day => {
-      if (day.id === dayId) {
-        return {
-          ...day,
-          phases: day.phases.map(phase => {
-            if (phase.type === phaseType) {
-              const migratedPhase = migratePhaseToGroups(phase);
-              return {
-                ...phase,
-                groups: migratedPhase.groups.map(group => {
-                  if (group.id === groupId) {
-                    const exToDup = group.exercises.find(ex => ex.id === exerciseId);
-                    if (!exToDup) return group;
-                    const newEx = { ...exToDup, id: crypto.randomUUID(), order: group.exercises.length + 1 };
-                    return { ...group, exercises: [...group.exercises, newEx] };
-                  }
-                  return group;
-                }),
-              };
-            }
-            return phase;
-          }),
-        };
-      }
-      return day;
-    }));
+    setDays(
+      days.map((day) => {
+        if (day.id === dayId) {
+          return {
+            ...day,
+            phases: day.phases.map((phase) => {
+              if (phase.type === phaseType) {
+                const migratedPhase = migratePhaseToGroups(phase);
+                return {
+                  ...phase,
+                  groups: migratedPhase.groups.map((group) => {
+                    if (group.id === groupId) {
+                      const exToDup = group.exercises.find((ex) => ex.id === exerciseId);
+                      if (!exToDup) return group;
+                      const newEx = { ...exToDup, id: crypto.randomUUID(), order: group.exercises.length + 1 };
+                      return { ...group, exercises: [...group.exercises, newEx] };
+                    }
+                    return group;
+                  }),
+                };
+              }
+              return phase;
+            }),
+          };
+        }
+        return day;
+      }),
+    );
   };
 
   const handleDeleteExercise = (dayId: string, phaseType: PhaseType, groupId: string, exerciseId: string) => {
-    setDays(days.map(day => {
-      if (day.id === dayId) {
-        return {
-          ...day,
-          phases: day.phases.map(phase => {
-            if (phase.type === phaseType) {
-              const migratedPhase = migratePhaseToGroups(phase);
-              return {
-                ...phase,
-                groups: migratedPhase.groups.map(group => {
-                  if (group.id === groupId) {
-                    return { ...group, exercises: group.exercises.filter(ex => ex.id !== exerciseId) };
-                  }
-                  return group;
-                }),
-              };
-            }
-            return phase;
-          }),
-        };
-      }
-      return day;
-    }));
+    setDays(
+      days.map((day) => {
+        if (day.id === dayId) {
+          return {
+            ...day,
+            phases: day.phases.map((phase) => {
+              if (phase.type === phaseType) {
+                const migratedPhase = migratePhaseToGroups(phase);
+                return {
+                  ...phase,
+                  groups: migratedPhase.groups.map((group) => {
+                    if (group.id === groupId) {
+                      return { ...group, exercises: group.exercises.filter((ex) => ex.id !== exerciseId) };
+                    }
+                    return group;
+                  }),
+                };
+              }
+              return phase;
+            }),
+          };
+        }
+        return day;
+      }),
+    );
   };
 
   if (loading) {
@@ -445,8 +500,7 @@ const ClientPlanEditor = () => {
                   <p className="text-sm text-muted-foreground">
                     {plan?.derived_from_template_id && derivedTemplate
                       ? `${toSentenceCase("Derivato da template")}: ${derivedTemplate.name}`
-                      : `${toSentenceCase("Piano creato da zero il")} ${plan?.created_at ? format(new Date(plan.created_at), "dd/MM/yyyy", { locale: it }) : ""}`
-                    }
+                      : `${toSentenceCase("Piano creato da zero il")} ${plan?.created_at ? format(new Date(plan.created_at), "dd/MM/yyyy", { locale: it }) : ""}`}
                   </p>
                 )}
                 {isNewFromTemplate && (
@@ -463,23 +517,13 @@ const ClientPlanEditor = () => {
                   {toSentenceCase("Salvataggio...")}
                 </Button>
               ) : (
-              <Button 
-                onClick={handleSave} 
-                size="sm" 
-                className="gap-2"
-                disabled={!id && !name?.trim()}
-              >
-                <CheckCircle className="h-4 w-4" />
-                {id ? toSentenceCase("Salva") : toSentenceCase("Assegna")}
-              </Button>
+                <Button onClick={handleSave} size="sm" className="gap-2" disabled={!id && !name?.trim()}>
+                  <CheckCircle className="h-4 w-4" />
+                  {id ? toSentenceCase("Salva") : toSentenceCase("Assegna")}
+                </Button>
               )}
               {id && clientId && plan?.status === "IN_CORSO" && (
-                <Button
-                  onClick={() => setDayPickerOpen(true)}
-                  variant="secondary"
-                  size="sm"
-                  className="gap-2"
-                >
+                <Button onClick={() => setDayPickerOpen(true)} variant="secondary" size="sm" className="gap-2">
                   <Save className="h-4 w-4" />
                   {toSentenceCase("Usa in sessione")}
                 </Button>
@@ -496,12 +540,12 @@ const ClientPlanEditor = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => {
                         if (!plan) return;
-                        updateMutation.mutate({ 
-                          id: plan.id, 
-                          updates: { is_visible: !plan.is_visible } 
+                        updateMutation.mutate({
+                          id: plan.id,
+                          updates: { is_visible: !plan.is_visible },
                         });
                       }}
                     >
@@ -522,7 +566,7 @@ const ClientPlanEditor = () => {
                         if (!plan) return;
                         updateMutation.mutate({
                           id: plan.id,
-                          updates: { locked_at: plan.locked_at ? null : new Date().toISOString() }
+                          updates: { locked_at: plan.locked_at ? null : new Date().toISOString() },
                         });
                       }}
                     >
@@ -543,15 +587,12 @@ const ClientPlanEditor = () => {
                         if (!plan) return;
                         updateMutation.mutate({
                           id: plan.id,
-                          updates: { is_in_use: !plan.is_in_use }
+                          updates: { is_in_use: !plan.is_in_use },
                         });
                       }}
                     >
-                      <Star className={`h-4 w-4 mr-2 ${plan?.is_in_use ? 'fill-current' : ''}`} />
-                      {plan?.is_in_use
-                        ? toSentenceCase("Rimuovi da In Uso")
-                        : toSentenceCase("Imposta come In Uso")
-                      }
+                      <Star className={`h-4 w-4 mr-2 ${plan?.is_in_use ? "fill-current" : ""}`} />
+                      {plan?.is_in_use ? toSentenceCase("Rimuovi da In Uso") : toSentenceCase("Imposta come In Uso")}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setSaveAsTemplateOpen(true)}>
@@ -566,14 +607,16 @@ const ClientPlanEditor = () => {
           {isNewFromTemplate && (
             <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mt-3">
               <p className="text-blue-900 dark:text-blue-100">
-                {toSentenceCase("Stai personalizzando un piano basato sul template")} "{template.name}". {toSentenceCase("Le modifiche non influiscono sul template originale")}.
+                {toSentenceCase("Stai personalizzando un piano basato sul template")} "{template.name}".{" "}
+                {toSentenceCase("Le modifiche non influiscono sul template originale")}.
               </p>
             </div>
           )}
           {id && !isNewFromTemplate && plan?.derived_from_template_id && derivedTemplate && (
             <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mt-3">
               <p className="text-blue-900 dark:text-blue-100">
-                {toSentenceCase("Questo piano è stato creato a partire dal template")} "{derivedTemplate.name}". {toSentenceCase("Le modifiche non influiscono sul template originale")}.
+                {toSentenceCase("Questo piano è stato creato a partire dal template")} "{derivedTemplate.name}".{" "}
+                {toSentenceCase("Le modifiche non influiscono sul template originale")}.
               </p>
             </div>
           )}
@@ -584,7 +627,7 @@ const ClientPlanEditor = () => {
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>{toSentenceCase("Nome piano")}</Label>
+              <Label>{toSentenceCase("Nome piano*")}</Label>
               <div className="space-y-1">
                 <Input
                   value={name}
@@ -595,9 +638,7 @@ const ClientPlanEditor = () => {
                   placeholder="Es: Piano Forza Personalizzato"
                   className={nameError ? "border-destructive" : ""}
                 />
-                {nameError && (
-                  <p className="text-sm text-destructive">Il nome del piano è obbligatorio</p>
-                )}
+                {nameError && <p className="text-sm text-destructive">Il nome del piano è obbligatorio</p>}
               </div>
             </div>
             <div className="space-y-2">
@@ -622,9 +663,7 @@ const ClientPlanEditor = () => {
 
             {days.length === 0 ? (
               <div className="text-center py-12 border rounded-lg bg-muted/20">
-                <p className="text-muted-foreground mb-4">
-                  {toSentenceCase("Nessun giorno ancora")}
-                </p>
+                <p className="text-muted-foreground mb-4">{toSentenceCase("Nessun giorno ancora")}</p>
                 <Button onClick={handleAddDay} variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
                   {toSentenceCase("Aggiungi primo giorno")}
@@ -640,13 +679,21 @@ const ClientPlanEditor = () => {
                     onDuplicate={() => handleDuplicateDay(day.id)}
                     onDelete={() => handleDeleteDay(day.id)}
                     onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
-                    onUpdateGroup={(phaseType, groupId, updates) => handleUpdateGroup(day.id, phaseType, groupId, updates)}
+                    onUpdateGroup={(phaseType, groupId, updates) =>
+                      handleUpdateGroup(day.id, phaseType, groupId, updates)
+                    }
                     onDuplicateGroup={(phaseType, groupId) => handleDuplicateGroup(day.id, phaseType, groupId)}
                     onDeleteGroup={(phaseType, groupId) => handleDeleteGroup(day.id, phaseType, groupId)}
                     onAddExerciseToGroup={(phaseType, groupId) => handleAddExerciseToGroup(day.id, phaseType, groupId)}
-                    onUpdateExercise={(phaseType, groupId, exerciseId, patch) => handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)}
-                    onDuplicateExercise={(phaseType, groupId, exerciseId) => handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)}
-                    onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
+                    onUpdateExercise={(phaseType, groupId, exerciseId, patch) =>
+                      handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)
+                    }
+                    onDuplicateExercise={(phaseType, groupId, exerciseId) =>
+                      handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)
+                    }
+                    onDeleteExercise={(phaseType, groupId, exerciseId) =>
+                      handleDeleteExercise(day.id, phaseType, groupId, exerciseId)
+                    }
                   />
                 ))}
               </div>
