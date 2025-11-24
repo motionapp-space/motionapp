@@ -34,6 +34,13 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
     setModalOpen(true);
   };
 
+  const handleModalOpenChange = (open: boolean) => {
+    setModalOpen(open);
+    if (!open) {
+      setSelectedEvent(undefined);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -152,7 +159,7 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
 
       <EventModal
         open={modalOpen}
-        onOpenChange={setModalOpen}
+        onOpenChange={handleModalOpenChange}
         event={selectedEvent}
         prefillData={
           !selectedEvent
