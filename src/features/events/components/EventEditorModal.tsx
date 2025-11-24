@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -193,7 +194,7 @@ export function EventEditorModal({
         });
       }
     }
-  }, [open, mode, event, initialDate, initialStartTime, initialEndTime, lockedClientId, isNewMode]);
+  }, [open, mode, event, initialDate, initialStartTime, initialEndTime, lockedClientId, isNewMode, bookingSettings]);
 
   // Computed values
   const duration = useMemo(() => {
@@ -278,6 +279,25 @@ export function EventEditorModal({
     }
     
     return true;
+  }, [formData, recurrence, occurrences, availableCredits]);
+
+  // Validation message for tooltip
+  const validationMessage = useMemo(() => {
+    if (!formData.title.trim()) return "Inserisci un titolo";
+    if (!formData.clientId) return "Seleziona un cliente";
+    
+    const [startH, startM] = formData.startTime.split(':').map(Number);
+    const [endH, endM] = formData.endTime.split(':').map(Number);
+    const startMins = startH * 60 + startM;
+    const endMins = endH * 60 + endM;
+    
+    if (endMins <= startMins) return "L'ora di fine deve essere successiva all'ora di inizio";
+    
+    if (recurrence.enabled && occurrences.length > availableCredits) {
+      return `Crediti insufficienti (${availableCredits} disponibili, ${occurrences.length} richiesti)`;
+    }
+    
+    return null;
   }, [formData, recurrence, occurrences, availableCredits]);
 
   // Handlers
@@ -571,7 +591,9 @@ export function EventEditorModal({
             {/* Dettagli Principali */}
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="title">Titolo</Label>
+                <Label htmlFor="title">
+                  Titolo <span className="ml-1">*</span>
+                </Label>
                 <Input
                   id="title"
                   value={formData.title}
@@ -840,13 +862,26 @@ export function EventEditorModal({
                         Avvia sessione
                       </Button>
                     )}
-                    <Button
-                      onClick={handleUpdate}
-                      disabled={!isValid || updateEvent.isPending}
-                      className="h-10"
-                    >
-                      {updateEvent.isPending ? 'Salvataggio...' : 'Salva modifiche'}
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              onClick={handleUpdate}
+                              disabled={!isValid || updateEvent.isPending}
+                              className="h-10"
+                            >
+                              {updateEvent.isPending ? 'Salvataggio...' : 'Salva modifiche'}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {validationMessage && (
+                          <TooltipContent>
+                            <p>{validationMessage}</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
               )}
@@ -863,13 +898,26 @@ export function EventEditorModal({
                     >
                       Annulla
                     </Button>
-                    <Button
-                      onClick={handleCreate}
-                      disabled={!isValid || createEvent.isPending}
-                      className="h-10"
-                    >
-                      {createEvent.isPending ? 'Salvataggio...' : 'Crea appuntamento'}
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              onClick={handleCreate}
+                              disabled={!isValid || createEvent.isPending}
+                              className="h-10"
+                            >
+                              {createEvent.isPending ? 'Salvataggio...' : 'Crea appuntamento'}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {validationMessage && (
+                          <TooltipContent>
+                            <p>{validationMessage}</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
               )}
