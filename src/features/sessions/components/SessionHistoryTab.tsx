@@ -83,7 +83,7 @@ export function SessionHistoryTab({ clientId, onStartNewSession }: SessionHistor
             <p className="text-sm text-muted-foreground">
               Sessioni svolte insieme al personal trainer
             </p>
-            {onStartNewSession && (
+            {onStartNewSession && withCoachSessions.length > 0 && (
               <Button onClick={onStartNewSession} size="sm" className="gap-2">
                 <Play className="h-4 w-4" />
                 Nuova sessione
@@ -98,6 +98,10 @@ export function SessionHistoryTab({ clientId, onStartNewSession }: SessionHistor
                   icon={UserCheck}
                   title="Nessuna sessione con PT"
                   description="Non ci sono ancora sessioni registrate con il personal trainer."
+                  action={onStartNewSession ? {
+                    label: "Inizia prima sessione",
+                    onClick: onStartNewSession
+                  } : undefined}
                 />
               </CardContent>
             </Card>
