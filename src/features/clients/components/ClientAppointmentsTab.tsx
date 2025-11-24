@@ -157,8 +157,6 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
         prefillData={
           !selectedEvent
             ? {
-                start: new Date(),
-                end: addHours(new Date(), 1),
                 clientId,
               }
             : undefined

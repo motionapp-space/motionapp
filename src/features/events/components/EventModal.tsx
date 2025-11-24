@@ -10,8 +10,8 @@ interface EventModalProps {
   onOpenChange: (open: boolean) => void;
   event?: EventWithClient;
   prefillData?: {
-    start: Date;
-    end: Date;
+    start?: Date;
+    end?: Date;
     clientId?: string;
   };
   lockedClientId?: string;
