@@ -49,62 +49,30 @@ export function ClientPlanCard({
     }
   };
 
-  const openTemplate = () => {
+  const openTemplate = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!templateId) return;
     
-    // If template is missing (404), navigate to missing page
     if (isError && (error as any)?.code === "PGRST116") {
       navigate(`/templates/${templateId}/missing`, { 
         state: { planId: plan.id } 
       });
     } else {
-      // Navigate to read mode
       navigate(`/templates/${templateId}?mode=read`);
     }
   };
 
-  const getStatusBadge = () => {
-    const badges = [];
-    
-    // In Uso badge (most important)
-    if (plan.is_in_use) {
-      badges.push(
-        <Badge key="in-use" className="bg-green-500/10 text-green-700 dark:text-green-400">
-          <Star className="h-3 w-3 mr-1" />
-          {toSentenceCase("In uso")}
-        </Badge>
-      );
-    }
-    
-    // Status badge
-    if (plan.status === "IN_CORSO") {
-      badges.push(
-        <Badge key="status" className="bg-blue-500/10 text-blue-700 dark:text-blue-400">
-          {toSentenceCase("Attivo")}
-        </Badge>
-      );
-    } else if (plan.status === "COMPLETATO") {
-      badges.push(
-        <Badge key="status" className="bg-purple-500/10 text-purple-700 dark:text-purple-400">
-          {toSentenceCase("Completato")}
-        </Badge>
-      );
-    } else if (plan.status === "ELIMINATO") {
-      badges.push(
-        <Badge key="status" className="bg-gray-500/10 text-gray-700 dark:text-gray-400">
-          {toSentenceCase("Archiviato")}
-        </Badge>
-      );
-    }
-
-    return badges;
+  const handleCardClick = () => {
+    onEdit?.();
   };
 
-  const handleDeleteClick = () => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setShowDeleteDialog(true);
   };
 
-  const handleArchiveClick = () => {
+  const handleArchiveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setShowArchiveDialog(true);
   };
 
@@ -120,27 +88,64 @@ export function ClientPlanCard({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between gap-4">
+      <Card 
+        className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
+        onClick={handleCardClick}
+      >
+        <CardContent className="p-5">
+          {/* Top Row: Title + Badges + Menu */}
+          <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg truncate">{plan.name}</CardTitle>
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                {getStatusBadge()}
+              <h3 className="text-lg font-semibold leading-tight mb-2">
+                {plan.name}
+              </h3>
+              <div className="flex flex-wrap items-center gap-2">
+                {plan.is_in_use && (
+                  <Badge className="bg-primary/10 text-primary border-primary/20">
+                    <Star className="h-3 w-3 mr-1" />
+                    {toSentenceCase("In uso")}
+                  </Badge>
+                )}
+                {plan.status === "IN_CORSO" && (
+                  <Badge variant="outline" className="text-xs">
+                    {toSentenceCase("Attivo")}
+                  </Badge>
+                )}
+                {plan.status === "COMPLETATO" && (
+                  <Badge variant="outline" className="text-xs border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400">
+                    {toSentenceCase("Completato")}
+                  </Badge>
+                )}
+                {plan.status === "ELIMINATO" && (
+                  <Badge variant="outline" className="text-xs">
+                    {toSentenceCase("Archiviato")}
+                  </Badge>
+                )}
+                {plan.locked_at && (
+                  <Badge variant="outline" className="text-xs">
+                    <Lock className="h-3 w-3 mr-1" />
+                    {toSentenceCase("Bloccato")}
+                  </Badge>
+                )}
               </div>
             </div>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0">
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onDuplicate}>
+              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(); }}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  {toSentenceCase("Apri piano")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }}>
                   <Copy className="h-4 w-4 mr-2" />
                   {toSentenceCase("Duplica piano")}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onToggleInUse}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleInUse?.(); }}>
                   <Star className={`h-4 w-4 mr-2 ${plan.is_in_use ? 'fill-current' : ''}`} />
                   {plan.is_in_use 
                     ? toSentenceCase("Rimuovi da In Uso")
@@ -148,7 +153,7 @@ export function ClientPlanCard({
                   }
                 </DropdownMenuItem>
                 {plan.status === 'IN_CORSO' && (
-                  <DropdownMenuItem onClick={onComplete}>
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onComplete?.(); }}>
                     <CheckCircle className="h-4 w-4 mr-2" />
                     {toSentenceCase("Segna come completato")}
                   </DropdownMenuItem>
@@ -159,7 +164,7 @@ export function ClientPlanCard({
                     {toSentenceCase("Archivia")}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={onToggleVisibility}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleVisibility?.(); }}>
                   {plan.is_visible ? (
                     <>
                       <EyeOff className="h-4 w-4 mr-2" />
@@ -173,7 +178,7 @@ export function ClientPlanCard({
                   )}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onSaveAsTemplate}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSaveAsTemplate?.(); }}>
                   <FileText className="h-4 w-4 mr-2" />
                   {toSentenceCase("Salva come template")}
                 </DropdownMenuItem>
@@ -187,80 +192,34 @@ export function ClientPlanCard({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-3">
-          {plan.description && (
-            <p className="text-sm text-muted-foreground">{plan.description}</p>
-          )}
 
-          {templateId && (
-            <div className="text-sm text-muted-foreground flex items-center gap-2">
-              {isError && (error as any)?.code === "PGRST116" ? (
-                <>
-                  <Info className="h-4 w-4 text-destructive" />
-                  <span>{toSentenceCase("Template eliminato")}</span>
-                  <Button
-                    variant="link"
-                    className="px-0 h-auto text-primary"
-                    onClick={() => navigate(`/templates/${templateId}/missing`, { state: { planId: plan.id } })}
-                  >
-                    {toSentenceCase("Recupera")}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4" />
-                  <span>{toSentenceCase("Da template")}: </span>
-                  <button
-                    type="button"
-                    onClick={openTemplate}
-                    className="text-primary underline underline-offset-2 hover:opacity-90 inline-flex items-center gap-1"
-                  >
-                    {template?.name || toSentenceCase("Caricamento...")}
-                    <ExternalLink className="h-3 w-3" />
-                  </button>
-                </>
-              )}
+          {/* Template Origin */}
+          {templateId && !isError && (
+            <div className="text-sm text-muted-foreground mb-2">
+              <span>{toSentenceCase("Da template")}: </span>
+              <button
+                type="button"
+                onClick={openTemplate}
+                className="text-primary hover:underline inline-flex items-center gap-1"
+              >
+                {template?.name || toSentenceCase("Caricamento...")}
+                <ExternalLink className="h-3 w-3" />
+              </button>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              📅 {toSentenceCase("Creato il")}: {formatDate(plan.created_at)}
-            </div>
-            <div className="flex items-center gap-1">
-              📝 {toSentenceCase("Modificato")}: {formatDate(plan.updated_at)}
-            </div>
+          {/* Temporal Metadata */}
+          <div className="text-xs text-muted-foreground">
+            {toSentenceCase("Creato il")} {formatDate(plan.created_at)}
+            {" • "}
+            {toSentenceCase("Modificato il")} {formatDate(plan.updated_at)}
             {plan.completed_at && (
-              <div className="flex items-center gap-1">
-                ✅ {toSentenceCase("Completato")}: {formatDate(plan.completed_at)}
-              </div>
+              <>
+                {" • "}
+                {toSentenceCase("Completato il")} {formatDate(plan.completed_at)}
+              </>
             )}
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
-            {!plan.is_visible && (
-              <Badge variant="outline" className="text-xs">
-                <EyeOff className="h-3 w-3 mr-1" />
-                {toSentenceCase("Nascosto")}
-              </Badge>
-            )}
-            {plan.locked_at && (
-              <Badge variant="outline" className="text-xs">
-                <Lock className="h-3 w-3 mr-1" />
-                {toSentenceCase("Bloccato")}
-              </Badge>
-            )}
-          </div>
-
-          <Button 
-            size="sm" 
-            onClick={onEdit}
-            className="w-full gap-2 mt-2"
-          >
-            {toSentenceCase("Apri piano")}
-          </Button>
         </CardContent>
       </Card>
 
