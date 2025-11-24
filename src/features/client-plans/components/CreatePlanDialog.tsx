@@ -1,5 +1,4 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, FilePlus } from "lucide-react";
 import { toSentenceCase } from "@/lib/text";
@@ -36,35 +35,39 @@ export function CreatePlanDialog({ clientId, open, onOpenChange }: CreatePlanDia
           </DialogHeader>
           
           <div className="grid gap-4 md:grid-cols-2 py-4">
-            <Card 
-              className="cursor-pointer hover:border-primary transition-colors"
+            <button
               onClick={handleCreateFromScratch}
+              className="w-full text-left rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary transition-colors p-6 flex flex-col space-y-3"
             >
-              <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <FilePlus className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle className="text-lg">{toSentenceCase("Crea da zero")}</CardTitle>
-                <CardDescription className="text-sm">
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FilePlus className="h-6 w-6 text-primary" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-lg font-semibold leading-none tracking-tight">
+                  {toSentenceCase("Crea da zero")}
+                </h3>
+                <p className="text-sm text-muted-foreground">
                   {toSentenceCase("Parti con un piano vuoto e costruiscilo completamente personalizzato")}
-                </CardDescription>
-              </CardHeader>
-            </Card>
+                </p>
+              </div>
+            </button>
 
-            <Card 
-              className="cursor-pointer hover:border-primary transition-colors"
+            <button
               onClick={handleUseTemplate}
+              className="w-full text-left rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary transition-colors p-6 flex flex-col space-y-3"
             >
-              <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center mb-3">
-                  <FileText className="h-6 w-6 text-secondary-foreground" />
-                </div>
-                <CardTitle className="text-lg">{toSentenceCase("Usa un template")}</CardTitle>
-                <CardDescription className="text-sm">
+              <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center">
+                <FileText className="h-6 w-6 text-secondary-foreground" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-lg font-semibold leading-none tracking-tight">
+                  {toSentenceCase("Usa un template")}
+                </h3>
+                <p className="text-sm text-muted-foreground">
                   {toSentenceCase("Parti da un template esistente e personalizzalo")}
-                </CardDescription>
-              </CardHeader>
-            </Card>
+                </p>
+              </div>
+            </button>
           </div>
 
           <div className="flex justify-end">
