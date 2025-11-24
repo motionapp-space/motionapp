@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Edit, Plus, X, FileText, Play, Pencil, Activity } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -16,7 +17,10 @@ import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
 import { useClientPlansQuery } from "@/features/client-plans/hooks/useClientPlansQuery";
 import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClientPlan";
-import { AssignPlanDialog } from "@/features/client-plans/components/AssignPlanDialog";
+import { useToggleInUse } from "@/features/client-plans/hooks/useToggleInUse";
+import { useDuplicatePlan } from "@/features/client-plans/hooks/useDuplicatePlan";
+import { useSaveAsTemplate } from "@/features/client-plans/hooks/useSaveAsTemplate";
+import { CreatePlanDialog } from "@/features/client-plans/components/CreatePlanDialog";
 import { ClientPlanCard } from "@/features/client-plans/components/ClientPlanCard";
 import { ClientAppointmentsTab } from "@/features/clients/components/ClientAppointmentsTab";
 import { SessionHistoryTab } from "@/features/sessions/components/SessionHistoryTab";
@@ -43,9 +47,13 @@ const ClientDetail = () => {
   } = useClientStore();
 
   const [editMode, setEditMode] = useState(false);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [quickSessionDayPickerOpen, setQuickSessionDayPickerOpen] = useState(false);
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+  const [saveAsTemplateDialogOpen, setSaveAsTemplateDialogOpen] = useState(false);
+  const [selectedPlanForTemplate, setSelectedPlanForTemplate] = useState<string | null>(null);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [formData, setFormData] = useState({
     first_name: "",
@@ -58,6 +66,9 @@ const ClientDetail = () => {
 
   const { data: clientPlans = [], isLoading: plansLoading } = useClientPlansQuery(id || "");
   const updatePlanMutation = useUpdateClientPlan();
+  const toggleInUseMutation = useToggleInUse();
+  const duplicatePlanMutation = useDuplicatePlan();
+  const saveAsTemplateMutation = useSaveAsTemplate();
   const createEvent = useCreateEvent();
   const createSession = useCreateSession();
 
@@ -90,6 +101,82 @@ const ClientDetail = () => {
     if (!id || !tagInput.trim()) return;
     await addTagToClient(id, tagInput.trim());
     setTagInput("");
+  };
+
+  const handleToggleInUse = (planId: string, currentValue: boolean) => {
+    if (!id) return;
+    toggleInUseMutation.mutate({ planId, clientId: id, currentValue });
+  };
+
+  const handleDuplicatePlan = (planId: string) => {
+    duplicatePlanMutation.mutate({ planId });
+  };
+
+  const handleCompletePlan = async (planId: string) => {
+    try {
+      await updatePlanMutation.mutateAsync({ id: planId, updates: { status: "COMPLETATO", completed_at: new Date().toISOString() } });
+      toast.success("Piano completato", {
+        description: "Vuoi archiviare questo piano?",
+        action: {
+          label: "Archivia",
+          onClick: () => handleArchivePlan(planId)
+        }
+      });
+    } catch (error) {
+      toast.error("Errore");
+    }
+  };
+
+  const handleArchivePlan = async (planId: string) => {
+    try {
+      await updatePlanMutation.mutateAsync({ id: planId, updates: { status: "ELIMINATO", deleted_at: new Date().toISOString() } });
+      toast.success("Piano archiviato");
+    } catch (error) {
+      toast.error("Errore");
+    }
+  };
+
+  const handleDeletePlan = async (planId: string) => {
+    try {
+      await updatePlanMutation.mutateAsync({ id: planId, updates: { status: "ELIMINATO", deleted_at: new Date().toISOString() } });
+      toast.success("Piano eliminato");
+    } catch (error) {
+      toast.error("Errore");
+    }
+  };
+
+  const handleToggleVisibility = async (planId: string, currentValue: boolean) => {
+    try {
+      await updatePlanMutation.mutateAsync({ id: planId, updates: { is_visible: !currentValue } });
+      toast.success(currentValue ? "Piano nascosto" : "Piano visibile");
+    } catch (error) {
+      toast.error("Errore");
+    }
+  };
+
+  const handleSaveAsTemplate = (planId: string) => {
+    setSelectedPlanForTemplate(planId);
+    setTemplateName("");
+    setTemplateDescription("");
+    setSaveAsTemplateDialogOpen(true);
+  };
+
+  const confirmSaveAsTemplate = async () => {
+    if (!selectedPlanForTemplate) return;
+    try {
+      await saveAsTemplateMutation.mutateAsync({
+        planId: selectedPlanForTemplate,
+        input: {
+          name: templateName,
+          description: templateDescription,
+          also_assign: false,
+        },
+      });
+      toast.success("Template creato");
+      setSaveAsTemplateDialogOpen(false);
+    } catch (error) {
+      toast.error("Errore");
+    }
   };
 
   const handleUpdatePlanStatus = async (planId: string, status: "IN_CORSO" | "COMPLETATO" | "ELIMINATO") => {
@@ -373,9 +460,9 @@ const ClientDetail = () => {
           <TabsContent value="plans" className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">{toSentenceCase("Piani assegnati")}</h3>
-              <Button onClick={() => setAssignDialogOpen(true)} size="sm" className="gap-2">
+              <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="gap-2">
                 <Plus className="h-4 w-4" />
-                {toSentenceCase("Assegna piano")}
+                {toSentenceCase("Nuovo piano")}
               </Button>
             </div>
 
@@ -388,11 +475,11 @@ const ClientDetail = () => {
                 <CardContent className="p-0">
                   <EmptyState
                     icon={FileText}
-                    title="Nessun piano assegnato"
-                    description="Questo cliente non ha ancora piani di allenamento assegnati. Assegna un piano per iniziare."
+                    title="Nessun piano ancora"
+                    description="Questo cliente non ha ancora un piano di allenamento. Puoi crearne uno da zero o partire da un template."
                     action={{
-                      label: "Assegna piano",
-                      onClick: () => setAssignDialogOpen(true)
+                      label: "Crea nuovo piano",
+                      onClick: () => setCreateDialogOpen(true)
                     }}
                   />
                 </CardContent>
@@ -400,31 +487,29 @@ const ClientDetail = () => {
             ) : (
               <div className="grid gap-4">
                 {clientPlans
-                  .filter((p) => p.status === "IN_CORSO")
+                  .sort((a, b) => {
+                    // Prima i piani In Uso
+                    if (a.is_in_use && !b.is_in_use) return -1;
+                    if (!a.is_in_use && b.is_in_use) return 1;
+                    
+                    // Poi per status: IN_CORSO > COMPLETATO > ELIMINATO
+                    const statusOrder = { IN_CORSO: 0, COMPLETATO: 1, ELIMINATO: 2 };
+                    return statusOrder[a.status] - statusOrder[b.status];
+                  })
                   .map((plan) => (
                     <ClientPlanCard
                       key={plan.id}
                       plan={plan}
                       onEdit={() => navigate(`/client-plans/${plan.id}/edit`)}
-                      onUpdateStatus={(status) => handleUpdatePlanStatus(plan.id, status)}
+                      onDuplicate={() => handleDuplicatePlan(plan.id)}
+                      onToggleInUse={() => handleToggleInUse(plan.id, plan.is_in_use)}
+                      onComplete={() => handleCompletePlan(plan.id)}
+                      onArchive={() => handleArchivePlan(plan.id)}
+                      onDelete={() => handleDeletePlan(plan.id)}
+                      onToggleVisibility={() => handleToggleVisibility(plan.id, plan.is_visible)}
+                      onSaveAsTemplate={() => handleSaveAsTemplate(plan.id)}
                     />
                   ))}
-
-                {clientPlans.filter((p) => p.status !== "IN_CORSO").length > 0 && (
-                  <>
-                    <h4 className="text-md font-semibold mt-4">{toSentenceCase("Storico")}</h4>
-                    {clientPlans
-                      .filter((p) => p.status !== "IN_CORSO")
-                      .map((plan) => (
-                        <ClientPlanCard
-                          key={plan.id}
-                          plan={plan}
-                          onEdit={() => navigate(`/client-plans/${plan.id}/edit`)}
-                          onUpdateStatus={(status) => handleUpdatePlanStatus(plan.id, status)}
-                        />
-                      ))}
-                  </>
-                )}
               </div>
             )}
           </TabsContent>
@@ -462,8 +547,48 @@ const ClientDetail = () => {
         activities={currentClient.activities}
       />
 
-      {/* Assign Plan Dialog */}
-      <AssignPlanDialog clientId={id || ""} open={assignDialogOpen} onOpenChange={setAssignDialogOpen} />
+      {/* Create Plan Dialog */}
+      <CreatePlanDialog 
+        clientId={id || ""} 
+        open={createDialogOpen} 
+        onOpenChange={setCreateDialogOpen} 
+      />
+
+      {/* Save As Template Dialog */}
+      <Dialog open={saveAsTemplateDialogOpen} onOpenChange={setSaveAsTemplateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{toSentenceCase("Salva come template")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{toSentenceCase("Nome template")}</Label>
+              <Input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder={toSentenceCase("Es: Piano Forza Base")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{toSentenceCase("Descrizione")}</Label>
+              <Textarea
+                value={templateDescription}
+                onChange={(e) => setTemplateDescription(e.target.value)}
+                placeholder={toSentenceCase("Descrizione del template...")}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveAsTemplateDialogOpen(false)}>
+              {toSentenceCase("Annulla")}
+            </Button>
+            <Button onClick={confirmSaveAsTemplate} disabled={!templateName.trim()}>
+              {toSentenceCase("Crea template")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

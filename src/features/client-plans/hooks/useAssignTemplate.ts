@@ -21,12 +21,7 @@ export function useAssignTemplate() {
       queryClient.invalidateQueries({ queryKey: ["clientPlans", variables.clientId] });
       queryClient.invalidateQueries({ queryKey: ["client", variables.clientId] });
       
-      toast.success(
-        "Piano assegnato",
-        {
-          description: "Il piano è stato assegnato. Eventuali piani precedenti in corso sono stati automaticamente completati.",
-        }
-      );
+      toast.success("Piano assegnato");
     },
   });
 }

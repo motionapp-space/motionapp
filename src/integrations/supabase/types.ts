@@ -445,6 +445,7 @@ export type Database = {
           description: string | null
           duration_weeks: number | null
           id: string
+          is_in_use: boolean
           is_visible: boolean
           locked_at: string | null
           name: string
@@ -464,6 +465,7 @@ export type Database = {
           description?: string | null
           duration_weeks?: number | null
           id?: string
+          is_in_use?: boolean
           is_visible?: boolean
           locked_at?: string | null
           name: string
@@ -483,6 +485,7 @@ export type Database = {
           description?: string | null
           duration_weeks?: number | null
           id?: string
+          is_in_use?: boolean
           is_visible?: boolean
           locked_at?: string | null
           name?: string
