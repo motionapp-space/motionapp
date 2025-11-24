@@ -20,6 +20,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   ArrowLeft,
   Download,
   CheckCircle,
@@ -517,10 +522,21 @@ const ClientPlanEditor = () => {
                   {toSentenceCase("Salvataggio...")}
                 </Button>
               ) : (
-                <Button onClick={handleSave} size="sm" className="gap-2" disabled={!id && !name?.trim()}>
-                  <CheckCircle className="h-4 w-4" />
-                  {id ? toSentenceCase("Salva") : toSentenceCase("Assegna")}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <Button onClick={handleSave} size="sm" className="gap-2" disabled={!id && !name?.trim()}>
+                        <CheckCircle className="h-4 w-4" />
+                        {id ? toSentenceCase("Salva") : toSentenceCase("Assegna")}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!id && !name?.trim() && (
+                    <TooltipContent side="bottom">
+                      Inserisci un nome per il piano
+                    </TooltipContent>
+                  )}
+                </Tooltip>
               )}
               {id && clientId && plan?.status === "IN_CORSO" && (
                 <Button onClick={() => setDayPickerOpen(true)} variant="secondary" size="sm" className="gap-2">
@@ -627,7 +643,10 @@ const ClientPlanEditor = () => {
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>{toSentenceCase("Nome piano")}</Label>
+              <Label>
+                {toSentenceCase("Nome piano")}
+                {!id && <span className="text-destructive ml-1">*</span>}
+              </Label>
               <div className="space-y-1">
                 <Input
                   value={name}
