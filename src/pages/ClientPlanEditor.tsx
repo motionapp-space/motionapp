@@ -423,7 +423,10 @@ const ClientPlanEditor = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate(clientId ? `/clients/${clientId}?tab=plans` : "/clients")}
+                onClick={() => {
+                  const targetClientId = plan?.client_id || clientId;
+                  navigate(targetClientId ? `/clients/${targetClientId}?tab=plans` : "/clients");
+                }}
                 className="shrink-0"
               >
                 <ArrowLeft className="h-5 w-5" />
