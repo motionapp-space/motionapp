@@ -66,7 +66,7 @@ export function StickySessionBar() {
     if ((e.target as HTMLElement).closest("button")) return;
     
     if (activeSession) {
-      navigate(`/session/live?sessionId=${activeSession.id}`);
+      navigate(`/session/live?sessionId=${activeSession.id}&clientId=${activeSession.client_id}`);
     }
   };
 
@@ -203,7 +203,7 @@ export function StickySessionBar() {
               size="icon"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/session/live?sessionId=${activeSession.id}`);
+                navigate(`/session/live?sessionId=${activeSession.id}&clientId=${activeSession.client_id}`);
               }}
               title="Apri sessione"
             >

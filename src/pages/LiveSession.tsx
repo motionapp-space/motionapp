@@ -283,7 +283,7 @@ export default function LiveSession() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate(`/clients/${session.client_id}?tab=sessions`)}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
