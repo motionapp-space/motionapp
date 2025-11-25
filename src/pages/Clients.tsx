@@ -722,8 +722,8 @@ const Clients = () => {
                     className={cn(
                       "h-9 px-3 transition-colors",
                       advancedOpen
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "bg-green-600 text-white hover:bg-green-700 hover:text-white"
+                        : "text-muted-foreground hover:bg-green-600 hover:text-white"
                     )}
                   >
                     Filtri avanzati
