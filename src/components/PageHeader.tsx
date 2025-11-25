@@ -72,9 +72,9 @@ export default function PageHeader({
       className={cn("w-full bg-background", className)}
       role="banner"
     >
-      <div className="container mx-auto p-6 max-w-7xl">
+      <div className="container mx-auto px-6 pt-4 pb-6 max-w-7xl">
         {/* Title + CTA Row */}
-        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1">
             <h1 
               className="text-4xl font-bold mb-2"

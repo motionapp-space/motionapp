@@ -3,6 +3,7 @@ import { Eye, Archive, RotateCcw } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 import { toSentenceCase } from "@/lib/text";
+import { cn } from "@/lib/utils";
 import type { ClientWithDetails } from "../types";
 import { PlanWeeksBadge } from "./badges/PlanWeeksBadge";
 import { PackageStatusBadge } from "./badges/PackageStatusBadge";
@@ -30,7 +31,12 @@ function ClientRow({
   const navigate = useNavigate();
 
   return (
-    <TableRow className={client.id === highlightId ? "ring-2 ring-primary/60 bg-primary/5" : ""}>
+    <TableRow 
+      className={cn(
+        "hover:bg-muted/30 transition-colors",
+        client.id === highlightId ? "ring-2 ring-primary/60 bg-primary/5" : ""
+      )}
+    >
       <TableCell className="font-medium">
         {client.first_name} {client.last_name}
       </TableCell>
@@ -54,7 +60,7 @@ function ClientRow({
         <ActivityStatusBadge status={client.activity_status} />
       </TableCell>
       <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-3">
           <IconTooltipButton
             label={`Visualizza cliente ${client.first_name} ${client.last_name}`}
             onClick={() => navigate(`/clients/${client.id}`)}
@@ -89,7 +95,7 @@ export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: Clie
   return (
     <div className="rounded-lg border bg-card">
       <Table>
-        <TableHeader>
+        <TableHeader className="border-b-2 border-border/50">
           <TableRow>
             <TableHead>{toSentenceCase("Cliente")}</TableHead>
             <TableHead>{toSentenceCase("Ultimo Piano")}</TableHead>
