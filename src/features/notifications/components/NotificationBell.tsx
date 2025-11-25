@@ -53,7 +53,7 @@ export function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="flex items-center justify-between px-4 py-2">
-          <h3 className="font-semibold">Notifiche</h3>
+          <h3 className="text-sm font-semibold">Notifiche</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
