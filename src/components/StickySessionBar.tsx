@@ -36,6 +36,9 @@ export function StickySessionBar() {
   const [isVisible, setIsVisible] = useState(true);
   
   const isOnLiveSessionPage = location.pathname === "/session/live";
+  
+  // Non mostrare la sticky bar se siamo sulla pagina LiveSession
+  if (isOnLiveSessionPage) return null;
 
   // Update elapsed time every second
   useEffect(() => {
