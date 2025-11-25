@@ -32,7 +32,6 @@ export function StickySessionBar() {
   
   const [elapsedTime, setElapsedTime] = useState("");
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   
   const isOnLiveSessionPage = location.pathname === "/session/live";
@@ -113,7 +112,7 @@ export function StickySessionBar() {
       await updateSession.mutateAsync({
         id: activeSession.id,
         updates: {
-          status: "interrupted",
+          status: "cancelled",
           ended_at: new Date().toISOString(),
         },
       });
@@ -133,8 +132,6 @@ export function StickySessionBar() {
     } catch (error) {
       console.error("Error canceling session:", error);
     }
-    
-    setShowCancelDialog(false);
   };
 
   // Non mostrare la sticky bar se siamo sulla pagina LiveSession
@@ -228,7 +225,7 @@ export function StickySessionBar() {
               size="icon"
               onClick={(e) => {
                 e.stopPropagation();
-                setShowCancelDialog(true);
+                handleCancel();
               }}
               title="Annulla"
             >
@@ -250,24 +247,6 @@ export function StickySessionBar() {
             <AlertDialogCancel>Annulla</AlertDialogCancel>
             <AlertDialogAction onClick={handleComplete}>
               Completa
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Annulla sessione</AlertDialogTitle>
-            <AlertDialogDescription>
-              Sei sicuro di voler annullare la sessione con {activeSession.client_name}?
-              Questa azione non può essere annullata.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Torna indietro</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancel} className="bg-destructive hover:bg-destructive/90">
-              Annulla sessione
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

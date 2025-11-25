@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, Play, Pause, Save, MoreVertical, XCircle, PauseCircle } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ArrowLeft, Play, Pause, Save, MoreVertical, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useSessionQuery } from "@/features/sessions/hooks/useSessionQuery";
 import { useUpdateSession } from "@/features/sessions/hooks/useUpdateSession";
@@ -250,19 +250,6 @@ export default function LiveSession() {
     }
   };
 
-  const handleInterruptSession = async () => {
-    try {
-      await updateSession.mutateAsync({
-        id: sessionId!,
-        updates: { status: "interrupted" },
-      });
-      toast.success("Sessione interrotta");
-      navigate(`/clients/${session.client_id}?tab=sessions`);
-    } catch (error) {
-      toast.error("Errore nell'interrompere la sessione");
-    }
-  };
-
   const handleCancelSession = async () => {
     try {
       await updateSession.mutateAsync({
@@ -327,11 +314,6 @@ export default function LiveSession() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleInterruptSession}>
-                    <PauseCircle className="h-4 w-4" />
-                    Interrompi sessione
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => setCancelDialogOpen(true)}
                     className="text-destructive focus:text-destructive"
