@@ -52,7 +52,7 @@ export function GlobalSessionCTA() {
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
-              className="gap-2 font-medium"
+              className="gap-2 px-5 font-semibold bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-150"
               onClick={() => navigate(`/session/live?sessionId=${activeSession.id}`)}
             >
               <span className="relative flex h-2 w-2">
@@ -86,8 +86,8 @@ export function GlobalSessionCTA() {
     return (
       <>
         <Button
-          variant="default"
-          className="gap-2"
+          variant="ghost"
+          className="gap-2 px-5 font-semibold bg-primary/10 text-primary hover:bg-primary/20 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-150"
           onClick={() => setDialogOpen(true)}
         >
           <Timer className="h-4 w-4" />
@@ -110,8 +110,8 @@ export function GlobalSessionCTA() {
   return (
     <>
       <Button
-        variant="default"
-        className="gap-2"
+        variant="ghost"
+        className="gap-2 px-5 font-semibold bg-primary/10 text-primary hover:bg-primary/20 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-150"
         onClick={() => setDialogOpen(true)}
       >
         <Timer className="h-4 w-4" />

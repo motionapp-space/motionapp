@@ -44,11 +44,11 @@ export function AppSidebar() {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "group relative flex items-center gap-3 rounded-xl px-3 py-3 text-base leading-6 transition-colors duration-200",
+                  "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-base leading-6 transition-colors duration-200",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   active
                     ? "bg-primary/10 text-primary font-semibold"
-                    : "text-foreground hover:bg-muted font-medium"
+                    : "text-foreground hover:bg-muted/80 font-medium"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
@@ -74,7 +74,7 @@ export function AppSidebar() {
       <div className="border-t px-3 py-4">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-base font-medium text-muted-foreground/80 hover:bg-muted hover:text-foreground transition-colors"
         >
           <LogOut className="h-5 w-5" />
           <span>Esci</span>
