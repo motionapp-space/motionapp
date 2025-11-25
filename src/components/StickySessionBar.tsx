@@ -19,39 +19,45 @@ import { toast } from "sonner";
 
 export function StickySessionBar() {
   const navigate = useNavigate();
-  const { activeSession, clearActiveSession } = useSessionStore();
+  const { 
+    activeSession, 
+    clearActiveSession,
+    isPaused,
+    pauseSession,
+    resumeSession,
+    getElapsedSeconds
+  } = useSessionStore();
   const updateSession = useUpdateSession();
   
   const [elapsedTime, setElapsedTime] = useState("");
-  const [isPaused, setIsPaused] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
 
   // Update elapsed time every second
   useEffect(() => {
-    if (!activeSession?.started_at || isPaused) return;
+    if (!activeSession?.started_at) return;
 
     const updateElapsed = () => {
-      const started = new Date(activeSession.started_at!);
-      const now = new Date();
-      const diff = Math.floor((now.getTime() - started.getTime()) / 1000);
-      
-      const hours = Math.floor(diff / 3600);
-      const minutes = Math.floor((diff % 3600) / 60);
-      const seconds = diff % 60;
+      const seconds = getElapsedSeconds();
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
       
       setElapsedTime(
         hours > 0 
-          ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-          : `${minutes}:${seconds.toString().padStart(2, '0')}`
+          ? `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+          : `${minutes}:${secs.toString().padStart(2, '0')}`
       );
     };
 
     updateElapsed();
+    
+    if (isPaused) return;
+    
     const interval = setInterval(updateElapsed, 1000);
     return () => clearInterval(interval);
-  }, [activeSession?.started_at, isPaused]);
+  }, [activeSession?.started_at, isPaused, getElapsedSeconds]);
 
   const handleBarClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking on buttons
@@ -165,7 +171,7 @@ export function StickySessionBar() {
               size="icon"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsPaused(!isPaused);
+                isPaused ? resumeSession() : pauseSession();
               }}
               title={isPaused ? "Riprendi" : "Pausa"}
             >

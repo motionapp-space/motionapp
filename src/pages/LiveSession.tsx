@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useSessionStore } from "@/stores/useSessionStore";
 
 export default function LiveSession() {
   const [searchParams] = useSearchParams();
@@ -34,10 +35,15 @@ export default function LiveSession() {
   const updateSession = useUpdateSession();
   const createActual = useCreateActual(sessionId || "");
   const deleteActual = useDeleteActual(sessionId || "");
+  const { 
+    isPaused, 
+    pauseSession, 
+    resumeSession, 
+    getElapsedSeconds 
+  } = useSessionStore();
 
   const [day, setDay] = useState<Day | null>(null);
   const [planName, setPlanName] = useState("");
-  const [timerRunning, setTimerRunning] = useState(true);
   const [elapsed, setElapsed] = useState(0);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [sessionNotes, setSessionNotes] = useState("");
@@ -81,13 +87,19 @@ export default function LiveSession() {
 
   // Session timer
   useEffect(() => {
-    if (!timerRunning) return;
-    const startTime = session?.started_at ? new Date(session.started_at).getTime() : Date.now();
-    const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startTime) / 1000));
-    }, 1000);
+    if (!session?.started_at) return;
+
+    const updateElapsed = () => {
+      setElapsed(getElapsedSeconds());
+    };
+
+    updateElapsed();
+    
+    if (isPaused) return;
+    
+    const interval = setInterval(updateElapsed, 1000);
     return () => clearInterval(interval);
-  }, [timerRunning, session]);
+  }, [session?.started_at, isPaused, getElapsedSeconds]);
 
   // Rest timers
   useEffect(() => {
@@ -299,9 +311,9 @@ export default function LiveSession() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setTimerRunning(!timerRunning)}
+                onClick={() => isPaused ? resumeSession() : pauseSession()}
               >
-                {timerRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
               </Button>
               <div className="text-sm font-mono">{formatTime(elapsed)}</div>
               <Button onClick={handleFinishSession} size="sm" className="gap-2">
