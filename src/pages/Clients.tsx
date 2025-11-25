@@ -719,7 +719,12 @@ const Clients = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-9 px-3 text-muted-foreground hover:text-foreground"
+                    className={cn(
+                      "h-9 px-3 transition-colors",
+                      advancedOpen
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
                   >
                     Filtri avanzati
                     <ChevronDown className={cn("ml-2 h-4 w-4 transition-transform", advancedOpen && "rotate-180")} />

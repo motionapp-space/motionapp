@@ -1,8 +1,6 @@
-import { Users, FileText, Calendar, Settings, LogOut } from "lucide-react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Users, FileText, Calendar, Settings } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import React from "react";
 
 type NavItem = { label: string; to: string; icon: React.ElementType };
@@ -16,16 +14,6 @@ const NAV_ITEMS: NavItem[] = [
 
 export function AppSidebar() {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error("Errore durante il logout");
-    } else {
-      navigate("/auth");
-    }
-  };
 
   return (
     <aside 
@@ -68,17 +56,6 @@ export function AppSidebar() {
             );
           })}
         </nav>
-      </div>
-
-      {/* Separator + Logout button */}
-      <div className="border-t px-3 py-4">
-        <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-base font-medium text-muted-foreground/80 hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <LogOut className="h-5 w-5" />
-          <span>Esci</span>
-        </button>
       </div>
     </aside>
   );
