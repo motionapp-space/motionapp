@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Pause, Play, ExternalLink, Check, Trash2 } from "lucide-react";
@@ -19,6 +19,7 @@ import { toast } from "sonner";
 
 export function StickySessionBar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { 
     activeSession, 
     clearActiveSession,
@@ -33,6 +34,8 @@ export function StickySessionBar() {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  
+  const isOnLiveSessionPage = location.pathname === "/session/live";
 
   // Update elapsed time every second
   useEffect(() => {
@@ -71,6 +74,8 @@ export function StickySessionBar() {
   const handleComplete = async () => {
     if (!activeSession) return;
     
+    const clientId = activeSession.client_id;
+    
     try {
       await updateSession.mutateAsync({
         id: activeSession.id,
@@ -86,6 +91,11 @@ export function StickySessionBar() {
       setIsVisible(false);
       setTimeout(() => {
         clearActiveSession();
+        
+        // Se siamo sulla pagina LiveSession, naviga al dettaglio cliente
+        if (isOnLiveSessionPage && clientId) {
+          navigate(`/clients/${clientId}?tab=sessions`);
+        }
       }, 700);
     } catch (error) {
       console.error("Error completing session:", error);
@@ -96,6 +106,8 @@ export function StickySessionBar() {
 
   const handleCancel = async () => {
     if (!activeSession) return;
+    
+    const clientId = activeSession.client_id;
     
     try {
       await updateSession.mutateAsync({
@@ -112,6 +124,11 @@ export function StickySessionBar() {
       setIsVisible(false);
       setTimeout(() => {
         clearActiveSession();
+        
+        // Se siamo sulla pagina LiveSession, naviga al dettaglio cliente
+        if (isOnLiveSessionPage && clientId) {
+          navigate(`/clients/${clientId}?tab=sessions`);
+        }
       }, 700);
     } catch (error) {
       console.error("Error canceling session:", error);
