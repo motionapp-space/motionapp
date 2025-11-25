@@ -15,7 +15,12 @@ import {
 
 export function GlobalSessionCTA() {
   const navigate = useNavigate();
-  const { activeSession, upcomingEvent } = useSessionStore();
+  const { 
+    activeSession, 
+    upcomingEvent, 
+    isPaused, 
+    getElapsedSeconds 
+  } = useSessionStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [elapsedTime, setElapsedTime] = useState("");
 
@@ -24,25 +29,25 @@ export function GlobalSessionCTA() {
     if (!activeSession?.started_at) return;
 
     const updateElapsed = () => {
-      const started = new Date(activeSession.started_at!);
-      const now = new Date();
-      const diff = Math.floor((now.getTime() - started.getTime()) / 1000);
-      
-      const hours = Math.floor(diff / 3600);
-      const minutes = Math.floor((diff % 3600) / 60);
-      const seconds = diff % 60;
+      const seconds = getElapsedSeconds();
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
       
       setElapsedTime(
         hours > 0 
-          ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-          : `${minutes}:${seconds.toString().padStart(2, '0')}`
+          ? `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+          : `${minutes}:${secs.toString().padStart(2, '0')}`
       );
     };
 
     updateElapsed();
+    
+    if (isPaused) return;
+    
     const interval = setInterval(updateElapsed, 1000);
     return () => clearInterval(interval);
-  }, [activeSession?.started_at]);
+  }, [activeSession?.started_at, isPaused, getElapsedSeconds]);
 
   // State 3 - Active Session
   if (activeSession) {
@@ -60,7 +65,9 @@ export function GlobalSessionCTA() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
               <span>Sessione attiva: {activeSession.client_name}</span>
-              <span className="text-muted-foreground">• {elapsedTime}</span>
+              <span className="text-muted-foreground">
+                • {elapsedTime} {isPaused && "(in pausa)"}
+              </span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
