@@ -26,7 +26,9 @@ export function AppSidebar() {
         <nav className="flex flex-col gap-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+            const active = item.to === "/" 
+              ? pathname === "/" || pathname.startsWith("/clients") || pathname.startsWith("/client-plans") || pathname.startsWith("/session/live")
+              : pathname.startsWith(item.to);
             return (
               <NavLink
                 key={item.to}
