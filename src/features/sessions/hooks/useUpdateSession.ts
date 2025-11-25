@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateSession } from "../api/sessions.api";
 import { toast } from "sonner";
 import { logClientActivity } from "@/features/clients/api/activities.api";
+import { useSessionStore } from "@/stores/useSessionStore";
 
 export function useUpdateSession() {
   const queryClient = useQueryClient();
@@ -21,6 +22,11 @@ export function useUpdateSession() {
 
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["session", session.id] });
+      
+      // Aggiorna immediatamente lo store globale quando la sessione termina
+      if (session.status === "completed" || session.status === "interrupted") {
+        useSessionStore.getState().clearActiveSession();
+      }
     },
     onError: (error: Error) => {
       toast.error("Errore", {
