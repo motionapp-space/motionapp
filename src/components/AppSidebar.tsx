@@ -17,12 +17,16 @@ export function AppSidebar() {
 
   return (
     <aside 
-      className="sticky top-16 h-[calc(100vh-64px)] w-64 shrink-0 border-r bg-background flex flex-col" 
+      className="sticky top-0 h-screen w-64 shrink-0 border-r bg-background flex flex-col" 
       data-testid="sidebar"
     >
-      {/* Menu label + navigation */}
+      {/* Logo in alto */}
+      <div className="h-16 flex items-center px-5 border-b border-border/60">
+        <span className="text-xl font-bold tracking-tight">Studio AI</span>
+      </div>
+      
+      {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-3 pt-4">
-        <div className="px-2 mb-2 text-sm font-medium text-muted-foreground">Menu</div>
         <nav className="flex flex-col gap-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
