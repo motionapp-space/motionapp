@@ -52,6 +52,13 @@ export default function TemplateDetail() {
     }
   }, [template]);
 
+  // Set topbar (must be before any early returns)
+  useTopbar({
+    title: name || template?.name || "Template",
+    showBack: true,
+    onBack: () => navigate("/library?tab=templates"),
+  });
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -333,13 +340,6 @@ export default function TemplateDetail() {
       return day;
     }));
   };
-
-  // Set topbar
-  useTopbar({
-    title: name || "Template",
-    showBack: true,
-    onBack: () => navigate("/library?tab=templates"),
-  });
 
   return (
     <TooltipProvider>
