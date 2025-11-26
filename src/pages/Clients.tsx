@@ -186,7 +186,7 @@ const Clients = () => {
     { value: "plan_weeks_asc", label: "Piano (recente → scaduto)" },
     { value: "plan_weeks_desc", label: "Piano (scaduto → recente)" },
     { value: "package_status", label: "Pacchetto (critico → ok)" },
-    { value: "appointment_status", label: "Appuntamenti (da pianificare)" },
+    { value: "appointment_status", label: "Agenda (da pianificare)" },
     { value: "activity_status", label: "Attività (inattivi → attivi)" },
   ];
 
@@ -726,10 +726,10 @@ const Clients = () => {
                     <div className="grid grid-cols-2 gap-6">
                       {/* Left Column: Relazione / Attività */}
                       <div className="space-y-5">
-                        {/* Appuntamenti */}
+                        {/* Agenda */}
                         <div>
                           <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">
-                            Appuntamenti
+                            Agenda
                           </Label>
                           <RadioGroup
                             value={
@@ -1002,7 +1002,7 @@ const Clients = () => {
 
               {filters.appointmentStatuses && filters.appointmentStatuses.length > 0 && (
                 <Badge variant="secondary" className="gap-1">
-                  Appuntamenti: {
+                  Agenda: {
                     filters.appointmentStatuses[0] === "planned" ? "Pianificato" : "Da pianificare"
                   }
                   <X 

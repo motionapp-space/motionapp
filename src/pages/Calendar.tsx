@@ -191,10 +191,10 @@ const Calendar = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background w-full">
       <PageHeader
-        title="Appuntamenti"
+        title="Agenda"
         subtitle="Organizza e gestisci le tue sessioni con i clienti"
         primaryCta={{
-          label: "Nuovo appuntamento",
+          label: "Nuovo evento",
           onClick: handleNewEvent,
           icon: <Plus className="h-4 w-4" />,
           testId: "calendar-new-event-btn"
@@ -274,7 +274,7 @@ const Calendar = () => {
           <div className="flex h-full items-center justify-center text-center py-16">
             <div>
               <CalendarIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">Nessun appuntamento trovato</p>
+              <p className="text-muted-foreground">Nessun evento trovato</p>
             </div>
           </div>
         ) : (
