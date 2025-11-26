@@ -25,7 +25,6 @@ import { useArchiveClient } from "@/features/clients/hooks/useArchiveClient";
 import { useUnarchiveClient } from "@/features/clients/hooks/useUnarchiveClient";
 import { useOnboardingState } from "@/features/clients/hooks/useOnboardingState";
 import { ClientsEmptyOnboarding } from "@/features/clients/components/ClientsEmptyOnboarding";
-import { NextStepsPanel } from "@/features/clients/components/NextStepsPanel";
 import { getDefaultFilters, filtersToSearchParams } from "@/features/clients/utils/filters";
 import { ClientsTable } from "@/features/clients/components/ClientsTable";
 import { getClientById } from "@/features/clients/api/clients.api";
@@ -463,18 +462,6 @@ const Clients = () => {
         />
 
         <div className="container mx-auto px-6 py-6 max-w-7xl">
-          {/* Next Steps Panel - solo in questo stato e se non si filtra per archiviati */}
-          {!filters.includeArchived && (
-            <NextStepsPanel
-              onCreatePlan={() => {
-                navigate('/library');
-              }}
-              onCreateAppointment={() => {
-                navigate('/calendar');
-              }}
-            />
-          )}
-
           {/* Tabella base senza filtri */}
           {isLoading ? (
             <div className="flex justify-center py-12">
