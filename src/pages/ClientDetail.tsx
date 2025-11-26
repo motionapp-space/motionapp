@@ -301,7 +301,7 @@ const ClientDetail = () => {
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="profile">{toSentenceCase("Profilo")}</TabsTrigger>
             <TabsTrigger value="plans">{toSentenceCase("Piani")}</TabsTrigger>
-            <TabsTrigger value="appointments">{toSentenceCase("Agenda")}</TabsTrigger>
+            <TabsTrigger value="appointments">{toSentenceCase("Appuntamenti")}</TabsTrigger>
             <TabsTrigger value="sessions">{toSentenceCase("Sessioni")}</TabsTrigger>
             <TabsTrigger value="packages">{toSentenceCase("Pacchetti")}</TabsTrigger>
           </TabsList>
