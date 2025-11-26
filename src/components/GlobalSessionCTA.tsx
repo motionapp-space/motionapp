@@ -1,6 +1,7 @@
 import { Timer, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSessionStore } from "@/stores/useSessionStore";
+import { useOnboardingState } from "@/features/clients/hooks/useOnboardingState";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { StartSessionDialog } from "./StartSessionDialog";
@@ -21,6 +22,7 @@ export function GlobalSessionCTA() {
     isPaused, 
     getElapsedSeconds 
   } = useSessionStore();
+  const { hasAnyPlan } = useOnboardingState();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [elapsedTime, setElapsedTime] = useState("");
 
@@ -113,7 +115,10 @@ export function GlobalSessionCTA() {
     );
   }
 
-  // State 1 - Idle
+  // State 1 - Idle - Hide if no plans exist
+  if (!hasAnyPlan) {
+    return null;
+  }
   return (
     <>
       <Button
