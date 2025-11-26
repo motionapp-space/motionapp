@@ -41,25 +41,20 @@ export async function uploadMedia(input: UploadMediaInput): Promise<LibraryMedia
 
   if (uploadError) throw uploadError;
 
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from("media_library")
-    .getPublicUrl(fileName);
-
   // Determine file type
   const mimeType = input.file.type;
   let fileType: 'video' | 'image' | 'document' = 'document';
   if (mimeType.startsWith('video/')) fileType = 'video';
   else if (mimeType.startsWith('image/')) fileType = 'image';
 
-  // Insert metadata
+  // Insert metadata - save file path instead of public URL
   const { data, error } = await supabase
     .from("library_media")
     .insert({
       coach_id: user.id,
       filename: input.file.name,
       file_type: fileType,
-      file_url: publicUrl,
+      file_url: fileName, // Save relative path for signed URLs
       file_size_bytes: input.file.size,
       mime_type: mimeType,
       tags: input.tags || [],
@@ -69,6 +64,16 @@ export async function uploadMedia(input: UploadMediaInput): Promise<LibraryMedia
 
   if (error) throw error;
   return data as LibraryMedia;
+}
+
+export async function getSignedUrl(filePath: string): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from("media_library")
+    .createSignedUrl(filePath, 3600); // Valid for 1 hour
+
+  if (error) throw error;
+  if (!data?.signedUrl) throw new Error("Failed to generate signed URL");
+  return data.signedUrl;
 }
 
 export async function renameMedia(id: string, newFilename: string): Promise<LibraryMedia> {

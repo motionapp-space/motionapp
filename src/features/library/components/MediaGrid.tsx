@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useDeleteMedia } from "../hooks/useDeleteMedia";
 import { useRenameMedia } from "../hooks/useRenameMedia";
+import { useSignedUrl } from "../hooks/useSignedUrl";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -30,6 +31,7 @@ export default function MediaGrid({ media, search, fileType, onClearFilters, onU
   const [newFilename, setNewFilename] = useState("");
   const deleteMutation = useDeleteMedia();
   const renameMutation = useRenameMedia();
+  const signedUrlMutation = useSignedUrl();
 
   const handleDeleteClick = (id: string) => {
     setItemToDelete(id);
@@ -66,9 +68,19 @@ export default function MediaGrid({ media, search, fileType, onClearFilters, onU
     }
   };
 
+  const handleViewFile = async (item: LibraryMedia) => {
+    try {
+      const signedUrl = await signedUrlMutation.mutateAsync(item.file_url);
+      window.open(signedUrl, '_blank');
+    } catch (error) {
+      toast.error("Errore nell'apertura del file");
+    }
+  };
+
   const handleDownload = async (item: LibraryMedia) => {
     try {
-      const response = await fetch(item.file_url);
+      const signedUrl = await signedUrlMutation.mutateAsync(item.file_url);
+      const response = await fetch(signedUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -169,8 +181,9 @@ export default function MediaGrid({ media, search, fileType, onClearFilters, onU
               
               {/* Primary Action Button */}
               <Button 
-                onClick={() => window.open(item.file_url, '_blank')}
+                onClick={() => handleViewFile(item)}
                 className="w-full gap-2"
+                disabled={signedUrlMutation.isPending}
               >
                 <Eye className="h-4 w-4" />
                 Visualizza File
