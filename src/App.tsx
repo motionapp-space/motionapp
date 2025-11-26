@@ -87,10 +87,10 @@ const App = () => {
         <BrowserRouter>
           <ScrollToTop />
           {user ? (
-            <div className="flex min-h-screen w-full flex-col">
-              <Topbar />
-              <div className="flex flex-1">
-                <AppSidebar />
+            <div className="flex min-h-screen w-full">
+              <AppSidebar />
+              <div className="flex flex-1 flex-col">
+                <Topbar />
                 <main className="flex-1 overflow-y-auto pb-16">
                   <Routes>
                     <Route path="/" element={<Clients />} />

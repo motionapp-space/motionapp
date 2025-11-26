@@ -6,11 +6,6 @@ export function Topbar() {
   return (
     <header className="sticky top-0 z-50 h-16 border-b border-border/60 bg-background px-6 shadow-sm">
       <div className="flex h-full items-center">
-        {/* Logo a sinistra */}
-        <div className="flex items-center">
-          <span className="text-xl font-bold tracking-tight">Studio AI</span>
-        </div>
-        
         {/* Spacer centrale */}
         <div className="flex-1" />
         
