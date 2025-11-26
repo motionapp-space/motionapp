@@ -63,23 +63,6 @@ export default function LiveSession() {
   // State per tracciare esercizi saltati
   const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
 
-  // Set topbar
-  const clientId = searchParams.get("clientId");
-  useTopbar({
-    title: session?.client_name || "Sessione Live",
-    showBack: true,
-    onBack: () => navigate(clientId ? `/clients/${clientId}?tab=sessions` : "/"),
-    actions: (
-      <>
-        <Button variant="ghost" size="icon" onClick={togglePause}>
-          {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-        </Button>
-        <span className="font-mono text-lg font-semibold">{formatTime(elapsed)}</span>
-        <Button onClick={handleFinishSession} size="sm">Fine sessione</Button>
-      </>
-    ),
-  });
-
   // Load day data from plan
   useEffect(() => {
     if (session?.plan_id && session?.day_id) {
@@ -234,10 +217,35 @@ export default function LiveSession() {
     }
   };
 
+  const togglePause = () => {
+    if (isPaused) {
+      resumeSession();
+    } else {
+      pauseSession();
+    }
+  };
+
   const handleFinishSession = () => {
     setSessionNotes(session?.notes || "");
     setReviewOpen(true);
   };
+
+  // Set topbar - must be after function declarations
+  const clientId = searchParams.get("clientId");
+  useTopbar({
+    title: session?.client_name || "Sessione Live",
+    showBack: true,
+    onBack: () => navigate(clientId ? `/clients/${clientId}?tab=sessions` : "/"),
+    actions: (
+      <>
+        <Button variant="ghost" size="icon" onClick={togglePause}>
+          {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+        </Button>
+        <span className="font-mono text-lg font-semibold">{formatTime(elapsed)}</span>
+        <Button onClick={handleFinishSession} size="sm">Fine sessione</Button>
+      </>
+    ),
+  });
 
   const handleSaveSession = async () => {
     if (!session) return;
@@ -294,59 +302,11 @@ export default function LiveSession() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 md:px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate(`/clients/${session.client_id}?tab=sessions`)}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="truncate">
-                <h1 className="text-h5 font-semibold">{session.client_name}</h1>
-                <p className="text-sm text-muted-foreground">
-                  {planName} · Giorno {day.order} — {day.title}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => isPaused ? resumeSession() : pauseSession()}
-              >
-                {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-              </Button>
-              <div className="text-sm font-mono">{formatTime(elapsed)}</div>
-              <Button onClick={handleFinishSession} size="sm" className="gap-2">
-                <Save className="h-4 w-4" />
-                Fine sessione
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem 
-                    onClick={() => setCancelDialogOpen(true)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Annulla sessione
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 md:px-6 py-6 max-w-6xl space-y-6">
+        {/* Subtitle info */}
+        <div className="text-sm text-muted-foreground">
+          {planName} · Giorno {day.order} — {day.title}
+        </div>
         {/* Legenda */}
         <Card className="bg-muted/50">
           <CardContent className="pt-4 pb-4">

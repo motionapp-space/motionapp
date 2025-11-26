@@ -1,5 +1,5 @@
 import { useState } from "react";
-import PageHeader from "@/components/PageHeader";
+import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -79,20 +79,19 @@ const Plans = () => {
     }
   };
 
+  useTopbar({
+    title: "Template di Allenamento",
+    actions: (
+      <Button onClick={createNewTemplate} className="gap-2">
+        <Plus className="h-4 w-4" />
+        Nuovo template
+      </Button>
+    ),
+  });
+
   return (
     <TooltipProvider>
-      <PageHeader
-        title={toSentenceCase("Template di Allenamento")}
-        subtitle={toSentenceCase("Repository dei tuoi template riutilizzabili")}
-        primaryCta={{
-          label: toSentenceCase("Nuovo template"),
-          onClick: createNewTemplate,
-          icon: <Plus className="h-4 w-4" />,
-          testId: "create-template-btn"
-        }}
-      />
-      
-      <div className="container mx-auto px-6 max-w-7xl pb-6">
+      <div className="container mx-auto px-6 max-w-7xl py-6">
 
       {isLoading ? (
         <div className="text-center py-12">
