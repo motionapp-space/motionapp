@@ -28,6 +28,8 @@ import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateEvent } from "@/features/events/hooks/useCreateEvent";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 import { ClientActivityDialog } from "@/features/clients/components/ClientActivityDialog";
+import { useClientOnboardingState } from "@/features/clients/hooks/useClientOnboardingState";
+import { NextStepsPanel } from "@/features/clients/components/NextStepsPanel";
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -69,6 +71,7 @@ const ClientDetail = () => {
   const saveAsTemplateMutation = useSaveAsTemplate();
   const createEvent = useCreateEvent();
   const createSession = useCreateSession();
+  const onboardingState = useClientOnboardingState(id || "");
 
   useEffect(() => {
     if (id) {
@@ -269,6 +272,23 @@ const ClientDetail = () => {
 
       {/* Content */}
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
+        {/* Next Steps Panel - mostrato solo se il cliente non ha piani né appuntamenti */}
+        {!onboardingState.isLoading && onboardingState.needsOnboarding && (
+          <NextStepsPanel
+            clientName={currentClient.first_name}
+            onCreatePlan={() => {
+              const sp = new URLSearchParams(searchParams);
+              sp.set("tab", "plans");
+              setSearchParams(sp, { replace: true });
+            }}
+            onCreateAppointment={() => {
+              const sp = new URLSearchParams(searchParams);
+              sp.set("tab", "appointments");
+              setSearchParams(sp, { replace: true });
+            }}
+          />
+        )}
+
         <Tabs
           value={searchParams.get("tab") || "profile"}
           onValueChange={(value) => {

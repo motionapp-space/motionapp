@@ -3,11 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 interface NextStepsPanelProps {
+  clientName: string;
   onCreatePlan: () => void;
   onCreateAppointment: () => void;
 }
 
-export function NextStepsPanel({ onCreatePlan, onCreateAppointment }: NextStepsPanelProps) {
+export function NextStepsPanel({ clientName, onCreatePlan, onCreateAppointment }: NextStepsPanelProps) {
   return (
     <Card className="mb-6 border-primary/20 bg-primary/5">
       <CardContent className="p-6">
@@ -18,10 +19,10 @@ export function NextStepsPanel({ onCreatePlan, onCreateAppointment }: NextStepsP
           <div className="flex-1 space-y-4">
             <div>
               <h3 className="text-lg font-semibold text-foreground">
-                Ottimo, hai creato il tuo primo cliente!
+                Inizia a lavorare con {clientName}
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Ora completa questi passaggi per iniziare a lavorare con Studio AI.
+                Completa questi passaggi per iniziare
               </p>
             </div>
             
