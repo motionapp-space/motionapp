@@ -29,6 +29,7 @@ export function useCreateEvent() {
           queryClient.invalidateQueries({ queryKey: ["events"] });
           queryClient.invalidateQueries({ queryKey: ["clients"] });
           queryClient.invalidateQueries({ queryKey: ["packages"] });
+          queryClient.invalidateQueries({ queryKey: ['client-onboarding-events', createdEvent.client_id] });
           
           toast.success("Appuntamento creato", {
             description: "1 credito prenotato dal pacchetto",
@@ -37,6 +38,7 @@ export function useCreateEvent() {
           // Se fallisce (es: no package, no credits), avvisa ma non blocca
           queryClient.invalidateQueries({ queryKey: ["events"] });
           queryClient.invalidateQueries({ queryKey: ["clients"] });
+          queryClient.invalidateQueries({ queryKey: ['client-onboarding-events', createdEvent.client_id] });
           
           toast.warning("Appuntamento creato senza gestione crediti", {
             description: error.message || "Nessun pacchetto attivo trovato",
@@ -45,6 +47,7 @@ export function useCreateEvent() {
       } else {
         queryClient.invalidateQueries({ queryKey: ["events"] });
         queryClient.invalidateQueries({ queryKey: ["clients"] });
+        queryClient.invalidateQueries({ queryKey: ['client-onboarding-events', createdEvent.client_id] });
         
         toast.success("Appuntamento creato");
       }
