@@ -98,7 +98,12 @@ export default function TemplateDetail() {
 
   const handleExportPDF = () => {
     if (template) {
-      exportPlanToPDF({ ...template, days } as any);
+      exportPlanToPDF({
+        name,
+        days,
+        created_at: template.created_at,
+        updated_at: template.updated_at,
+      });
     }
   };
 

@@ -222,7 +222,12 @@ const ClientPlanEditor = () => {
 
   const handleExportPDF = () => {
     if (plan || isNewFromTemplate) {
-      exportPlanToPDF({ name, days } as any);
+      exportPlanToPDF({
+        name,
+        days,
+        created_at: plan?.created_at,
+        updated_at: plan?.updated_at,
+      });
     }
   };
 
