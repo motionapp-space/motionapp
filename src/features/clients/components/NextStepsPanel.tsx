@@ -10,13 +10,13 @@ interface NextStepsPanelProps {
 
 export function NextStepsPanel({ clientName, onCreatePlan, onCreateAppointment }: NextStepsPanelProps) {
   return (
-    <Card className="mb-6 border-primary/20 bg-primary/5">
-      <CardContent className="p-6">
+    <Card className="mb-4 border-primary/20 bg-primary/5">
+      <CardContent className="p-4">
         <div className="flex items-start gap-4">
-          <div className="rounded-full bg-primary/10 p-3">
-            <Sparkles className="h-6 w-6 text-primary" />
+          <div className="rounded-full bg-primary/10 p-2">
+            <Sparkles className="h-5 w-5 text-primary" />
           </div>
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 space-y-3">
             <div>
               <h3 className="text-lg font-semibold text-foreground">
                 Inizia a lavorare con {clientName}
@@ -30,7 +30,7 @@ export function NextStepsPanel({ clientName, onCreatePlan, onCreateAppointment }
               <Button 
                 variant="default" 
                 onClick={onCreatePlan}
-                className="w-full justify-start h-auto p-4"
+                className="w-full justify-start h-auto p-3"
               >
                 <div className="text-left w-full">
                   <div className="flex items-center gap-2 mb-1">
@@ -38,7 +38,7 @@ export function NextStepsPanel({ clientName, onCreatePlan, onCreateAppointment }
                     <span className="font-semibold">Crea un piano di allenamento</span>
                   </div>
                   <p className="text-xs opacity-90 font-normal">
-                    Imposta il primo piano per uno dei tuoi clienti
+                    Personalizza il programma di allenamento
                   </p>
                 </div>
               </Button>
@@ -46,7 +46,7 @@ export function NextStepsPanel({ clientName, onCreatePlan, onCreateAppointment }
               <Button 
                 variant="outline" 
                 onClick={onCreateAppointment}
-                className="w-full justify-start h-auto p-4"
+                className="w-full justify-start h-auto p-3"
               >
                 <div className="text-left w-full">
                   <div className="flex items-center gap-2 mb-1">
