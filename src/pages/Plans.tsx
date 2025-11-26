@@ -81,17 +81,17 @@ const Plans = () => {
 
   useTopbar({
     title: "Template di Allenamento",
-    actions: (
-      <Button onClick={createNewTemplate} className="gap-2">
-        <Plus className="h-4 w-4" />
-        Nuovo template
-      </Button>
-    ),
   });
 
   return (
     <TooltipProvider>
       <div className="container mx-auto px-6 max-w-7xl py-6">
+        <div className="flex items-center justify-end mb-6">
+          <Button onClick={createNewTemplate}>
+            <Plus className="h-4 w-4" />
+            Nuovo template
+          </Button>
+        </div>
 
       {isLoading ? (
         <div className="text-center py-12">

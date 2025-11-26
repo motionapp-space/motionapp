@@ -339,52 +339,55 @@ export default function TemplateDetail() {
     title: name || "Template",
     showBack: true,
     onBack: () => navigate("/library?tab=templates"),
-    actions: mode === "read" ? (
-      <>
-        <Button onClick={toEdit} size="sm" className="gap-2">
-          <Pencil className="h-4 w-4" />
-          Modifica
-        </Button>
-        <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2">
-          <Download className="h-4 w-4" />
-          PDF
-        </Button>
-        {FLAGS.copilotEnabled && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => setCopilotOpen(!copilotOpen)}
-          >
-            <Sparkles className="h-4 w-4" />
-            AI
-          </Button>
-        )}
-      </>
-    ) : (
-      <>
-        {updateMutation.isPending ? (
-          <Button disabled size="sm" className="gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Salvataggio...
-          </Button>
-        ) : (
-          <Button onClick={handleSave} size="sm" className="gap-2">
-            <CheckCircle className="h-4 w-4" />
-            Salva
-          </Button>
-        )}
-        <Button variant="outline" onClick={toRead} size="sm">
-          Annulla
-        </Button>
-      </>
-    ),
   });
 
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
+          {/* Action toolbar */}
+          <div className="flex items-center justify-end gap-2 mb-6">
+            {mode === "read" ? (
+              <>
+                <Button onClick={toEdit} size="sm">
+                  <Pencil className="h-4 w-4" />
+                  Modifica
+                </Button>
+                <Button onClick={handleExportPDF} variant="outline" size="sm">
+                  <Download className="h-4 w-4" />
+                  PDF
+                </Button>
+                {FLAGS.copilotEnabled && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCopilotOpen(!copilotOpen)}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    AI
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                {updateMutation.isPending ? (
+                  <Button disabled size="sm">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Salvataggio...
+                  </Button>
+                ) : (
+                  <Button onClick={handleSave} size="sm">
+                    <CheckCircle className="h-4 w-4" />
+                    Salva
+                  </Button>
+                )}
+                <Button variant="outline" onClick={toRead} size="sm">
+                  Annulla
+                </Button>
+              </>
+            )}
+          </div>
+
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
