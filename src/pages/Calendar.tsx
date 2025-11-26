@@ -219,6 +219,24 @@ const Calendar = () => {
               <SelectItem value="availability">Disponibilità</SelectItem>
             </SelectContent>
           </Select>
+          
+          <div className="flex-1" />
+          
+          <Button
+            variant="outline"
+            onClick={() => navigate("/booking-management")}
+            className="flex items-center gap-2"
+          >
+            Gestione prenotazioni
+            {pendingCount > 0 && (
+              <Badge variant="secondary">{pendingCount}</Badge>
+            )}
+          </Button>
+          
+          <Button onClick={handleNewEvent} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Nuovo appuntamento
+          </Button>
         </div>
       </div>
 
