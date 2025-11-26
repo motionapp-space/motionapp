@@ -95,6 +95,20 @@ const ClientPlanEditor = () => {
 
   const { data: derivedTemplate } = useTemplate(plan?.derived_from_template_id || undefined);
 
+  // Set topbar (must be before any early returns)
+  useTopbar({
+    title: id ? (name || "Piano") : "Nuovo piano",
+    showBack: true,
+    onBack: () => {
+      const targetClientId = plan?.client_id || clientId;
+      if (targetClientId) {
+        navigate(`/clients/${targetClientId}?tab=plans`);
+      } else {
+        navigate("/");
+      }
+    },
+  });
+
   // Migrate days to use groups on load
   useEffect(() => {
     if (id) {
@@ -486,20 +500,6 @@ const ClientPlanEditor = () => {
   }
 
   const clientName = plan?.client_id ? "Cliente" : "Cliente";
-
-  // Set topbar
-  useTopbar({
-    title: id ? (name || "Piano") : "Nuovo piano",
-    showBack: true,
-    onBack: () => {
-      const targetClientId = plan?.client_id || clientId;
-      if (targetClientId) {
-        navigate(`/clients/${targetClientId}?tab=plans`);
-      } else {
-        navigate("/");
-      }
-    },
-  });
 
   return (
     <div className="min-h-screen bg-background">
