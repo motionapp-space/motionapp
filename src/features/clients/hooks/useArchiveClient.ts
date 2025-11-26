@@ -9,6 +9,8 @@ export function useArchiveClient() {
     mutationFn: (clientId: string) => archiveClient(clientId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["onboarding-archived-check"] });
+      qc.invalidateQueries({ queryKey: ["onboarding-non-archived-count"] });
       toast.success("Cliente archiviato con successo");
     },
     onError: (error) => {

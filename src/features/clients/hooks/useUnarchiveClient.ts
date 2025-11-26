@@ -9,6 +9,8 @@ export function useUnarchiveClient() {
     mutationFn: (clientId: string) => unarchiveClient(clientId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["onboarding-archived-check"] });
+      qc.invalidateQueries({ queryKey: ["onboarding-non-archived-count"] });
       toast.success("Cliente ripristinato con successo");
     },
     onError: (error) => {
