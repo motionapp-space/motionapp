@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { PageHeading } from "@/components/ui/page-heading";
+import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,8 @@ const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState({ name: "", email: "", locale: "it" });
   const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
+
+  useTopbar({ title: "Impostazioni" });
 
   useEffect(() => {
     loadProfile();
@@ -88,11 +90,6 @@ const Settings = () => {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-6">
-        <PageHeading className="mb-2">Impostazioni</PageHeading>
-        <p className="text-muted-foreground">Gestisci il tuo account e le preferenze</p>
-      </div>
-
       <Tabs defaultValue="profile" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="profile" className="gap-2">

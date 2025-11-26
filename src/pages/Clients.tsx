@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { z } from "zod";
-import PageHeader from "@/components/PageHeader";
+import { useTopbar } from "@/contexts/TopbarContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +69,17 @@ const Clients = () => {
     notes: "",
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Set topbar title and actions
+  useTopbar({
+    title: "Clienti",
+    actions: (
+      <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+        <Plus className="h-4 w-4" />
+        Nuovo cliente
+      </Button>
+    ),
+  });
 
   // Handle return from create flow
   useEffect(() => {
@@ -226,11 +237,6 @@ const Clients = () => {
   if (onboarding.state === 'ZERO_CLIENTS') {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <PageHeader
-          title="Clienti"
-          subtitle="Gestisci tutti i tuoi clienti in un unico posto"
-        />
-        
         <div className="container mx-auto px-6 max-w-7xl">
           {/* Filtro Mostra Archiviati - solo se esistono clienti archiviati */}
           {onboarding.hasArchivedClients && (
@@ -393,16 +399,9 @@ const Clients = () => {
   if (onboarding.state === 'FIRST_CLIENT_NO_CONTENT') {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <PageHeader
-          title="Clienti"
-          subtitle="Gestisci tutti i tuoi clienti in un unico posto"
-          primaryCta={{
-            label: "Nuovo cliente",
-            onClick: () => setCreateDialogOpen(true),
-            icon: <Plus className="h-4 w-4" />,
-            testId: "clients-new-btn",
-          }}
-          toolbarLeft={
+        <div className="container mx-auto px-6 max-w-7xl pt-6">
+          {/* Toolbar */}
+          <div className="mb-6 space-y-4">
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
