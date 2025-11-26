@@ -6,7 +6,7 @@ import { GlobalSessionCTA } from "./GlobalSessionCTA";
 import { useTopbarContext } from "@/contexts/TopbarContext";
 
 export function Topbar() {
-  const { title, showBack, onBack, actions } = useTopbarContext();
+  const { title, showBack, onBack } = useTopbarContext();
 
   return (
     <header className="sticky top-0 z-50 h-16 bg-background px-6">
@@ -28,9 +28,8 @@ export function Topbar() {
           )}
         </div>
         
-        {/* Right: Actions + Global Session CTA + Notifications + User */}
+        {/* Right: Global elements only */}
         <div className="flex items-center gap-3 shrink-0">
-          {actions}
           <GlobalSessionCTA />
           <NotificationBell />
           <UserMenu />

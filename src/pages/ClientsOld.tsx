@@ -136,12 +136,6 @@ const Clients = () => {
 
   useTopbar({
     title: "Clienti",
-    actions: (
-      <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-        <Plus className="h-4 w-4" />
-        Nuovo cliente
-      </Button>
-    ),
   });
 
   return (
@@ -149,14 +143,21 @@ const Clients = () => {
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6">
         {/* Toolbar */}
         <div className="mb-6 space-y-4">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={toSentenceCase("Cerca clienti...")}
-              value={filters.q}
-              onChange={(e) => setFilters({ q: e.target.value })}
-              className="pl-10 h-11"
-            />
+          <div className="flex items-center gap-4 justify-between">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={toSentenceCase("Cerca clienti...")}
+                value={filters.q}
+                onChange={(e) => setFilters({ q: e.target.value })}
+                className="pl-10 h-11"
+              />
+            </div>
+
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Nuovo cliente
+            </Button>
           </div>
           <div className="flex flex-col md:flex-row gap-3 w-full">
             <div className="flex flex-wrap gap-4 items-center">

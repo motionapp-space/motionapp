@@ -70,15 +70,9 @@ const Clients = () => {
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Set topbar title and actions
+  // Set topbar title
   useTopbar({
     title: "Clienti",
-    actions: (
-      <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-        <Plus className="h-4 w-4" />
-        Nuovo cliente
-      </Button>
-    ),
   });
 
   // Handle return from create flow
@@ -400,6 +394,14 @@ const Clients = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <div className="container mx-auto px-6 max-w-7xl pt-6">
+          {/* Header with CTA */}
+          <div className="flex items-center justify-end mb-6">
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Nuovo cliente
+            </Button>
+          </div>
+
           {/* Toolbar */}
           <div className="mb-6 space-y-4">
             <div className="relative w-full max-w-sm">

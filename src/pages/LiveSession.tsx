@@ -236,15 +236,6 @@ export default function LiveSession() {
     title: session?.client_name || "Sessione Live",
     showBack: true,
     onBack: () => navigate(clientId ? `/clients/${clientId}?tab=sessions` : "/"),
-    actions: (
-      <>
-        <Button variant="ghost" size="icon" onClick={togglePause}>
-          {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-        </Button>
-        <span className="font-mono text-lg font-semibold">{formatTime(elapsed)}</span>
-        <Button onClick={handleFinishSession} size="sm">Fine sessione</Button>
-      </>
-    ),
   });
 
   const handleSaveSession = async () => {
@@ -302,6 +293,34 @@ export default function LiveSession() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Session toolbar */}
+      <div className="sticky top-16 z-40 bg-background border-b">
+        <div className="container mx-auto px-6 py-3 max-w-4xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={togglePause}
+                className="h-9 w-9"
+              >
+                {isPaused ? (
+                  <Play className="h-4 w-4" />
+                ) : (
+                  <Pause className="h-4 w-4" />
+                )}
+              </Button>
+              <span className="font-mono text-lg font-semibold tabular-nums">
+                {formatTime(elapsed)}
+              </span>
+            </div>
+            <Button onClick={handleFinishSession} size="sm">
+              Fine sessione
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4 md:px-6 py-6 max-w-6xl space-y-6">
         {/* Subtitle info */}
         <div className="text-sm text-muted-foreground">
