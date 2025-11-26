@@ -225,7 +225,7 @@ const Calendar = () => {
           <Button
             variant="outline"
             onClick={() => navigate("/booking-management")}
-            className="flex items-center gap-2"
+            className="h-10 flex items-center gap-2"
           >
             Gestione prenotazioni
             {pendingCount > 0 && (
@@ -233,7 +233,7 @@ const Calendar = () => {
             )}
           </Button>
           
-          <Button onClick={handleNewEvent} className="flex items-center gap-2">
+          <Button onClick={handleNewEvent} className="h-10 flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Nuovo appuntamento
           </Button>
