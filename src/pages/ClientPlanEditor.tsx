@@ -82,11 +82,6 @@ const ClientPlanEditor = () => {
   const [alsoAssign, setAlsoAssign] = useState(false);
   const [dayPickerOpen, setDayPickerOpen] = useState(false);
 
-  // Reset scroll on mount
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
   const updateMutation = useUpdateClientPlan();
   const saveAsTemplateMutation = useSaveAsTemplate();
   const assignMutation = useAssignTemplate();

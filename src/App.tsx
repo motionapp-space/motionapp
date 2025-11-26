@@ -25,6 +25,7 @@ import NotFound from "./pages/NotFound";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Topbar } from "@/components/Topbar";
 import { StickySessionBar } from "@/components/StickySessionBar";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,6 +85,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           {user ? (
             <div className="flex min-h-screen w-full flex-col">
               <Topbar />
