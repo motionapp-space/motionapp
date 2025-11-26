@@ -9,7 +9,7 @@ export function Topbar() {
   const { title, showBack, onBack } = useTopbarContext();
 
   return (
-    <header className="sticky top-0 z-50 h-16 bg-background px-6">
+    <header className="sticky top-0 z-50 h-16 bg-background px-6 border-b">
       <div className="flex h-full items-center gap-4">
         {/* Left: Back + Title */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
