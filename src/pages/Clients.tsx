@@ -427,17 +427,349 @@ const Clients = () => {
             </Button>
           </div>
 
-          {/* Toggle "Mostra archiviati" - solo se ci sono clienti archiviati */}
-          {showArchivedToggle && (
-            <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-              <Switch
-                id="show-archived-first"
-                checked={filters.includeArchived === true}
-                onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
-              />
-              <Label htmlFor="show-archived-first" className="cursor-pointer text-sm">
-                Mostra archiviati
-              </Label>
+          {/* Quick Filters Pills - solo se > 1 cliente non archiviato */}
+          {showFilters && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Toggle
+                pressed={filters.withoutPlan || false}
+                onPressedChange={(pressed) => setFilters({ withoutPlan: pressed ? true : undefined })}
+                variant="outline"
+                size="sm"
+                className="h-9"
+              >
+                Senza piano
+              </Toggle>
+              
+              <Toggle
+                pressed={filters.packageToRenew || false}
+                onPressedChange={(pressed) => setFilters({ packageToRenew: pressed ? true : undefined })}
+                variant="outline"
+                size="sm"
+                className="h-9"
+              >
+                Pacchetto da rinnovare
+              </Toggle>
+              
+              <Toggle
+                pressed={filters.withoutAppointment || false}
+                onPressedChange={(pressed) => setFilters({ withoutAppointment: pressed ? true : undefined })}
+                variant="outline"
+                size="sm"
+                className="h-9"
+              >
+                Senza appuntamento futuro
+              </Toggle>
+
+              <Toggle
+                pressed={filters.lowActivity || false}
+                onPressedChange={(pressed) => setFilters({ lowActivity: pressed ? true : undefined })}
+                variant="outline"
+                size="sm"
+                className="h-9"
+              >
+                Clienti non attivi
+              </Toggle>
+            </div>
+          )}
+
+          {/* Control Bar: Sort + Show Archived + Advanced Filters */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b">
+            {showFilters && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">Ordina per:</span>
+                <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
+                  <SelectTrigger className="h-9 w-[200px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Popover open={advancedOpen} onOpenChange={setAdvancedOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        "h-9 px-3 transition-colors",
+                        advancedOpen
+                          ? "bg-green-600 text-white hover:bg-green-700 hover:text-white"
+                          : "text-muted-foreground hover:bg-green-600 hover:text-white"
+                      )}
+                    >
+                      Filtri avanzati
+                      <ChevronDown className={cn("ml-2 h-4 w-4 transition-transform", advancedOpen && "rotate-180")} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[600px] p-0" align="start">
+                    <div className="p-5">
+                      <div className="grid grid-cols-2 gap-6">
+                        {/* Ultimo Piano */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">Ultimo Piano</Label>
+                          <RadioGroup
+                            value={filters.planWeeksRange || "all"}
+                            onValueChange={(v) => setFilters({ planWeeksRange: v === "all" ? undefined : v as any })}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="all" id="plan-all" />
+                              <Label htmlFor="plan-all" className="cursor-pointer font-normal">Tutti</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="none" id="plan-none" />
+                              <Label htmlFor="plan-none" className="cursor-pointer font-normal">Nessun piano</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="0-4" id="plan-0-4" />
+                              <Label htmlFor="plan-0-4" className="cursor-pointer font-normal">0-4 settimane</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="4-8" id="plan-4-8" />
+                              <Label htmlFor="plan-4-8" className="cursor-pointer font-normal">4-8 settimane</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="8+" id="plan-8+" />
+                              <Label htmlFor="plan-8+" className="cursor-pointer font-normal">8+ settimane</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {/* Stato Pacchetto */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">Stato Pacchetto</Label>
+                          <RadioGroup
+                            value={filters.packageStatuses?.[0] || "all"}
+                            onValueChange={(v) => setFilters({ packageStatuses: v === "all" ? undefined : [v as any] })}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="all" id="pkg-all" />
+                              <Label htmlFor="pkg-all" className="cursor-pointer font-normal">Tutti</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="none" id="pkg-none" />
+                              <Label htmlFor="pkg-none" className="cursor-pointer font-normal">Nessuno</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="active" id="pkg-active" />
+                              <Label htmlFor="pkg-active" className="cursor-pointer font-normal">Attivo</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="low" id="pkg-low" />
+                              <Label htmlFor="pkg-low" className="cursor-pointer font-normal">In esaurimento</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="expired" id="pkg-expired" />
+                              <Label htmlFor="pkg-expired" className="cursor-pointer font-normal">Da rinnovare</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {/* Appuntamenti */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">Appuntamenti</Label>
+                          <RadioGroup
+                            value={filters.appointmentStatuses?.[0] || "all"}
+                            onValueChange={(v) => setFilters({ appointmentStatuses: v === "all" ? undefined : [v as any] })}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="all" id="apt-all" />
+                              <Label htmlFor="apt-all" className="cursor-pointer font-normal">Tutti</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="planned" id="apt-planned" />
+                              <Label htmlFor="apt-planned" className="cursor-pointer font-normal">Pianificato</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="not_planned" id="apt-not-planned" />
+                              <Label htmlFor="apt-not-planned" className="cursor-pointer font-normal">Da pianificare</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {/* Attività */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">Attività</Label>
+                          <RadioGroup
+                            value={filters.activityStatuses?.[0] || "all"}
+                            onValueChange={(v) => setFilters({ activityStatuses: v === "all" ? undefined : [v as any] })}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="all" id="act-all" />
+                              <Label htmlFor="act-all" className="cursor-pointer font-normal">Tutti</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="active" id="act-active" />
+                              <Label htmlFor="act-active" className="cursor-pointer font-normal">Attivo</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="low" id="act-low" />
+                              <Label htmlFor="act-low" className="cursor-pointer font-normal">Bassa</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="inactive" id="act-inactive" />
+                              <Label htmlFor="act-inactive" className="cursor-pointer font-normal">Assente</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setFilters({
+                              appointmentStatuses: undefined,
+                              activityStatuses: undefined,
+                              planWeeksRange: undefined,
+                              packageStatuses: undefined,
+                            });
+                          }}
+                        >
+                          Reimposta
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => setAdvancedOpen(false)}
+                        >
+                          Applica filtri
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
+            {showArchivedToggle && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="show-archived-first"
+                  checked={filters.includeArchived === true}
+                  onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
+                />
+                <Label htmlFor="show-archived-first" className="cursor-pointer text-sm">
+                  Mostra archiviati
+                </Label>
+              </div>
+            )}
+          </div>
+
+          {/* Active Filters Summary */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 pb-4">
+              <span className="text-xs text-muted-foreground">Filtri attivi:</span>
+              
+              {filters.withoutPlan && (
+                <Badge variant="secondary" className="gap-1">
+                  Senza piano
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ withoutPlan: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.packageToRenew && (
+                <Badge variant="secondary" className="gap-1">
+                  Pacchetto da rinnovare
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ packageToRenew: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.withoutAppointment && (
+                <Badge variant="secondary" className="gap-1">
+                  Senza appuntamento futuro
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ withoutAppointment: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.lowActivity && (
+                <Badge variant="secondary" className="gap-1">
+                  Clienti non attivi
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ lowActivity: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.planWeeksRange && (
+                <Badge variant="secondary" className="gap-1">
+                  Piano: {
+                    filters.planWeeksRange === "none" ? "Nessun piano" :
+                    filters.planWeeksRange === "0-4" ? "0-4 sett" :
+                    filters.planWeeksRange === "4-8" ? "4-8 sett" :
+                    "8+ sett"
+                  }
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ planWeeksRange: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.packageStatuses && filters.packageStatuses.length > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  Pacchetto: {
+                    filters.packageStatuses[0] === "active" ? "Attivo" :
+                    filters.packageStatuses[0] === "low" ? "In esaurimento" :
+                    filters.packageStatuses[0] === "expired" ? "Da rinnovare" :
+                    "Nessuno"
+                  }
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ packageStatuses: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.appointmentStatuses && filters.appointmentStatuses.length > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  Agenda: {
+                    filters.appointmentStatuses[0] === "planned" ? "Pianificato" : "Da pianificare"
+                  }
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ appointmentStatuses: undefined })}
+                  />
+                </Badge>
+              )}
+
+              {filters.activityStatuses && filters.activityStatuses.length > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  Attività: {
+                    filters.activityStatuses[0] === "active" ? "Attivo" :
+                    filters.activityStatuses[0] === "low" ? "Bassa" :
+                    "Assente"
+                  }
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => setFilters({ activityStatuses: undefined })}
+                  />
+                </Badge>
+              )}
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-7 text-xs"
+              >
+                Pulisci filtri
+              </Button>
             </div>
           )}
         </div>
