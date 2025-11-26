@@ -1,6 +1,17 @@
-import { Plan } from "@/types/plan";
+import type { Day } from "@/types/plan";
 
-export const exportPlanToPDF = (plan: Plan) => {
+export interface PlanExportData {
+  name: string;
+  days: Day[];
+  objective?: string;
+  durationWeeks?: number;
+  created_at?: string;
+  updated_at?: string;
+  createdAt?: string;  // Legacy support
+  updatedAt?: string;  // Legacy support
+}
+
+export const exportPlanToPDF = (plan: PlanExportData) => {
   // Create a new window for printing
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
@@ -22,6 +33,10 @@ export const exportPlanToPDF = (plan: Plan) => {
     HIIT: "HIIT",
     Functional: "Funzionale",
   };
+
+  // Get dates (support both camelCase and snake_case)
+  const createdDate = plan.created_at || plan.createdAt;
+  const updatedDate = plan.updated_at || plan.updatedAt;
 
   // Generate HTML content with tokenized styles
   const htmlContent = `
@@ -105,6 +120,17 @@ export const exportPlanToPDF = (plan: Plan) => {
           margin-bottom: 12px;
           color: #333;
         }
+
+        .group-header {
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 8px;
+          margin-top: 12px;
+          color: #555;
+          padding: 6px 12px;
+          background-color: #f8f8f8;
+          border-left: 4px solid #666;
+        }
         
         table {
           width: 100%;
@@ -148,67 +174,80 @@ export const exportPlanToPDF = (plan: Plan) => {
     <body>
       <div class="header">
         <h1>${plan.name}</h1>
-        <div class="meta">
-          <div class="meta-item">
-            <strong>Obiettivo:</strong> ${objectiveLabels[plan.objective] || plan.objective}
+        ${plan.objective || plan.durationWeeks ? `
+          <div class="meta">
+            ${plan.objective ? `<div class="meta-item"><strong>Obiettivo:</strong> ${objectiveLabels[plan.objective] || plan.objective}</div>` : ''}
+            ${plan.durationWeeks ? `<div class="meta-item"><strong>Durata:</strong> ${plan.durationWeeks} settimane</div>` : ''}
           </div>
-          <div class="meta-item">
-            <strong>Durata:</strong> ${plan.durationWeeks} settimane
+        ` : ''}
+        ${createdDate || updatedDate ? `
+          <div class="meta">
+            ${createdDate ? `<div class="meta-item"><strong>Creato:</strong> ${new Date(createdDate).toLocaleDateString('it-IT')}</div>` : ''}
+            ${updatedDate ? `<div class="meta-item"><strong>Aggiornato:</strong> ${new Date(updatedDate).toLocaleDateString('it-IT')}</div>` : ''}
           </div>
-        </div>
-        <div class="meta">
-          <div class="meta-item">
-            <strong>Creato:</strong> ${new Date(plan.createdAt).toLocaleDateString('it-IT')}
-          </div>
-          <div class="meta-item">
-            <strong>Aggiornato:</strong> ${new Date(plan.updatedAt).toLocaleDateString('it-IT')}
-          </div>
-        </div>
+        ` : ''}
       </div>
       
       ${plan.days.map((day) => `
         <div class="day">
           <h2 class="day-title">${day.title}</h2>
-          ${day.phases.map((phase) => `
-            <div class="section">
-              <h3 class="section-header">
-                ${phaseLabels[phase.type] || phase.type} 
-                (${phase.exercises.length} ${phase.exercises.length === 1 ? 'esercizio' : 'esercizi'})
-              </h3>
-              ${phase.exercises.length === 0 ? `
-                <div class="empty-section">Nessun esercizio</div>
-              ` : `
-                <table>
-                  <thead>
-                    <tr>
-                      <th style="width: 25%;">Nome</th>
-                      <th style="width: 8%;">Serie</th>
-                      <th style="width: 10%;">Rip</th>
-                      <th style="width: 12%;">Carico</th>
-                      <th style="width: 10%;">Rec</th>
-                      <th style="width: 20%;">Note</th>
-                      <th style="width: 15%;">🎯 Obiettivo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${phase.exercises
-                      .sort((a, b) => a.order - b.order)
-                      .map((ex) => `
-                        <tr>
-                          <td>${ex.name || '-'}</td>
-                          <td>${ex.sets}</td>
-                          <td>${ex.reps}</td>
-                          <td>${ex.load || '-'}</td>
-                          <td>${ex.rest || '-'}</td>
-                          <td>${ex.notes || '-'}</td>
-                          <td>${ex.goal || '-'}</td>
-                        </tr>
-                      `).join('')}
-                  </tbody>
-                </table>
-              `}
-            </div>
-          `).join('')}
+          ${day.phases.map((phase) => {
+            // Flatten exercises from groups (supports new structure)
+            const allExercises = phase.groups?.flatMap(g => g.exercises) || [];
+            const exerciseCount = allExercises.length;
+            
+            return `
+              <div class="section">
+                <h3 class="section-header">
+                  ${phaseLabels[phase.type] || phase.type} 
+                  (${exerciseCount} ${exerciseCount === 1 ? 'esercizio' : 'esercizi'})
+                </h3>
+                ${exerciseCount === 0 ? `
+                  <div class="empty-section">Nessun esercizio</div>
+                ` : `
+                  ${phase.groups?.map((group) => {
+                    const groupLabel = group.type === 'superset' 
+                      ? 'Superset' 
+                      : group.type === 'circuit' 
+                        ? `Circuito${group.rounds ? ` (${group.rounds} giri)` : ''}` 
+                        : '';
+                    
+                    return `
+                      ${groupLabel ? `<div class="group-header">${groupLabel}</div>` : ''}
+                      <table>
+                        <thead>
+                          <tr>
+                            <th style="width: 25%;">Nome</th>
+                            <th style="width: 8%;">Serie</th>
+                            <th style="width: 10%;">Rip</th>
+                            <th style="width: 12%;">Carico</th>
+                            <th style="width: 10%;">Rec</th>
+                            <th style="width: 20%;">Note</th>
+                            <th style="width: 15%;">🎯 Obiettivo</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${group.exercises
+                            .sort((a, b) => a.order - b.order)
+                            .map((ex) => `
+                              <tr>
+                                <td>${ex.name || '-'}</td>
+                                <td>${ex.sets}</td>
+                                <td>${ex.reps}</td>
+                                <td>${ex.load || '-'}</td>
+                                <td>${ex.rest || '-'}</td>
+                                <td>${ex.notes || '-'}</td>
+                                <td>${ex.goal || '-'}</td>
+                              </tr>
+                            `).join('')}
+                        </tbody>
+                      </table>
+                    `;
+                  }).join('') || ''}
+                `}
+              </div>
+            `;
+          }).join('')}
         </div>
       `).join('')}
     </body>
