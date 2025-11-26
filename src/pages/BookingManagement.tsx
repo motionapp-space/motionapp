@@ -47,7 +47,7 @@ const BookingManagement = () => {
             className="gap-2 h-10"
           >
             <ArrowLeft className="h-4 w-4" />
-            Torna agli appuntamenti
+            Torna all'agenda
           </Button>
         }
       />

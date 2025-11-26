@@ -67,7 +67,7 @@ export function YearView({ date, events, onMonthClick }: YearViewProps) {
               </div>
 
               <div className="mt-auto pt-3 text-center text-sm text-muted-foreground">
-                {monthEvents.length} {monthEvents.length === 1 ? "appuntamento" : "appuntamenti"}
+                {monthEvents.length} {monthEvents.length === 1 ? "evento" : "eventi"}
               </div>
             </div>
           );

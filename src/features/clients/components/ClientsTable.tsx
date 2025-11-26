@@ -100,7 +100,7 @@ export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: Clie
             <TableHead>{toSentenceCase("Cliente")}</TableHead>
             <TableHead>{toSentenceCase("Ultimo Piano")}</TableHead>
             <TableHead>{toSentenceCase("Pacchetto")}</TableHead>
-            <TableHead>{toSentenceCase("Appuntamenti")}</TableHead>
+            <TableHead>{toSentenceCase("Agenda")}</TableHead>
             <TableHead>{toSentenceCase("Attività")}</TableHead>
             <TableHead className="text-right">{toSentenceCase("Azioni")}</TableHead>
           </TableRow>
