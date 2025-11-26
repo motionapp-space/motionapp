@@ -357,16 +357,6 @@ export default function TemplateDetail() {
                   <Download className="h-4 w-4" />
                   PDF
                 </Button>
-                {FLAGS.copilotEnabled && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCopilotOpen(!copilotOpen)}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    AI
-                  </Button>
-                )}
               </>
             ) : (
               <>
