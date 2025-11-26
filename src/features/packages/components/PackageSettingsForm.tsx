@@ -113,13 +113,13 @@ export function PackageSettingsForm() {
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-2xl">Impostazioni Pacchetti</CardTitle>
-        <CardDescription className="text-base">
+      <CardHeader>
+        <CardTitle>Impostazioni Pacchetti</CardTitle>
+        <CardDescription>
           Definisci prezzi e durate di default per ciascun tipo di pacchetto
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-6 pt-4 pb-6">
+      <CardContent className="space-y-8">
         {singleSessionPrice === 0 && (
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
