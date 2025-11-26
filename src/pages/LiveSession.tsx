@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, Play, Pause, Save, MoreVertical, XCircle } from "lucide-react";
+import { Play, Pause, Save, MoreVertical, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useSessionQuery } from "@/features/sessions/hooks/useSessionQuery";
 import { useUpdateSession } from "@/features/sessions/hooks/useUpdateSession";
@@ -61,6 +62,23 @@ export default function LiveSession() {
   
   // State per tracciare esercizi saltati
   const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
+
+  // Set topbar
+  const clientId = searchParams.get("clientId");
+  useTopbar({
+    title: session?.client_name || "Sessione Live",
+    showBack: true,
+    onBack: () => navigate(clientId ? `/clients/${clientId}?tab=sessions` : "/"),
+    actions: (
+      <>
+        <Button variant="ghost" size="icon" onClick={togglePause}>
+          {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+        </Button>
+        <span className="font-mono text-lg font-semibold">{formatTime(elapsed)}</span>
+        <Button onClick={handleFinishSession} size="sm">Fine sessione</Button>
+      </>
+    ),
+  });
 
   // Load day data from plan
   useEffect(() => {
