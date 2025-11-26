@@ -233,19 +233,21 @@ const Clients = () => {
         />
         
         <div className="container mx-auto px-6 max-w-7xl">
-          {/* Filtro Mostra Archiviati - posizione coerente con ACTIVE_USER */}
-          <div className="flex items-center gap-4 py-4 border-b border-border">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="show-archived-zero"
-                checked={filters.includeArchived === true}
-                onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
-              />
-              <Label htmlFor="show-archived-zero" className="cursor-pointer text-sm">
-                Mostra archiviati
-              </Label>
+          {/* Filtro Mostra Archiviati - solo se esistono clienti archiviati */}
+          {onboarding.hasArchivedClients && (
+            <div className="flex items-center gap-4 py-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="show-archived-zero"
+                  checked={filters.includeArchived === true}
+                  onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
+                />
+                <Label htmlFor="show-archived-zero" className="cursor-pointer text-sm">
+                  Mostra archiviati
+                </Label>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Contenuto condizionale */}
           {filters.includeArchived ? (
@@ -443,17 +445,19 @@ const Clients = () => {
                 </Select>
               </div>
 
-              {/* Mostra archiviati */}
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="show-archived-first"
-                  checked={filters.includeArchived === true}
-                  onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
-                />
-                <Label htmlFor="show-archived-first" className="cursor-pointer text-sm">
-                  Mostra archiviati
-                </Label>
-              </div>
+              {/* Mostra archiviati - solo se esistono clienti archiviati */}
+              {onboarding.hasArchivedClients && (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="show-archived-first"
+                    checked={filters.includeArchived === true}
+                    onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
+                  />
+                  <Label htmlFor="show-archived-first" className="cursor-pointer text-sm">
+                    Mostra archiviati
+                  </Label>
+                </div>
+              )}
             </div>
           }
         />
@@ -920,16 +924,18 @@ const Clients = () => {
               </Popover>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Switch
-                id="show-archived"
-                checked={filters.includeArchived === true}
-                onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
-              />
-              <Label htmlFor="show-archived" className="cursor-pointer text-sm">
-                Mostra archiviati
-              </Label>
-            </div>
+            {onboarding.hasArchivedClients && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="show-archived"
+                  checked={filters.includeArchived === true}
+                  onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
+                />
+                <Label htmlFor="show-archived" className="cursor-pointer text-sm">
+                  Mostra archiviati
+                </Label>
+              </div>
+            )}
           </div>
 
           {/* Active Filters Summary */}

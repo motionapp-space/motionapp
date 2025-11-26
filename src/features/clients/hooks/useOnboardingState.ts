@@ -9,6 +9,7 @@ export interface OnboardingState {
   clientsCount: number;
   hasAnyPlan: boolean;
   hasAnyAppointment: boolean;
+  hasArchivedClients: boolean;
   isLoading: boolean;
 }
 
@@ -58,13 +59,34 @@ export function useOnboardingState(): OnboardingState {
     staleTime: 30000, // 30s cache
   });
 
+  // Check esistenza clienti archiviati (ottimizzato: limit 1, solo id)
+  const archivedQuery = useQuery({
+    queryKey: ['onboarding-archived-check'],
+    queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return false;
+
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('coach_id', user.user.id)
+        .not('archived_at', 'is', null)
+        .limit(1);
+
+      if (error) throw error;
+      return (data?.length || 0) > 0;
+    },
+    staleTime: 30000, // 30s cache
+  });
+
   // Calcola isLoading dai veri stati delle query
-  const isLoading = clientsQuery.isLoading || plansQuery.isLoading || eventsQuery.isLoading;
+  const isLoading = clientsQuery.isLoading || plansQuery.isLoading || eventsQuery.isLoading || archivedQuery.isLoading;
 
   // Valori sicuri (defaults)
   const clientsCount = clientsQuery.data?.total || 0;
   const hasAnyPlan = plansQuery.data || false;
   const hasAnyAppointment = eventsQuery.data || false;
+  const hasArchivedClients = archivedQuery.data || false;
 
   // Determina stato onboarding
   let state: OnboardingStateType;
@@ -81,6 +103,7 @@ export function useOnboardingState(): OnboardingState {
     clientsCount, 
     hasAnyPlan, 
     hasAnyAppointment, 
+    hasArchivedClients,
     isLoading 
   };
 }
