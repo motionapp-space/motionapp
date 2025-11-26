@@ -14,7 +14,26 @@ export interface OnboardingState {
 }
 
 export function useOnboardingState(): OnboardingState {
-  // Query clienti NON archiviati con limit minimo per performance
+  // Query per ottenere il count reale dei clienti NON archiviati
+  const nonArchivedCountQuery = useQuery({
+    queryKey: ['onboarding-non-archived-count'],
+    queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return 0;
+
+      const { count, error } = await supabase
+        .from('clients')
+        .select('id', { count: 'exact', head: true })
+        .eq('coach_id', user.user.id)
+        .is('archived_at', null);
+
+      if (error) throw error;
+      return count || 0;
+    },
+    staleTime: 30000, // 30s cache
+  });
+
+  // Query per verifica esistenza di almeno un cliente (per stato ZERO_CLIENTS)
   const clientsQuery = useClientsQuery({ 
     limit: 1, 
     includeArchived: false 
@@ -80,10 +99,10 @@ export function useOnboardingState(): OnboardingState {
   });
 
   // Calcola isLoading dai veri stati delle query
-  const isLoading = clientsQuery.isLoading || plansQuery.isLoading || eventsQuery.isLoading || archivedQuery.isLoading;
+  const isLoading = clientsQuery.isLoading || nonArchivedCountQuery.isLoading || plansQuery.isLoading || eventsQuery.isLoading || archivedQuery.isLoading;
 
   // Valori sicuri (defaults)
-  const clientsCount = clientsQuery.data?.total || 0;
+  const clientsCount = nonArchivedCountQuery.data || 0;  // Count reale di clienti non archiviati
   const hasAnyPlan = plansQuery.data || false;
   const hasAnyAppointment = eventsQuery.data || false;
   const hasArchivedClients = archivedQuery.data || false;

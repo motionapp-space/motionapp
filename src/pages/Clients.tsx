@@ -49,6 +49,10 @@ const Clients = () => {
   // Onboarding state
   const onboarding = useOnboardingState();
 
+  // Nuova logica visibilità filtri (indipendente dagli stati di onboarding)
+  const showArchivedToggle = onboarding.hasArchivedClients; // >= 1 clienti archiviati
+  const showFilters = onboarding.clientsCount > 1;          // > 1 clienti non archiviati
+
   const highlight = sp.get("highlight");
   const from = sp.get("from");
 
@@ -233,7 +237,7 @@ const Clients = () => {
       <div className="min-h-screen flex flex-col bg-background">
         <div className="container mx-auto px-6 max-w-7xl">
           {/* Filtro Mostra Archiviati - solo se esistono clienti archiviati */}
-          {onboarding.hasArchivedClients && (
+          {showArchivedToggle && (
             <div className="flex items-center gap-4 py-4 border-b border-border">
               <div className="flex items-center gap-2">
                 <Switch
@@ -422,6 +426,20 @@ const Clients = () => {
               Nuovo cliente
             </Button>
           </div>
+
+          {/* Toggle "Mostra archiviati" - solo se ci sono clienti archiviati */}
+          {showArchivedToggle && (
+            <div className="flex items-center gap-2 mb-4 pb-4 border-b">
+              <Switch
+                id="show-archived-first"
+                checked={filters.includeArchived === true}
+                onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
+              />
+              <Label htmlFor="show-archived-first" className="cursor-pointer text-sm">
+                Mostra archiviati
+              </Label>
+            </div>
+          )}
         </div>
 
         <div className="container mx-auto px-6 py-6 max-w-7xl">
@@ -605,273 +623,121 @@ const Clients = () => {
       <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-6 max-w-7xl py-4 space-y-3">
 
-          {/* Quick Filters Pills */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Toggle
-              pressed={filters.withoutPlan || false}
-              onPressedChange={(pressed) => setFilters({ withoutPlan: pressed ? true : undefined })}
-              variant="outline"
-              size="sm"
-              className="h-9"
-            >
-              Senza piano
-            </Toggle>
-            
-            <Toggle
-              pressed={filters.packageToRenew || false}
-              onPressedChange={(pressed) => setFilters({ packageToRenew: pressed ? true : undefined })}
-              variant="outline"
-              size="sm"
-              className="h-9"
-            >
-              Pacchetto da rinnovare
-            </Toggle>
-            
-            <Toggle
-              pressed={filters.withoutAppointment || false}
-              onPressedChange={(pressed) => setFilters({ withoutAppointment: pressed ? true : undefined })}
-              variant="outline"
-              size="sm"
-              className="h-9"
-            >
-              Senza appuntamento futuro
-            </Toggle>
+          {/* Quick Filters Pills - solo se > 1 cliente non archiviato */}
+          {showFilters && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Toggle
+                pressed={filters.withoutPlan || false}
+                onPressedChange={(pressed) => setFilters({ withoutPlan: pressed ? true : undefined })}
+                variant="outline"
+                size="sm"
+                className="h-9"
+              >
+                Senza piano
+              </Toggle>
+              
+              <Toggle
+                pressed={filters.packageToRenew || false}
+                onPressedChange={(pressed) => setFilters({ packageToRenew: pressed ? true : undefined })}
+                variant="outline"
+                size="sm"
+                className="h-9"
+              >
+                Pacchetto da rinnovare
+              </Toggle>
+              
+              <Toggle
+                pressed={filters.withoutAppointment || false}
+                onPressedChange={(pressed) => setFilters({ withoutAppointment: pressed ? true : undefined })}
+                variant="outline"
+                size="sm"
+                className="h-9"
+              >
+                Senza appuntamento futuro
+              </Toggle>
 
-            <Toggle
-              pressed={filters.lowActivity || false}
-              onPressedChange={(pressed) => setFilters({ lowActivity: pressed ? true : undefined })}
-              variant="outline"
-              size="sm"
-              className="h-9"
-            >
-              Clienti non attivi
-            </Toggle>
-          </div>
+              <Toggle
+                pressed={filters.lowActivity || false}
+                onPressedChange={(pressed) => setFilters({ lowActivity: pressed ? true : undefined })}
+                variant="outline"
+                size="sm"
+                className="h-9"
+              >
+                Clienti non attivi
+              </Toggle>
+            </div>
+          )}
 
           {/* Control Bar: Sort + Show Archived + Advanced Filters */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground">Ordina per:</span>
-              <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
-                <SelectTrigger className="h-9 w-[200px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {showFilters && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">Ordina per:</span>
+                <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
+                  <SelectTrigger className="h-9 w-[200px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Popover open={advancedOpen} onOpenChange={setAdvancedOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "h-9 px-3 transition-colors",
-                      advancedOpen
-                        ? "bg-green-600 text-white hover:bg-green-700 hover:text-white"
-                        : "text-muted-foreground hover:bg-green-600 hover:text-white"
-                    )}
-                  >
-                    Filtri avanzati
-                    <ChevronDown className={cn("ml-2 h-4 w-4 transition-transform", advancedOpen && "rotate-180")} />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[600px] p-0" align="start">
-                  <div className="p-5">
-                    <div className="grid grid-cols-2 gap-6">
-                      {/* Left Column: Relazione / Attività */}
-                      <div className="space-y-5">
-                        {/* Agenda */}
-                        <div>
-                          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">
-                            Agenda
-                          </Label>
-                          <RadioGroup
-                            value={
-                              !filters.appointmentStatuses || filters.appointmentStatuses.length === 0
-                                ? "all"
-                                : filters.appointmentStatuses.includes("planned") && filters.appointmentStatuses.includes("unplanned")
-                                ? "all"
-                                : filters.appointmentStatuses[0]
-                            }
-                            onValueChange={(value) => {
-                              if (value === "all") {
-                                setFilters({ appointmentStatuses: undefined });
-                              } else {
-                                setFilters({ appointmentStatuses: [value as any] });
-                              }
-                            }}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="all" id="appointment-all" />
-                              <Label htmlFor="appointment-all" className="cursor-pointer font-normal">Tutti</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="planned" id="appointment-planned" />
-                              <Label htmlFor="appointment-planned" className="cursor-pointer font-normal">Pianificato</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="unplanned" id="appointment-unplanned" />
-                              <Label htmlFor="appointment-unplanned" className="cursor-pointer font-normal">Da pianificare</Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
-
-                        {/* Attività */}
-                        <div>
-                          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">
-                            Attività
-                          </Label>
-                          <RadioGroup
-                            value={
-                              !filters.activityStatuses || filters.activityStatuses.length === 0
-                                ? "all"
-                                : filters.activityStatuses.includes("active") && filters.activityStatuses.includes("low") && filters.activityStatuses.includes("inactive")
-                                ? "all"
-                                : filters.activityStatuses[0]
-                            }
-                            onValueChange={(value) => {
-                              if (value === "all") {
-                                setFilters({ activityStatuses: undefined });
-                              } else {
-                                setFilters({ activityStatuses: [value as any] });
-                              }
-                            }}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="all" id="activity-all" />
-                              <Label htmlFor="activity-all" className="cursor-pointer font-normal">Tutti</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="active" id="activity-active" />
-                              <Label htmlFor="activity-active" className="cursor-pointer font-normal">Attivo</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="low" id="activity-low" />
-                              <Label htmlFor="activity-low" className="cursor-pointer font-normal">Bassa</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="inactive" id="activity-inactive" />
-                              <Label htmlFor="activity-inactive" className="cursor-pointer font-normal">Assente</Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
+                <Popover open={advancedOpen} onOpenChange={setAdvancedOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        "h-9 px-3 transition-colors",
+                        advancedOpen
+                          ? "bg-green-600 text-white hover:bg-green-700 hover:text-white"
+                          : "text-muted-foreground hover:bg-green-600 hover:text-white"
+                      )}
+                    >
+                      Filtri avanzati
+                      <ChevronDown className={cn("ml-2 h-4 w-4 transition-transform", advancedOpen && "rotate-180")} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[600px] p-0" align="start">
+                    <div className="p-5">
+                      <div className="grid grid-cols-2 gap-6">
+...
                       </div>
 
-                      {/* Right Column: Piano & Pacchetto */}
-                      <div className="space-y-5">
-                        {/* Ultimo piano */}
-                        <div>
-                          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">
-                            Ultimo Piano
-                          </Label>
-                          <RadioGroup
-                            value={filters.planWeeksRange || "all"}
-                            onValueChange={(value) => setFilters({ planWeeksRange: value === "all" ? undefined : value as ClientsFilters['planWeeksRange'] })}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="all" id="plan-all" />
-                              <Label htmlFor="plan-all" className="cursor-pointer font-normal">Tutti</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="0-4" id="plan-0-4" />
-                              <Label htmlFor="plan-0-4" className="cursor-pointer font-normal">0–4 settimane</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="4-8" id="plan-4-8" />
-                              <Label htmlFor="plan-4-8" className="cursor-pointer font-normal">4–8 settimane</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="8+" id="plan-8plus" />
-                              <Label htmlFor="plan-8plus" className="cursor-pointer font-normal">8+ settimane</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="none" id="plan-none" />
-                              <Label htmlFor="plan-none" className="cursor-pointer font-normal">Nessun piano</Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
-
-                        {/* Stato pacchetto */}
-                        <div>
-                          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">
-                            Stato Pacchetto
-                          </Label>
-                          <RadioGroup
-                            value={
-                              !filters.packageStatuses || filters.packageStatuses.length === 0
-                                ? "all"
-                                : filters.packageStatuses.length > 1
-                                ? "all"
-                                : filters.packageStatuses[0]
-                            }
-                            onValueChange={(value) => {
-                              if (value === "all") {
-                                setFilters({ packageStatuses: undefined });
-                              } else {
-                                setFilters({ packageStatuses: [value as any] });
-                              }
-                            }}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="all" id="package-all" />
-                              <Label htmlFor="package-all" className="cursor-pointer font-normal">Tutti</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="active" id="package-active" />
-                              <Label htmlFor="package-active" className="cursor-pointer font-normal">Attivo</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="low" id="package-low" />
-                              <Label htmlFor="package-low" className="cursor-pointer font-normal">In esaurimento</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="expired" id="package-expired" />
-                              <Label htmlFor="package-expired" className="cursor-pointer font-normal">Da rinnovare</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="none" id="package-none" />
-                              <Label htmlFor="package-none" className="cursor-pointer font-normal">Nessuno</Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setFilters({
+                              appointmentStatuses: undefined,
+                              activityStatuses: undefined,
+                              planWeeksRange: undefined,
+                              packageStatuses: undefined,
+                            });
+                          }}
+                        >
+                          Reimposta
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => setAdvancedOpen(false)}
+                        >
+                          Applica filtri
+                        </Button>
                       </div>
                     </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
 
-                    {/* Actions */}
-                    <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setFilters({
-                            appointmentStatuses: undefined,
-                            activityStatuses: undefined,
-                            planWeeksRange: undefined,
-                            packageStatuses: undefined,
-                          });
-                        }}
-                      >
-                        Reimposta
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => setAdvancedOpen(false)}
-                      >
-                        Applica filtri
-                      </Button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {onboarding.hasArchivedClients && (
+            {showArchivedToggle && (
               <div className="flex items-center gap-2">
                 <Switch
                   id="show-archived"
