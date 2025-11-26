@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +26,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  ArrowLeft,
   Download,
   CheckCircle,
   Loader2,
@@ -487,164 +487,52 @@ const ClientPlanEditor = () => {
 
   const clientName = plan?.client_id ? "Cliente" : "Cliente";
 
+  // Set topbar
+  useTopbar({
+    title: id ? (name || "Piano") : "Nuovo piano",
+    showBack: true,
+    onBack: () => {
+      const targetClientId = plan?.client_id || clientId;
+      if (targetClientId) {
+        navigate(`/clients/${targetClientId}?tab=plans`);
+      } else {
+        navigate("/");
+      }
+    },
+    actions: id ? (
+      <>
+        <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2">
+          <Download className="h-4 w-4" />
+          PDF
+        </Button>
+        <Button onClick={handleSave} size="sm" className="gap-2">
+          <Save className="h-4 w-4" />
+          Salva
+        </Button>
+      </>
+    ) : undefined,
+  });
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4 mb-2">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  const targetClientId = plan?.client_id || clientId;
-                  navigate(targetClientId ? `/clients/${targetClientId}?tab=plans` : "/clients");
-                }}
-                className="shrink-0"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-h4 font-semibold truncate">{name || "Piano Cliente"}</h1>
-                {id && !isNewFromTemplate && (
-                  <p className="text-sm text-muted-foreground">
-                    {plan?.derived_from_template_id && derivedTemplate
-                      ? `${toSentenceCase("Derivato da template")}: ${derivedTemplate.name}`
-                      : `${toSentenceCase("Piano creato da zero il")} ${plan?.created_at ? format(new Date(plan.created_at), "dd/MM/yyyy", { locale: it }) : ""}`}
-                  </p>
-                )}
-                {isNewFromTemplate && (
-                  <p className="text-sm text-muted-foreground">
-                    {toSentenceCase("Creato da template")}: {template.name}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {updateMutation.isPending || assignMutation.isPending ? (
-                <Button disabled size="sm">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {toSentenceCase("Salvataggio...")}
-                </Button>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex">
-                      <Button onClick={handleSave} size="sm" className="gap-2" disabled={!id && !name?.trim()}>
-                        <CheckCircle className="h-4 w-4" />
-                        {id ? toSentenceCase("Salva") : toSentenceCase("Assegna")}
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {!id && !name?.trim() && (
-                    <TooltipContent side="bottom">
-                      Inserisci un nome per il piano
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              )}
-              {id && clientId && plan?.status === "IN_CORSO" && (
-                <Button onClick={() => setDayPickerOpen(true)} variant="secondary" size="sm" className="gap-2">
-                  <Save className="h-4 w-4" />
-                  {toSentenceCase("Usa in sessione")}
-                </Button>
-              )}
-              <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2">
-                <Download className="h-4 w-4" />
-                PDF
-              </Button>
-              {id && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (!plan) return;
-                        updateMutation.mutate({
-                          id: plan.id,
-                          updates: { is_visible: !plan.is_visible },
-                        });
-                      }}
-                    >
-                      {plan?.is_visible ? (
-                        <>
-                          <EyeOff className="h-4 w-4 mr-2" />
-                          {toSentenceCase("Nascondi al cliente")}
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="h-4 w-4 mr-2" />
-                          {toSentenceCase("Rendi visibile")}
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (!plan) return;
-                        updateMutation.mutate({
-                          id: plan.id,
-                          updates: { locked_at: plan.locked_at ? null : new Date().toISOString() },
-                        });
-                      }}
-                    >
-                      {plan?.locked_at ? (
-                        <>
-                          <Unlock className="h-4 w-4 mr-2" />
-                          {toSentenceCase("Sblocca pianificazione")}
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="h-4 w-4 mr-2" />
-                          {toSentenceCase("Blocca pianificazione")}
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (!plan) return;
-                        updateMutation.mutate({
-                          id: plan.id,
-                          updates: { is_in_use: !plan.is_in_use },
-                        });
-                      }}
-                    >
-                      <Star className={`h-4 w-4 mr-2 ${plan?.is_in_use ? "fill-current" : ""}`} />
-                      {plan?.is_in_use ? toSentenceCase("Rimuovi da In Uso") : toSentenceCase("Imposta come In Uso")}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setSaveAsTemplateOpen(true)}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      {toSentenceCase("Salva come template")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          </div>
-          {isNewFromTemplate && (
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mt-3">
-              <p className="text-blue-900 dark:text-blue-100">
-                {toSentenceCase("Stai personalizzando un piano basato sul template")} "{template.name}".{" "}
-                {toSentenceCase("Le modifiche non influiscono sul template originale")}.
-              </p>
-            </div>
-          )}
-          {id && !isNewFromTemplate && plan?.derived_from_template_id && derivedTemplate && (
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mt-3">
-              <p className="text-blue-900 dark:text-blue-100">
-                {toSentenceCase("Questo piano è stato creato a partire dal template")} "{derivedTemplate.name}".{" "}
-                {toSentenceCase("Le modifiche non influiscono sul template originale")}.
-              </p>
-            </div>
-          )}
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
+        {isNewFromTemplate && (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mb-6">
+            <p className="text-blue-900 dark:text-blue-100">
+              {toSentenceCase("Stai personalizzando un piano basato sul template")} "{template.name}".{" "}
+              {toSentenceCase("Le modifiche non influiscono sul template originale")}.
+            </p>
+          </div>
+        )}
+        {id && !isNewFromTemplate && plan?.derived_from_template_id && derivedTemplate && (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mb-6">
+            <p className="text-blue-900 dark:text-blue-100">
+              {toSentenceCase("Questo piano è stato creato a partire dal template")} "{derivedTemplate.name}".{" "}
+              {toSentenceCase("Le modifiche non influiscono sul template originale")}.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">

@@ -65,35 +65,7 @@ const Calendar = () => {
   // Fetch pending count
   const { data: pendingCount = 0 } = usePendingCount();
 
-  // Set topbar
-  useTopbar({
-    title: "Agenda",
-    actions: (
-      <>
-        <Button onClick={handleNewEvent} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nuovo evento
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => navigate("/calendar/manage")}
-          className="gap-2 relative"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="hidden sm:inline">Richieste clienti</span>
-          <span className="sm:hidden">Richieste</span>
-          {pendingCount > 0 && (
-            <Badge 
-              variant={pendingCount >= 10 ? "destructive" : "default"}
-              className={`h-5 min-w-5 px-1.5 ${pendingCount >= 10 ? 'animate-pulse' : ''}`}
-            >
-              {pendingCount}
-            </Badge>
-          )}
-        </Button>
-      </>
-    ),
-  });
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   // Persist isClientView in localStorage
   useEffect(() => {

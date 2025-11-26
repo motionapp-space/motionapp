@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Clock, CheckCircle2 } from "lucide-react";
+import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import PageHeader from "@/components/PageHeader";
 import { BookingRequestCard } from "@/features/bookings/components/BookingRequestCard";
 import { BookingRequestDrawer } from "@/features/bookings/components/BookingRequestDrawer";
 import { useBookingRequestsQuery } from "@/features/bookings/hooks/useBookingRequests";
@@ -19,6 +19,17 @@ const BookingManagement = () => {
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
 
+  // Count requests by status
+  const approvedCount = allRequests.filter(r => r.status === "APPROVED").length;
+  const declinedCount = allRequests.filter(r => r.status === "DECLINED").length;
+
+  // Set topbar
+  useTopbar({
+    title: "Gestione prenotazioni",
+    showBack: true,
+    onBack: () => navigate("/calendar"),
+  });
+
   // Redirect if trying to access settings tab
   useEffect(() => {
     if (searchParams.get('tab') === 'settings') {
@@ -31,27 +42,8 @@ const BookingManagement = () => {
     setRequestDrawerOpen(true);
   };
 
-  // Count requests by status
-  const approvedCount = allRequests.filter(r => r.status === "APPROVED").length;
-  const declinedCount = allRequests.filter(r => r.status === "DECLINED").length;
-
   return (
     <div className="min-h-screen flex flex-col bg-background w-full">
-      <PageHeader
-        title="Gestione prenotazioni"
-        subtitle="Organizza e approva le richieste dei tuoi clienti"
-        toolbarLeft={
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/calendar")}
-            className="gap-2 h-10"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Torna all'agenda
-          </Button>
-        }
-      />
-
       <div className="flex-1 overflow-auto mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6">
         <div className="space-y-6">
           {/* Summary Counters */}

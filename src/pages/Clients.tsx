@@ -423,42 +423,8 @@ const Clients = () => {
                 </button>
               )}
             </div>
-          }
-          toolbarRight={
-            <div className="flex items-center gap-3">
-              {/* Sort */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Ordina:</span>
-                <Select value={filters.sort} onValueChange={(value: any) => setFilters({ sort: value })}>
-                  <SelectTrigger className="h-9 w-[200px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sortOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Mostra archiviati - solo se esistono clienti archiviati */}
-              {onboarding.hasArchivedClients && (
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="show-archived-first"
-                    checked={filters.includeArchived === true}
-                    onCheckedChange={(checked) => setFilters({ includeArchived: checked ? true : undefined })}
-                  />
-                  <Label htmlFor="show-archived-first" className="cursor-pointer text-sm">
-                    Mostra archiviati
-                  </Label>
-                </div>
-              )}
-            </div>
-          }
-        />
+          </div>
+        </div>
 
         <div className="container mx-auto px-6 py-6 max-w-7xl">
           {/* Tabella base senza filtri */}
@@ -606,16 +572,9 @@ const Clients = () => {
   // STATO 3: ACTIVE_USER - Vista completa con tutti i filtri (codice esistente)
   return (
     <div className="min-h-screen flex flex-col bg-background w-full">
-      <PageHeader
-        title="Clienti"
-        subtitle="Gestisci tutti i tuoi clienti in un unico posto"
-        primaryCta={{
-          label: "Nuovo cliente",
-          onClick: () => setCreateDialogOpen(true),
-          icon: <Plus className="h-4 w-4" />,
-          testId: "clients-new-btn",
-        }}
-        toolbarLeft={
+      {/* Toolbar section */}
+      <div className="container mx-auto px-6 max-w-7xl pt-6">
+        <div className="mb-6 space-y-4">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -637,8 +596,8 @@ const Clients = () => {
               </button>
             )}
           </div>
-        }
-      />
+        </div>
+      </div>
 
       {/* Filters Section */}
       <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

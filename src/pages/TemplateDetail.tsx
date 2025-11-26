@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, CheckCircle, Loader2, Sparkles, Pencil } from "lucide-react";
+import { Download, CheckCircle, Loader2, Sparkles, Pencil } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
 import { exportPlanToPDF } from "@/lib/pdfExport";
@@ -333,69 +334,57 @@ export default function TemplateDetail() {
     }));
   };
 
+  // Set topbar
+  useTopbar({
+    title: name || "Template",
+    showBack: true,
+    onBack: () => navigate("/library?tab=templates"),
+    actions: mode === "read" ? (
+      <>
+        <Button onClick={toEdit} size="sm" className="gap-2">
+          <Pencil className="h-4 w-4" />
+          Modifica
+        </Button>
+        <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-2">
+          <Download className="h-4 w-4" />
+          PDF
+        </Button>
+        {FLAGS.copilotEnabled && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => setCopilotOpen(!copilotOpen)}
+          >
+            <Sparkles className="h-4 w-4" />
+            AI
+          </Button>
+        )}
+      </>
+    ) : (
+      <>
+        {updateMutation.isPending ? (
+          <Button disabled size="sm" className="gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Salvataggio...
+          </Button>
+        ) : (
+          <Button onClick={handleSave} size="sm" className="gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Salva
+          </Button>
+        )}
+        <Button variant="outline" onClick={toRead} size="sm">
+          Annulla
+        </Button>
+      </>
+    ),
+  });
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background">
-        <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/templates")}
-              className="shrink-0"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <h1 className="text-h4 font-semibold truncate">{name || "Template"}</h1>
-              {readonly && <Badge variant="secondary">{toSentenceCase("Sola lettura")}</Badge>}
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {mode === "read" ? (
-              <Button onClick={toEdit} size="default" className="h-10 gap-2" data-testid="btn-edit-template">
-                <Pencil className="h-4 w-4" />
-                {toSentenceCase("Modifica")}
-              </Button>
-            ) : (
-              <>
-                {updateMutation.isPending ? (
-                  <Button disabled size="default" className="h-10 gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {toSentenceCase("Salvataggio...")}
-                  </Button>
-                ) : (
-                  <Button onClick={handleSave} size="default" className="h-10 gap-2" data-testid="btn-save-template">
-                    <CheckCircle className="h-4 w-4" />
-                    {toSentenceCase("Salva")}
-                  </Button>
-                )}
-                <Button variant="outline" onClick={toRead} size="default" className="h-10" data-testid="btn-cancel-edit">
-                  {toSentenceCase("Annulla")}
-                </Button>
-              </>
-            )}
-            <Button onClick={handleExportPDF} variant="outline" size="default" className="h-10 gap-2">
-              <Download className="h-4 w-4" />
-              PDF
-            </Button>
-            {FLAGS.copilotEnabled && (
-              <Button
-                variant="outline"
-                size="default"
-                className="h-10 gap-2"
-                onClick={() => setCopilotOpen(!copilotOpen)}
-              >
-                <Sparkles className="h-4 w-4" />
-                AI
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
