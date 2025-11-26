@@ -505,18 +505,18 @@ const ClientPlanEditor = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
         {/* Action toolbar */}
-        {id && (
-          <div className="flex items-center justify-end gap-2 mb-6">
+        <div className="flex items-center justify-end gap-2 mb-6">
+          {(id || isNewFromTemplate) && (
             <Button onClick={handleExportPDF} variant="outline" size="sm">
               <Download className="h-4 w-4" />
               PDF
             </Button>
-            <Button onClick={handleSave} size="sm">
-              <Save className="h-4 w-4" />
-              Salva
-            </Button>
-          </div>
-        )}
+          )}
+          <Button onClick={handleSave} size="sm">
+            <Save className="h-4 w-4" />
+            {id ? "Salva" : "Crea piano"}
+          </Button>
+        </div>
 
         {isNewFromTemplate && (
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mb-6">
