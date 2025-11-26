@@ -42,6 +42,9 @@ const Calendar = () => {
   });
   const [view, setView] = useState<CalendarView>((sp.get("view") as CalendarView) || "week");
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Set page title in Topbar
+  useTopbar({ title: "Agenda" });
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
