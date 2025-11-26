@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { parseISO, format } from "date-fns";
+import { useTopbar } from "@/contexts/TopbarContext";
 import { Input } from "@/components/ui/input";
 import { Search, Calendar as CalendarIcon, Plus, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import PageHeader from "@/components/PageHeader";
 import { useEventsQuery } from "@/features/events/hooks/useEventsQuery";
 import { CalendarToolbar } from "@/features/events/components/CalendarToolbar";
 import { DayView } from "@/features/events/components/DayView";
@@ -62,6 +62,39 @@ const Calendar = () => {
   const { data: bookingSettings } = useBookingSettingsQuery();
   const hasSelfServiceBooking = bookingSettings?.enabled === true;
 
+  // Fetch pending count
+  const { data: pendingCount = 0 } = usePendingCount();
+
+  // Set topbar
+  useTopbar({
+    title: "Agenda",
+    actions: (
+      <>
+        <Button onClick={handleNewEvent} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Nuovo evento
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => navigate("/calendar/manage")}
+          className="gap-2 relative"
+        >
+          <Bell className="h-4 w-4" />
+          <span className="hidden sm:inline">Richieste clienti</span>
+          <span className="sm:hidden">Richieste</span>
+          {pendingCount > 0 && (
+            <Badge 
+              variant={pendingCount >= 10 ? "destructive" : "default"}
+              className={`h-5 min-w-5 px-1.5 ${pendingCount >= 10 ? 'animate-pulse' : ''}`}
+            >
+              {pendingCount}
+            </Badge>
+          )}
+        </Button>
+      </>
+    ),
+  });
+
   // Persist isClientView in localStorage
   useEffect(() => {
     localStorage.setItem('calendar-client-view', String(isClientView));
@@ -74,13 +107,10 @@ const Calendar = () => {
     }
   }, [hasSelfServiceBooking, isClientView]);
 
-  const debouncedSearch = useDebounce(searchQuery, 300);
-
   // Fetch booking data
   const { data: bookingRequests = [] } = useBookingRequestsQuery({ status: "PENDING" });
   const { data: availabilityWindows = [] } = useAvailabilityWindowsQuery();
   const { data: oooBlocks = [] } = useOutOfOfficeBlocksQuery();
-  const { data: pendingCount = 0 } = usePendingCount();
 
   // Derivazione viewMode semplificata
   const viewMode: CalendarViewMode = isClientView ? 'client-preview' : 'coach';
@@ -190,62 +220,34 @@ const Calendar = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background w-full">
-      <PageHeader
-        title="Agenda"
-        subtitle="Organizza e gestisci le tue sessioni con i clienti"
-        primaryCta={{
-          label: "Nuovo evento",
-          onClick: handleNewEvent,
-          icon: <Plus className="h-4 w-4" />,
-          testId: "calendar-new-event-btn"
-        }}
-        toolbarLeft={
-          <div className="flex items-center gap-3 w-full">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Cerca per cliente o tipo di sessione..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10"
-              />
-            </div>
-            <Select value={filterOption} onValueChange={(v) => setFilterOption(v as FilterOption)}>
-              <SelectTrigger className="w-[160px] h-10">
-                <SelectValue placeholder="Mostra" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti</SelectItem>
-                <SelectItem value="approved">Approvati</SelectItem>
-                <SelectItem value="pending">In attesa</SelectItem>
-                <SelectItem value="ooo">Fuori ufficio</SelectItem>
-                <SelectItem value="availability">Disponibilità</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* Toolbar with search and filters */}
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cerca per cliente o tipo di sessione..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-10"
+            />
           </div>
-        }
-        toolbarRight={
-        <Button
-          variant="outline"
-          onClick={() => navigate("/calendar/manage")}
-          className="gap-2 h-10 relative"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="hidden sm:inline">Richieste clienti</span>
-          <span className="sm:hidden">Richieste</span>
-            {pendingCount > 0 && (
-              <Badge 
-                variant={pendingCount >= 10 ? "destructive" : "default"}
-                className={`h-5 min-w-5 px-1.5 ${pendingCount >= 10 ? 'animate-pulse' : ''}`}
-              >
-                {pendingCount}
-              </Badge>
-            )}
-          </Button>
-        }
-      />
+          <Select value={filterOption} onValueChange={(v) => setFilterOption(v as FilterOption)}>
+            <SelectTrigger className="w-[160px] h-10">
+              <SelectValue placeholder="Mostra" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti</SelectItem>
+              <SelectItem value="approved">Approvati</SelectItem>
+              <SelectItem value="pending">In attesa</SelectItem>
+              <SelectItem value="ooo">Fuori ufficio</SelectItem>
+              <SelectItem value="availability">Disponibilità</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-      {/* Toolbar with lateral padding */}
+      {/* Calendar toolbar */}
       <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
       <CalendarToolbar
         view={view}

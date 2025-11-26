@@ -87,11 +87,12 @@ const App = () => {
         <BrowserRouter>
           <ScrollToTop />
           {user ? (
-            <div className="flex min-h-screen w-full">
-              <AppSidebar />
-              <div className="flex flex-1 flex-col">
-                <Topbar />
-                <main className="flex-1 overflow-y-auto pb-16">
+            <TopbarProvider>
+              <div className="flex min-h-screen w-full">
+                <AppSidebar />
+                <div className="flex flex-1 flex-col">
+                  <Topbar />
+                  <main className="flex-1 overflow-y-auto pb-16">
                   <Routes>
                     <Route path="/" element={<Clients />} />
                     <Route path="/library" element={<Library />} />
@@ -112,6 +113,7 @@ const App = () => {
               </div>
               <StickySessionBar />
             </div>
+            </TopbarProvider>
           ) : (
             <Routes>
               <Route path="/auth" element={<Auth />} />
