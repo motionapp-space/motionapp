@@ -654,14 +654,15 @@ export function EventEditorModal({
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.date}
-                        onSelect={(newDate) => newDate && setFormData(prev => ({ ...prev, date: newDate }))}
-                        initialFocus
-                        locale={it}
-                        className="pointer-events-auto"
-                      />
+                <Calendar
+                  mode="single"
+                  selected={formData.date}
+                  onSelect={(newDate) => newDate && setFormData(prev => ({ ...prev, date: newDate }))}
+                  initialFocus
+                  locale={it}
+                  className="pointer-events-auto"
+                  disabled={(date) => viewMode === 'new' && date < startOfDay(new Date())}
+                />
                     </PopoverContent>
                   </Popover>
                 </div>
