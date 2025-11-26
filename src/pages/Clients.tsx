@@ -429,7 +429,7 @@ const Clients = () => {
 
           {/* Quick Filters Pills - solo se > 1 cliente non archiviato */}
           {showFilters && (
-            <div className="flex flex-wrap items-center gap-2 mb-3">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
               <Toggle
                 pressed={filters.withoutPlan || false}
                 onPressedChange={(pressed) => setFilters({ withoutPlan: pressed ? true : undefined })}
@@ -473,7 +473,7 @@ const Clients = () => {
           )}
 
           {/* Control Bar: Sort + Show Archived + Advanced Filters */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             {showFilters && (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">Ordina per:</span>
@@ -661,9 +661,9 @@ const Clients = () => {
             )}
           </div>
 
-          {/* Active Filters Summary */}
-          {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-2 pb-4">
+            {/* Active Filters Summary */}
+            {hasActiveFilters && (
+              <div className="flex flex-wrap items-center gap-2 mb-4">
               <span className="text-xs text-muted-foreground">Filtri attivi:</span>
               
               {filters.withoutPlan && (
@@ -1085,7 +1085,7 @@ const Clients = () => {
 
           {/* Active Filters Summary */}
           {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-2 pt-2">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
               <span className="text-xs text-muted-foreground">Filtri attivi:</span>
               
               {filters.withoutPlan && (
