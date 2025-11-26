@@ -394,16 +394,8 @@ const Clients = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <div className="container mx-auto px-6 max-w-7xl pt-6">
-          {/* Header with CTA */}
-          <div className="flex items-center justify-end mb-6">
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Nuovo cliente
-            </Button>
-          </div>
-
-          {/* Toolbar */}
-          <div className="mb-6 space-y-4">
+          {/* Search and CTA */}
+          <div className="flex items-center justify-between gap-4 mb-6">
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -425,6 +417,10 @@ const Clients = () => {
                 </button>
               )}
             </div>
+            <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
+              <Plus className="h-4 w-4" />
+              Nuovo cliente
+            </Button>
           </div>
         </div>
 
@@ -576,7 +572,7 @@ const Clients = () => {
     <div className="min-h-screen flex flex-col bg-background w-full">
       {/* Toolbar section */}
       <div className="container mx-auto px-6 max-w-7xl pt-6">
-        <div className="mb-6 space-y-4">
+        <div className="flex items-center justify-between gap-4 mb-6">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -598,6 +594,10 @@ const Clients = () => {
               </button>
             )}
           </div>
+          <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
+            <Plus className="h-4 w-4" />
+            Nuovo cliente
+          </Button>
         </div>
       </div>
 
