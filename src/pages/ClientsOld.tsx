@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import PageHeader from "@/components/PageHeader";
+import { useTopbar } from "@/contexts/TopbarContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,18 +134,21 @@ const Clients = () => {
     { value: "created_asc", label: "Creato meno recente" },
   ];
 
+  useTopbar({
+    title: "Clienti",
+    actions: (
+      <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+        <Plus className="h-4 w-4" />
+        Nuovo cliente
+      </Button>
+    ),
+  });
+
   return (
     <div className="min-h-screen bg-background">
-      <PageHeader
-        title={toSentenceCase("Clienti")}
-        subtitle={toSentenceCase("Gestisci tutti i tuoi clienti in un unico posto")}
-        primaryCta={{
-          label: toSentenceCase("Nuovo cliente"),
-          onClick: () => setCreateDialogOpen(true),
-          icon: <Plus className="h-4 w-4" />,
-          testId: "clients-new-btn",
-        }}
-        toolbarLeft={
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6">
+        {/* Toolbar */}
+        <div className="mb-6 space-y-4">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -155,8 +158,6 @@ const Clients = () => {
               className="pl-10 h-11"
             />
           </div>
-        }
-        toolbarRight={
           <div className="flex flex-col md:flex-row gap-3 w-full">
             <div className="flex flex-wrap gap-4 items-center">
               <div className="flex items-center gap-2">
@@ -224,11 +225,9 @@ const Clients = () => {
               </Select>
             </div>
           </div>
-        }
-      />
+        </div>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 pb-6 md:pb-8">
+        {/* Content */}
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -254,7 +253,7 @@ const Clients = () => {
             onUnarchive={handleUnarchive}
           />
         )}
-      </div>
+        </div>
 
       {/* Create Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
