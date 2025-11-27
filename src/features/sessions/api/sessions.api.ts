@@ -124,6 +124,10 @@ export async function getActiveSession(): Promise<TrainingSessionWithClient | nu
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  // Solo sessioni avviate nelle ultime 12 ore (ignora sessioni "zombie")
+  const twelveHoursAgo = new Date();
+  twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
+
   const { data, error } = await supabase
     .from("training_sessions")
     .select(`
@@ -135,6 +139,7 @@ export async function getActiveSession(): Promise<TrainingSessionWithClient | nu
     `)
     .eq("coach_id", user.id)
     .eq("status", "in_progress")
+    .gte("started_at", twelveHoursAgo.toISOString())
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
