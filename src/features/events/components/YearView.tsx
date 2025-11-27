@@ -32,7 +32,7 @@ export function YearView({ date, events, onMonthClick }: YearViewProps) {
               onClick={() => onMonthClick(month)}
               className="border rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow flex flex-col"
             >
-              <h3 className="text-center font-semibold mb-3 capitalize">
+              <h3 className="text-lg text-center font-semibold mb-3 capitalize">
                 {format(month, "MMMM", { locale: it })}
               </h3>
 
