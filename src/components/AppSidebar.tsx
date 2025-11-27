@@ -32,7 +32,9 @@ export function AppSidebar() {
             const Icon = item.icon;
             const active = item.to === "/" 
               ? pathname === "/" || pathname.startsWith("/clients") || pathname.startsWith("/client-plans") || pathname.startsWith("/session/live")
-              : pathname.startsWith(item.to);
+              : item.to === "/library"
+                ? pathname.startsWith("/library") || pathname.startsWith("/templates")
+                : pathname.startsWith(item.to);
             return (
               <NavLink
                 key={item.to}
