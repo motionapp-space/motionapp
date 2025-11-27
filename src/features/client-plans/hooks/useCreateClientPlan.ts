@@ -9,17 +9,20 @@ export function useCreateClientPlan() {
     mutationFn: ({ 
       clientId, 
       name, 
-      description, 
+      description,
+      objective,
       days 
     }: {
       clientId: string;
       name: string;
       description?: string;
+      objective?: string;
       days: any;
     }) =>
       createClientPlanFromScratch(clientId, {
         name,
         description,
+        objective,
         data: { days },
       }),
     onSuccess: (plan) => {

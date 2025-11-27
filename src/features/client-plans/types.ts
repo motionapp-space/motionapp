@@ -6,6 +6,7 @@ export interface ClientPlan {
   coach_id: string;
   name: string;
   description?: string;
+  objective?: string;
   data: any;
   status: PlanStatus;
   is_visible: boolean;
@@ -22,5 +23,6 @@ export interface ClientPlan {
 export interface UpdateClientPlanInput {
   name?: string;
   description?: string;
+  objective?: string;
   data?: any;
 }

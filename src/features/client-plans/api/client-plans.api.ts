@@ -81,7 +81,7 @@ export async function assignTemplateToClient(clientId: string, input: AssignTemp
 
 export async function createClientPlanFromScratch(
   clientId: string,
-  input: { name: string; description?: string; data: any }
+  input: { name: string; description?: string; objective?: string; data: any }
 ) {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error("Not authenticated");
@@ -93,6 +93,7 @@ export async function createClientPlanFromScratch(
       coach_id: auth.user.id,
       name: input.name,
       description: input.description,
+      objective: input.objective,
       data: input.data,
       status: "IN_CORSO",
       is_visible: true,
