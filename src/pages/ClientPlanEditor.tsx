@@ -37,6 +37,7 @@ import {
   Lock,
   Unlock,
   Star,
+  Pencil,
 } from "lucide-react";
 import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
@@ -69,7 +70,20 @@ const ClientPlanEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Mode logic (read-only for existing plans, edit for new)
+  const modeParam = searchParams.get("mode");
+  const mode = id ? (modeParam ?? "read") : "edit";
+  const readonly = mode === "read";
+
+  const toEdit = () => {
+    setSearchParams({ mode: "edit" }, { replace: true });
+  };
+
+  const toRead = () => {
+    setSearchParams({ mode: "read" }, { replace: true });
+  };
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<ClientPlan | null>(null);
   const [days, setDays] = useState<Day[]>([]);
@@ -510,30 +524,51 @@ const ClientPlanEditor = () => {
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
         {/* Action toolbar */}
         <div className="flex items-center justify-end gap-2 mb-6">
-          {(id || isNewFromTemplate) && (
-            <Button onClick={handleExportPDF} variant="outline" size="sm">
-              <Download className="h-4 w-4" />
-              PDF
-            </Button>
+          {mode === "read" ? (
+            // Read mode: Modifica + PDF
+            <>
+              <Button onClick={toEdit} size="sm">
+                <Pencil className="h-4 w-4" />
+                Modifica
+              </Button>
+              <Button onClick={handleExportPDF} variant="outline" size="sm">
+                <Download className="h-4 w-4" />
+                PDF
+              </Button>
+            </>
+          ) : (
+            // Edit mode: Salva + Annulla
+            <>
+              {(id || isNewFromTemplate) && (
+                <Button onClick={handleExportPDF} variant="outline" size="sm">
+                  <Download className="h-4 w-4" />
+                  PDF
+                </Button>
+              )}
+              <Button onClick={handleSave} size="sm" disabled={!id && !name.trim()}>
+                <Save className="h-4 w-4" />
+                Salva
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  if (id) {
+                    toRead();
+                  } else {
+                    const targetClientId = plan?.client_id || clientId;
+                    if (targetClientId) {
+                      navigate(`/clients/${targetClientId}?tab=plans`);
+                    } else {
+                      navigate("/");
+                    }
+                  }
+                }}
+              >
+                Annulla
+              </Button>
+            </>
           )}
-          <Button onClick={handleSave} size="sm">
-            <Save className="h-4 w-4" />
-            {id ? "Salva" : "Assegna piano"}
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              const targetClientId = plan?.client_id || clientId;
-              if (targetClientId) {
-                navigate(`/clients/${targetClientId}?tab=plans`);
-              } else {
-                navigate("/");
-              }
-            }}
-          >
-            Annulla
-          </Button>
         </div>
 
         {isNewFromTemplate && (
@@ -569,16 +604,18 @@ const ClientPlanEditor = () => {
                   }}
                   placeholder="Es: Piano Forza Personalizzato"
                   className={nameError ? "border-destructive" : ""}
+                  disabled={readonly}
                 />
                 {nameError && <p className="text-sm text-destructive">Il nome del piano è obbligatorio</p>}
               </div>
             </div>
             <div className="space-y-2">
-              <Label>{toSentenceCase("Tipo piano")}</Label>
+              <Label>{toSentenceCase("Categoria")}</Label>
               <Input
                 value={objective}
                 onChange={(e) => setObjective(e.target.value)}
                 placeholder="Es: Forza, Ipertrofia..."
+                disabled={readonly}
               />
             </div>
             <div className="space-y-2 md:col-span-3">
@@ -588,6 +625,7 @@ const ClientPlanEditor = () => {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Note specifiche per questo cliente..."
                 rows={1}
+                disabled={readonly}
               />
             </div>
           </div>
@@ -595,10 +633,12 @@ const ClientPlanEditor = () => {
           <div className="border-t pt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">{toSentenceCase("Giorni di allenamento")}</h2>
-              <Button onClick={handleAddDay} variant="outline" size="sm" className="gap-2">
-                <Plus className="h-4 w-4" />
-                {toSentenceCase("Aggiungi giorno")}
-              </Button>
+              {!readonly && (
+                <Button onClick={handleAddDay} variant="outline" size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  {toSentenceCase("Aggiungi giorno")}
+                </Button>
+              )}
             </div>
 
             {days.length === 0 ? (
@@ -634,6 +674,7 @@ const ClientPlanEditor = () => {
                     onDeleteExercise={(phaseType, groupId, exerciseId) =>
                       handleDeleteExercise(day.id, phaseType, groupId, exerciseId)
                     }
+                    readonly={readonly}
                   />
                 ))}
               </div>
