@@ -539,12 +539,6 @@ const ClientPlanEditor = () => {
           ) : (
             // Edit mode: Salva + Annulla
             <>
-              {(id || isNewFromTemplate) && (
-                <Button onClick={handleExportPDF} variant="outline" size="sm">
-                  <Download className="h-4 w-4" />
-                  PDF
-                </Button>
-              )}
               <Button onClick={handleSave} size="sm" disabled={!id && !name.trim()}>
                 <Save className="h-4 w-4" />
                 Salva
