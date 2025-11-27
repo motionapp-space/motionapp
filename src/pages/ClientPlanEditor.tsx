@@ -75,6 +75,7 @@ const ClientPlanEditor = () => {
   const [days, setDays] = useState<Day[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [objective, setObjective] = useState("");
   const [nameError, setNameError] = useState(false);
   const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
@@ -97,7 +98,7 @@ const ClientPlanEditor = () => {
 
   // Set topbar (must be before any early returns)
   useTopbar({
-    title: id ? (name || "Piano") : "Nuovo piano",
+    title: name || "Nuovo piano",
     showBack: true,
     onBack: () => {
       const targetClientId = plan?.client_id || clientId;
@@ -139,6 +140,7 @@ const ClientPlanEditor = () => {
       setPlan(data);
       setName(data.name);
       setDescription(data.description || "");
+      setObjective(data.objective || "");
       // Migrate loaded data
       const migratedDays = (data.data?.days || []).map((day: Day) => ({
         ...day,
@@ -162,6 +164,7 @@ const ClientPlanEditor = () => {
           updates: {
             name,
             description,
+            objective: objective || null,
             data: { days },
           },
         });
@@ -203,6 +206,7 @@ const ClientPlanEditor = () => {
           clientId,
           name: name.trim(),
           description: description?.trim(),
+          objective: objective?.trim() || null,
           days,
         });
         toast.success("Piano creato");
@@ -514,7 +518,21 @@ const ClientPlanEditor = () => {
           )}
           <Button onClick={handleSave} size="sm">
             <Save className="h-4 w-4" />
-            {id ? "Salva" : "Crea piano"}
+            {id ? "Salva" : "Assegna piano"}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const targetClientId = plan?.client_id || clientId;
+              if (targetClientId) {
+                navigate(`/clients/${targetClientId}?tab=plans`);
+              } else {
+                navigate("/");
+              }
+            }}
+          >
+            Annulla
           </Button>
         </div>
 
@@ -536,8 +554,8 @@ const ClientPlanEditor = () => {
         )}
 
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2 md:col-span-2">
               <Label>
                 {toSentenceCase("Nome piano")}
                 {!id && <span className="ml-1">*</span>}
@@ -556,6 +574,14 @@ const ClientPlanEditor = () => {
               </div>
             </div>
             <div className="space-y-2">
+              <Label>{toSentenceCase("Tipo piano")}</Label>
+              <Input
+                value={objective}
+                onChange={(e) => setObjective(e.target.value)}
+                placeholder="Es: Forza, Ipertrofia..."
+              />
+            </div>
+            <div className="space-y-2 md:col-span-3">
               <Label>{toSentenceCase("Descrizione")}</Label>
               <Textarea
                 value={description}
