@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, MoreVertical, Copy, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -80,6 +80,8 @@ export function AvailabilityEditor({
     start_time: string;
     end_time: string;
   } | null>(null);
+  
+  const editorRef = useRef<HTMLDivElement>(null);
 
   // Sync local changes with parent ref
   if (localChangesRef) {
@@ -147,25 +149,43 @@ export function AvailabilityEditor({
     });
   };
 
+  const closeEditor = () => {
+    if (!editingSlot) return;
+    
+    const currentRanges = getWindowsForDay(editingSlot.dayOfWeek);
+    
+    // If the edited range is valid, save changes
+    if (isValidTimeRange(editingSlot.start_time, editingSlot.end_time)) {
+      const updated = [...currentRanges];
+      updated[editingSlot.index] = {
+        ...updated[editingSlot.index],
+        start_time: editingSlot.start_time,
+        end_time: editingSlot.end_time,
+      };
+      setEditMode({ ...editMode, [editingSlot.dayOfWeek]: sortTimeRanges(updated) });
+      onChangeDetected?.();
+    }
+    // If invalid, discard changes (keeps original values)
+    
+    setEditingSlot(null);
+  };
+
   const handleTimeChange = (field: 'start_time' | 'end_time', value: string) => {
     if (!editingSlot) return;
 
     const newSlot = { ...editingSlot, [field]: value };
     setEditingSlot(newSlot);
 
-    // Auto-save se il range è valido, altrimenti resta aperto con errore
-    if (isValidTimeRange(newSlot.start_time, newSlot.end_time)) {
-      const currentRanges = getWindowsForDay(newSlot.dayOfWeek);
-      const updated = [...currentRanges];
-      updated[newSlot.index] = {
-        ...updated[newSlot.index],
-        start_time: newSlot.start_time,
-        end_time: newSlot.end_time,
-      };
-      setEditMode({ ...editMode, [newSlot.dayOfWeek]: sortTimeRanges(updated) });
-      setEditingSlot(null);
-      onChangeDetected?.();
-    }
+    // Update local state immediately without auto-closing
+    const currentRanges = getWindowsForDay(newSlot.dayOfWeek);
+    const updated = [...currentRanges];
+    updated[newSlot.index] = {
+      ...updated[newSlot.index],
+      start_time: newSlot.start_time,
+      end_time: newSlot.end_time,
+    };
+    setEditMode({ ...editMode, [newSlot.dayOfWeek]: updated }); // No sort during edit
+    onChangeDetected?.();
   };
 
 
@@ -192,6 +212,19 @@ export function AvailabilityEditor({
     });
     onChangeDetected?.();
   };
+
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!editingSlot) return;
+      if (editorRef.current && !editorRef.current.contains(event.target as Node)) {
+        closeEditor();
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [editingSlot, editMode]);
 
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Caricamento disponibilità...</div>;
@@ -224,42 +257,39 @@ export function AvailabilityEditor({
                         const isInvalid = !isValidTimeRange(range.start_time, range.end_time);
 
                         if (isEditing) {
-                          // Inline Editor - auto-save su selezione valida
+                          // Inline Editor with click-outside handler
                           const isEditInvalid = !isValidTimeRange(editingSlot.start_time, editingSlot.end_time);
                           
                           return (
                             <div 
                               key={range.temp_id || index}
-                              className="inline-flex flex-col gap-1"
-                            >
-                              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card shadow-md border-2 ${
+                              ref={editorRef}
+                              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card shadow-md border-2 ${
                                 isEditInvalid ? 'border-destructive' : 'border-primary'
-                              }`}>
-                                <span className="text-xs text-muted-foreground">Da:</span>
-                                <select 
-                                  value={editingSlot.start_time}
-                                  onChange={(e) => handleTimeChange('start_time', e.target.value)}
-                                  className="bg-transparent border-none text-sm font-medium focus:outline-none focus:ring-0"
-                                >
-                                  {timeOptions.map(time => (
-                                    <option key={time} value={time}>{time}</option>
-                                  ))}
-                                </select>
-                                <span className="text-xs text-muted-foreground">A:</span>
-                                <select 
-                                  value={editingSlot.end_time}
-                                  onChange={(e) => handleTimeChange('end_time', e.target.value)}
-                                  className="bg-transparent border-none text-sm font-medium focus:outline-none focus:ring-0"
-                                >
-                                  {timeOptions.map(time => (
-                                    <option key={time} value={time}>{time}</option>
-                                  ))}
-                                </select>
-                              </div>
+                              }`}
+                            >
+                              <span className="text-xs text-muted-foreground">Da:</span>
+                              <select 
+                                value={editingSlot.start_time}
+                                onChange={(e) => handleTimeChange('start_time', e.target.value)}
+                                className="bg-transparent border-none text-sm font-medium focus:outline-none focus:ring-0"
+                              >
+                                {timeOptions.map(time => (
+                                  <option key={time} value={time}>{time}</option>
+                                ))}
+                              </select>
+                              <span className="text-xs text-muted-foreground">A:</span>
+                              <select 
+                                value={editingSlot.end_time}
+                                onChange={(e) => handleTimeChange('end_time', e.target.value)}
+                                className="bg-transparent border-none text-sm font-medium focus:outline-none focus:ring-0"
+                              >
+                                {timeOptions.map(time => (
+                                  <option key={time} value={time}>{time}</option>
+                                ))}
+                              </select>
                               {isEditInvalid && (
-                                <span className="text-xs text-destructive px-3">
-                                  L'orario di fine deve essere successivo all'inizio
-                                </span>
+                                <span className="text-xs text-destructive whitespace-nowrap">⚠ Invalido</span>
                               )}
                             </div>
                           );
