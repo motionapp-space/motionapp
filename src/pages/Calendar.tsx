@@ -224,7 +224,7 @@ const Calendar = () => {
           
           <Button
             variant="outline"
-            onClick={() => navigate("/booking-management")}
+            onClick={() => navigate("/calendar/manage")}
             className="h-10 flex items-center gap-2"
           >
             Gestione prenotazioni
