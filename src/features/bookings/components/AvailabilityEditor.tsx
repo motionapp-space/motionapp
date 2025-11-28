@@ -147,27 +147,25 @@ export function AvailabilityEditor({
     });
   };
 
-  const saveEditingSlot = () => {
+  const handleTimeChange = (field: 'start_time' | 'end_time', value: string) => {
     if (!editingSlot) return;
-    
-    if (!isValidTimeRange(editingSlot.start_time, editingSlot.end_time)) {
-      toast.error("Orario non valido", {
-        description: "L'orario di fine deve essere successivo all'orario di inizio.",
-      });
-      return;
+
+    const newSlot = { ...editingSlot, [field]: value };
+    setEditingSlot(newSlot);
+
+    // Auto-save se il range è valido, altrimenti resta aperto con errore
+    if (isValidTimeRange(newSlot.start_time, newSlot.end_time)) {
+      const currentRanges = getWindowsForDay(newSlot.dayOfWeek);
+      const updated = [...currentRanges];
+      updated[newSlot.index] = {
+        ...updated[newSlot.index],
+        start_time: newSlot.start_time,
+        end_time: newSlot.end_time,
+      };
+      setEditMode({ ...editMode, [newSlot.dayOfWeek]: sortTimeRanges(updated) });
+      setEditingSlot(null);
+      onChangeDetected?.();
     }
-    
-    const currentRanges = getWindowsForDay(editingSlot.dayOfWeek);
-    const updated = [...currentRanges];
-    updated[editingSlot.index] = {
-      ...updated[editingSlot.index],
-      start_time: editingSlot.start_time,
-      end_time: editingSlot.end_time,
-    };
-    
-    setEditMode({ ...editMode, [editingSlot.dayOfWeek]: sortTimeRanges(updated) });
-    setEditingSlot(null);
-    onChangeDetected?.();
   };
 
 
@@ -226,53 +224,56 @@ export function AvailabilityEditor({
                         const isInvalid = !isValidTimeRange(range.start_time, range.end_time);
 
                         if (isEditing) {
-                          // Inline Editor
+                          // Inline Editor - auto-save su selezione valida
+                          const isEditInvalid = !isValidTimeRange(editingSlot.start_time, editingSlot.end_time);
+                          
                           return (
                             <div 
                               key={range.temp_id || index}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary border border-primary/50"
+                              className="inline-flex flex-col gap-1"
                             >
-                              <span className="text-xs text-muted-foreground">Da:</span>
-                              <select 
-                                value={editingSlot.start_time}
-                                onChange={(e) => setEditingSlot({...editingSlot, start_time: e.target.value})}
-                                className="bg-transparent border-none text-sm font-medium focus:outline-none cursor-pointer"
-                              >
-                                {timeOptions.map(time => (
-                                  <option key={time} value={time}>{time}</option>
-                                ))}
-                              </select>
-                              <span className="text-xs text-muted-foreground">A:</span>
-                              <select 
-                                value={editingSlot.end_time}
-                                onChange={(e) => setEditingSlot({...editingSlot, end_time: e.target.value})}
-                                className="bg-transparent border-none text-sm font-medium focus:outline-none cursor-pointer"
-                              >
-                                {timeOptions.map(time => (
-                                  <option key={time} value={time}>{time}</option>
-                                ))}
-                              </select>
-                              <Button
-                                onClick={saveEditingSlot}
-                                variant="ghost"
-                                size="sm"
-                                className="h-auto px-2 py-1 text-xs text-primary font-medium hover:underline"
-                              >
-                                Salva
-                              </Button>
+                              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary border ${
+                                isEditInvalid ? 'border-destructive' : 'border-primary/50'
+                              }`}>
+                                <span className="text-xs text-muted-foreground">Da:</span>
+                                <select 
+                                  value={editingSlot.start_time}
+                                  onChange={(e) => handleTimeChange('start_time', e.target.value)}
+                                  className="bg-transparent border-none text-sm font-medium focus:outline-none focus:ring-0"
+                                >
+                                  {timeOptions.map(time => (
+                                    <option key={time} value={time}>{time}</option>
+                                  ))}
+                                </select>
+                                <span className="text-xs text-muted-foreground">A:</span>
+                                <select 
+                                  value={editingSlot.end_time}
+                                  onChange={(e) => handleTimeChange('end_time', e.target.value)}
+                                  className="bg-transparent border-none text-sm font-medium focus:outline-none focus:ring-0"
+                                >
+                                  {timeOptions.map(time => (
+                                    <option key={time} value={time}>{time}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              {isEditInvalid && (
+                                <span className="text-xs text-destructive px-3">
+                                  L'orario di fine deve essere successivo all'inizio
+                                </span>
+                              )}
                             </div>
                           );
                         }
 
-                        // Pill View
+                        // Pill View - styling migliorato per maggiore affordance
                         return (
                           <button
                             key={range.temp_id || index}
                             onClick={() => startEditing(day.key, index, range)}
-                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border text-sm font-medium transition-colors ${
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
                               isInvalid 
-                                ? 'border-destructive hover:bg-destructive/10' 
-                                : 'border-border hover:bg-secondary/80'
+                                ? 'bg-card border border-destructive hover:shadow hover:border-destructive/50' 
+                                : 'bg-card border border-border shadow-sm hover:shadow hover:border-primary/30'
                             }`}
                           >
                             {formatTimeDisplay(range.start_time)} – {formatTimeDisplay(range.end_time)}
