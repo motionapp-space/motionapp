@@ -245,243 +245,243 @@ export function BookingSettingsForm() {
               {form.watch("enabled") && (
                 <>
                   {/* Booking Rules Section */}
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="text-base font-semibold">Regole di prenotazione</h4>
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <h4 className="text-lg font-semibold">Regole di prenotazione</h4>
                       <p className="text-sm text-muted-foreground">
                         Questi parametri determinano come i clienti possono prenotare
                       </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Min advance notice */}
-                  <FormField
-                    control={form.control}
-                    name="min_advance_notice_hours"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <FormLabel className="text-sm font-medium">Preavviso minimo</FormLabel>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button type="button" className="inline-flex">
-                                <Info className="h-4 w-4 text-muted-foreground" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
-                              <p>
-                                Tempo minimo richiesto tra la richiesta e l'orario della sessione
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <Select
-                          value={field.value.toString()}
-                          onValueChange={(value) => {
-                            field.onChange(parseInt(value));
-                            setHasUnsavedChanges(true);
-                          }}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="12">12 ore</SelectItem>
-                            <SelectItem value="24">24 ore</SelectItem>
-                            <SelectItem value="48">48 ore</SelectItem>
-                            <SelectItem value="72">72 ore</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
+                      {/* Min advance notice */}
+                      <FormField
+                        control={form.control}
+                        name="min_advance_notice_hours"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <FormLabel className="text-sm font-medium">Preavviso minimo</FormLabel>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button type="button" className="inline-flex">
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p>
+                                    Tempo minimo richiesto tra la richiesta e l'orario della sessione
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <Select
+                              value={field.value.toString()}
+                              onValueChange={(value) => {
+                                field.onChange(parseInt(value));
+                                setHasUnsavedChanges(true);
+                              }}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="12">12 ore</SelectItem>
+                                <SelectItem value="24">24 ore</SelectItem>
+                                <SelectItem value="48">48 ore</SelectItem>
+                                <SelectItem value="72">72 ore</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
 
-                  {/* Slot duration */}
-                  <FormField
-                    control={form.control}
-                    name="slot_duration_minutes"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <FormLabel className="text-sm font-medium">Durata slot</FormLabel>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button type="button" className="inline-flex">
-                                <Info className="h-4 w-4 text-muted-foreground" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
-                              <p>
-                                Durata predefinita per ogni slot di prenotazione
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <Select
-                          value={field.value.toString()}
-                          onValueChange={(value) => {
-                            field.onChange(parseInt(value));
-                            setHasUnsavedChanges(true);
-                          }}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="30">30 minuti</SelectItem>
-                            <SelectItem value="45">45 minuti</SelectItem>
-                            <SelectItem value="60">60 minuti</SelectItem>
-                            <SelectItem value="90">90 minuti</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
+                      {/* Slot duration */}
+                      <FormField
+                        control={form.control}
+                        name="slot_duration_minutes"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <FormLabel className="text-sm font-medium">Durata slot</FormLabel>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button type="button" className="inline-flex">
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p>
+                                    Durata predefinita per ogni slot di prenotazione
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <Select
+                              value={field.value.toString()}
+                              onValueChange={(value) => {
+                                field.onChange(parseInt(value));
+                                setHasUnsavedChanges(true);
+                              }}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="30">30 minuti</SelectItem>
+                                <SelectItem value="45">45 minuti</SelectItem>
+                                <SelectItem value="60">60 minuti</SelectItem>
+                                <SelectItem value="90">90 minuti</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
 
-                  {/* Buffer between slots */}
-                  <FormField
-                    control={form.control}
-                    name="buffer_between_minutes"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <FormLabel className="text-sm font-medium">Buffer tra slot</FormLabel>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button type="button" className="inline-flex">
-                                <Info className="h-4 w-4 text-muted-foreground" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
-                              <p>
-                                Pausa invisibile tra slot consecutivi (non prenotabile dai clienti)
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <Select
-                          value={field.value.toString()}
-                          onValueChange={(value) => {
-                            field.onChange(parseInt(value));
-                            setHasUnsavedChanges(true);
-                          }}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="0">Nessuno</SelectItem>
-                            <SelectItem value="5">5 minuti</SelectItem>
-                            <SelectItem value="10">10 minuti</SelectItem>
-                            <SelectItem value="15">15 minuti</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
+                      {/* Buffer between slots */}
+                      <FormField
+                        control={form.control}
+                        name="buffer_between_minutes"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <FormLabel className="text-sm font-medium">Buffer tra slot</FormLabel>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button type="button" className="inline-flex">
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p>
+                                    Pausa invisibile tra slot consecutivi (non prenotabile dai clienti)
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <Select
+                              value={field.value.toString()}
+                              onValueChange={(value) => {
+                                field.onChange(parseInt(value));
+                                setHasUnsavedChanges(true);
+                              }}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="0">Nessuno</SelectItem>
+                                <SelectItem value="5">5 minuti</SelectItem>
+                                <SelectItem value="10">10 minuti</SelectItem>
+                                <SelectItem value="15">15 minuti</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
 
-                  {/* Cancel policy */}
-                  <FormField
-                    control={form.control}
-                    name="cancel_policy_hours"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <FormLabel className="text-sm font-medium">Finestra cancellazione tardiva</FormLabel>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button type="button" className="inline-flex">
-                                <Info className="h-4 w-4 text-muted-foreground" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
-                              <p>
-                                Le cancellazioni entro questo periodo consumano una sessione
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <Select
-                          value={field.value.toString()}
-                          onValueChange={(value) => {
-                            field.onChange(parseInt(value));
-                            setHasUnsavedChanges(true);
-                          }}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="12">12 ore</SelectItem>
-                            <SelectItem value="24">24 ore</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
+                      {/* Cancel policy */}
+                      <FormField
+                        control={form.control}
+                        name="cancel_policy_hours"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <FormLabel className="text-sm font-medium">Finestra cancellazione tardiva</FormLabel>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button type="button" className="inline-flex">
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p>
+                                    Le cancellazioni entro questo periodo consumano una sessione
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <Select
+                              value={field.value.toString()}
+                              onValueChange={(value) => {
+                                field.onChange(parseInt(value));
+                                setHasUnsavedChanges(true);
+                              }}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="12">12 ore</SelectItem>
+                                <SelectItem value="24">24 ore</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
                     </div>
 
                     {/* Approval mode - full width */}
                     <FormField
-                  control={form.control}
-                  name="approval_mode"
-                  render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <FormLabel className="text-sm font-medium">Modalità approvazione</FormLabel>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type="button" className="inline-flex">
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs">
-                            <p>
-                              {field.value === "AUTO" 
-                                ? "Le richieste vengono approvate automaticamente"
-                                : "Dovrai approvare manualmente ogni richiesta"}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <Select 
-                        value={field.value} 
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setHasUnsavedChanges(true);
-                        }}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="AUTO">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-green-600" />
-                              <span>Automatica</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="MANUAL">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-orange-600" />
-                              <span>Manuale</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
+                      control={form.control}
+                      name="approval_mode"
+                      render={({ field }) => (
+                        <FormItem className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <FormLabel className="text-sm font-medium">Modalità approvazione</FormLabel>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button type="button" className="inline-flex">
+                                  <Info className="h-4 w-4 text-muted-foreground" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p>
+                                  {field.value === "AUTO" 
+                                    ? "Le richieste vengono approvate automaticamente"
+                                    : "Dovrai approvare manualmente ogni richiesta"}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <Select 
+                            value={field.value} 
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              setHasUnsavedChanges(true);
+                            }}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="AUTO">
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                  <span>Automatica</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="MANUAL">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4 text-orange-600" />
+                                  <span>Manuale</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
                   {/* Weekly Time Slots Section */}
