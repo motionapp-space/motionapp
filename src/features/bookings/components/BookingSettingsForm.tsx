@@ -245,7 +245,7 @@ export function BookingSettingsForm() {
               {form.watch("enabled") && (
                 <>
                   {/* Booking Rules Section */}
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="space-y-1">
                       <h4 className="text-lg font-semibold">Regole di prenotazione</h4>
                       <p className="text-sm text-muted-foreground">
