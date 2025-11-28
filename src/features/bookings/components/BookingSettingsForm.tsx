@@ -485,9 +485,9 @@ export function BookingSettingsForm() {
                   </div>
 
                   {/* Weekly Time Slots Section */}
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="text-base font-semibold">Fasce orarie settimanali</h4>
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <h4 className="text-lg font-semibold">Fasce orarie settimanali</h4>
                       <p className="text-sm text-muted-foreground">
                         Definisci quando i clienti possono prenotare
                       </p>
@@ -500,9 +500,9 @@ export function BookingSettingsForm() {
                   </div>
 
                   {/* Absence Periods Section */}
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="text-base font-semibold">Periodi di assenza</h4>
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <h4 className="text-lg font-semibold">Periodi di assenza</h4>
                       <p className="text-sm text-muted-foreground">
                         Blocca date specifiche in cui non sei disponibile per i clienti
                       </p>
