@@ -58,7 +58,6 @@ export function AvailabilityEditor({
   const { data: windows = [], isLoading } = useAvailabilityWindowsQuery();
 
   const [editMode, setEditMode] = useState<Record<number, TimeRange[]>>({});
-  const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   // Sync local changes with parent ref
   if (localChangesRef) {
@@ -68,7 +67,6 @@ export function AvailabilityEditor({
   // Reset handler
   if (onResetRequested && Object.keys(editMode).length > 0) {
     setEditMode({});
-    setExpandedDay(null);
   }
 
   const getWindowsForDay = (dayOfWeek: number): TimeRange[] => {
@@ -92,10 +90,6 @@ export function AvailabilityEditor({
         { start_time: "09:00", end_time: "17:00", temp_id: `new-${Date.now()}` },
       ],
     });
-    // Only set expanded if not already expanded
-    if (expandedDay !== dayOfWeek) {
-      setExpandedDay(dayOfWeek);
-    }
     onChangeDetected?.();
   };
 
@@ -132,10 +126,6 @@ export function AvailabilityEditor({
     onChangeDetected?.();
   };
 
-  const confirmSlotChanges = (dayOfWeek: number) => {
-    // Just close the editor - changes are already in editMode
-    setExpandedDay(null);
-  };
 
   const copyToOtherDays = (sourceDayOfWeek: number) => {
     const sourceRanges = getWindowsForDay(sourceDayOfWeek);
@@ -158,7 +148,6 @@ export function AvailabilityEditor({
       ...editMode,
       [dayOfWeek]: [],
     });
-    setExpandedDay(dayOfWeek);
     onChangeDetected?.();
   };
 
@@ -174,40 +163,63 @@ export function AvailabilityEditor({
         <div className="divide-y">
           {DAYS_OF_WEEK.map((day) => {
             const ranges = getWindowsForDay(day.key);
-            const hasChanges = !!editMode[day.key];
-            const isExpanded = expandedDay === day.key;
 
             return (
               <div key={day.key} className="bg-card">
-                {/* Day row */}
+                {/* Day row with inline time pickers */}
                 <div className="flex items-center gap-3 p-3">
                   {/* Day name */}
                   <div className="w-28 font-medium text-sm">{day.label}</div>
 
-                  {/* Time slot chips */}
-                  <div className="flex-1 flex flex-wrap gap-2 items-center">
+                  {/* Inline time slots with pickers */}
+                  <div className="flex-1 flex flex-wrap gap-3 items-center">
                     {ranges.length === 0 ? (
                       <span className="text-sm text-muted-foreground">Nessuna disponibilità</span>
                     ) : (
-                      ranges.map((range, idx) => {
+                      ranges.map((range, index) => {
                         const isInvalid = !isValidTimeRange(range.start_time, range.end_time);
                         return (
-                          <Tooltip key={range.temp_id || idx}>
-                            <TooltipTrigger asChild>
-                              <Badge 
-                                variant="secondary"
-                                className={`font-mono text-xs ${isInvalid ? 'border-destructive border-2' : ''}`}
-                              >
-                                {isInvalid && <AlertCircle className="h-3 w-3 mr-1 text-destructive" />}
-                                {formatTimeDisplay(range.start_time)}–{formatTimeDisplay(range.end_time)}
-                              </Badge>
-                            </TooltipTrigger>
-                            {isInvalid && (
-                              <TooltipContent>
-                                <p className="text-xs">Fascia oraria non valida: attraversa mezzanotte</p>
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
+                          <div key={range.temp_id || index} className="flex items-center gap-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className={`flex items-center gap-2 ${isInvalid ? 'opacity-50' : ''}`}>
+                                  <div className="w-24">
+                                    <TimePicker
+                                      value={range.start_time}
+                                      onChange={(value) =>
+                                        updateTimeRange(day.key, index, "start_time", value)
+                                      }
+                                    />
+                                  </div>
+                                  <span className="text-muted-foreground text-sm">—</span>
+                                  <div className="w-24">
+                                    <TimePicker
+                                      value={range.end_time}
+                                      onChange={(value) =>
+                                        updateTimeRange(day.key, index, "end_time", value)
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                              </TooltipTrigger>
+                              {isInvalid && (
+                                <TooltipContent>
+                                  <p className="text-xs flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3" />
+                                    Fascia oraria non valida: attraversa mezzanotte
+                                  </p>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeTimeRange(day.key, index)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         );
                       })
                     )}
@@ -248,64 +260,6 @@ export function AvailabilityEditor({
                     </DropdownMenu>
                   </div>
                 </div>
-
-                {/* Inline editor */}
-                {isExpanded && (
-                  <div className="border-t bg-muted/30 p-4 space-y-3">
-                    {ranges.length === 0 ? (
-                      <div className="text-sm text-muted-foreground text-center py-2">
-                        Rimuovere tutte le fasce - ricorda di salvare le modifiche usando il pulsante Salva in fondo alla pagina
-                      </div>
-                    ) : (
-                      ranges.map((range, index) => (
-                      <div key={range.temp_id || index} className="flex items-center gap-3">
-                        <TimePicker
-                          value={range.start_time}
-                          onChange={(value) =>
-                            updateTimeRange(day.key, index, "start_time", value)
-                          }
-                        />
-                        <span className="text-muted-foreground">—</span>
-                        <TimePicker
-                          value={range.end_time}
-                          onChange={(value) =>
-                            updateTimeRange(day.key, index, "end_time", value)
-                          }
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeTimeRange(day.key, index)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      ))
-                    )}
-                    {hasChanges && (
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          size="sm"
-                          onClick={() => confirmSlotChanges(day.key)}
-                        >
-                          {ranges.some(r => r.temp_id?.startsWith("new-")) ? "Aggiungi slot" : "Aggiorna slot"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            const newEditMode = { ...editMode };
-                            delete newEditMode[day.key];
-                            setEditMode(newEditMode);
-                            setExpandedDay(null);
-                          }}
-                        >
-                          Annulla
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
