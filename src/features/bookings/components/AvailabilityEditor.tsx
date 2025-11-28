@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TimePicker } from "@/components/ui/time-picker";
-import { Plus, MoreVertical, Copy, Trash2 } from "lucide-react";
+import { Plus, MoreVertical, Copy, Trash2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +39,15 @@ interface AvailabilityEditorProps {
 // Helper to format time without seconds (HH:mm:ss → HH:mm)
 const formatTimeDisplay = (time: string): string => {
   return time.substring(0, 5);
+};
+
+// Helper to validate time range (end must be after start, no cross-midnight)
+const isValidTimeRange = (start: string, end: string): boolean => {
+  const [startH, startM] = start.split(':').map(Number);
+  const [endH, endM] = end.split(':').map(Number);
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+  return endMinutes > startMinutes;
 };
 
 export function AvailabilityEditor({
@@ -106,7 +117,17 @@ export function AvailabilityEditor({
   ) => {
     const currentRanges = getWindowsForDay(dayOfWeek);
     const updated = [...currentRanges];
-    updated[index] = { ...updated[index], [field]: value };
+    const newRange = { ...updated[index], [field]: value };
+    
+    // Validate the new time range
+    if (!isValidTimeRange(newRange.start_time, newRange.end_time)) {
+      toast.error("Orario non valido", {
+        description: "L'orario di fine deve essere successivo all'orario di inizio. Le fasce che attraversano mezzanotte non sono supportate.",
+      });
+      return; // Don't apply invalid change
+    }
+    
+    updated[index] = newRange;
     setEditMode({ ...editMode, [dayOfWeek]: updated });
     onChangeDetected?.();
   };
@@ -146,9 +167,10 @@ export function AvailabilityEditor({
   }
 
   return (
-    <div className="space-y-2">
-      {/* Compact table */}
-      <div className="border rounded-lg overflow-hidden">
+    <TooltipProvider>
+      <div className="space-y-2">
+        {/* Compact table */}
+        <div className="border rounded-lg overflow-hidden">
         <div className="divide-y">
           {DAYS_OF_WEEK.map((day) => {
             const ranges = getWindowsForDay(day.key);
@@ -167,15 +189,27 @@ export function AvailabilityEditor({
                     {ranges.length === 0 ? (
                       <span className="text-sm text-muted-foreground">Nessuna disponibilità</span>
                     ) : (
-                      ranges.map((range, idx) => (
-                        <Badge 
-                          key={range.temp_id || idx} 
-                          variant="secondary"
-                          className="font-mono text-xs"
-                        >
-                          {formatTimeDisplay(range.start_time)}–{formatTimeDisplay(range.end_time)}
-                        </Badge>
-                      ))
+                      ranges.map((range, idx) => {
+                        const isInvalid = !isValidTimeRange(range.start_time, range.end_time);
+                        return (
+                          <Tooltip key={range.temp_id || idx}>
+                            <TooltipTrigger asChild>
+                              <Badge 
+                                variant="secondary"
+                                className={`font-mono text-xs ${isInvalid ? 'border-destructive border-2' : ''}`}
+                              >
+                                {isInvalid && <AlertCircle className="h-3 w-3 mr-1 text-destructive" />}
+                                {formatTimeDisplay(range.start_time)}–{formatTimeDisplay(range.end_time)}
+                              </Badge>
+                            </TooltipTrigger>
+                            {isInvalid && (
+                              <TooltipContent>
+                                <p className="text-xs">Fascia oraria non valida: attraversa mezzanotte</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        );
+                      })
                     )}
                   </div>
 
@@ -277,6 +311,7 @@ export function AvailabilityEditor({
           })}
         </div>
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
