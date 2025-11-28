@@ -134,7 +134,7 @@ export const useClientStore = create<ClientStore>((set, get) => ({
   },
 
   loadClient: async (id: string) => {
-    set({ isLoading: true });
+    set({ isLoading: true, currentClient: null });
     try {
       // Load client with all related data
       const [clientRes, tagsRes, measurementsRes, activitiesRes] = await Promise.all([
