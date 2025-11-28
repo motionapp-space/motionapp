@@ -5,6 +5,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 import { useBookingSettingsQuery } from "../hooks/useBookingSettingsQuery";
 import { useUpdateBookingSettings } from "../hooks/useUpdateBookingSettings";
 import { useUpdateAvailabilityWindows } from "../hooks/useUpdateAvailabilityWindows";
@@ -71,12 +72,42 @@ export function BookingSettingsForm() {
     return () => subscription.unsubscribe();
   }, [form]);
 
+  // Helper to validate time range
+  const isValidTimeRange = (start: string, end: string): boolean => {
+    const [startH, startM] = start.split(':').map(Number);
+    const [endH, endM] = end.split(':').map(Number);
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+    return endMinutes > startMinutes;
+  };
+
   const onSubmit = (values: BookingSettingsFormValues) => {
+    // Validate availability changes before saving
+    const availabilityChanges = availabilityChangesRef.current;
+    if (Object.keys(availabilityChanges).length > 0) {
+      // Check for invalid time ranges
+      const invalidRanges: Array<{ day: number; range: TimeRange }> = [];
+      Object.entries(availabilityChanges).forEach(([dayKey, ranges]) => {
+        const dayOfWeek = parseInt(dayKey);
+        ranges.forEach((r) => {
+          if (!isValidTimeRange(r.start_time, r.end_time)) {
+            invalidRanges.push({ day: dayOfWeek, range: r });
+          }
+        });
+      });
+
+      if (invalidRanges.length > 0) {
+        toast.error("Impossibile salvare", {
+          description: "Alcune fasce orarie attraversano mezzanotte. Correggi questi orari prima di salvare.",
+        });
+        return; // Block save
+      }
+    }
+
     // Save form settings
     updateSettings(values, {
       onSuccess: () => {
         // Save availability changes if any
-        const availabilityChanges = availabilityChangesRef.current;
         if (Object.keys(availabilityChanges).length > 0) {
           const allWindows: CreateAvailabilityWindowInput[] = [];
           
