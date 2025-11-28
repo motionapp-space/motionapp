@@ -17,7 +17,6 @@ import { useDeleteTemplate } from "@/features/templates/hooks/useDeleteTemplate"
 import { makePlan } from "@/types/plan";
 
 type SortOption = "modified" | "name-asc" | "name-desc";
-type FilterOption = "all";
 
 export default function TemplatesTab() {
   const navigate = useNavigate();
@@ -27,7 +26,6 @@ export default function TemplatesTab() {
   // New state for controls
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("modified");
-  const [filterBy, setFilterBy] = useState<FilterOption>("all");
 
   const { data: templates = [], isLoading } = useTemplatesQuery();
   const createMutation = useCreateTemplate();
@@ -129,16 +127,6 @@ export default function TemplatesTab() {
             className="pl-10"
           />
         </div>
-        
-        {/* Filter Dropdown */}
-        <Select value={filterBy} onValueChange={(v) => setFilterBy(v as FilterOption)}>
-          <SelectTrigger className="w-full md:w-[180px]">
-            <SelectValue placeholder="Filtro" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tutti i template</SelectItem>
-          </SelectContent>
-        </Select>
         
         {/* Sort Dropdown */}
         <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
