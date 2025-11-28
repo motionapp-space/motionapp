@@ -114,7 +114,7 @@ export function PackageSettingsForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Impostazioni Pacchetti</CardTitle>
+        <CardTitle>Pacchetti</CardTitle>
         <CardDescription>
           Definisci prezzi e durate di default per ciascun tipo di pacchetto
         </CardDescription>
