@@ -142,8 +142,8 @@ export function AvailabilityEditor({
     setEditingSlot({
       dayOfWeek,
       index,
-      start_time: range.start_time,
-      end_time: range.end_time,
+      start_time: formatTimeDisplay(range.start_time), // HH:mm:ss → HH:mm
+      end_time: formatTimeDisplay(range.end_time),
     });
   };
 
@@ -232,8 +232,8 @@ export function AvailabilityEditor({
                               key={range.temp_id || index}
                               className="inline-flex flex-col gap-1"
                             >
-                              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary border ${
-                                isEditInvalid ? 'border-destructive' : 'border-primary/50'
+                              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card shadow-md border-2 ${
+                                isEditInvalid ? 'border-destructive' : 'border-primary'
                               }`}>
                                 <span className="text-xs text-muted-foreground">Da:</span>
                                 <select 
