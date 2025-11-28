@@ -230,10 +230,10 @@ export function BookingSettingsForm() {
               {!form.watch("enabled") && (
                 <Card className="border-dashed bg-muted/20">
                   <CardContent className="py-8 text-center">
-                    <div className="space-y-2">
-                      <CalendarX className="h-8 w-8 mx-auto text-muted-foreground" />
-                      <h4 className="font-medium">Prenotazioni disabilitate</h4>
-                      <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    <div className="space-y-3">
+                      <CalendarX className="h-10 w-10 mx-auto text-muted-foreground" />
+                      <h4 className="text-lg font-semibold">Prenotazioni disabilitate</h4>
+                      <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
                         Le prenotazioni self-service sono disabilitate. I tuoi clienti non potranno prenotare autonomamente. Attiva la funzionalità per configurare disponibilità e regole.
                       </p>
                     </div>
