@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -13,7 +13,7 @@ import { useAvailabilityWindowsQuery } from "../hooks/useAvailabilityWindowsQuer
 import { AvailabilityEditor } from "./AvailabilityEditor";
 import { OutOfOfficeManager } from "./OutOfOfficeManager";
 import { GlobalSaveBar } from "./GlobalSaveBar";
-import { Loader2, CheckCircle2, Clock, Info } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, Info, Calendar, CalendarX } from "lucide-react";
 import type { CreateAvailabilityWindowInput } from "../types";
 
 interface BookingSettingsFormValues {
@@ -184,40 +184,33 @@ export function BookingSettingsForm() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="space-y-8 pb-24">
-        {/* General Settings */}
-        <div className="space-y-3">
-          <div>
-            <h3 className="text-lg font-semibold">Impostazioni generali</h3>
-            <p className="text-sm text-muted-foreground">
-              Configura le tue preferenze di prenotazione
-            </p>
-          </div>
-          <div className="border rounded-lg p-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Self-service bookings toggle */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Prenotazioni</CardTitle>
+          <CardDescription>
+            Gestisci le prenotazioni self-service dei tuoi clienti
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              {/* Prominent Toggle Section */}
+              <div className="bg-muted/30 border rounded-lg p-4">
                 <FormField
                   control={form.control}
                   name="enabled"
                   render={({ field }) => (
-                    <FormItem className="flex items-center justify-between space-y-0 rounded-lg border p-4">
-                      <div className="flex items-center gap-2">
-                        <FormLabel className="text-sm font-medium cursor-pointer">
-                          Prenotazioni self-service
-                        </FormLabel>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type="button" className="inline-flex">
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs">
-                            <p>
-                              Consenti ai clienti di prenotare autonomamente gli slot disponibili
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
+                    <FormItem className="flex items-center justify-between space-y-0">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-5 w-5 text-primary" />
+                          <FormLabel className="text-base font-semibold cursor-pointer">
+                            Prenotazioni self-service
+                          </FormLabel>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Consenti ai tuoi clienti di prenotare autonomamente gli appuntamenti nelle fasce orarie che definisci
+                        </p>
                       </div>
                       <FormControl>
                         <Switch
@@ -231,9 +224,36 @@ export function BookingSettingsForm() {
                     </FormItem>
                   )}
                 />
+              </div>
 
-                {/* Two-column grid for remaining fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Disabled State - Informative Card */}
+              {!form.watch("enabled") && (
+                <Card className="border-dashed bg-muted/20">
+                  <CardContent className="py-8 text-center">
+                    <div className="space-y-2">
+                      <CalendarX className="h-8 w-8 mx-auto text-muted-foreground" />
+                      <h4 className="font-medium">Prenotazioni disabilitate</h4>
+                      <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                        Le prenotazioni self-service sono disabilitate. I tuoi clienti non potranno prenotare autonomamente. Attiva la funzionalità per configurare disponibilità e regole.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Conditional Configuration Sections */}
+              {form.watch("enabled") && (
+                <>
+                  {/* Booking Rules Section */}
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-base font-semibold">Regole di prenotazione</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Questi parametri determinano come i clienti possono prenotare
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Min advance notice */}
                   <FormField
                     control={form.control}
@@ -407,10 +427,10 @@ export function BookingSettingsForm() {
                       </FormItem>
                     )}
                   />
-                </div>
+                    </div>
 
-                {/* Approval mode - full width */}
-                <FormField
+                    {/* Approval mode - full width */}
+                    <FormField
                   control={form.control}
                   name="approval_mode"
                   render={({ field }) => (
@@ -462,46 +482,48 @@ export function BookingSettingsForm() {
                     </FormItem>
                   )}
                 />
-              </form>
-            </Form>
-          </div>
-        </div>
+                  </div>
 
-        {/* Weekly Time Slots */}
-        <div className="space-y-3">
-          <div>
-            <h3 className="text-lg font-semibold">Fasce orarie settimanali</h3>
-            <p className="text-sm text-muted-foreground">
-              Definisci quando sei disponibile per le prenotazioni
-            </p>
-          </div>
-          <AvailabilityEditor 
-            key={resetAvailability}
-            onChangeDetected={() => setHasUnsavedChanges(true)}
-            localChangesRef={availabilityChangesRef}
+                  {/* Weekly Time Slots Section */}
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-base font-semibold">Fasce orarie settimanali</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Definisci quando i clienti possono prenotare
+                      </p>
+                    </div>
+                    <AvailabilityEditor 
+                      key={resetAvailability}
+                      onChangeDetected={() => setHasUnsavedChanges(true)}
+                      localChangesRef={availabilityChangesRef}
+                    />
+                  </div>
+
+                  {/* Absence Periods Section */}
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-base font-semibold">Periodi di assenza</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Blocca date specifiche in cui non sei disponibile per i clienti
+                      </p>
+                    </div>
+                    <OutOfOfficeManager onChangeDetected={() => setHasUnsavedChanges(true)} />
+                  </div>
+                </>
+              )}
+            </form>
+          </Form>
+
+          {/* Global Save Bar */}
+          <GlobalSaveBar
+            show={hasUnsavedChanges}
+            onSave={form.handleSubmit(onSubmit)}
+            onCancel={handleCancelChanges}
+            isSaving={isPending || isUpdatingAvailability}
+            error={error?.message}
           />
-        </div>
-
-        {/* Absence Periods */}
-        <div className="space-y-3">
-          <div>
-            <h3 className="text-lg font-semibold">Periodi di assenza</h3>
-            <p className="text-sm text-muted-foreground">
-              Blocca date specifiche per vacanze o altri impegni
-            </p>
-          </div>
-          <OutOfOfficeManager onChangeDetected={() => setHasUnsavedChanges(true)} />
-        </div>
-
-        {/* Global Save Bar */}
-        <GlobalSaveBar
-          show={hasUnsavedChanges}
-          onSave={form.handleSubmit(onSubmit)}
-          onCancel={handleCancelChanges}
-          isSaving={isPending || isUpdatingAvailability}
-          error={error?.message}
-        />
-      </div>
+        </CardContent>
+      </Card>
     </TooltipProvider>
   );
 }
