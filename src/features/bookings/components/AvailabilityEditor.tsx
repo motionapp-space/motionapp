@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { TimePicker } from "@/components/ui/time-picker";
-import { Plus, MoreVertical, Copy, Trash2, AlertCircle } from "lucide-react";
+import { Plus, MoreVertical, Copy, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +9,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAvailabilityWindowsQuery } from "../hooks/useAvailability";
-import type { CreateAvailabilityWindowInput } from "../types";
 
 const DAYS_OF_WEEK = [
   { key: 0, label: "Lunedì" },
@@ -50,6 +46,26 @@ const isValidTimeRange = (start: string, end: string): boolean => {
   return endMinutes > startMinutes;
 };
 
+// Helper to generate time options (every 15 minutes)
+const generateTimeOptions = (): string[] => {
+  const options: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      options.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+    }
+  }
+  return options;
+};
+
+// Helper to sort time ranges by start time
+const sortTimeRanges = (ranges: TimeRange[]): TimeRange[] => {
+  return [...ranges].sort((a, b) => {
+    const [aH, aM] = a.start_time.split(':').map(Number);
+    const [bH, bM] = b.start_time.split(':').map(Number);
+    return (aH * 60 + aM) - (bH * 60 + bM);
+  });
+};
+
 export function AvailabilityEditor({
   onChangeDetected, 
   onResetRequested,
@@ -58,6 +74,12 @@ export function AvailabilityEditor({
   const { data: windows = [], isLoading } = useAvailabilityWindowsQuery();
 
   const [editMode, setEditMode] = useState<Record<number, TimeRange[]>>({});
+  const [editingSlot, setEditingSlot] = useState<{
+    dayOfWeek: number;
+    index: number;
+    start_time: string;
+    end_time: string;
+  } | null>(null);
 
   // Sync local changes with parent ref
   if (localChangesRef) {
@@ -81,15 +103,24 @@ export function AvailabilityEditor({
       }));
   };
 
-  const addTimeRange = (dayOfWeek: number) => {
+  const addTimeRangeAndEdit = (dayOfWeek: number) => {
     const currentRanges = getWindowsForDay(dayOfWeek);
+    const newIndex = currentRanges.length;
+    const newRange = { start_time: "09:00", end_time: "17:00", temp_id: `new-${Date.now()}` };
+    
     setEditMode({
       ...editMode,
-      [dayOfWeek]: [
-        ...currentRanges,
-        { start_time: "09:00", end_time: "17:00", temp_id: `new-${Date.now()}` },
-      ],
+      [dayOfWeek]: [...currentRanges, newRange],
     });
+    
+    // Open immediately in edit mode
+    setEditingSlot({
+      dayOfWeek,
+      index: newIndex,
+      start_time: "09:00",
+      end_time: "17:00",
+    });
+    
     onChangeDetected?.();
   };
 
@@ -100,29 +131,42 @@ export function AvailabilityEditor({
       ...editMode,
       [dayOfWeek]: newRanges,
     });
+    // Close editing if we're removing the slot being edited
+    if (editingSlot?.dayOfWeek === dayOfWeek && editingSlot?.index === index) {
+      setEditingSlot(null);
+    }
     onChangeDetected?.();
   };
 
-  const updateTimeRange = (
-    dayOfWeek: number,
-    index: number,
-    field: "start_time" | "end_time",
-    value: string
-  ) => {
-    const currentRanges = getWindowsForDay(dayOfWeek);
-    const updated = [...currentRanges];
-    const newRange = { ...updated[index], [field]: value };
+  const startEditing = (dayOfWeek: number, index: number, range: TimeRange) => {
+    setEditingSlot({
+      dayOfWeek,
+      index,
+      start_time: range.start_time,
+      end_time: range.end_time,
+    });
+  };
+
+  const saveEditingSlot = () => {
+    if (!editingSlot) return;
     
-    // Validate the new time range
-    if (!isValidTimeRange(newRange.start_time, newRange.end_time)) {
+    if (!isValidTimeRange(editingSlot.start_time, editingSlot.end_time)) {
       toast.error("Orario non valido", {
-        description: "L'orario di fine deve essere successivo all'orario di inizio. Le fasce che attraversano mezzanotte non sono supportate.",
+        description: "L'orario di fine deve essere successivo all'orario di inizio.",
       });
-      return; // Don't apply invalid change
+      return;
     }
     
-    updated[index] = newRange;
-    setEditMode({ ...editMode, [dayOfWeek]: updated });
+    const currentRanges = getWindowsForDay(editingSlot.dayOfWeek);
+    const updated = [...currentRanges];
+    updated[editingSlot.index] = {
+      ...updated[editingSlot.index],
+      start_time: editingSlot.start_time,
+      end_time: editingSlot.end_time,
+    };
+    
+    setEditMode({ ...editMode, [editingSlot.dayOfWeek]: sortTimeRanges(updated) });
+    setEditingSlot(null);
     onChangeDetected?.();
   };
 
@@ -155,86 +199,108 @@ export function AvailabilityEditor({
     return <div className="text-sm text-muted-foreground">Caricamento disponibilità...</div>;
   }
 
+  const timeOptions = generateTimeOptions();
+
   return (
-    <TooltipProvider>
-      <div className="space-y-2">
-        {/* Compact table */}
-        <div className="border rounded-lg overflow-hidden">
+    <div className="space-y-2">
+      {/* Compact table */}
+      <div className="border rounded-lg overflow-hidden">
         <div className="divide-y">
           {DAYS_OF_WEEK.map((day) => {
             const ranges = getWindowsForDay(day.key);
 
             return (
               <div key={day.key} className="bg-card">
-                {/* Day row with inline time pickers */}
+                {/* Day row */}
                 <div className="flex items-center gap-3 p-3">
                   {/* Day name */}
-                  <div className="w-28 font-medium text-sm">{day.label}</div>
+                  <div className="w-24 font-medium text-sm">{day.label}</div>
 
-                  {/* Inline time slots with pickers */}
-                  <div className="flex-1 flex flex-wrap gap-3 items-center">
+                  {/* Pills / Editor inline */}
+                  <div className="flex-1 flex flex-wrap gap-2 items-center">
                     {ranges.length === 0 ? (
                       <span className="text-sm text-muted-foreground">Nessuna disponibilità</span>
                     ) : (
                       ranges.map((range, index) => {
+                        const isEditing = editingSlot?.dayOfWeek === day.key && editingSlot?.index === index;
                         const isInvalid = !isValidTimeRange(range.start_time, range.end_time);
-                        return (
-                          <div key={range.temp_id || index} className="flex items-center gap-2">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className={`flex items-center gap-2 ${isInvalid ? 'opacity-50' : ''}`}>
-                                  <div className="w-24">
-                                    <TimePicker
-                                      value={range.start_time}
-                                      onChange={(value) =>
-                                        updateTimeRange(day.key, index, "start_time", value)
-                                      }
-                                    />
-                                  </div>
-                                  <span className="text-muted-foreground text-sm">—</span>
-                                  <div className="w-24">
-                                    <TimePicker
-                                      value={range.end_time}
-                                      onChange={(value) =>
-                                        updateTimeRange(day.key, index, "end_time", value)
-                                      }
-                                    />
-                                  </div>
-                                </div>
-                              </TooltipTrigger>
-                              {isInvalid && (
-                                <TooltipContent>
-                                  <p className="text-xs flex items-center gap-1">
-                                    <AlertCircle className="h-3 w-3" />
-                                    Fascia oraria non valida: attraversa mezzanotte
-                                  </p>
-                                </TooltipContent>
-                              )}
-                            </Tooltip>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeTimeRange(day.key, index)}
-                              className="h-8 w-8 p-0"
+
+                        if (isEditing) {
+                          // Inline Editor
+                          return (
+                            <div 
+                              key={range.temp_id || index}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary border border-primary/50"
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
+                              <span className="text-xs text-muted-foreground">Da:</span>
+                              <select 
+                                value={editingSlot.start_time}
+                                onChange={(e) => setEditingSlot({...editingSlot, start_time: e.target.value})}
+                                className="bg-transparent border-none text-sm font-medium focus:outline-none cursor-pointer"
+                              >
+                                {timeOptions.map(time => (
+                                  <option key={time} value={time}>{time}</option>
+                                ))}
+                              </select>
+                              <span className="text-xs text-muted-foreground">A:</span>
+                              <select 
+                                value={editingSlot.end_time}
+                                onChange={(e) => setEditingSlot({...editingSlot, end_time: e.target.value})}
+                                className="bg-transparent border-none text-sm font-medium focus:outline-none cursor-pointer"
+                              >
+                                {timeOptions.map(time => (
+                                  <option key={time} value={time}>{time}</option>
+                                ))}
+                              </select>
+                              <Button
+                                onClick={saveEditingSlot}
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto px-2 py-1 text-xs text-primary font-medium hover:underline"
+                              >
+                                Salva
+                              </Button>
+                            </div>
+                          );
+                        }
+
+                        // Pill View
+                        return (
+                          <button
+                            key={range.temp_id || index}
+                            onClick={() => startEditing(day.key, index, range)}
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border text-sm font-medium transition-colors ${
+                              isInvalid 
+                                ? 'border-destructive hover:bg-destructive/10' 
+                                : 'border-border hover:bg-secondary/80'
+                            }`}
+                          >
+                            {formatTimeDisplay(range.start_time)} – {formatTimeDisplay(range.end_time)}
+                            <X 
+                              className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive transition-colors" 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                removeTimeRange(day.key, index); 
+                              }}
+                            />
+                          </button>
                         );
                       })
                     )}
                   </div>
 
-                  {/* Actions */}
+                  {/* Actions: + Aggiungi fascia + Menu ⋮ */}
                   <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
+                    <Button 
+                      variant="ghost" 
                       size="sm"
-                      onClick={() => addTimeRange(day.key)}
-                      className="h-8 w-8 p-0"
+                      onClick={() => addTimeRangeAndEdit(day.key)}
+                      className="text-xs text-muted-foreground hover:text-foreground h-8 px-2"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      Aggiungi fascia
                     </Button>
+                    
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -265,7 +331,6 @@ export function AvailabilityEditor({
           })}
         </div>
       </div>
-      </div>
-    </TooltipProvider>
+    </div>
   );
 }
