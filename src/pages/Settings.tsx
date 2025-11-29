@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import { BookingSettingsForm } from "@/features/bookings/components/BookingSetti
 import { PackageSettingsForm } from "@/features/packages/components/PackageSettingsForm";
 
 const Settings = () => {
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'profile';
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState({ name: "", email: "", locale: "it" });
   const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
@@ -90,7 +93,7 @@ const Settings = () => {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <Tabs defaultValue="profile" className="space-y-4">
+      <Tabs defaultValue={initialTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
