@@ -5,7 +5,7 @@ import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+
 import { BookingRequestCard } from "@/features/bookings/components/BookingRequestCard";
 import { BookingRequestDrawer } from "@/features/bookings/components/BookingRequestDrawer";
 import { useBookingRequestsQuery } from "@/features/bookings/hooks/useBookingRequests";
@@ -51,16 +51,26 @@ const BookingManagement = () => {
         <div className="space-y-6">
           {/* Alert when bookings disabled */}
           {!isLoadingSettings && bookingSettings?.enabled === false && (
-            <Alert>
-              <CalendarX className="h-4 w-4" />
-              <AlertTitle>Prenotazioni self-service disabilitate</AlertTitle>
-              <AlertDescription>
-                I tuoi clienti non possono prenotare autonomamente. Abilita le prenotazioni per ricevere richieste.
-                <Link to="/settings?tab=bookings" className="ml-2 underline underline-offset-4 hover:text-primary">
-                  Vai alle impostazioni →
-                </Link>
-              </AlertDescription>
-            </Alert>
+            <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <div className="rounded-full bg-amber-500/10 p-2.5 shrink-0">
+                    <CalendarX className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-semibold text-foreground">
+                      Prenotazioni self-service disabilitate
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      I tuoi clienti non possono prenotare autonomamente sul calendario
+                    </p>
+                  </div>
+                  <Button asChild size="sm">
+                    <Link to="/settings?tab=bookings">Abilita</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Summary Counters */}
