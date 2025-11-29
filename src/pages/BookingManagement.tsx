@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Clock, CheckCircle2 } from "lucide-react";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { ArrowLeft, Clock, CheckCircle2, CalendarX } from "lucide-react";
 import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { BookingRequestCard } from "@/features/bookings/components/BookingRequestCard";
 import { BookingRequestDrawer } from "@/features/bookings/components/BookingRequestDrawer";
 import { useBookingRequestsQuery } from "@/features/bookings/hooks/useBookingRequests";
+import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettingsQuery";
 import type { BookingRequestWithClient } from "@/features/bookings/types";
 
 const BookingManagement = () => {
@@ -15,6 +17,7 @@ const BookingManagement = () => {
   const [searchParams] = useSearchParams();
   const { data: allRequests = [] } = useBookingRequestsQuery({});
   const { data: pendingRequests = [] } = useBookingRequestsQuery({ status: "PENDING" });
+  const { data: bookingSettings, isLoading: isLoadingSettings } = useBookingSettingsQuery();
 
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
@@ -46,6 +49,20 @@ const BookingManagement = () => {
     <div className="min-h-screen flex flex-col bg-background w-full">
       <div className="flex-1 overflow-auto mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6">
         <div className="space-y-6">
+          {/* Alert when bookings disabled */}
+          {!isLoadingSettings && bookingSettings?.enabled === false && (
+            <Alert>
+              <CalendarX className="h-4 w-4" />
+              <AlertTitle>Prenotazioni self-service disabilitate</AlertTitle>
+              <AlertDescription>
+                I tuoi clienti non possono prenotare autonomamente. Abilita le prenotazioni per ricevere richieste.
+                <Link to="/settings?tab=bookings" className="ml-2 underline underline-offset-4 hover:text-primary">
+                  Vai alle impostazioni →
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Summary Counters */}
           <div className="flex flex-wrap gap-4">
             <Card className="flex-1 min-w-[200px]">
