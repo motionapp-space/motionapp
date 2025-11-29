@@ -1,6 +1,6 @@
 // Time utilities for calendar views
-export const DAY_START_H = 5;   // 05:00
-export const DAY_END_H = 23;    // 23:00
+export const DAY_START_H = 0;   // 00:00
+export const DAY_END_H = 24;    // 24:00
 export const MINUTE_HEIGHT = 1; // 1px per minute
 
 export const toMinutes = (d: Date) => d.getHours() * 60 + d.getMinutes();
