@@ -29,9 +29,7 @@ import ClientWorkouts from "./pages/client/ClientWorkouts";
 import ClientAppointments from "./pages/client/ClientAppointments";
 import ClientProfile from "./pages/client/ClientProfile";
 import ClientAppLayout from "./components/client/ClientAppLayout";
-import { AppSidebar } from "@/components/AppSidebar";
-import { Topbar } from "@/components/Topbar";
-import { StickySessionBar } from "@/components/StickySessionBar";
+import CoachLayout from "./components/CoachLayout";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useEffect, useState } from "react";
@@ -93,9 +91,8 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <ScrollToTop />
-          
-          {/* Client area routes - accessible without coach authentication */}
           <Routes>
+            {/* Client area routes - always accessible, no coach auth required */}
             <Route path="/client/auth" element={<ClientAuth />} />
             <Route path="/client/app" element={<ClientAppLayout />}>
               <Route index element={<ClientHome />} />
@@ -103,46 +100,32 @@ const App = () => {
               <Route path="appointments" element={<ClientAppointments />} />
               <Route path="profile" element={<ClientProfile />} />
             </Route>
-          </Routes>
 
-          {user ? (
-            <TopbarProvider>
-              <div className="flex min-h-screen w-full">
-                <AppSidebar />
-                <div className="flex flex-1 flex-col">
-                  <Topbar />
-                  <main className="flex-1 overflow-y-auto pb-16">
-                  <Routes>
-                    <Route path="/" element={<Clients />} />
-                    <Route path="/library" element={<Library />} />
-                    <Route path="/templates" element={<Navigate to="/library?tab=templates" replace />} />
-                    <Route path="/templates/:id" element={<TemplateDetail />} />
-                    <Route path="/templates/:id/edit" element={<TemplateEditor />} />
-                    <Route path="/templates/:id/missing" element={<TemplateMissing />} />
-                    <Route path="/client-plans/new" element={<ClientPlanEditor />} />
-                    <Route path="/client-plans/:id/edit" element={<ClientPlanEditor />} />
-                    <Route path="/clients/:id" element={<ClientDetail />} />
-                    <Route path="/calendar" element={<Calendar />} />
-                    <Route path="/calendar/manage" element={<BookingManagement />} />
-                    <Route path="/session/live" element={<LiveSession />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-              </div>
-              <StickySessionBar />
-            </div>
-            </TopbarProvider>
-          ) : (
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/share/:token" element={<SharedPlan />} />
-              <Route path="/booking/:coachId" element={<ClientBooking />} />
-              <Route path="*" element={<Navigate to="/auth" replace />} />
-            </Routes>
-          )}
+            {/* Public routes - accessible without authentication */}
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/share/:token" element={<SharedPlan />} />
+            <Route path="/booking/:coachId" element={<ClientBooking />} />
+
+            {/* Coach area routes - require authentication */}
+            <Route element={<CoachLayout isAuthenticated={!!user} />}>
+              <Route path="/" element={<Clients />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/templates" element={<Navigate to="/library?tab=templates" replace />} />
+              <Route path="/templates/:id" element={<TemplateDetail />} />
+              <Route path="/templates/:id/edit" element={<TemplateEditor />} />
+              <Route path="/templates/:id/missing" element={<TemplateMissing />} />
+              <Route path="/client-plans/new" element={<ClientPlanEditor />} />
+              <Route path="/client-plans/:id/edit" element={<ClientPlanEditor />} />
+              <Route path="/clients/:id" element={<ClientDetail />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/calendar/manage" element={<BookingManagement />} />
+              <Route path="/session/live" element={<LiveSession />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
