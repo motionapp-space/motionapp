@@ -31,6 +31,7 @@ export interface Client {
   sex?: Sex;
   status: ClientStatus;
   notes?: string;
+  auth_user_id?: string;
 }
 
 export interface ClientTag {
