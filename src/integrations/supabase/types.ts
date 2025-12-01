@@ -618,6 +618,7 @@ export type Database = {
         Row: {
           active_plan_id: string | null
           archived_at: string | null
+          auth_user_id: string | null
           birth_date: string | null
           coach_id: string
           created_at: string
@@ -637,6 +638,7 @@ export type Database = {
         Insert: {
           active_plan_id?: string | null
           archived_at?: string | null
+          auth_user_id?: string | null
           birth_date?: string | null
           coach_id: string
           created_at?: string
@@ -656,6 +658,7 @@ export type Database = {
         Update: {
           active_plan_id?: string | null
           archived_at?: string | null
+          auth_user_id?: string | null
           birth_date?: string | null
           coach_id?: string
           created_at?: string
