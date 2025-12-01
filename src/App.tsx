@@ -23,6 +23,12 @@ import LiveSession from "./pages/LiveSession";
 import Settings from "./pages/Settings";
 import SharedPlan from "./pages/SharedPlan";
 import NotFound from "./pages/NotFound";
+import ClientAuth from "./pages/client/ClientAuth";
+import ClientHome from "./pages/client/ClientHome";
+import ClientWorkouts from "./pages/client/ClientWorkouts";
+import ClientAppointments from "./pages/client/ClientAppointments";
+import ClientProfile from "./pages/client/ClientProfile";
+import ClientAppLayout from "./components/client/ClientAppLayout";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Topbar } from "@/components/Topbar";
 import { StickySessionBar } from "@/components/StickySessionBar";
@@ -87,6 +93,18 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <ScrollToTop />
+          
+          {/* Client area routes - accessible without coach authentication */}
+          <Routes>
+            <Route path="/client/auth" element={<ClientAuth />} />
+            <Route path="/client/app" element={<ClientAppLayout />}>
+              <Route index element={<ClientHome />} />
+              <Route path="workouts" element={<ClientWorkouts />} />
+              <Route path="appointments" element={<ClientAppointments />} />
+              <Route path="profile" element={<ClientProfile />} />
+            </Route>
+          </Routes>
+
           {user ? (
             <TopbarProvider>
               <div className="flex min-h-screen w-full">
