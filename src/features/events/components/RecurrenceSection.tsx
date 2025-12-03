@@ -166,14 +166,10 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
                     <Input
                       type="number"
                       min="1"
-                      max={maxOccurrences}
+                      max="52"
                       value={config.occurrenceCount || 10}
                       onChange={(e) => {
-                        const value = parseInt(e.target.value) || 10;
-                        if (maxOccurrences && value > maxOccurrences) {
-                          onMaxOccurrencesExceeded?.();
-                          return;
-                        }
+                        const value = Math.min(52, Math.max(1, parseInt(e.target.value) || 10));
                         updateConfig({ occurrenceCount: value });
                       }}
                       className="w-20"

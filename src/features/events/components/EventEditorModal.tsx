@@ -15,6 +15,8 @@ import { RecurrenceSection, type RecurrenceConfig } from "./RecurrenceSection";
 import { handleEventConfirm } from "@/features/packages/api/calendar-integration.api";
 import { useCreateSingleLesson } from "@/features/packages/hooks/useCreateSingleLesson";
 import { SingleLessonDialog } from "@/features/packages/components/SingleLessonDialog";
+import { createLedgerEntry } from "@/features/packages/api/ledger.api";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { EventWithClient, Event } from "../types";
@@ -126,6 +129,10 @@ export function EventEditorModal({
   // Single lesson dialog state
   const [showSingleLessonDialog, setShowSingleLessonDialog] = useState(false);
   const [pendingEvent, setPendingEvent] = useState<Event | null>(null);
+
+  // Recurrence package management state
+  const [recurrencePackageMode, setRecurrencePackageMode] = useState<"none" | "assign">("none");
+  const [recurrencePackageId, setRecurrencePackageId] = useState<string | null>(null);
 
   // Hooks
   const queryClient = useQueryClient();
@@ -262,6 +269,23 @@ export function EventEditorModal({
     [activePackage]
   );
 
+  // Available packages with credits for recurrence selection
+  const availablePackages = useMemo(() => {
+    if (!clientPackages) return [];
+    return clientPackages.filter(pkg => {
+      if (pkg.usage_status !== 'active') return false;
+      const kpi = calculatePackageKPI(pkg);
+      return kpi.available > 0;
+    });
+  }, [clientPackages]);
+
+  // Credits from selected package for recurrences
+  const selectedPackageCredits = useMemo(() => {
+    if (recurrencePackageMode !== 'assign' || !recurrencePackageId) return 0;
+    const pkg = availablePackages.find(p => p.package_id === recurrencePackageId);
+    return pkg ? calculatePackageKPI(pkg).available : 0;
+  }, [recurrencePackageMode, recurrencePackageId, availablePackages]);
+
   // Calculate occurrences for recurrence
   const occurrences = useMemo(() => {
     if (!recurrence.enabled) return [];
@@ -270,6 +294,20 @@ export function EventEditorModal({
       config: recurrence,
     });
   }, [recurrence, eventStartDateTime]);
+
+  // Reset package selection when client changes
+  useEffect(() => {
+    setRecurrencePackageMode("none");
+    setRecurrencePackageId(null);
+  }, [formData.clientId]);
+
+  // Reset package selection when recurrence is disabled
+  useEffect(() => {
+    if (!recurrence.enabled) {
+      setRecurrencePackageMode("none");
+      setRecurrencePackageId(null);
+    }
+  }, [recurrence.enabled]);
 
   // Validation
   const isValid = useMemo(() => {
@@ -282,11 +320,6 @@ export function EventEditorModal({
     const endMins = endH * 60 + endM;
     
     if (endMins <= startMins) return false;
-    
-    // If recurring, check credits
-    if (recurrence.enabled && occurrences.length > availableCredits) {
-      return false;
-    }
     
     return true;
   }, [formData, recurrence, occurrences, availableCredits]);
@@ -302,10 +335,6 @@ export function EventEditorModal({
     const endMins = endH * 60 + endM;
     
     if (endMins <= startMins) return "L'ora di fine deve essere successiva all'ora di inizio";
-    
-    if (recurrence.enabled && occurrences.length > availableCredits) {
-      return `Crediti insufficienti (${availableCredits} disponibili, ${occurrences.length} richiesti)`;
-    }
     
     return null;
   }, [formData, recurrence, occurrences, availableCredits]);
@@ -347,11 +376,13 @@ export function EventEditorModal({
       };
 
       if (recurrence.enabled && occurrences.length > 0) {
-        // Create recurring events
+        // 1. Create ALL recurring events without package management
         toast.info(`Creazione di ${occurrences.length} appuntamenti ricorrenti...`);
         
         const [startH, startM] = formData.startTime.split(':').map(Number);
         const [endH, endM] = formData.endTime.split(':').map(Number);
+
+        const createdEvents: Event[] = [];
 
         for (const occurrenceDate of occurrences) {
           const startAt = setMinutes(setHours(startOfDay(occurrenceDate), startH), startM);
@@ -363,20 +394,84 @@ export function EventEditorModal({
             end_at: endAt.toISOString(),
           });
 
-          // Try to confirm each recurring event with package
-          if (event.client_id) {
-            try {
-              await handleEventConfirm(event.id, event.client_id, event.start_at);
-            } catch (err) {
-              // Silent fail for recurring - package might run out of credits
-              console.warn('Could not confirm recurring event:', err);
-            }
+          createdEvents.push(event);
+        }
+
+        // 2. If NOT associating a package → done
+        if (recurrencePackageMode === "none" || !recurrencePackageId) {
+          toast.success(`Creati ${createdEvents.length} appuntamenti ricorrenti`);
+          onOpenChange(false);
+          return;
+        }
+
+        // 3. Allocate HOLD to first N events (chronological order)
+        const pkg = availablePackages.find(p => p.package_id === recurrencePackageId);
+        if (!pkg) {
+          toast.success(`Creati ${createdEvents.length} appuntamenti ricorrenti`);
+          onOpenChange(false);
+          return;
+        }
+
+        let remaining = calculatePackageKPI(pkg).available;
+        let holdCount = 0;
+        let currentOnHold = pkg.on_hold_sessions;
+
+        // Sort by start_at ASC
+        const sortedEvents = [...createdEvents].sort(
+          (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+        );
+
+        for (const evt of sortedEvents) {
+          if (remaining <= 0) break;
+
+          try {
+            // Create HOLD in ledger
+            await createLedgerEntry(
+              pkg.package_id,
+              'HOLD_CREATE',
+              'CONFIRM',
+              0,  // delta_consumed
+              1,  // delta_hold
+              evt.id,
+              `Ricorrenza: ${evt.title || 'Allenamento'}`
+            );
+
+            // Update on_hold counter directly via supabase
+            currentOnHold += 1;
+            await supabase
+              .from("package")
+              .update({ on_hold_sessions: currentOnHold })
+              .eq("package_id", pkg.package_id);
+
+            remaining--;
+            holdCount++;
+          } catch (err) {
+            console.warn('Could not create HOLD for recurring event:', err);
           }
         }
 
+        // 4. Final toast with count
+        const uncovered = createdEvents.length - holdCount;
         queryClient.invalidateQueries({ queryKey: ["packages"] });
-        toast.success(`Creati ${occurrences.length} appuntamenti ricorrenti`);
+
+        if (uncovered > 0) {
+          toast.success(
+            `Creati ${createdEvents.length} appuntamenti ricorrenti`,
+            {
+              description: `${holdCount} coperti da pacchetto, ${uncovered} senza copertura`
+            }
+          );
+        } else {
+          toast.success(
+            `Creati ${createdEvents.length} appuntamenti ricorrenti`,
+            {
+              description: `Tutti coperti dal pacchetto`
+            }
+          );
+        }
+
         onOpenChange(false);
+        return;
       } else {
         // Create single event
         const event = await createEvent.mutateAsync({
@@ -806,14 +901,97 @@ export function EventEditorModal({
                 config={recurrence}
                 onChange={setRecurrence}
                 startDate={formData.date}
-                maxOccurrences={availableCredits}
-                onMaxOccurrencesExceeded={() => {
-                  toast.error(
-                    `Il cliente ha solo ${availableCredits} sessioni disponibili nel pacchetto`,
-                    { duration: 4000 }
-                  );
-                }}
               />
+            )}
+
+            {/* Gestione Pacchetto per Ricorrenze */}
+            {isNewMode && recurrence.enabled && occurrences.length > 0 && formData.clientId && (
+              <div className="space-y-3 rounded-lg border p-4">
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-base font-medium">Gestione pacchetto</Label>
+                </div>
+                
+                <RadioGroup
+                  value={recurrencePackageMode}
+                  onValueChange={(value) => {
+                    setRecurrencePackageMode(value as "none" | "assign");
+                    if (value === "none") setRecurrencePackageId(null);
+                  }}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="none" id="pkg-none" />
+                    <Label htmlFor="pkg-none" className="text-sm font-normal cursor-pointer">
+                      Non associare un pacchetto
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem 
+                      value="assign" 
+                      id="pkg-assign" 
+                      disabled={availablePackages.length === 0}
+                    />
+                    <Label 
+                      htmlFor="pkg-assign" 
+                      className={cn(
+                        "text-sm font-normal cursor-pointer",
+                        availablePackages.length === 0 && "text-muted-foreground"
+                      )}
+                    >
+                      Associa un pacchetto esistente
+                    </Label>
+                  </div>
+                </RadioGroup>
+
+                {/* Package dropdown - only if mode = assign */}
+                {recurrencePackageMode === "assign" && (
+                  <div className="pl-6 space-y-2">
+                    {availablePackages.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Nessun pacchetto con crediti disponibili
+                      </p>
+                    ) : (
+                      <>
+                        <Select
+                          value={recurrencePackageId || ""}
+                          onValueChange={setRecurrencePackageId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleziona pacchetto" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availablePackages.map((pkg) => {
+                              const kpi = calculatePackageKPI(pkg);
+                              return (
+                                <SelectItem key={pkg.package_id} value={pkg.package_id}>
+                                  {pkg.name} ({kpi.available} crediti disponibili)
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+
+                        {/* Coverage info */}
+                        {recurrencePackageId && (
+                          <div className="text-sm">
+                            {occurrences.length <= selectedPackageCredits ? (
+                              <p className="text-green-600">
+                                ✓ Tutti i {occurrences.length} appuntamenti saranno coperti
+                              </p>
+                            ) : (
+                              <p className="text-amber-600">
+                                ⚠ {selectedPackageCredits} appuntamenti coperti, {occurrences.length - selectedPackageCredits} senza copertura
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Luogo */}
@@ -877,15 +1055,6 @@ export function EventEditorModal({
               </Alert>
             )}
 
-            {recurrence.enabled && occurrences.length > availableCredits && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Crediti insufficienti: {occurrences.length} richiesti, {availableCredits} disponibili. 
-                  Riduci il numero di occorrenze o aggiungi sessioni al pacchetto.
-                </AlertDescription>
-              </Alert>
-            )}
             </div>
             )}
             </div>
