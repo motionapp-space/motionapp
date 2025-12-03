@@ -9,6 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Toggle } from "@/components/ui/toggle";
 import { Plus, Search, UserPlus, ChevronDown, X, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -73,6 +83,12 @@ const Clients = () => {
     notes: "",
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    type: "archive" | "unarchive";
+    clientId: string;
+    clientName: string;
+  } | null>(null);
 
   // Set topbar title
   useTopbar({
@@ -174,15 +190,32 @@ const Clients = () => {
   };
 
   const handleArchive = (id: string, name: string) => {
-    if (confirm(`Archiviare il cliente ${name}?`)) {
-      archiveMutation.mutate(id);
-    }
+    setConfirmDialog({
+      open: true,
+      type: "archive",
+      clientId: id,
+      clientName: name,
+    });
   };
 
   const handleUnarchive = (id: string, name: string) => {
-    if (confirm(`Ripristinare il cliente ${name}?`)) {
-      unarchiveMutation.mutate(id);
+    setConfirmDialog({
+      open: true,
+      type: "unarchive",
+      clientId: id,
+      clientName: name,
+    });
+  };
+
+  const handleConfirmAction = () => {
+    if (!confirmDialog) return;
+    
+    if (confirmDialog.type === "archive") {
+      archiveMutation.mutate(confirmDialog.clientId);
+    } else {
+      unarchiveMutation.mutate(confirmDialog.clientId);
     }
+    setConfirmDialog(null);
   };
 
   const sortOptions = [
@@ -1355,6 +1388,31 @@ const Clients = () => {
       >
         <Plus className="h-6 w-6" />
       </Button>
+
+      {/* Confirm Archive/Unarchive Dialog */}
+      <AlertDialog 
+        open={confirmDialog?.open ?? false} 
+        onOpenChange={(open) => !open && setConfirmDialog(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmDialog?.type === "archive" ? "Archivia cliente" : "Ripristina cliente"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog?.type === "archive"
+                ? `Sei sicuro di voler archiviare il cliente ${confirmDialog?.clientName}? Il cliente non sarà più visibile nella lista principale.`
+                : `Sei sicuro di voler ripristinare il cliente ${confirmDialog?.clientName}? Il cliente tornerà visibile nella lista principale.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAction}>
+              {confirmDialog?.type === "archive" ? "Archivia" : "Ripristina"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
