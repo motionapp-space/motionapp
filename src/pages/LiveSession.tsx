@@ -14,7 +14,6 @@ import { useActualsQuery } from "@/features/sessions/hooks/useActualsQuery";
 import { useCreateActual } from "@/features/sessions/hooks/useCreateActual";
 import { useDeleteActual } from "@/features/sessions/hooks/useDeleteActual";
 import { getClientPlan } from "@/features/client-plans/api/client-plans.api";
-import { updateEvent } from "@/features/events/api/events.api";
 import { ExerciseHistoryDrawer } from "@/features/sessions/components/ExerciseHistoryDrawer";
 import type { Day, Phase, ExerciseGroup, Exercise } from "@/types/plan";
 import type { ExerciseActual } from "@/features/sessions/types";
@@ -251,14 +250,9 @@ export default function LiveSession() {
         },
       });
 
-      // Mark event as done if linked
-      if (session.event_id) {
-        try {
-          await updateEvent(session.event_id, { session_status: "done" });
-        } catch (error) {
-          console.error("Error updating event:", error);
-        }
-      }
+      // NOTE: We no longer update events here
+      // Sessions = performance tracking (training_sessions table)
+      // Events = calendar/payment tracking (handled by auto-complete-events edge function)
 
       toast.success("Sessione salvata");
       navigate(`/clients/${session.client_id}?tab=sessions`);

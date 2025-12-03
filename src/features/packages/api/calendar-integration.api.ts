@@ -4,37 +4,29 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { getActivePackage, getPackageSettings, createPackage } from "./packages.api";
+import { getActivePackage, getPackageSettings } from "./packages.api";
 import { createLedgerEntry } from "./ledger.api";
 import type { Package } from "../types";
 
 /**
  * Handle event confirmation - creates hold on package
- * Auto-creates 1-session technical package if no active package exists
+ * Returns null if no active package exists (UI must handle this case)
+ * Single lesson packages are created explicitly via SingleLessonDialog
  */
 export async function handleEventConfirm(
   eventId: string,
   clientId: string,
   startAt: string
-): Promise<{ package: Package; holdCreated: boolean }> {
+): Promise<{ package: Package; holdCreated: boolean } | null> {
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new Error("Non autenticato");
 
-  // Get or create active package
-  let pkg = await getActivePackage(clientId);
+  // Get active package - DO NOT auto-create
+  const pkg = await getActivePackage(clientId);
   
   if (!pkg) {
-    // Auto-create 1-session technical package
-    const settings = await getPackageSettings();
-    pkg = await createPackage({
-      client_id: clientId,
-      name: "1 lezione individuale (automatico)",
-      total_sessions: 1,
-      price_total_cents: settings.sessions_1_price,
-      duration_months: settings.sessions_1_duration,
-      payment_status: 'unpaid',
-      is_single_technical: true,
-    });
+    // Return null - UI will show SingleLessonDialog for explicit coach decision
+    return null;
   }
 
   // Check if package is expired
