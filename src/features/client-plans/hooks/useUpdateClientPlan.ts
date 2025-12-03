@@ -12,6 +12,7 @@ export function useUpdateClientPlan() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["clientPlans", data.client_id] });
       queryClient.invalidateQueries({ queryKey: ["clientPlan", data.id] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-plans-check'] });
       
       // Show notification if other plans were auto-completed
       if (data._autoCompletedCount && data._autoCompletedCount > 0) {
