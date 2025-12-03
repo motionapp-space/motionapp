@@ -3,8 +3,12 @@ import { updateSession } from "../api/sessions.api";
 import { toast } from "sonner";
 import { logClientActivity } from "@/features/clients/api/activities.api";
 import { useSessionStore } from "@/stores/useSessionStore";
-import { deleteEvent } from "@/features/events/api/events.api";
 
+/**
+ * Hook for updating training sessions
+ * Sessions are decoupled from events - they only manage training_sessions table
+ * Event management (calendar/packages) is handled separately
+ */
 export function useUpdateSession() {
   const queryClient = useQueryClient();
 
@@ -21,22 +25,14 @@ export function useUpdateSession() {
         );
       }
 
-      // Gestisci evento collegato quando sessione viene cancellata o completata
-      if (session.event_id) {
-        if (session.status === "cancelled") {
-          // Cancella l'evento quando la sessione viene annullata
-          try {
-            await deleteEvent(session.event_id);
-          } catch (error) {
-            console.error("Error deleting event:", error);
-          }
-        }
-      }
+      // NOTE: We no longer delete events when sessions are cancelled
+      // Sessions = performance tracking
+      // Events = calendar/payment tracking (managed separately)
 
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["session", session.id] });
       
-      // Aggiorna immediatamente lo store globale quando la sessione termina
+      // Update global store immediately when session ends
       if (session.status === "completed" || session.status === "cancelled") {
         useSessionStore.getState().clearActiveSession();
       }

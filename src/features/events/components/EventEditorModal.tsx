@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { format, addMinutes, differenceInMinutes, isWithinInterval, startOfDay, setHours, setMinutes } from "date-fns";
 import { it } from "date-fns/locale";
 import { Calendar as CalendarIcon, AlertTriangle, Info, AlertCircle, Trash2, Play, Pencil, MapPin, Clock, User, UserCircle, Bell, FileText, Package } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useUpdateEvent } from "../hooks/useUpdateEvent";
 import { useDeleteEvent } from "../hooks/useDeleteEvent";
@@ -11,6 +12,9 @@ import { useEventsQuery } from "../hooks/useEventsQuery";
 import { calculatePackageKPI } from "@/features/packages/utils/kpi";
 import { generateRecurrenceOccurrences } from "../utils/recurrence";
 import { RecurrenceSection, type RecurrenceConfig } from "./RecurrenceSection";
+import { handleEventConfirm } from "@/features/packages/api/calendar-integration.api";
+import { useCreateSingleLesson } from "@/features/packages/hooks/useCreateSingleLesson";
+import { SingleLessonDialog } from "@/features/packages/components/SingleLessonDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import type { EventWithClient } from "../types";
+import type { EventWithClient, Event } from "../types";
 import { Badge } from "@/components/ui/badge";
 import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettingsQuery";
 
@@ -118,11 +122,17 @@ export function EventEditorModal({
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [viewMode, setViewMode] = useState<'new' | 'view' | 'edit'>(isNewMode ? 'new' : 'view');
+  
+  // Single lesson dialog state
+  const [showSingleLessonDialog, setShowSingleLessonDialog] = useState(false);
+  const [pendingEvent, setPendingEvent] = useState<Event | null>(null);
 
   // Hooks
+  const queryClient = useQueryClient();
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
   const deleteEvent = useDeleteEvent();
+  const createSingleLesson = useCreateSingleLesson();
   const { data: clientsData } = useClientsQuery({ q: "", page: 1, limit: 100 });
   const clients = clientsData?.items || [];
   const { data: clientPackages } = useClientPackages(formData.clientId);
@@ -300,6 +310,28 @@ export function EventEditorModal({
     return null;
   }, [formData, recurrence, occurrences, availableCredits]);
 
+  // Handlers for SingleLessonDialog
+  const handleConfirmSingleLesson = async () => {
+    if (!pendingEvent) return;
+    
+    await createSingleLesson.mutateAsync({
+      eventId: pendingEvent.id,
+      clientId: pendingEvent.client_id,
+      eventStartAt: pendingEvent.start_at
+    });
+    
+    setShowSingleLessonDialog(false);
+    setPendingEvent(null);
+    onOpenChange(false);
+  };
+
+  const handleConfirmWithoutPackage = () => {
+    setShowSingleLessonDialog(false);
+    setPendingEvent(null);
+    onOpenChange(false);
+    toast.info("Appuntamento creato senza pacchetto");
+  };
+
   // Handlers
   const handleCreate = async () => {
     if (!isValid) return;
@@ -325,25 +357,69 @@ export function EventEditorModal({
           const startAt = setMinutes(setHours(startOfDay(occurrenceDate), startH), startM);
           const endAt = setMinutes(setHours(startOfDay(occurrenceDate), endH), endM);
 
-          await createEvent.mutateAsync({
+          const event = await createEvent.mutateAsync({
             ...basePayload,
             start_at: startAt.toISOString(),
             end_at: endAt.toISOString(),
           });
+
+          // Try to confirm each recurring event with package
+          if (event.client_id) {
+            try {
+              await handleEventConfirm(event.id, event.client_id, event.start_at);
+            } catch (err) {
+              // Silent fail for recurring - package might run out of credits
+              console.warn('Could not confirm recurring event:', err);
+            }
+          }
         }
 
+        queryClient.invalidateQueries({ queryKey: ["packages"] });
         toast.success(`Creati ${occurrences.length} appuntamenti ricorrenti`);
+        onOpenChange(false);
       } else {
         // Create single event
-        await createEvent.mutateAsync({
+        const event = await createEvent.mutateAsync({
           ...basePayload,
           start_at: eventStartDateTime.toISOString(),
           end_at: eventEndDateTime.toISOString(),
         });
-      }
 
-      onOpenChange(false);
+        // If there's a client, try to confirm with package hold
+        if (event.client_id) {
+          try {
+            const result = await handleEventConfirm(
+              event.id,
+              event.client_id,
+              event.start_at
+            );
+
+            if (!result) {
+              // No active package - show dialog for explicit coach decision
+              setPendingEvent(event);
+              setShowSingleLessonDialog(true);
+              return; // Don't close main modal yet
+            }
+
+            // Package found, hold created
+            queryClient.invalidateQueries({ queryKey: ["packages"] });
+            toast.success("Appuntamento creato", {
+              description: "1 credito prenotato dal pacchetto",
+            });
+          } catch (error: any) {
+            // Error during package confirmation (expired, suspended, etc.)
+            toast.warning("Appuntamento creato senza gestione crediti", {
+              description: error.message,
+            });
+          }
+        } else {
+          toast.success("Appuntamento creato");
+        }
+
+        onOpenChange(false);
+      }
     } catch (error) {
+      // Error is handled by useCreateEvent onError
       console.error('Create event error:', error);
     }
   };
@@ -953,6 +1029,16 @@ export function EventEditorModal({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Single Lesson Dialog - shown when no active package exists */}
+      <SingleLessonDialog
+        open={showSingleLessonDialog}
+        onOpenChange={setShowSingleLessonDialog}
+        clientName={clients?.find(c => c.id === pendingEvent?.client_id)?.first_name + ' ' + clients?.find(c => c.id === pendingEvent?.client_id)?.last_name || ""}
+        onConfirmSingleLesson={handleConfirmSingleLesson}
+        onConfirmWithoutPackage={handleConfirmWithoutPackage}
+        isLoading={createSingleLesson.isPending}
+      />
     </>
   );
 }
