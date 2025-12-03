@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createClient } from "../api/clients.api";
+import { logClientActivity } from "../api/activities.api";
 import type { CreateClientInput, Client } from "../types";
 import { toast } from "sonner";
 
@@ -10,7 +11,14 @@ export function useCreateClient() {
 
   return useMutation<Client, Error, CreateClientInput>({
     mutationFn: createClient,
-    onSuccess: (created) => {
+    onSuccess: async (created) => {
+      // Log activity
+      await logClientActivity(
+        created.id,
+        "CREATED",
+        `Cliente creato: ${created.first_name} ${created.last_name}`
+      );
+
       // Invalidate all client list queries
       qc.invalidateQueries({ queryKey: ["clients"] });
       
