@@ -422,6 +422,31 @@ const Clients = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Confirm Archive/Unarchive Dialog */}
+        <AlertDialog 
+          open={confirmDialog?.open ?? false} 
+          onOpenChange={(open) => !open && setConfirmDialog(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {confirmDialog?.type === "archive" ? "Archivia cliente" : "Ripristina cliente"}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {confirmDialog?.type === "archive"
+                  ? `Sei sicuro di voler archiviare il cliente ${confirmDialog?.clientName}? Il cliente non sarà più visibile nella lista principale.`
+                  : `Sei sicuro di voler ripristinare il cliente ${confirmDialog?.clientName}? Il cliente tornerà visibile nella lista principale.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmAction}>
+                {confirmDialog?.type === "archive" ? "Archivia" : "Ripristina"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
@@ -946,6 +971,31 @@ const Clients = () => {
         >
           <Plus className="h-6 w-6" />
         </Button>
+
+        {/* Confirm Archive/Unarchive Dialog */}
+        <AlertDialog 
+          open={confirmDialog?.open ?? false} 
+          onOpenChange={(open) => !open && setConfirmDialog(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {confirmDialog?.type === "archive" ? "Archivia cliente" : "Ripristina cliente"}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {confirmDialog?.type === "archive"
+                  ? `Sei sicuro di voler archiviare il cliente ${confirmDialog?.clientName}? Il cliente non sarà più visibile nella lista principale.`
+                  : `Sei sicuro di voler ripristinare il cliente ${confirmDialog?.clientName}? Il cliente tornerà visibile nella lista principale.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmAction}>
+                {confirmDialog?.type === "archive" ? "Archivia" : "Ripristina"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
