@@ -5,43 +5,59 @@ import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import { formatTimeRange } from "@/features/events/utils/calendar-utils";
+import { Calendar, CalendarX } from "lucide-react";
+import type { ClientAppointment } from "@/features/client-appointments/api/client-appointments.api";
 
 const ClientAppointments = () => {
   const { data: client, isLoading: clientLoading } = useCurrentClient();
 
   if (clientLoading) {
-    return <p>Caricamento...</p>;
+    return <p className="text-muted-foreground">Caricamento...</p>;
   }
 
   if (!client) {
-    return <p>Account non collegato</p>;
+    return <p className="text-muted-foreground">Account non collegato</p>;
   }
 
-  const { data: appointments, isLoading, isError } = useClientAppointments(client.id);
+  return <ClientAppointmentsContent clientId={client.id} />;
+};
+
+function ClientAppointmentsContent({ clientId }: { clientId: string }) {
+  const { data, isLoading, isError } = useClientAppointments(clientId);
 
   if (isLoading) {
-    return <p>Sto caricando i tuoi appuntamenti...</p>;
+    return <p className="text-muted-foreground">Sto caricando i tuoi appuntamenti...</p>;
   }
 
   if (isError) {
-    return <p>Si è verificato un errore nel caricamento dei tuoi appuntamenti.</p>;
+    return <p className="text-destructive">Si è verificato un errore nel caricamento dei tuoi appuntamenti.</p>;
   }
 
-  if (!appointments || appointments.length === 0) {
+  const future = data?.future || [];
+  const past = data?.past || [];
+  const hasNoAppointments = future.length === 0 && past.length === 0;
+
+  // Empty state generale se non ci sono appuntamenti
+  if (hasNoAppointments) {
     return (
       <div className="space-y-4">
         <div>
-          <h1 className="text-2xl font-bold">Prenotazioni Cliente</h1>
-          <p className="text-muted-foreground mt-2">
-            Gestisci i tuoi appuntamenti
+          <h1 className="text-2xl font-bold">I tuoi appuntamenti</h1>
+          <p className="text-muted-foreground mt-1">
+            Visualizza i tuoi appuntamenti programmati
           </p>
         </div>
 
         <Card>
-          <CardContent className="py-8 flex flex-col items-center text-center space-y-2">
-            <CardTitle className="text-base font-semibold">Non hai ancora appuntamenti futuri.</CardTitle>
+          <CardContent className="py-12 flex flex-col items-center text-center space-y-3">
+            <div className="rounded-full bg-muted p-4">
+              <CalendarX className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <CardTitle className="text-base font-semibold">
+              Non hai ancora appuntamenti registrati
+            </CardTitle>
             <CardDescription>
-              Contatta il tuo personal trainer per prenotare una sessione.
+              Contatta il tuo personal trainer se hai bisogno di assistenza.
             </CardDescription>
           </CardContent>
         </Card>
@@ -49,6 +65,70 @@ const ClientAppointments = () => {
     );
   }
 
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">I tuoi appuntamenti</h1>
+        <p className="text-muted-foreground mt-1">
+          Visualizza i tuoi appuntamenti programmati
+        </p>
+      </div>
+
+      {/* Sezione Prossimi Appuntamenti */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-primary" />
+          Prossimi appuntamenti
+        </h2>
+        {future.length > 0 ? (
+          <div className="space-y-3">
+            {future.map((appointment) => (
+              <AppointmentCard key={appointment.id} appointment={appointment} />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Nessun appuntamento programmato
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </section>
+
+      {/* Sezione Appuntamenti Recenti */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-muted-foreground">
+          Appuntamenti recenti
+        </h2>
+        {past.length > 0 ? (
+          <div className="space-y-3">
+            {past.map((appointment) => (
+              <AppointmentCard key={appointment.id} appointment={appointment} isPast />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Nessun appuntamento passato
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function AppointmentCard({ 
+  appointment, 
+  isPast = false 
+}: { 
+  appointment: ClientAppointment; 
+  isPast?: boolean;
+}) {
   const formatDateLabel = (iso: string) => {
     const date = parseISO(iso);
     return format(date, "EEEE d MMMM", { locale: it });
@@ -65,7 +145,9 @@ const ClientAppointments = () => {
       case "no_show":
         return { label: "Non presentato", variant: "outline" as const };
       default:
-        return { label: "Da confermare", variant: "outline" as const };
+        return isPast 
+          ? { label: "Completato", variant: "secondary" as const }
+          : { label: "Da confermare", variant: "outline" as const };
     }
   };
 
@@ -82,64 +164,47 @@ const ClientAppointments = () => {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Prenotazioni Cliente</h1>
-        <p className="text-muted-foreground mt-2">
-          Gestisci i tuoi appuntamenti
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        {appointments.map((appointment) => {
-          const dateLabel = formatDateLabel(appointment.start_at);
-          const timeRange = formatTimeRange(
-            appointment.start_at,
-            appointment.end_at,
-            appointment.is_all_day ?? false,
-          );
-          const status = getStatusBadge(appointment.session_status ?? null);
-          const sourceLabel = formatSource(appointment.source ?? null);
-
-          return (
-            <Card key={appointment.id}>
-              <CardHeader className="space-y-1 pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base font-semibold">
-                      {appointment.title}
-                    </CardTitle>
-                    <CardDescription>
-                      {dateLabel}
-                    </CardDescription>
-                  </div>
-                  {status && (
-                    <Badge variant={status.variant}>{status.label}</Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-1 text-sm">
-                <p className="font-medium">
-                  {timeRange}
-                </p>
-                {appointment.location && (
-                  <p className="text-muted-foreground">
-                    Luogo: {appointment.location}
-                  </p>
-                )}
-                {sourceLabel && (
-                  <p className="text-muted-foreground text-xs">
-                    {sourceLabel}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-    </div>
+  const dateLabel = formatDateLabel(appointment.start_at);
+  const timeRange = formatTimeRange(
+    appointment.start_at,
+    appointment.end_at,
+    appointment.is_all_day ?? false
   );
-};
+  const status = getStatusBadge(appointment.session_status ?? null);
+  const sourceLabel = formatSource(appointment.source ?? null);
+
+  return (
+    <Card className={isPast ? "opacity-75" : ""}>
+      <CardHeader className="space-y-1 pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle className="text-base font-semibold">
+              {appointment.title}
+            </CardTitle>
+            <CardDescription className="capitalize">
+              {dateLabel}
+            </CardDescription>
+          </div>
+          {status && (
+            <Badge variant={status.variant}>{status.label}</Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-1 text-sm">
+        <p className="font-medium">{timeRange}</p>
+        {appointment.location && (
+          <p className="text-muted-foreground">
+            Luogo: {appointment.location}
+          </p>
+        )}
+        {sourceLabel && (
+          <p className="text-muted-foreground text-xs">
+            {sourceLabel}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default ClientAppointments;
