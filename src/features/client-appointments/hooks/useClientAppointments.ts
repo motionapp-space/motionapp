@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { getClientAppointments, type ClientAppointment } from "../api/client-appointments.api";
+import { getClientAppointments, type ClientAppointmentsResult } from "../api/client-appointments.api";
 
 export function useClientAppointments(clientId: string) {
-  return useQuery<ClientAppointment[]>({
+  return useQuery<ClientAppointmentsResult>({
     queryKey: ["client-appointments", clientId],
     queryFn: () => getClientAppointments(clientId),
     enabled: !!clientId,

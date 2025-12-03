@@ -12,10 +12,15 @@ export interface ClientAppointment {
   location?: string | null;
 }
 
+export interface ClientAppointmentsResult {
+  future: ClientAppointment[];
+  past: ClientAppointment[];
+}
+
 /**
  * Recupera gli appuntamenti FUTURI per un determinato client
  */
-export async function getClientAppointments(clientId: string): Promise<ClientAppointment[]> {
+async function getFutureAppointments(clientId: string): Promise<ClientAppointment[]> {
   const now = new Date().toISOString();
 
   const { data, error } = await supabase
@@ -26,9 +31,43 @@ export async function getClientAppointments(clientId: string): Promise<ClientApp
     .order("start_at", { ascending: true });
 
   if (error) {
-    console.error("Error fetching client appointments", error);
+    console.error("Error fetching future appointments", error);
     throw error;
   }
 
   return (data as ClientAppointment[]) || [];
+}
+
+/**
+ * Recupera gli appuntamenti PASSATI (storico recente, max 20)
+ */
+async function getPastAppointments(clientId: string): Promise<ClientAppointment[]> {
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("events")
+    .select("id,title,start_at,end_at,session_status,source,is_all_day,location")
+    .eq("client_id", clientId)
+    .lt("start_at", now)
+    .order("start_at", { ascending: false })
+    .limit(20);
+
+  if (error) {
+    console.error("Error fetching past appointments", error);
+    throw error;
+  }
+
+  return (data as ClientAppointment[]) || [];
+}
+
+/**
+ * Recupera sia gli appuntamenti futuri che passati per un cliente
+ */
+export async function getClientAppointments(clientId: string): Promise<ClientAppointmentsResult> {
+  const [future, past] = await Promise.all([
+    getFutureAppointments(clientId),
+    getPastAppointments(clientId),
+  ]);
+
+  return { future, past };
 }
