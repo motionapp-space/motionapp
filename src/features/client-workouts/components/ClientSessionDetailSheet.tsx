@@ -1,0 +1,184 @@
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Clock, User, UserCheck } from "lucide-react";
+import { format, differenceInMinutes } from "date-fns";
+import { it } from "date-fns/locale";
+import { useClientSessionDetail } from "../hooks/useClientSessionDetail";
+import type { ClientSession } from "../api/client-sessions.api";
+import type { ClientActivePlan } from "../api/client-plans.api";
+import type { ExerciseActual } from "@/features/sessions/types";
+
+interface ClientSessionDetailSheetProps {
+  session: ClientSession | null;
+  plan: ClientActivePlan | null | undefined;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+interface GroupedActuals {
+  exerciseId: string;
+  exerciseName: string;
+  sets: ExerciseActual[];
+}
+
+function groupActualsByExercise(
+  actuals: ExerciseActual[],
+  plan: ClientActivePlan | null | undefined
+): GroupedActuals[] {
+  const groups: Record<string, GroupedActuals> = {};
+
+  for (const actual of actuals) {
+    if (!groups[actual.exercise_id]) {
+      // Try to find exercise name from plan
+      let exerciseName = `Esercizio ${actual.exercise_id.slice(0, 8)}`;
+      
+      if (plan?.data?.days) {
+        for (const day of plan.data.days) {
+          for (const phase of day.phases || []) {
+            for (const group of phase.groups || []) {
+              const found = group.exercises?.find(e => e.id === actual.exercise_id);
+              if (found?.name) {
+                exerciseName = found.name;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      groups[actual.exercise_id] = {
+        exerciseId: actual.exercise_id,
+        exerciseName,
+        sets: [],
+      };
+    }
+    groups[actual.exercise_id].sets.push(actual);
+  }
+
+  // Sort sets by set_index
+  return Object.values(groups).map(g => ({
+    ...g,
+    sets: g.sets.sort((a, b) => a.set_index - b.set_index),
+  }));
+}
+
+function SetLine({ actual, index }: { actual: ExerciseActual; index: number }) {
+  const parts: string[] = [];
+  
+  if (actual.reps) parts.push(`${actual.reps} reps`);
+  if (actual.load) parts.push(`@ ${actual.load}`);
+  if (actual.rest) parts.push(`rec ${actual.rest}`);
+  if (actual.rpe) parts.push(`RPE ${actual.rpe}`);
+
+  return (
+    <div className="flex items-baseline gap-2 py-1">
+      <span className="text-xs text-muted-foreground w-14 flex-shrink-0">
+        Serie {index + 1}
+      </span>
+      <span className="text-sm text-foreground">
+        {parts.join(" • ") || "—"}
+      </span>
+    </div>
+  );
+}
+
+function ExerciseDetail({ group }: { group: GroupedActuals }) {
+  return (
+    <div className="py-3 border-b border-border/50 last:border-0">
+      <p className="font-medium text-sm text-foreground mb-1">
+        {group.exerciseName}
+      </p>
+      <div className="space-y-0">
+        {group.sets.map((actual, i) => (
+          <SetLine key={actual.id} actual={actual} index={i} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function ClientSessionDetailSheet({
+  session,
+  plan,
+  open,
+  onOpenChange,
+}: ClientSessionDetailSheetProps) {
+  const { data: actuals, isLoading } = useClientSessionDetail(
+    open && session ? session.id : undefined
+  );
+
+  if (!session) return null;
+
+  const startDate = session.started_at ? new Date(session.started_at) : null;
+  const endDate = session.ended_at ? new Date(session.ended_at) : null;
+  
+  const formattedDate = startDate 
+    ? format(startDate, "EEEE d MMMM yyyy", { locale: it })
+    : "Data non disponibile";
+  
+  const duration = startDate && endDate 
+    ? differenceInMinutes(endDate, startDate)
+    : null;
+
+  const isWithCoach = session.source === "with_coach";
+  const grouped = actuals ? groupActualsByExercise(actuals, plan) : [];
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-xl">
+        <SheetHeader className="text-left pb-4 border-b">
+          <SheetTitle className="text-lg capitalize">
+            {formattedDate}
+          </SheetTitle>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <Badge variant="secondary" className="text-xs flex items-center gap-1">
+              {isWithCoach ? (
+                <>
+                  <UserCheck className="h-3 w-3" />
+                  Con coach
+                </>
+              ) : (
+                <>
+                  <User className="h-3 w-3" />
+                  Da solo
+                </>
+              )}
+            </Badge>
+            {duration !== null && (
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {duration} min
+              </Badge>
+            )}
+          </div>
+        </SheetHeader>
+
+        <div className="overflow-y-auto py-4 -mx-6 px-6" style={{ maxHeight: "calc(85vh - 120px)" }}>
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ) : grouped.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nessun esercizio registrato per questa sessione
+            </p>
+          ) : (
+            <div>
+              {grouped.map((group) => (
+                <ExerciseDetail key={group.exerciseId} group={group} />
+              ))}
+            </div>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
