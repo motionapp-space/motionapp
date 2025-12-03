@@ -136,9 +136,12 @@ export const useClientStore = create<ClientStore>((set, get) => ({
   loadClient: async (id: string) => {
     set({ isLoading: true, currentClient: null });
     try {
+      const { user } = (await supabase.auth.getUser()).data;
+      if (!user) throw new Error("Not authenticated");
+
       // Load client with all related data
       const [clientRes, tagsRes, measurementsRes, activitiesRes] = await Promise.all([
-        supabase.from("clients").select("*").eq("id", id).single(),
+        supabase.from("clients").select("*").eq("id", id).eq("coach_id", user.id).single(),
         supabase
           .from("client_tag_on_client")
           .select("tag:client_tags(*)")

@@ -11,6 +11,9 @@ interface ComputedClientData {
 }
 
 export async function listClients(filters: ClientsFilters): Promise<ClientsPageResult> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
   const { 
     q = "", 
     tag = "", 
@@ -41,7 +44,8 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       current_plan:client_plans!active_plan_id(name),
       packages:package(package_id, consumed_sessions, total_sessions),
       sessions:training_sessions(id, started_at)
-    `, { count: "exact" });
+    `, { count: "exact" })
+    .eq("coach_id", user.id);
 
   // Archive filter (default excludes archived)
   if (!includeArchived) {
@@ -235,6 +239,9 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
 }
 
 export async function getClientById(id: string): Promise<ClientWithTags> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
   const { data, error } = await supabase
     .from("clients")
     .select(`
@@ -244,6 +251,7 @@ export async function getClientById(id: string): Promise<ClientWithTags> {
       )
     `)
     .eq("id", id)
+    .eq("coach_id", user.id)
     .single();
 
   if (error) throw error;
