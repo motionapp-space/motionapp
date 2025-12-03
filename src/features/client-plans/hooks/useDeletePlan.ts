@@ -11,6 +11,7 @@ export function useDeletePlan() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["client-plans"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-plans-check'] });
       toast({
         title: "Piano eliminato",
         description: "Il piano è stato eliminato con successo.",

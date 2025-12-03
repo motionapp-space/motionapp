@@ -21,6 +21,7 @@ export function useAssignTemplate() {
       queryClient.invalidateQueries({ queryKey: ["clientPlans", variables.clientId] });
       queryClient.invalidateQueries({ queryKey: ["client", variables.clientId] });
       queryClient.invalidateQueries({ queryKey: ['client-onboarding-plans', variables.clientId] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-plans-check'] });
       
       toast.success("Piano assegnato");
     },

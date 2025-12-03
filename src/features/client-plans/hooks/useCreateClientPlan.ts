@@ -28,6 +28,7 @@ export function useCreateClientPlan() {
     onSuccess: (plan) => {
       queryClient.invalidateQueries({ queryKey: ["clientPlans", plan.client_id] });
       queryClient.invalidateQueries({ queryKey: ['client-onboarding-plans', plan.client_id] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-plans-check'] });
     },
     onError: (error: any) => {
       if (error.message?.includes('name')) {
