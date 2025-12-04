@@ -298,6 +298,7 @@ export function AvailabilityEditor({
                         // Pill View - styling migliorato per maggiore affordance
                         return (
                           <button
+                            type="button"
                             key={range.temp_id || index}
                             onClick={() => startEditing(day.key, index, range)}
                             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
@@ -323,6 +324,7 @@ export function AvailabilityEditor({
                   {/* Actions: + Aggiungi fascia + Menu ⋮ */}
                   <div className="flex items-center gap-1">
                     <Button 
+                      type="button"
                       variant="ghost" 
                       size="sm"
                       onClick={() => addTimeRangeAndEdit(day.key)}
@@ -334,7 +336,7 @@ export function AvailabilityEditor({
                     
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
