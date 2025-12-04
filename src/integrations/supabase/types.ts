@@ -1811,6 +1811,7 @@ export type Database = {
         | "APPROVED"
         | "DECLINED"
         | "COUNTER_PROPOSED"
+        | "CANCELED_BY_CLIENT"
       client_status: "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO"
       ledger_reason:
         | "CONFIRM"
@@ -1978,6 +1979,7 @@ export const Constants = {
         "APPROVED",
         "DECLINED",
         "COUNTER_PROPOSED",
+        "CANCELED_BY_CLIENT",
       ],
       client_status: ["POTENZIALE", "ATTIVO", "INATTIVO", "ARCHIVIATO"],
       ledger_reason: [
