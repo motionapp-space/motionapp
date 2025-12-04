@@ -1,73 +1,36 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Calendar, Clock, CheckCircle2, Hourglass, XCircle, CheckCheck } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ChevronDown, Calendar, CheckCircle2, Hourglass, XCircle, CheckCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ClientSectionHeader } from "@/components/client/ClientSectionHeader";
+import { ClientHistoryItem } from "@/components/client/ClientHistoryItem";
+import { ClientEmptyState } from "@/components/client/ClientEmptyState";
+import { Card, CardContent } from "@/components/ui/card";
 import { format, parseISO, isBefore } from "date-fns";
 import { it } from "date-fns/locale";
 import type { ClientAppointmentView, ClientAppointmentStatus } from "../types";
+import { cn } from "@/lib/utils";
 
 interface AppointmentsListProps {
   appointments: ClientAppointmentView[];
   onSelect: (appointment: ClientAppointmentView) => void;
 }
 
-function getStatusIcon(status: ClientAppointmentStatus) {
+function getStatusBadge(status: ClientAppointmentStatus): { label: string; variant: "default" | "secondary" | "outline" | "destructive" } {
   switch (status) {
     case 'CONFIRMED':
-      return <CheckCircle2 className="h-3 w-3 text-primary" />;
+      return { label: 'Confermato', variant: 'secondary' };
     case 'REQUESTED':
-      return <Hourglass className="h-3 w-3 text-muted-foreground" />;
+      return { label: 'In attesa', variant: 'outline' };
     case 'CANCELLED':
-      return <XCircle className="h-3 w-3 text-destructive" />;
+      return { label: 'Annullato', variant: 'destructive' };
     case 'COMPLETED':
-      return <CheckCheck className="h-3 w-3 text-muted-foreground" />;
+      return { label: 'Completato', variant: 'secondary' };
+    case 'CHANGE_PROPOSED':
+      return { label: 'Proposta', variant: 'outline' };
     default:
-      return null;
+      return { label: '', variant: 'secondary' };
   }
-}
-
-function getStatusLabel(status: ClientAppointmentStatus): string {
-  switch (status) {
-    case 'CONFIRMED': return 'Confermato';
-    case 'REQUESTED': return 'In attesa';
-    case 'CHANGE_PROPOSED': return 'Proposta';
-    case 'CANCELLED': return 'Annullato';
-    case 'COMPLETED': return 'Completato';
-  }
-}
-
-function AppointmentRow({ 
-  appointment, 
-  onClick 
-}: { 
-  appointment: ClientAppointmentView; 
-  onClick: () => void;
-}) {
-  const date = format(parseISO(appointment.startAt), "d MMM", { locale: it });
-  const time = format(parseISO(appointment.startAt), "HH:mm");
-
-  return (
-    <button 
-      onClick={onClick}
-      className="w-full flex items-center gap-3 p-3 hover:bg-accent/50 rounded-lg transition-colors text-left"
-    >
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate">{appointment.title}</p>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-          <Calendar className="h-3 w-3" />
-          <span>{date}</span>
-          <Clock className="h-3 w-3 ml-1" />
-          <span>{time}</span>
-        </div>
-      </div>
-      <div className="flex items-center gap-1 text-xs">
-        {getStatusIcon(appointment.status)}
-        <span className="text-muted-foreground">{getStatusLabel(appointment.status)}</span>
-      </div>
-    </button>
-  );
 }
 
 export function AppointmentsList({ appointments, onSelect }: AppointmentsListProps) {
@@ -81,103 +44,99 @@ export function AppointmentsList({ appointments, onSelect }: AppointmentsListPro
 
     for (const apt of appointments) {
       const aptDate = parseISO(apt.startAt);
-      // Future: CONFIRMED or REQUESTED that haven't passed
       if (!isBefore(aptDate, now) && (apt.status === 'CONFIRMED' || apt.status === 'REQUESTED')) {
         future.push(apt);
       }
-      // Past: COMPLETED or CANCELLED, or any that have passed
       if (apt.status === 'COMPLETED' || apt.status === 'CANCELLED') {
         past.push(apt);
       }
     }
 
-    // Sort future by date ascending
     future.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-    // Sort past by date descending
     past.sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
 
     return { future, past };
   }, [appointments]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Future appointments */}
       <Collapsible open={futureOpen} onOpenChange={setFutureOpen}>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between px-3 h-auto py-3">
-            <span className="font-medium">
-              Appuntamenti futuri
-              {future.length > 0 && (
-                <span className="ml-2 text-muted-foreground">({future.length})</span>
-              )}
-            </span>
-            {futureOpen ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
+        <CollapsibleTrigger className="w-full">
+          <div className="flex items-center justify-between py-2">
+            <ClientSectionHeader title="Appuntamenti futuri" count={future.length} />
+            <ChevronDown className={cn(
+              "h-4 w-4 text-muted-foreground transition-transform duration-200",
+              futureOpen && "rotate-180"
+            )} />
+          </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <Card className="mt-2">
-            <CardContent className="p-2">
-              {future.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
+          {future.length === 0 ? (
+            <Card className="border-dashed mt-2">
+              <CardContent className="p-4">
+                <p className="text-sm text-muted-foreground text-center">
                   Nessun appuntamento futuro
                 </p>
-              ) : (
-                <div className="divide-y">
-                  {future.map(apt => (
-                    <AppointmentRow 
-                      key={apt.id} 
-                      appointment={apt} 
-                      onClick={() => onSelect(apt)}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="divide-y mt-2">
+              {future.map(apt => {
+                const badge = getStatusBadge(apt.status);
+                return (
+                  <ClientHistoryItem
+                    key={apt.id}
+                    title={apt.title}
+                    date={format(parseISO(apt.startAt), "EEEE d MMM", { locale: it })}
+                    time={format(parseISO(apt.startAt), "HH:mm")}
+                    badge={badge}
+                    onClick={() => onSelect(apt)}
+                  />
+                );
+              })}
+            </div>
+          )}
         </CollapsibleContent>
       </Collapsible>
 
       {/* Past appointments */}
       <Collapsible open={pastOpen} onOpenChange={setPastOpen}>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full justify-between px-3 h-auto py-3">
-            <span className="font-medium">
-              Storico appuntamenti
-              {past.length > 0 && (
-                <span className="ml-2 text-muted-foreground">({past.length})</span>
-              )}
-            </span>
-            {pastOpen ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
+        <CollapsibleTrigger className="w-full">
+          <div className="flex items-center justify-between py-2">
+            <ClientSectionHeader title="Storico appuntamenti" count={past.length} />
+            <ChevronDown className={cn(
+              "h-4 w-4 text-muted-foreground transition-transform duration-200",
+              pastOpen && "rotate-180"
+            )} />
+          </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <Card className="mt-2">
-            <CardContent className="p-2">
-              {past.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nessun appuntamento completato
+          {past.length === 0 ? (
+            <Card className="border-dashed mt-2">
+              <CardContent className="p-4">
+                <p className="text-sm text-muted-foreground text-center">
+                  Nessun appuntamento passato
                 </p>
-              ) : (
-                <div className="divide-y">
-                  {past.slice(0, 20).map(apt => (
-                    <AppointmentRow 
-                      key={apt.id} 
-                      appointment={apt} 
-                      onClick={() => onSelect(apt)}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="divide-y mt-2">
+              {past.slice(0, 20).map(apt => {
+                const badge = getStatusBadge(apt.status);
+                return (
+                  <ClientHistoryItem
+                    key={apt.id}
+                    title={apt.title}
+                    date={format(parseISO(apt.startAt), "d MMM yyyy", { locale: it })}
+                    time={format(parseISO(apt.startAt), "HH:mm")}
+                    badge={badge}
+                    onClick={() => onSelect(apt)}
+                  />
+                );
+              })}
+            </div>
+          )}
         </CollapsibleContent>
       </Collapsible>
     </div>

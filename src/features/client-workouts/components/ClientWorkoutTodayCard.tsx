@@ -1,7 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Dumbbell } from "lucide-react";
+import { ClientEmptyState } from "@/components/client/ClientEmptyState";
 import type { ClientActivePlan } from "../api/client-plans.api";
 
 interface ClientWorkoutTodayCardProps {
@@ -12,34 +13,36 @@ interface ClientWorkoutTodayCardProps {
 export function ClientWorkoutTodayCard({ plan, isLoading }: ClientWorkoutTodayCardProps) {
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader className="pb-2">
-          <Skeleton className="h-5 w-40" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-4 w-32" />
+      <Card className="shadow-sm">
+        <CardContent className="p-5">
+          <div className="flex items-start gap-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
-  // Find today's workout day based on day index or name
+  // Find today's workout day based on day index
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  
+  const dayOfWeek = today.getDay();
   const days = plan?.data?.days || [];
-  
-  // Simple logic: map day index to workout day (Mon=0, Tue=1, etc. in our plan)
-  // This is a simplified approach - could be enhanced with actual scheduling logic
-  const todayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Mon=0 format
+  const todayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   const todayWorkout = days.length > 0 ? days[todayIndex % days.length] : null;
 
   if (!plan || !todayWorkout) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="py-6">
+      <Card className="border-dashed shadow-sm">
+        <CardContent className="p-5">
           <div className="flex items-center gap-3 text-muted-foreground">
-            <Calendar className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+              <Calendar className="h-5 w-5" />
+            </div>
             <span className="text-sm">Nessun allenamento pianificato per oggi</span>
           </div>
         </CardContent>
@@ -56,25 +59,29 @@ export function ClientWorkoutTodayCard({ plan, isLoading }: ClientWorkoutTodayCa
   }, 0) || 0;
 
   return (
-    <Card className="border-primary/20 bg-primary/5">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-medium flex items-center gap-2">
-            <Dumbbell className="h-4 w-4 text-primary" />
-            Allenamento di oggi
-          </CardTitle>
-          <Badge variant="secondary" className="text-xs">
-            Da fare
-          </Badge>
+    <Card className="border-l-4 border-l-primary shadow-sm">
+      <CardContent className="p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+            <Dumbbell className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                Allenamento di oggi
+              </p>
+              <Badge variant="outline" className="text-xs">
+                Da fare
+              </Badge>
+            </div>
+            <p className="text-base font-semibold text-foreground mt-1">
+              {todayWorkout.title || `Giorno ${todayWorkout.order || 1}`}
+            </p>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {totalExercises} esercizi
+            </p>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        <p className="font-semibold text-foreground">
-          {todayWorkout.title || `Giorno ${todayWorkout.order || 1}`}
-        </p>
-        <p className="text-sm text-muted-foreground mt-1">
-          {totalExercises} esercizi
-        </p>
       </CardContent>
     </Card>
   );

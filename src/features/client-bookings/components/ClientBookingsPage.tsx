@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ClientPageHeader } from "@/components/client/ClientPageHeader";
 import { useClientBookingSettings } from "../hooks/useClientBookingSettings";
 import { useClientAppointmentsView } from "../hooks/useClientAppointmentsView";
 import { CurrentSituationCard } from "./CurrentSituationCard";
@@ -32,26 +33,24 @@ export function ClientBookingsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 space-y-6">
+      <div className="px-5 py-5 space-y-6 pb-24">
         <div className="space-y-2">
-          <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-4 w-60" />
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-4 w-52" />
         </div>
-        <Skeleton className="h-40" />
-        <Skeleton className="h-12" />
+        <Skeleton className="h-40 rounded-xl" />
+        <Skeleton className="h-12 rounded-xl" />
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="px-5 py-5 space-y-6 pb-24">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground">Prenotazioni</h1>
-        <p className="text-sm text-muted-foreground">
-          Gestisci i tuoi appuntamenti con il coach
-        </p>
-      </div>
+      <ClientPageHeader 
+        title="Prenotazioni" 
+        description="Gestisci i tuoi appuntamenti con il coach"
+      />
 
       {/* Current Situation Card */}
       <CurrentSituationCard
@@ -64,7 +63,7 @@ export function ClientBookingsPage() {
       {/* CTA - solo se booking abilitato */}
       {bookingEnabled && (
         <Button 
-          className="w-full" 
+          className="w-full h-12" 
           size="lg"
           onClick={handleOpenBooking}
         >

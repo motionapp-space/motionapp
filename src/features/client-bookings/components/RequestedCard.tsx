@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin } from "lucide-react";
+import { Calendar, Clock, MapPin, Hourglass } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
@@ -16,16 +16,24 @@ export function RequestedCard({ appointment, onClick }: RequestedCardProps) {
 
   return (
     <Card 
-      className="cursor-pointer hover:bg-accent/50 transition-colors"
+      className="cursor-pointer hover:bg-accent/30 transition-colors shadow-sm"
       onClick={onClick}
     >
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="font-medium text-foreground">{appointment.title}</p>
-            <Badge variant="secondary" className="text-xs">
-              In attesa di conferma
-            </Badge>
+      <CardContent className="p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+            <Hourglass className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                Richiesta in attesa
+              </p>
+              <Badge variant="secondary" className="text-xs">
+                In attesa
+              </Badge>
+            </div>
+            <p className="text-base font-semibold text-foreground mt-1">{appointment.title}</p>
           </div>
         </div>
 

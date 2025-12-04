@@ -16,21 +16,28 @@ export function ConfirmedCard({ appointment, onClick }: ConfirmedCardProps) {
 
   return (
     <Card 
-      className="cursor-pointer hover:bg-accent/50 transition-colors border-primary/20"
+      className="cursor-pointer hover:bg-accent/30 transition-colors shadow-sm"
       onClick={onClick}
     >
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="font-medium text-foreground">{appointment.title}</p>
-            <Badge className="text-xs bg-primary/10 text-primary hover:bg-primary/20">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Confermato
-            </Badge>
+      <CardContent className="p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+            <CheckCircle2 className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                Prossimo appuntamento
+              </p>
+              <Badge className="text-xs bg-primary/10 text-primary hover:bg-primary/20 border-0">
+                Confermato
+              </Badge>
+            </div>
+            <p className="text-base font-semibold text-foreground mt-1">{appointment.title}</p>
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 pl-13">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
             <span className="capitalize">{date}</span>
