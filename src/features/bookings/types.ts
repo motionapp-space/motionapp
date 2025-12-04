@@ -1,4 +1,4 @@
-export type BookingRequestStatus = 'PENDING' | 'APPROVED' | 'DECLINED' | 'COUNTER_PROPOSED';
+export type BookingRequestStatus = 'PENDING' | 'APPROVED' | 'DECLINED' | 'COUNTER_PROPOSED' | 'CANCELED_BY_CLIENT';
 export type ApprovalMode = 'AUTO' | 'MANUAL';
 
 export interface BookingRequest {
