@@ -142,11 +142,13 @@ export function BookingSettingsForm() {
               form.reset(values);
               availabilityChangesRef.current = {};
               setHasUnsavedChanges(false);
+              toast.success("Impostazioni salvate");
             },
           });
         } else {
           form.reset(values);
           setHasUnsavedChanges(false);
+          toast.success("Impostazioni salvate");
         }
       },
     });
