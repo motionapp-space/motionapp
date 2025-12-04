@@ -61,8 +61,8 @@ export function ClientBookingsPage() {
         onViewDetail={handleViewDetail}
       />
 
-      {/* CTA or Info Message */}
-      {bookingEnabled ? (
+      {/* CTA - solo se booking abilitato */}
+      {bookingEnabled && (
         <Button 
           className="w-full" 
           size="lg"
@@ -71,10 +71,6 @@ export function ClientBookingsPage() {
           <Calendar className="h-4 w-4 mr-2" />
           Prenota un appuntamento
         </Button>
-      ) : (
-        <p className="text-sm text-muted-foreground text-center py-2">
-          Le nuove prenotazioni sono gestite dal tuo coach.
-        </p>
       )}
 
       {/* Collapsible Lists */}
