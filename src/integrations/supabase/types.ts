@@ -834,6 +834,9 @@ export type Database = {
           linked_plan_id: string | null
           location: string | null
           notes: string | null
+          proposal_status: string | null
+          proposed_end_at: string | null
+          proposed_start_at: string | null
           recurrence_rule: string | null
           reminder_offset_minutes: number | null
           session_status: string | null
@@ -855,6 +858,9 @@ export type Database = {
           linked_plan_id?: string | null
           location?: string | null
           notes?: string | null
+          proposal_status?: string | null
+          proposed_end_at?: string | null
+          proposed_start_at?: string | null
           recurrence_rule?: string | null
           reminder_offset_minutes?: number | null
           session_status?: string | null
@@ -876,6 +882,9 @@ export type Database = {
           linked_plan_id?: string | null
           location?: string | null
           notes?: string | null
+          proposal_status?: string | null
+          proposed_end_at?: string | null
+          proposed_start_at?: string | null
           recurrence_rule?: string | null
           reminder_offset_minutes?: number | null
           session_status?: string | null
