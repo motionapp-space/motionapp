@@ -11,10 +11,6 @@ export function useUpdateAvailabilityWindows() {
       replaceAvailabilityWindows(windows),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["availability-windows"] });
-      toast({
-        title: "Disponibilità aggiornata",
-        description: "La tua disponibilità è stata aggiornata con successo.",
-      });
     },
     onError: (error: Error) => {
       toast({

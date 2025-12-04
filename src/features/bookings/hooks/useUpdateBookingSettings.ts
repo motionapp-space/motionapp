@@ -10,10 +10,6 @@ export function useUpdateBookingSettings() {
     mutationFn: (input: UpdateBookingSettingsInput) => upsertBookingSettings(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["booking-settings"] });
-      toast({
-        title: "Impostazioni salvate",
-        description: "Le impostazioni di prenotazione sono state salvate con successo.",
-      });
     },
     onError: (error: Error) => {
       toast({
