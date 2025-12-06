@@ -113,6 +113,7 @@ const App = () => {
               <Route path="/" element={<Clients />} />
               <Route path="/library" element={<Library />} />
               <Route path="/templates" element={<Navigate to="/library?tab=templates" replace />} />
+              <Route path="/templates/new" element={<TemplateEditor />} />
               <Route path="/templates/:id" element={<TemplateDetail />} />
               <Route path="/templates/:id/edit" element={<TemplateEditor />} />
               <Route path="/templates/:id/missing" element={<TemplateMissing />} />
