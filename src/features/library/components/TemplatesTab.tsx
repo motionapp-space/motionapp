@@ -11,10 +11,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { useTemplatesQuery } from "@/features/templates/hooks/useTemplatesQuery";
-import { useCreateTemplate } from "@/features/templates/hooks/useCreateTemplate";
 import { useDuplicateTemplate } from "@/features/templates/hooks/useDuplicateTemplate";
 import { useDeleteTemplate } from "@/features/templates/hooks/useDeleteTemplate";
-import { makePlan } from "@/types/plan";
 
 type SortOption = "modified" | "name-asc" | "name-desc";
 
@@ -28,7 +26,6 @@ export default function TemplatesTab() {
   const [sortBy, setSortBy] = useState<SortOption>("modified");
 
   const { data: templates = [], isLoading } = useTemplatesQuery();
-  const createMutation = useCreateTemplate();
   const duplicateMutation = useDuplicateTemplate();
   const deleteMutation = useDeleteTemplate();
 
@@ -61,18 +58,9 @@ export default function TemplatesTab() {
     return result;
   }, [templates, searchQuery, sortBy]);
 
-  const createNewTemplate = async () => {
-    try {
-      const newPlan = makePlan("Nuovo Template");
-      const template = await createMutation.mutateAsync({
-        name: newPlan.name,
-        data: { days: newPlan.days },
-      });
-      toast.success("Template creato");
-      navigate(`/templates/${template.id}?mode=edit`);
-    } catch (error: any) {
-      toast.error("Errore nella creazione del template");
-    }
+  const createNewTemplate = () => {
+    // Navigate to editor with "new" - template will only be created on save
+    navigate("/templates/new?mode=edit");
   };
 
   const duplicateTemplate = async (templateId: string, e: React.MouseEvent) => {

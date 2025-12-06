@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Download, CheckCircle, Loader2, Sparkles, Clock, X } from "lucide-react";
 import { SortableDay } from "@/components/plan-editor/SortableDay";
 import { exportPlanToPDF } from "@/lib/pdfExport";
@@ -15,6 +16,7 @@ import CopilotPanel from "@/components/CopilotPanel";
 import { FLAGS } from "@/flags";
 import { getTemplate } from "@/features/templates/api/templates.api";
 import { useUpdateTemplate } from "@/features/templates/hooks/useUpdateTemplate";
+import { useCreateTemplate } from "@/features/templates/hooks/useCreateTemplate";
 import type { PlanTemplate } from "@/types/template";
 import { makeDay, makeGroup, type Day, type PhaseType, type GroupType, type Exercise, type ExerciseGroup, migratePhaseToGroups } from "@/types/plan";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -53,9 +55,12 @@ const TemplateEditor = () => {
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   
   const updateMutation = useUpdateTemplate();
+  const createMutation = useCreateTemplate();
   const readonly = location.state?.readonly === true;
+  const isNew = id === "new" || !id;
 
   // Drag & drop sensors
   // Sensors for drag & drop with proper activation constraints
@@ -184,13 +189,13 @@ const TemplateEditor = () => {
     }
   }, [name, description, categories, days, template]);
 
-  // Autosave every 30 seconds
+  // Autosave every 30 seconds (only for existing templates)
   const autoSave = useCallback(async () => {
-    if (!id || readonly || !hasUnsavedChanges || updateMutation.isPending || !validateName(name)) return;
+    if (isNew || readonly || !hasUnsavedChanges || updateMutation.isPending || !validateName(name)) return;
     
     try {
       await updateMutation.mutateAsync({
-        id,
+        id: id!,
         input: {
           name,
           description,
@@ -204,16 +209,36 @@ const TemplateEditor = () => {
       // Silent fail for autosave
       console.error('Autosave failed:', error);
     }
-  }, [id, readonly, hasUnsavedChanges, updateMutation, name, description, categories, days]);
+  }, [id, isNew, readonly, hasUnsavedChanges, updateMutation, name, description, categories, days]);
 
   useEffect(() => {
     const interval = setInterval(autoSave, 30000); // 30 seconds
     return () => clearInterval(interval);
   }, [autoSave]);
 
+  // Warn before leaving with unsaved changes
   useEffect(() => {
-    if (id) {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    if (id && id !== "new") {
       loadTemplate(id);
+    } else {
+      // New template - initialize with empty state
+      setName("");
+      setDescription("");
+      setCategories([]);
+      setDays([]);
+      setLoading(false);
+      setHasUnsavedChanges(false);
     }
   }, [id]);
 
@@ -239,27 +264,48 @@ const TemplateEditor = () => {
   };
 
   const handleSave = async () => {
-    if (!id) return;
     if (!validateName(name)) {
       toast.error("Correggi gli errori prima di salvare");
       return;
     }
     
     try {
-      await updateMutation.mutateAsync({
-        id,
-        input: {
+      if (isNew) {
+        // CREATE: first save of a new template
+        const created = await createMutation.mutateAsync({
           name: name.trim(),
           description: description.trim(),
           category: categories.join(', '),
           data: { days },
-        },
-      });
-      setLastSaved(new Date());
-      setHasUnsavedChanges(false);
-      toast.success("Template salvato con successo");
+        });
+        toast.success("Template creato");
+        // Navigate to the real template ID for future saves
+        navigate(`/templates/${created.id}?mode=edit`, { replace: true });
+      } else {
+        // UPDATE: existing template
+        await updateMutation.mutateAsync({
+          id: id!,
+          input: {
+            name: name.trim(),
+            description: description.trim(),
+            category: categories.join(', '),
+            data: { days },
+          },
+        });
+        setLastSaved(new Date());
+        setHasUnsavedChanges(false);
+        toast.success("Template salvato");
+      }
     } catch (error) {
       toast.error("Errore durante il salvataggio. Riprova.");
+    }
+  };
+
+  const handleBack = () => {
+    if (hasUnsavedChanges) {
+      setShowUnsavedDialog(true);
+    } else {
+      navigate("/library?tab=templates");
     }
   };
 
@@ -280,7 +326,8 @@ const TemplateEditor = () => {
 
   // Get save status text
   const getSaveStatus = () => {
-    if (updateMutation.isPending) return "Salvataggio in corso...";
+    if (updateMutation.isPending || createMutation.isPending) return "Salvataggio in corso...";
+    if (isNew) return "Nuovo template";
     if (hasUnsavedChanges) return "Modifiche non salvate";
     if (lastSaved) {
       const minAgo = Math.floor((Date.now() - lastSaved.getTime()) / 60000);
@@ -555,7 +602,7 @@ const TemplateEditor = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/templates")}
+              onClick={handleBack}
               className="shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -576,11 +623,11 @@ const TemplateEditor = () => {
               <>
                 <Button 
                   onClick={handleSave}
-                  disabled={updateMutation.isPending || !!nameError || !name.trim()}
+                  disabled={updateMutation.isPending || createMutation.isPending || !!nameError || !name.trim()}
                   size="sm" 
                   className="gap-2"
                 >
-                  {updateMutation.isPending ? (
+                  {(updateMutation.isPending || createMutation.isPending) ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Salvataggio...
@@ -593,7 +640,7 @@ const TemplateEditor = () => {
                   )}
                 </Button>
                 <Button 
-                  onClick={() => navigate("/templates")} 
+                  onClick={handleBack} 
                   variant="ghost" 
                   size="sm"
                 >
@@ -858,6 +905,27 @@ const TemplateEditor = () => {
       {FLAGS.copilotEnabled && copilotOpen && (
         <CopilotPanel open={copilotOpen} onClose={() => setCopilotOpen(false)} />
       )}
+
+      {/* Unsaved Changes Confirmation Dialog */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Modifiche non salvate</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hai delle modifiche non salvate. Vuoi davvero uscire senza salvare?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Resta</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => navigate("/library?tab=templates")}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Esci senza salvare
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
