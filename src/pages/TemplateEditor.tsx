@@ -609,65 +609,57 @@ const TemplateEditor = () => {
     <div className="min-h-screen bg-background">
       {/* Toolbar with actions - in page content, not Topbar */}
       <div className="container mx-auto px-4 md:px-6 lg:px-8 pt-6 max-w-[1280px]">
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {readonly ? (
-              <Badge variant="secondary">Sola lettura</Badge>
-            ) : (
-              <span>{getSaveStatus()}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {!readonly && (
-              <>
-                <Button 
-                  onClick={handleSave}
-                  disabled={updateMutation.isPending || createMutation.isPending || !!nameError || !name.trim()}
-                  size="sm" 
-                  className="gap-2"
-                >
-                  {(updateMutation.isPending || createMutation.isPending) ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Salvataggio...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-4 w-4" />
-                      Salva
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  onClick={handleBack} 
-                  variant="ghost" 
-                  size="sm"
-                >
-                  Annulla
-                </Button>
-              </>
-            )}
-            <Button 
-              onClick={handleExportPDF} 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" />
-              PDF
-            </Button>
-            {FLAGS.copilotEnabled && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCopilotOpen(!copilotOpen)}
+        <div className="flex items-center justify-end gap-2 mb-6">
+          {readonly && <Badge variant="secondary">Sola lettura</Badge>}
+          {!readonly && (
+            <>
+              <Button 
+                onClick={handleSave}
+                disabled={updateMutation.isPending || createMutation.isPending || !!nameError || !name.trim()}
+                size="sm" 
                 className="gap-2"
               >
-                <Sparkles className="h-4 w-4" />
-                AI
+                {(updateMutation.isPending || createMutation.isPending) ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Salvataggio...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4" />
+                    Salva
+                  </>
+                )}
               </Button>
-            )}
-          </div>
+              <Button 
+                onClick={handleBack} 
+                variant="ghost" 
+                size="sm"
+              >
+                Annulla
+              </Button>
+            </>
+          )}
+          <Button 
+            onClick={handleExportPDF} 
+            variant="outline" 
+            size="sm" 
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            PDF
+          </Button>
+          {FLAGS.copilotEnabled && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCopilotOpen(!copilotOpen)}
+              className="gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              AI
+            </Button>
+          )}
         </div>
       </div>
 
