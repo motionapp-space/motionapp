@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Download, CheckCircle, Loader2, Sparkles, Clock, X } from "lucide-react";
+import { Download, CheckCircle, Loader2, Sparkles, Clock, X } from "lucide-react";
+import { useTopbar } from "@/contexts/TopbarContext";
 import { SortableDay } from "@/components/plan-editor/SortableDay";
 import { exportPlanToPDF } from "@/lib/pdfExport";
 import { toSentenceCase } from "@/lib/text";
@@ -61,6 +62,22 @@ const TemplateEditor = () => {
   const createMutation = useCreateTemplate();
   const readonly = location.state?.readonly === true;
   const isNew = id === "new" || !id;
+
+  // Define handleBack before useTopbar (needed for onBack callback)
+  const handleBack = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setShowUnsavedDialog(true);
+    } else {
+      navigate("/library?tab=templates");
+    }
+  }, [hasUnsavedChanges, navigate]);
+
+  // Configure global Topbar
+  useTopbar({
+    title: name || "Nuovo Template",
+    showBack: true,
+    onBack: handleBack,
+  });
 
   // Drag & drop sensors
   // Sensors for drag & drop with proper activation constraints
@@ -301,13 +318,7 @@ const TemplateEditor = () => {
     }
   };
 
-  const handleBack = () => {
-    if (hasUnsavedChanges) {
-      setShowUnsavedDialog(true);
-    } else {
-      navigate("/library?tab=templates");
-    }
-  };
+  // handleBack is defined earlier with useCallback for useTopbar
 
   // Add category chip
   const addCategory = (cat: string) => {
@@ -596,29 +607,17 @@ const TemplateEditor = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 flex items-center justify-between gap-4 max-w-[1280px]">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleBack}
-              className="shrink-0"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-              <h1 className="text-lg font-semibold truncate">{name || "Nuovo Template"}</h1>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                {readonly ? (
-                  <Badge variant="secondary" className="h-5">Sola lettura</Badge>
-                ) : (
-                  <span>{getSaveStatus()}</span>
-                )}
-              </div>
-            </div>
+      {/* Toolbar with actions - in page content, not Topbar */}
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 pt-6 max-w-[1280px]">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {readonly ? (
+              <Badge variant="secondary">Sola lettura</Badge>
+            ) : (
+              <span>{getSaveStatus()}</span>
+            )}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2">
             {!readonly && (
               <>
                 <Button 
@@ -670,7 +669,7 @@ const TemplateEditor = () => {
             )}
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-[1280px]">
         <div className="space-y-8">
