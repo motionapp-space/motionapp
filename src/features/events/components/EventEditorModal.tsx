@@ -577,7 +577,7 @@ export function EventEditorModal({
     // Completato se end_at è nel passato
     if (eventEnd < now) {
       return (
-        <Badge className="bg-gray-100 text-gray-700 border-gray-300 text-xs">
+        <Badge className="bg-muted text-muted-foreground border-0 font-medium text-xs">
           Completato
         </Badge>
       );
@@ -586,7 +586,7 @@ export function EventEditorModal({
     // Da confermare se creato dal cliente con approvazione manuale
     if (event.source === 'client' && bookingSettings?.approval_mode === 'MANUAL' && event.session_status === 'scheduled') {
       return (
-        <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs">
+        <Badge className="bg-amber-100 text-amber-800 border-0 font-medium text-xs">
           Da confermare
         </Badge>
       );
@@ -594,7 +594,7 @@ export function EventEditorModal({
     
     // Confermato in tutti gli altri casi
     return (
-      <Badge className="bg-green-50 text-green-700 border-green-200 text-xs">
+      <Badge className="bg-emerald-100 text-emerald-800 border-0 font-medium text-xs">
         Confermato
       </Badge>
     );
@@ -611,67 +611,76 @@ export function EventEditorModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[680px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
           {/* Header */}
-          <DialogHeader className="border-b border-border/50 px-6 py-4 min-h-[60px] flex-row items-center justify-between gap-4 flex-shrink-0 space-y-0">
-            <div className="flex-1 space-y-1.5">
-              <div className="flex items-center gap-2.5">
-                <CalendarIcon className="h-[18px] w-[18px] text-primary flex-shrink-0" />
-                <DialogTitle className="text-xl font-semibold leading-tight">
-                  {viewMode === 'view' ? formData.title : (viewMode === 'edit' ? 'Modifica appuntamento' : 'Nuovo appuntamento')}
-                </DialogTitle>
-                <DialogDescription className="sr-only">
-                  {viewMode === 'view' 
-                    ? `Dettagli appuntamento: ${formData.title}` 
-                    : viewMode === 'edit' 
-                      ? 'Modifica i dettagli dell\'appuntamento' 
-                      : 'Crea un nuovo appuntamento con un cliente'}
-                </DialogDescription>
+          <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 space-y-0">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <CalendarIcon className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <DialogTitle className="text-xl font-semibold text-foreground leading-tight truncate">
+                    {viewMode === 'view' ? formData.title : (viewMode === 'edit' ? 'Modifica appuntamento' : 'Nuovo appuntamento')}
+                  </DialogTitle>
+                  <DialogDescription className="sr-only">
+                    {viewMode === 'view' 
+                      ? `Dettagli appuntamento: ${formData.title}` 
+                      : viewMode === 'edit' 
+                        ? 'Modifica i dettagli dell\'appuntamento' 
+                        : 'Crea un nuovo appuntamento con un cliente'}
+                  </DialogDescription>
+                </div>
               </div>
               {viewMode === 'view' && (
-                <div className="flex items-center gap-2 flex-wrap pl-[26px]">
-                  {/* Badge Stato */}
+                <div className="flex items-center gap-2 flex-shrink-0 pt-1">
                   {getEventStatusBadge()}
-                  {/* Badge Ricorrente */}
                   {event?.recurrence_rule && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs font-medium">
                       Ricorrente
                     </Badge>
                   )}
                 </div>
               )}
             </div>
-            {/* Azioni spostate nel footer per evitare sovrapposizione con X */}
           </DialogHeader>
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            <div className="px-6 py-5">
+            <div className="px-6 py-6">
             
             {/* READ-ONLY VIEW */}
             {viewMode === 'view' && event && (
-              <div className="space-y-5">
-                {/* Data & Orario - UNA SOLA RIGA */}
-                <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-muted-foreground">Data e ora</p>
-                    <p className="text-base text-foreground">
+              <div className="space-y-6">
+                {/* Data & Orario */}
+                <div className="flex items-start gap-4">
+                  <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                    <Clock className="h-[18px] w-[18px] text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      Data e ora
+                    </p>
+                    <p className="text-base font-medium text-foreground">
                       {format(formData.date, "EEEE d MMMM", { locale: it })} • {formData.startTime} – {formData.endTime}
-                      <span className="text-muted-foreground ml-1.5">({duration})</span>
+                      <span className="text-muted-foreground font-normal ml-1.5">({duration})</span>
                     </p>
                   </div>
                 </div>
 
-                {/* Cliente - CLICCABILE */}
-                <div className="flex items-start gap-3">
-                  <User className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-muted-foreground">Cliente</p>
+                {/* Cliente */}
+                <div className="flex items-start gap-4">
+                  <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                    <User className="h-[18px] w-[18px] text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      Cliente
+                    </p>
                     <button
                       onClick={() => {
                         onOpenChange(false);
                         window.location.href = `/clients/${formData.clientId}`;
                       }}
-                      className="text-base text-primary hover:underline text-left"
+                      className="text-base font-medium text-primary hover:underline text-left"
                     >
                       {clients.find(c => c.id === formData.clientId)?.first_name} {clients.find(c => c.id === formData.clientId)?.last_name}
                     </button>
@@ -679,32 +688,44 @@ export function EventEditorModal({
                 </div>
 
                 {/* Creato da */}
-                <div className="flex items-start gap-3">
-                  <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-muted-foreground">Creato da</p>
-                    <p className="text-base text-foreground">{getCreatedByText()}</p>
+                <div className="flex items-start gap-4">
+                  <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                    <UserCircle className="h-[18px] w-[18px] text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      Creato da
+                    </p>
+                    <p className="text-base font-medium text-foreground">{getCreatedByText()}</p>
                   </div>
                 </div>
 
                 {/* Luogo (se presente) */}
                 {formData.location && (
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-muted-foreground">Luogo</p>
-                      <p className="text-base text-foreground">{formData.location}</p>
+                  <div className="flex items-start gap-4">
+                    <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="h-[18px] w-[18px] text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                        Luogo
+                      </p>
+                      <p className="text-base font-medium text-foreground">{formData.location}</p>
                     </div>
                   </div>
                 )}
 
                 {/* Promemoria (se presente) */}
                 {formData.reminderOffset && formData.reminderOffset > 0 && (
-                  <div className="flex items-start gap-3">
-                    <Bell className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-muted-foreground">Promemoria</p>
-                      <p className="text-base text-foreground">
+                  <div className="flex items-start gap-4">
+                    <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                      <Bell className="h-[18px] w-[18px] text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                        Promemoria
+                      </p>
+                      <p className="text-base font-medium text-foreground">
                         {formData.reminderOffset === 15 && "15 minuti prima"}
                         {formData.reminderOffset === 60 && "1 ora prima"}
                         {formData.reminderOffset === 1440 && "1 giorno prima"}
@@ -716,11 +737,15 @@ export function EventEditorModal({
 
                 {/* Pacchetto associato (se presente) */}
                 {activePackage && !activePackage.is_single_technical && (
-                  <div className="flex items-start gap-3">
-                    <Package className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-muted-foreground">Pacchetto</p>
-                      <p className="text-base text-foreground">
+                  <div className="flex items-start gap-4">
+                    <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                      <Package className="h-[18px] w-[18px] text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                        Pacchetto
+                      </p>
+                      <p className="text-base font-medium text-foreground">
                         {calculatePackageKPI(activePackage).available}/{activePackage.total_sessions} sessioni rimanenti
                       </p>
                     </div>
@@ -729,12 +754,16 @@ export function EventEditorModal({
 
                 {/* Note interne (se presenti) */}
                 {formData.notes && (
-                  <div className="flex items-start gap-3">
-                    <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-muted-foreground">Note interne</p>
-                      <div className="rounded-md bg-muted p-3 mt-1">
-                        <p className="text-sm text-foreground whitespace-pre-wrap">{formData.notes}</p>
+                  <div className="flex items-start gap-4">
+                    <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                      <FileText className="h-[18px] w-[18px] text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+                        Note interne
+                      </p>
+                      <div className="rounded-lg bg-muted/50 border border-border/50 p-3">
+                        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{formData.notes}</p>
                       </div>
                     </div>
                   </div>
@@ -1040,26 +1069,25 @@ export function EventEditorModal({
           </div>
 
           {/* Footer */}
-          <DialogFooter className="border-t px-6 py-3 bg-background sticky bottom-0 z-10 flex-shrink-0 min-h-[56px] flex items-center justify-between">
+          <DialogFooter className="px-6 py-4 bg-muted/30 sticky bottom-0 z-10 flex-shrink-0 min-h-[56px] flex items-center justify-between">
             {viewMode === 'view' && (
               <div className="flex items-center justify-between w-full">
                 <Button
                   variant="ghost"
                   onClick={() => setShowDeleteDialog(true)}
-                  className="h-10 text-destructive hover:text-destructive"
+                  className="h-10 text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Elimina
                 </Button>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   {canStartSession && event && new Date(event.end_at) >= new Date() && (
-                    <Button onClick={handleStartSession} className="h-10">
+                    <Button variant="outline" onClick={handleStartSession} className="h-10">
                       <Play className="h-4 w-4 mr-2" />
                       Avvia sessione
                     </Button>
                   )}
                   <Button
-                    variant="outline"
                     onClick={() => setViewMode('edit')}
                     className="h-10"
                   >
