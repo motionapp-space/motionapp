@@ -611,7 +611,7 @@ export function EventEditorModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[680px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
           {/* Header */}
-          <DialogHeader className="border-b border-border/50 px-8 py-4 min-h-[64px] flex-row items-center justify-between gap-4 flex-shrink-0 space-y-0">
+          <DialogHeader className="border-b border-border/50 px-6 py-4 min-h-[60px] flex-row items-center justify-between gap-4 flex-shrink-0 space-y-0">
             <div className="flex-1 space-y-1.5">
               <div className="flex items-center gap-2.5">
                 <CalendarIcon className="h-[18px] w-[18px] text-primary flex-shrink-0" />
@@ -644,14 +644,14 @@ export function EventEditorModal({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            <div className="px-8 py-4">
+            <div className="px-6 py-5">
             
             {/* READ-ONLY VIEW */}
             {viewMode === 'view' && event && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {/* Data & Orario - UNA SOLA RIGA */}
-                <div className="flex items-start gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-muted-foreground">Data e ora</p>
                     <p className="text-base text-foreground">
@@ -662,8 +662,8 @@ export function EventEditorModal({
                 </div>
 
                 {/* Cliente - CLICCABILE */}
-                <div className="flex items-start gap-2">
-                  <User className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3">
+                  <User className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-muted-foreground">Cliente</p>
                     <button
@@ -679,8 +679,8 @@ export function EventEditorModal({
                 </div>
 
                 {/* Creato da */}
-                <div className="flex items-start gap-2">
-                  <UserCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3">
+                  <UserCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-muted-foreground">Creato da</p>
                     <p className="text-base text-foreground">{getCreatedByText()}</p>
@@ -689,8 +689,8 @@ export function EventEditorModal({
 
                 {/* Luogo (se presente) */}
                 {formData.location && (
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-muted-foreground">Luogo</p>
                       <p className="text-base text-foreground">{formData.location}</p>
@@ -700,8 +700,8 @@ export function EventEditorModal({
 
                 {/* Promemoria (se presente) */}
                 {formData.reminderOffset && formData.reminderOffset > 0 && (
-                  <div className="flex items-start gap-2">
-                    <Bell className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-3">
+                    <Bell className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-muted-foreground">Promemoria</p>
                       <p className="text-base text-foreground">
@@ -716,8 +716,8 @@ export function EventEditorModal({
 
                 {/* Pacchetto associato (se presente) */}
                 {activePackage && !activePackage.is_single_technical && (
-                  <div className="flex items-start gap-2">
-                    <Package className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-3">
+                    <Package className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-muted-foreground">Pacchetto</p>
                       <p className="text-base text-foreground">
@@ -729,8 +729,8 @@ export function EventEditorModal({
 
                 {/* Note interne (se presenti) */}
                 {formData.notes && (
-                  <div className="flex items-start gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-3">
+                    <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-muted-foreground">Note interne</p>
                       <div className="rounded-md bg-muted p-3 mt-1">
@@ -1040,7 +1040,7 @@ export function EventEditorModal({
           </div>
 
           {/* Footer */}
-          <DialogFooter className="border-t px-8 py-4 bg-background sticky bottom-0 z-10 flex-shrink-0 min-h-[64px] flex items-center justify-between">
+          <DialogFooter className="border-t px-6 py-3 bg-background sticky bottom-0 z-10 flex-shrink-0 min-h-[56px] flex items-center justify-between">
             {viewMode === 'view' && (
               <div className="flex items-center justify-between w-full">
                 <Button
