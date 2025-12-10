@@ -639,28 +639,7 @@ export function EventEditorModal({
                 </div>
               )}
             </div>
-            {viewMode === 'view' && (
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setViewMode('edit')}
-                  className="h-9 w-9"
-                  aria-label="Modifica appuntamento"
-                >
-                  <Pencil className="h-[18px] w-[18px]" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="h-9 w-9 text-destructive hover:text-destructive"
-                  aria-label="Elimina appuntamento"
-                >
-                  <Trash2 className="h-[18px] w-[18px]" />
-                </Button>
-              </div>
-            )}
+            {/* Azioni spostate nel footer per evitare sovrapposizione con X */}
           </DialogHeader>
 
           {/* Content */}
@@ -674,7 +653,7 @@ export function EventEditorModal({
                 <div className="flex items-start gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-muted-foreground">Data e ora</p>
+                    <p className="text-sm font-medium text-muted-foreground">Data e ora</p>
                     <p className="text-base text-foreground">
                       {format(formData.date, "EEEE d MMMM", { locale: it })} • {formData.startTime} – {formData.endTime}
                       <span className="text-muted-foreground ml-1.5">({duration})</span>
@@ -686,7 +665,7 @@ export function EventEditorModal({
                 <div className="flex items-start gap-2">
                   <User className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-muted-foreground">Cliente</p>
+                    <p className="text-sm font-medium text-muted-foreground">Cliente</p>
                     <button
                       onClick={() => {
                         onOpenChange(false);
@@ -703,7 +682,7 @@ export function EventEditorModal({
                 <div className="flex items-start gap-2">
                   <UserCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-muted-foreground">Creato da</p>
+                    <p className="text-sm font-medium text-muted-foreground">Creato da</p>
                     <p className="text-base text-foreground">{getCreatedByText()}</p>
                   </div>
                 </div>
@@ -713,7 +692,7 @@ export function EventEditorModal({
                   <div className="flex items-start gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-muted-foreground">Luogo</p>
+                      <p className="text-sm font-medium text-muted-foreground">Luogo</p>
                       <p className="text-base text-foreground">{formData.location}</p>
                     </div>
                   </div>
@@ -724,7 +703,7 @@ export function EventEditorModal({
                   <div className="flex items-start gap-2">
                     <Bell className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-muted-foreground">Promemoria</p>
+                      <p className="text-sm font-medium text-muted-foreground">Promemoria</p>
                       <p className="text-base text-foreground">
                         {formData.reminderOffset === 15 && "15 minuti prima"}
                         {formData.reminderOffset === 60 && "1 ora prima"}
@@ -740,7 +719,7 @@ export function EventEditorModal({
                   <div className="flex items-start gap-2">
                     <Package className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-muted-foreground">Pacchetto</p>
+                      <p className="text-sm font-medium text-muted-foreground">Pacchetto</p>
                       <p className="text-base text-foreground">
                         {calculatePackageKPI(activePackage).available}/{activePackage.total_sessions} sessioni rimanenti
                       </p>
@@ -753,7 +732,7 @@ export function EventEditorModal({
                   <div className="flex items-start gap-2">
                     <FileText className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-muted-foreground">Note interne</p>
+                      <p className="text-sm font-medium text-muted-foreground">Note interne</p>
                       <div className="rounded-md bg-muted p-3 mt-1">
                         <p className="text-sm text-foreground whitespace-pre-wrap">{formData.notes}</p>
                       </div>
@@ -1066,10 +1045,11 @@ export function EventEditorModal({
               <div className="flex items-center justify-between w-full">
                 <Button
                   variant="ghost"
-                  onClick={() => onOpenChange(false)}
-                  className="h-10"
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="h-10 text-destructive hover:text-destructive"
                 >
-                  Chiudi
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Elimina
                 </Button>
                 <div className="flex items-center gap-2">
                   {canStartSession && event && new Date(event.end_at) >= new Date() && (
