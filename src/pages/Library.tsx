@@ -16,7 +16,7 @@ export default function Library() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="templates" className="gap-2">
