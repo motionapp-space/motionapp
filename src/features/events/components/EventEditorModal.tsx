@@ -577,7 +577,7 @@ export function EventEditorModal({
     // Completato se end_at è nel passato
     if (eventEnd < now) {
       return (
-        <Badge className="bg-muted text-muted-foreground border-0 font-medium text-xs">
+        <Badge className="bg-muted/80 text-muted-foreground/80 border-0 text-xs font-normal">
           Completato
         </Badge>
       );
@@ -586,7 +586,7 @@ export function EventEditorModal({
     // Da confermare se creato dal cliente con approvazione manuale
     if (event.source === 'client' && bookingSettings?.approval_mode === 'MANUAL' && event.session_status === 'scheduled') {
       return (
-        <Badge className="bg-amber-100 text-amber-800 border-0 font-medium text-xs">
+        <Badge className="bg-amber-50 text-amber-700 border-0 text-xs font-normal">
           Da confermare
         </Badge>
       );
@@ -594,7 +594,7 @@ export function EventEditorModal({
     
     // Confermato in tutti gli altri casi
     return (
-      <Badge className="bg-emerald-100 text-emerald-800 border-0 font-medium text-xs">
+      <Badge className="bg-emerald-50 text-emerald-700 border-0 text-xs font-normal">
         Confermato
       </Badge>
     );
@@ -611,35 +611,33 @@ export function EventEditorModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[680px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
           {/* Header */}
-          <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 space-y-0">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3 min-w-0 flex-1">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <CalendarIcon className="h-5 w-5 text-primary" />
-                </div>
-                <div className="min-w-0 flex-1 pt-0.5">
-                  <DialogTitle className="text-xl font-semibold text-foreground leading-tight truncate">
-                    {viewMode === 'view' ? formData.title : (viewMode === 'edit' ? 'Modifica appuntamento' : 'Nuovo appuntamento')}
-                  </DialogTitle>
-                  <DialogDescription className="sr-only">
-                    {viewMode === 'view' 
-                      ? `Dettagli appuntamento: ${formData.title}` 
-                      : viewMode === 'edit' 
-                        ? 'Modifica i dettagli dell\'appuntamento' 
-                        : 'Crea un nuovo appuntamento con un cliente'}
-                  </DialogDescription>
-                </div>
+          <DialogHeader className="px-6 pt-6 pb-5 flex-shrink-0 space-y-0 border-b border-border/40">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <CalendarIcon className="h-5 w-5 text-primary" />
               </div>
-              {viewMode === 'view' && (
-                <div className="flex items-center gap-2 flex-shrink-0 pt-1">
-                  {getEventStatusBadge()}
-                  {event?.recurrence_rule && (
-                    <Badge variant="outline" className="text-xs font-medium">
-                      Ricorrente
-                    </Badge>
-                  )}
-                </div>
-              )}
+              <div className="flex-1 min-w-0 pt-0.5 pr-8">
+                <DialogTitle className="text-lg font-semibold text-foreground leading-tight truncate">
+                  {viewMode === 'view' ? formData.title : (viewMode === 'edit' ? 'Modifica appuntamento' : 'Nuovo appuntamento')}
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                  {viewMode === 'view' 
+                    ? `Dettagli appuntamento: ${formData.title}` 
+                    : viewMode === 'edit' 
+                      ? 'Modifica i dettagli dell\'appuntamento' 
+                      : 'Crea un nuovo appuntamento con un cliente'}
+                </DialogDescription>
+                {viewMode === 'view' && (
+                  <div className="flex items-center gap-2 mt-2">
+                    {getEventStatusBadge()}
+                    {event?.recurrence_rule && (
+                      <Badge variant="outline" className="text-xs font-normal">
+                        Ricorrente
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </DialogHeader>
 
@@ -649,14 +647,14 @@ export function EventEditorModal({
             
             {/* READ-ONLY VIEW */}
             {viewMode === 'view' && event && (
-              <div className="space-y-6">
+              <div className="space-y-7">
                 {/* Data & Orario */}
                 <div className="flex items-start gap-4">
-                  <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                  <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                     <Clock className="h-[18px] w-[18px] text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0 pt-0.5">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                    <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
                       Data e ora
                     </p>
                     <p className="text-base font-medium text-foreground">
@@ -668,11 +666,11 @@ export function EventEditorModal({
 
                 {/* Cliente */}
                 <div className="flex items-start gap-4">
-                  <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                  <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                     <User className="h-[18px] w-[18px] text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0 pt-0.5">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                    <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
                       Cliente
                     </p>
                     <button
@@ -680,7 +678,7 @@ export function EventEditorModal({
                         onOpenChange(false);
                         window.location.href = `/clients/${formData.clientId}`;
                       }}
-                      className="text-base font-medium text-primary hover:underline text-left"
+                      className="text-base font-medium text-primary hover:underline text-left focus:outline-none focus-visible:ring-0"
                     >
                       {clients.find(c => c.id === formData.clientId)?.first_name} {clients.find(c => c.id === formData.clientId)?.last_name}
                     </button>
@@ -689,11 +687,11 @@ export function EventEditorModal({
 
                 {/* Creato da */}
                 <div className="flex items-start gap-4">
-                  <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                  <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                     <UserCircle className="h-[18px] w-[18px] text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0 pt-0.5">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                    <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
                       Creato da
                     </p>
                     <p className="text-base font-medium text-foreground">{getCreatedByText()}</p>
@@ -703,11 +701,11 @@ export function EventEditorModal({
                 {/* Luogo (se presente) */}
                 {formData.location && (
                   <div className="flex items-start gap-4">
-                    <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                    <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                       <MapPin className="h-[18px] w-[18px] text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
                         Luogo
                       </p>
                       <p className="text-base font-medium text-foreground">{formData.location}</p>
@@ -718,11 +716,11 @@ export function EventEditorModal({
                 {/* Promemoria (se presente) */}
                 {formData.reminderOffset && formData.reminderOffset > 0 && (
                   <div className="flex items-start gap-4">
-                    <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                    <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                       <Bell className="h-[18px] w-[18px] text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
                         Promemoria
                       </p>
                       <p className="text-base font-medium text-foreground">
@@ -738,11 +736,11 @@ export function EventEditorModal({
                 {/* Pacchetto associato (se presente) */}
                 {activePackage && !activePackage.is_single_technical && (
                   <div className="flex items-start gap-4">
-                    <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                    <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                       <Package className="h-[18px] w-[18px] text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                      <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
                         Pacchetto
                       </p>
                       <p className="text-base font-medium text-foreground">
@@ -755,14 +753,14 @@ export function EventEditorModal({
                 {/* Note interne (se presenti) */}
                 {formData.notes && (
                   <div className="flex items-start gap-4">
-                    <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0">
+                    <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                       <FileText className="h-[18px] w-[18px] text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+                      <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-2">
                         Note interne
                       </p>
-                      <div className="rounded-lg bg-muted/50 border border-border/50 p-3">
+                      <div className="rounded-lg bg-muted/30 border border-border/30 p-3.5">
                         <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{formData.notes}</p>
                       </div>
                     </div>
@@ -1069,27 +1067,27 @@ export function EventEditorModal({
           </div>
 
           {/* Footer */}
-          <DialogFooter className="px-6 py-4 bg-muted/30 sticky bottom-0 z-10 flex-shrink-0 min-h-[56px] flex items-center justify-between">
+          <DialogFooter className="px-6 py-4 bg-muted/20 border-t border-border/40 sticky bottom-0 z-10 flex-shrink-0 flex items-center justify-between">
             {viewMode === 'view' && (
               <div className="flex items-center justify-between w-full">
                 <Button
                   variant="ghost"
                   onClick={() => setShowDeleteDialog(true)}
-                  className="h-10 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="h-9 text-destructive/80 hover:text-destructive hover:bg-destructive/5 font-normal"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Elimina
                 </Button>
                 <div className="flex items-center gap-3">
                   {canStartSession && event && new Date(event.end_at) >= new Date() && (
-                    <Button variant="outline" onClick={handleStartSession} className="h-10">
+                    <Button variant="outline" onClick={handleStartSession} className="h-9">
                       <Play className="h-4 w-4 mr-2" />
                       Avvia sessione
                     </Button>
                   )}
                   <Button
                     onClick={() => setViewMode('edit')}
-                    className="h-10"
+                    className="h-9"
                   >
                     <Pencil className="h-4 w-4 mr-2" />
                     Modifica
