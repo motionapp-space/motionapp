@@ -611,7 +611,7 @@ export function EventEditorModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[680px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
           {/* Header */}
-          <DialogHeader className="px-6 pt-6 pb-5 flex-shrink-0 space-y-0 border-b border-border/40">
+          <DialogHeader className="px-5 pt-5 pb-4 flex-shrink-0 space-y-0 border-b border-border/40">
             <div className="flex items-start gap-3">
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <CalendarIcon className="h-5 w-5 text-primary" />
@@ -643,11 +643,11 @@ export function EventEditorModal({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            <div className="px-6 py-6">
+            <div className="px-5 py-5">
             
             {/* READ-ONLY VIEW */}
             {viewMode === 'view' && event && (
-              <div className="space-y-7">
+              <div className="space-y-6">
                 {/* Data & Orario */}
                 <div className="flex items-start gap-4">
                   <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
@@ -1067,7 +1067,7 @@ export function EventEditorModal({
           </div>
 
           {/* Footer */}
-          <DialogFooter className="px-6 py-4 bg-muted/20 border-t border-border/40 sticky bottom-0 z-10 flex-shrink-0 flex items-center justify-between">
+          <DialogFooter className="px-5 py-3 bg-muted/20 border-t border-border/40 sticky bottom-0 z-10 flex-shrink-0 flex items-center justify-between">
             {viewMode === 'view' && (
               <div className="flex items-center justify-between w-full">
                 <Button
