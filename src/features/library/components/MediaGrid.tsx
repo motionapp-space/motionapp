@@ -130,7 +130,7 @@ export default function MediaGrid({ media, search, fileType, onClearFilters, onU
         <div className="mb-6">
           <FolderOpen className="h-20 w-20 mx-auto text-primary/20" />
         </div>
-        <h3 className="text-2xl font-semibold mb-3">
+        <h3 className="text-xl font-semibold mb-2">
           Nessun file caricato
         </h3>
         <p className="text-muted-foreground mb-8 max-w-md mx-auto">
