@@ -268,7 +268,7 @@ const Clients = () => {
   if (onboarding.state === 'ZERO_CLIENTS') {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <div className="container mx-auto px-6 max-w-7xl">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
           {/* Filtro Mostra Archiviati - solo se esistono clienti archiviati */}
           {showArchivedToggle && (
             <div className="flex items-center gap-4 py-4 border-b border-border">
@@ -455,7 +455,7 @@ const Clients = () => {
   if (onboarding.state === 'FIRST_CLIENT_NO_CONTENT') {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <div className="container mx-auto px-6 max-w-7xl pt-6">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6">
           {/* Search and CTA */}
           <div className="flex items-center justify-between gap-4 mb-6">
             <div className="relative w-full max-w-sm">
@@ -832,7 +832,7 @@ const Clients = () => {
           )}
         </div>
 
-        <div className="container mx-auto px-6 py-6 max-w-7xl">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6">
           {/* Tabella base senza filtri */}
           {isLoading ? (
             <div className="flex justify-center py-12">
@@ -1004,7 +1004,7 @@ const Clients = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background w-full">
       {/* Toolbar section */}
-      <div className="container mx-auto px-6 max-w-7xl pt-6">
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6">
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1036,7 +1036,7 @@ const Clients = () => {
 
       {/* Filters Section */}
       <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-6 max-w-7xl py-4 space-y-3">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-4 space-y-3">
 
           {/* Quick Filters Pills - solo se > 1 cliente non archiviato */}
           {showFilters && (
@@ -1283,7 +1283,7 @@ const Clients = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        <div className="container mx-auto px-6 max-w-7xl py-6">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
