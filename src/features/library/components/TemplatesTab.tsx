@@ -163,7 +163,7 @@ export default function TemplatesTab() {
             <div className="mb-6">
               <FileText className="h-20 w-20 mx-auto text-primary/20" />
             </div>
-            <h3 className="text-2xl font-semibold mb-3">
+            <h3 className="text-xl font-semibold mb-2">
               Non hai ancora creato template
             </h3>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
