@@ -50,7 +50,7 @@ const BookingManagement = () => {
       <div className="flex-1 overflow-auto mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6">
         <div className="space-y-6">
           {/* Alert when bookings disabled */}
-          {!isLoadingSettings && bookingSettings?.enabled === false && (
+          {!isLoadingSettings && bookingSettings?.enabled !== true && (
             <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
