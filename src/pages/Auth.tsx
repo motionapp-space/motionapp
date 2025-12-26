@@ -62,12 +62,21 @@ const Auth = () => {
       });
 
       if (error) throw error;
+      
+      // Salva l'email per pre-popolarla nella tab login
+      const registeredEmail = email;
+      
       toast.success("Account creato con successo! Accedi per continuare.");
-      setEmail("");
+      
+      // Reset campi (tranne email)
       setPassword("");
       setName("");
       setConfirmPassword("");
       setAcceptedTerms(false);
+      
+      // Cambia tab e mantieni l'email per facilitare il login
+      setActiveTab("signin");
+      setEmail(registeredEmail);
     } catch (error: any) {
       toast.error(error.message || "Errore durante la registrazione");
     } finally {
