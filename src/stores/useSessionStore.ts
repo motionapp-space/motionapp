@@ -1,18 +1,14 @@
 import { create } from "zustand";
 import type { TrainingSessionWithClient } from "@/features/sessions/types";
-import type { EventWithClient } from "@/features/events/types";
 import { getActiveSession } from "@/features/sessions/api/sessions.api";
-import { getUpcomingCoachEvent } from "@/features/events/api/events.api";
 
 interface SessionStore {
   activeSession: TrainingSessionWithClient | null;
-  upcomingEvent: EventWithClient | null;
   isLoading: boolean;
   isPaused: boolean;
   pausedAt: number | null;
   accumulatedPauseTime: number;
   fetchActiveSession: () => Promise<void>;
-  fetchUpcomingEvent: () => Promise<void>;
   clearActiveSession: () => void;
   setActiveSession: (session: TrainingSessionWithClient | null) => void;
   pauseSession: () => void;
@@ -26,7 +22,6 @@ let pollingInterval: NodeJS.Timeout | null = null;
 
 export const useSessionStore = create<SessionStore>((set, get) => ({
   activeSession: null,
-  upcomingEvent: null,
   isLoading: false,
   isPaused: false,
   pausedAt: null,
@@ -42,16 +37,6 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       set({ activeSession: null });
     } finally {
       set({ isLoading: false });
-    }
-  },
-
-  fetchUpcomingEvent: async () => {
-    try {
-      const event = await getUpcomingCoachEvent();
-      set({ upcomingEvent: event });
-    } catch (error) {
-      console.error("Error fetching upcoming event:", error);
-      set({ upcomingEvent: null });
     }
   },
 
@@ -107,7 +92,6 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     // Poll every 30 seconds
     pollingInterval = setInterval(() => {
       get().fetchActiveSession();
-      get().fetchUpcomingEvent();
     }, 30000);
   },
 

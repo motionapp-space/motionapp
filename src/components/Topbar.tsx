@@ -2,7 +2,6 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
 import { UserMenu } from "./UserMenu";
-import { GlobalSessionCTA } from "./GlobalSessionCTA";
 import { useTopbarContext } from "@/contexts/TopbarContext";
 
 export function Topbar() {
@@ -30,7 +29,6 @@ export function Topbar() {
         
         {/* Right: Global elements only */}
         <div className="flex items-center gap-3 shrink-0">
-          <GlobalSessionCTA />
           <NotificationBell />
           <UserMenu />
         </div>

@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, X, FileText, Play, Pencil, Activity } from "lucide-react";
+import { Plus, X, FileText, Pencil, Activity } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
@@ -24,9 +24,6 @@ import { ClientPlansTab } from "@/features/client-plans/components/ClientPlansTa
 import { ClientAppointmentsTab } from "@/features/clients/components/ClientAppointmentsTab";
 import { SessionHistoryTab } from "@/features/sessions/components/SessionHistoryTab";
 import { PackageTab } from "@/features/packages/components/PackageTab";
-import { DayPicker } from "@/features/sessions/components/DayPicker";
-import { useCreateEvent } from "@/features/events/hooks/useCreateEvent";
-import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 import { ClientActivityDialog } from "@/features/clients/components/ClientActivityDialog";
 import { useClientOnboardingState } from "@/features/clients/hooks/useClientOnboardingState";
 import { NextStepsPanel } from "@/features/clients/components/NextStepsPanel";
@@ -48,7 +45,6 @@ const ClientDetail = () => {
   } = useClientStore();
 
   const [editMode, setEditMode] = useState(false);
-  const [quickSessionDayPickerOpen, setQuickSessionDayPickerOpen] = useState(false);
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
   const [saveAsTemplateDialogOpen, setSaveAsTemplateDialogOpen] = useState(false);
   const [selectedPlanForTemplate, setSelectedPlanForTemplate] = useState<string | null>(null);
@@ -69,8 +65,6 @@ const ClientDetail = () => {
   const toggleInUseMutation = useToggleInUse();
   const duplicatePlanMutation = useDuplicatePlan();
   const saveAsTemplateMutation = useSaveAsTemplate();
-  const createEvent = useCreateEvent();
-  const createSession = useCreateSession();
   const onboardingState = useClientOnboardingState(id || "");
 
   // Set topbar
@@ -193,50 +187,6 @@ const ClientDetail = () => {
       toast.success("Stato aggiornato");
     } catch (error) {
       toast.error("Errore nell'aggiornamento");
-    }
-  };
-
-  const handleQuickSessionStart = () => {
-    setQuickSessionDayPickerOpen(true);
-  };
-
-  const handleQuickSessionConfirm = async (planId: string, dayId: string) => {
-    if (!id) return;
-    
-    try {
-      // 1. Create event "NOW" - this will scale packages
-      const now = new Date();
-      const endTime = new Date(now.getTime() + 60 * 60 * 1000); // +1h default
-      
-      const event = await createEvent.mutateAsync({
-        client_id: id,
-        title: "Sessione live",
-        start_at: now.toISOString(),
-        end_at: endTime.toISOString(),
-        linked_plan_id: planId,
-        linked_day_id: dayId,
-        session_status: "scheduled",
-        source: "manual",
-      });
-      
-      // 2. Create session linked to event
-      const session = await createSession.mutateAsync({
-        client_id: id,
-        plan_id: planId,
-        day_id: dayId,
-        event_id: event.id,
-        source: "with_coach",
-      });
-      
-      // 3. Navigate to LiveSession
-      navigate(`/session/live?sessionId=${session.id}`);
-      
-    } catch (error) {
-      toast.error("Errore", {
-        description: "Impossibile avviare la sessione. Riprova.",
-      });
-    } finally {
-      setQuickSessionDayPickerOpen(false);
     }
   };
 
@@ -490,16 +440,7 @@ const ClientDetail = () => {
 
           {/* Sessions Tab */}
           <TabsContent value="sessions">
-            <SessionHistoryTab 
-              clientId={id!} 
-              onStartNewSession={handleQuickSessionStart}
-            />
-            <DayPicker
-              open={quickSessionDayPickerOpen}
-              onOpenChange={setQuickSessionDayPickerOpen}
-              onConfirm={handleQuickSessionConfirm}
-              clientId={id!}
-            />
+            <SessionHistoryTab clientId={id!} />
           </TabsContent>
 
           {/* Packages Tab */}

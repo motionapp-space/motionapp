@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Clock, Calendar, Activity, UserCheck, UserX, Play } from "lucide-react";
+import { Clock, Calendar, Activity, UserCheck, UserX, CalendarPlus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { format, parseISO, differenceInSeconds } from "date-fns";
 import { it } from "date-fns/locale";
@@ -15,10 +14,9 @@ import { cn } from "@/lib/utils";
 
 interface SessionHistoryTabProps {
   clientId: string;
-  onStartNewSession?: () => void;
 }
 
-export function SessionHistoryTab({ clientId, onStartNewSession }: SessionHistoryTabProps) {
+export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
 
   const { data: sessions = [], isLoading } = useQuery({
@@ -79,29 +77,17 @@ export function SessionHistoryTab({ clientId, onStartNewSession }: SessionHistor
 
         {/* Tab: Sessioni Con PT */}
         <TabsContent value="with_coach" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Sessioni svolte insieme al personal trainer
-            </p>
-            {onStartNewSession && withCoachSessions.length > 0 && (
-              <Button onClick={onStartNewSession} size="sm" className="gap-2">
-                <Play className="h-4 w-4" />
-                Nuova sessione
-              </Button>
-            )}
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Sessioni svolte insieme al personal trainer
+          </p>
 
           {withCoachSessions.length === 0 ? (
             <Card>
               <CardContent className="p-0">
                 <EmptyState
-                  icon={UserCheck}
-                  title="Nessuna sessione con PT"
-                  description="Non ci sono ancora sessioni registrate con il personal trainer."
-                  action={onStartNewSession ? {
-                    label: "Inizia prima sessione",
-                    onClick: onStartNewSession
-                  } : undefined}
+                  icon={CalendarPlus}
+                  title="Nessuna sessione registrata"
+                  description="Per registrare una nuova sessione, crea prima un appuntamento nel calendario e avviala dalla scheda dell'evento."
                 />
               </CardContent>
             </Card>
