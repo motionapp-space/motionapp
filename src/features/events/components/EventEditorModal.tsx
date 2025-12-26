@@ -17,6 +17,8 @@ import { useCreateSingleLesson } from "@/features/packages/hooks/useCreateSingle
 import { SingleLessonDialog } from "@/features/packages/components/SingleLessonDialog";
 import { createLedgerEntry } from "@/features/packages/api/ledger.api";
 import { supabase } from "@/integrations/supabase/client";
+import { useSessionStore } from "@/stores/useSessionStore";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -133,9 +135,14 @@ export function EventEditorModal({
   // Recurrence package management state
   const [recurrencePackageMode, setRecurrencePackageMode] = useState<"none" | "assign">("none");
   const [recurrencePackageId, setRecurrencePackageId] = useState<string | null>(null);
+  
+  // Session conflict state
+  const [showSessionConflictDialog, setShowSessionConflictDialog] = useState(false);
 
   // Hooks
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { activeSession } = useSessionStore();
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
   const deleteEvent = useDeleteEvent();
@@ -555,6 +562,12 @@ export function EventEditorModal({
   };
 
   const handleStartSession = () => {
+    // Check if there's already an active session
+    if (activeSession) {
+      setShowSessionConflictDialog(true);
+      return;
+    }
+    
     if (event && onStartSession) {
       onStartSession(
         event.client_id,
@@ -563,6 +576,15 @@ export function EventEditorModal({
         event.linked_day_id || undefined
       );
     }
+  };
+
+  const handleSessionConflictResolve = (action: "return" | "proceed") => {
+    setShowSessionConflictDialog(false);
+    if (action === "return" && activeSession) {
+      onOpenChange(false);
+      navigate(`/session/live?sessionId=${activeSession.id}`);
+    }
+    // "proceed" does nothing - user must first complete the active session
   };
 
   const canStartSession = isEditMode && !!event && !!onStartSession;
@@ -1200,6 +1222,26 @@ export function EventEditorModal({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Session Conflict Dialog */}
+      <AlertDialog open={showSessionConflictDialog} onOpenChange={setShowSessionConflictDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sessione già in corso</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hai già una sessione in corso con {activeSession?.client_name}.
+              <br />
+              Per avviare una nuova sessione, devi prima completare o annullare quella attuale.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Chiudi</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleSessionConflictResolve("return")}>
+              Vai alla sessione in corso
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

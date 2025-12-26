@@ -41,7 +41,7 @@ const queryClient = new QueryClient();
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const { fetchActiveSession, fetchUpcomingEvent, startPolling, stopPolling } = useSessionStore();
+  const { fetchActiveSession, startPolling, stopPolling } = useSessionStore();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -62,7 +62,6 @@ const App = () => {
   useEffect(() => {
     if (user) {
       fetchActiveSession();
-      fetchUpcomingEvent();
       startPolling();
     } else {
       stopPolling();
@@ -71,7 +70,7 @@ const App = () => {
     return () => {
       stopPolling();
     };
-  }, [user, fetchActiveSession, fetchUpcomingEvent, startPolling, stopPolling]);
+  }, [user, fetchActiveSession, startPolling, stopPolling]);
 
   if (loading) {
     return (
