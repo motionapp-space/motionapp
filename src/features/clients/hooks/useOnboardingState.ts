@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientsQuery } from "./useClientsQuery";
 
@@ -14,6 +15,20 @@ export interface OnboardingState {
 }
 
 export function useOnboardingState(): OnboardingState {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Query per ottenere il count reale dei clienti NON archiviati
   const nonArchivedCountQuery = useQuery({
     queryKey: ['onboarding-non-archived-count'],
@@ -31,6 +46,7 @@ export function useOnboardingState(): OnboardingState {
       return count || 0;
     },
     staleTime: 30000, // 30s cache
+    enabled: isAuthenticated === true,
   });
 
   // Query per verifica esistenza di almeno un cliente (per stato ZERO_CLIENTS)
@@ -57,6 +73,7 @@ export function useOnboardingState(): OnboardingState {
       return (data?.length || 0) > 0;
     },
     staleTime: 30000, // 30s cache
+    enabled: isAuthenticated === true,
   });
 
   // Check esistenza appuntamento futuro (ottimizzato: limit 1, solo id)
@@ -76,6 +93,7 @@ export function useOnboardingState(): OnboardingState {
       return (data?.length || 0) > 0;
     },
     staleTime: 30000, // 30s cache
+    enabled: isAuthenticated === true,
   });
 
   // Check esistenza clienti archiviati (ottimizzato: limit 1, solo id)
@@ -96,6 +114,7 @@ export function useOnboardingState(): OnboardingState {
       return (data?.length || 0) > 0;
     },
     staleTime: 30000, // 30s cache
+    enabled: isAuthenticated === true,
   });
 
   // Calcola isLoading dai veri stati delle query
