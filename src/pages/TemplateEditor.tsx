@@ -363,22 +363,6 @@ const TemplateEditor = () => {
     setDays(days.map(d => d.id === dayId ? { ...d, title } : d));
   };
 
-  const handleUpdateDayObjective = (dayId: string, objective: string) => {
-    setDays(days.map(d => d.id === dayId ? { ...d, objective } : d));
-  };
-
-  const handleUpdatePhaseObjective = (dayId: string, phaseType: PhaseType, objective: string) => {
-    setDays(days.map(d => 
-      d.id === dayId 
-        ? {
-            ...d,
-            phases: d.phases.map(p => 
-              p.type === phaseType ? { ...p, objective } : p
-            )
-          }
-        : d
-    ));
-  };
 
   const handleDuplicateDay = (dayId: string) => {
     const dayToDup = days.find(d => d.id === dayId);
@@ -870,8 +854,6 @@ const TemplateEditor = () => {
                           key={day.id}
                           day={day}
                           onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
-                          onUpdateObjective={(objective) => handleUpdateDayObjective(day.id, objective)}
-                          onUpdatePhaseObjective={(phaseType, objective) => handleUpdatePhaseObjective(day.id, phaseType, objective)}
                           onDuplicate={() => handleDuplicateDay(day.id)}
                           onDelete={() => handleDeleteDay(day.id)}
                           onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
