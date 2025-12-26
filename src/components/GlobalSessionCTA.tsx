@@ -1,12 +1,11 @@
-import { Timer, Play } from "lucide-react";
+import { Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSessionStore } from "@/stores/useSessionStore";
-import { useOnboardingState } from "@/features/clients/hooks/useOnboardingState";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { StartSessionDialog } from "./StartSessionDialog";
-import { formatDistanceToNow } from "date-fns";
-import { it } from "date-fns/locale";
 import {
   Tooltip,
   TooltipContent,
@@ -22,9 +21,27 @@ export function GlobalSessionCTA() {
     isPaused, 
     getElapsedSeconds 
   } = useSessionStore();
-  const { hasAnyPlan } = useOnboardingState();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [elapsedTime, setElapsedTime] = useState("");
+
+  // Lightweight check for any plans (no need for full onboarding state)
+  const { data: hasAnyPlan = false } = useQuery({
+    queryKey: ['global-cta-plans-check'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { data } = await supabase
+        .from('client_plans')
+        .select('id')
+        .eq('coach_id', user.id)
+        .eq('status', 'IN_CORSO')
+        .limit(1);
+
+      return (data?.length || 0) > 0;
+    },
+    staleTime: 60000, // 1 minute cache
+  });
 
   // Update elapsed time every second for active session
   useEffect(() => {
