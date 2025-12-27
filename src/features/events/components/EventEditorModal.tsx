@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { format, addMinutes, differenceInMinutes, isWithinInterval, startOfDay, setHours, setMinutes } from "date-fns";
 import { it } from "date-fns/locale";
 import { Calendar as CalendarIcon, AlertTriangle, Info, AlertCircle, Trash2, Play, Pencil, MapPin, Clock, User, UserCircle, Bell, FileText, Package } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { getCoachClientId, getClientIdFromCoachClient } from "@/lib/coach-client";
 import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useUpdateEvent } from "../hooks/useUpdateEvent";
 import { useDeleteEvent } from "../hooks/useDeleteEvent";
@@ -102,10 +103,24 @@ export function EventEditorModal({
   const defaultStartTime = initialStartTime || (event?.start_at ? new Date(event.start_at) : new Date());
   const defaultEndTime = initialEndTime || (event?.end_at ? new Date(event.end_at) : addMinutes(new Date(), 45));
 
+  // State to hold resolved clientId from coach_client_id
+  const [resolvedClientId, setResolvedClientId] = useState<string>('');
+  
+  // Resolve client_id from event's coach_client_id on mount
+  useEffect(() => {
+    if (event?.coach_client_id && !lockedClientId) {
+      getClientIdFromCoachClient(event.coach_client_id)
+        .then(clientId => setResolvedClientId(clientId))
+        .catch(() => setResolvedClientId(''));
+    } else if (lockedClientId) {
+      setResolvedClientId(lockedClientId);
+    }
+  }, [event?.coach_client_id, lockedClientId]);
+
   // Form state
   const [formData, setFormData] = useState({
     title: event?.title || 'Allenamento',
-    clientId: lockedClientId || event?.client_id || '',
+    clientId: lockedClientId || '',
     location: event?.location || '',
     date: defaultDate,
     startTime: format(defaultStartTime, 'HH:mm'),
@@ -113,6 +128,13 @@ export function EventEditorModal({
     reminderOffset: event?.reminder_offset_minutes ?? 15,
     notes: event?.notes || ''
   });
+
+  // Update formData.clientId when resolvedClientId changes
+  useEffect(() => {
+    if (resolvedClientId && !formData.clientId) {
+      setFormData(prev => ({ ...prev, clientId: resolvedClientId }));
+    }
+  }, [resolvedClientId]);
 
   const [recurrence, setRecurrence] = useState<RecurrenceConfig>({
     enabled: false,
@@ -131,6 +153,7 @@ export function EventEditorModal({
   // Single lesson dialog state
   const [showSingleLessonDialog, setShowSingleLessonDialog] = useState(false);
   const [pendingEvent, setPendingEvent] = useState<Event | null>(null);
+  const [pendingClientId, setPendingClientId] = useState<string>(''); // Track clientId for pending event
 
   // Recurrence package management state
   const [recurrencePackageMode, setRecurrencePackageMode] = useState<"none" | "assign">("none");
@@ -206,16 +229,32 @@ export function EventEditorModal({
           occurrenceCount: 10
         });
       } else if (event) {
-        setFormData({
-          title: event.title || 'Allenamento',
-          clientId: event.client_id,
-          location: event.location || '',
-          date: new Date(event.start_at),
-          startTime: format(new Date(event.start_at), 'HH:mm'),
-          endTime: format(new Date(event.end_at), 'HH:mm'),
-          reminderOffset: event.reminder_offset_minutes ?? 15,
-          notes: event.notes || ''
-        });
+        // Resolve client_id from coach_client_id
+        getClientIdFromCoachClient(event.coach_client_id)
+          .then(clientId => {
+            setFormData({
+              title: event.title || 'Allenamento',
+              clientId: clientId,
+              location: event.location || '',
+              date: new Date(event.start_at),
+              startTime: format(new Date(event.start_at), 'HH:mm'),
+              endTime: format(new Date(event.end_at), 'HH:mm'),
+              reminderOffset: event.reminder_offset_minutes ?? 15,
+              notes: event.notes || ''
+            });
+          })
+          .catch(() => {
+            setFormData({
+              title: event.title || 'Allenamento',
+              clientId: '',
+              location: event.location || '',
+              date: new Date(event.start_at),
+              startTime: format(new Date(event.start_at), 'HH:mm'),
+              endTime: format(new Date(event.end_at), 'HH:mm'),
+              reminderOffset: event.reminder_offset_minutes ?? 15,
+              notes: event.notes || ''
+            });
+          });
       }
     }
   }, [open, mode, event, initialDate, initialStartTime, initialEndTime, lockedClientId, isNewMode, bookingSettings]);
@@ -348,22 +387,24 @@ export function EventEditorModal({
 
   // Handlers for SingleLessonDialog
   const handleConfirmSingleLesson = async () => {
-    if (!pendingEvent) return;
+    if (!pendingEvent || !pendingClientId) return;
     
     await createSingleLesson.mutateAsync({
       eventId: pendingEvent.id,
-      clientId: pendingEvent.client_id,
+      clientId: pendingClientId,
       eventStartAt: pendingEvent.start_at
     });
     
     setShowSingleLessonDialog(false);
     setPendingEvent(null);
+    setPendingClientId('');
     onOpenChange(false);
   };
 
   const handleConfirmWithoutPackage = () => {
     setShowSingleLessonDialog(false);
     setPendingEvent(null);
+    setPendingClientId('');
     onOpenChange(false);
     toast.info("Appuntamento creato senza pacchetto");
   };
@@ -373,9 +414,11 @@ export function EventEditorModal({
     if (!isValid) return;
 
     try {
+      // Get coach_client_id from client_id
+      const coachClientId = await getCoachClientId(formData.clientId);
+      
       const basePayload = {
-        coach_id: coachId,
-        client_id: formData.clientId,
+        coach_client_id: coachClientId,
         title: formData.title,
         location: formData.location || null,
         reminder_offset_minutes: formData.reminderOffset || null,
@@ -488,17 +531,18 @@ export function EventEditorModal({
         });
 
         // If there's a client, try to confirm with package hold
-        if (event.client_id) {
+        if (formData.clientId) {
           try {
             const result = await handleEventConfirm(
               event.id,
-              event.client_id,
+              formData.clientId,
               event.start_at
             );
 
             if (!result) {
               // No active package - show dialog for explicit coach decision
               setPendingEvent(event);
+              setPendingClientId(formData.clientId);
               setShowSingleLessonDialog(true);
               return; // Don't close main modal yet
             }
@@ -561,16 +605,16 @@ export function EventEditorModal({
     }
   };
 
-  const handleStartSession = () => {
+  const handleStartSession = async () => {
     // Check if there's already an active session
     if (activeSession) {
       setShowSessionConflictDialog(true);
       return;
     }
     
-    if (event && onStartSession) {
+    if (event && onStartSession && formData.clientId) {
       onStartSession(
-        event.client_id,
+        formData.clientId,
         event.id,
         event.linked_plan_id || undefined,
         event.linked_day_id || undefined
@@ -1251,7 +1295,7 @@ export function EventEditorModal({
       <SingleLessonDialog
         open={showSingleLessonDialog}
         onOpenChange={setShowSingleLessonDialog}
-        clientName={clients?.find(c => c.id === pendingEvent?.client_id)?.first_name + ' ' + clients?.find(c => c.id === pendingEvent?.client_id)?.last_name || ""}
+        clientName={clients?.find(c => c.id === pendingClientId)?.first_name + ' ' + clients?.find(c => c.id === pendingClientId)?.last_name || ""}
         onConfirmSingleLesson={handleConfirmSingleLesson}
         onConfirmWithoutPackage={handleConfirmWithoutPackage}
         isLoading={createSingleLesson.isPending}
