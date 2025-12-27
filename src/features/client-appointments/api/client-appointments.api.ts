@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Event } from "@/features/events/types";
+import { getCoachClientId } from "@/lib/coach-client";
 
 export interface ClientAppointment {
   id: string;
@@ -22,11 +23,14 @@ export interface ClientAppointmentsResult {
  */
 async function getFutureAppointments(clientId: string): Promise<ClientAppointment[]> {
   const now = new Date().toISOString();
+  
+  // Get coach_client_id
+  const coachClientId = await getCoachClientId(clientId);
 
   const { data, error } = await supabase
     .from("events")
     .select("id,title,start_at,end_at,session_status,source,is_all_day,location")
-    .eq("client_id", clientId)
+    .eq("coach_client_id", coachClientId)
     .gte("start_at", now)
     .order("start_at", { ascending: true });
 
@@ -44,10 +48,13 @@ async function getFutureAppointments(clientId: string): Promise<ClientAppointmen
 async function getPastAppointments(clientId: string): Promise<ClientAppointment[]> {
   const now = new Date().toISOString();
 
+  // Get coach_client_id
+  const coachClientId = await getCoachClientId(clientId);
+
   const { data, error } = await supabase
     .from("events")
     .select("id,title,start_at,end_at,session_status,source,is_all_day,location")
-    .eq("client_id", clientId)
+    .eq("coach_client_id", coachClientId)
     .lt("start_at", now)
     .order("start_at", { ascending: false })
     .limit(20);

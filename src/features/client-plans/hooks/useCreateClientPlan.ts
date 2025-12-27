@@ -25,9 +25,9 @@ export function useCreateClientPlan() {
         objective,
         data: { days },
       }),
-    onSuccess: (plan) => {
-      queryClient.invalidateQueries({ queryKey: ["clientPlans", plan.client_id] });
-      queryClient.invalidateQueries({ queryKey: ['client-onboarding-plans', plan.client_id] });
+    onSuccess: (plan, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["clientPlans", variables.clientId] });
+      queryClient.invalidateQueries({ queryKey: ['client-onboarding-plans', variables.clientId] });
       queryClient.invalidateQueries({ queryKey: ['onboarding-plans-check'] });
     },
     onError: (error: any) => {

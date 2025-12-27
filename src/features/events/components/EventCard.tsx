@@ -17,7 +17,7 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, onClick, compact = false, positioning }: EventCardProps) {
-  const { bg, text, ring } = colorClassesForClient(event.client_id);
+  const { bg, text, ring } = colorClassesForClient(event.coach_client_id);
 
   const baseClasses = cn(
     "rounded-md p-2 cursor-pointer transition-all shadow-sm",

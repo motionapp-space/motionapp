@@ -4,6 +4,7 @@ import { findPackageForEvent, handleEventCancel } from "@/features/packages/api/
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { logClientActivity } from "@/features/clients/api/activities.api";
+import { getCoachClientDetails } from "@/lib/coach-client";
 
 interface CancelEventInput {
   eventId: string;
@@ -18,13 +19,16 @@ export function useCancelEvent() {
       // Get event details before deletion
       const event = await getEventById(eventId);
       
+      // Get client_id from coach_client relationship
+      const { client_id: clientId } = await getCoachClientDetails(event.coach_client_id);
+      
       // Try to find associated package
       const packageId = await findPackageForEvent(eventId);
       
       if (!packageId) {
         // Historic event without package - just delete
         await deleteEvent(eventId);
-        return { event, penaltyApplied: false, hasPackage: false };
+        return { event, clientId, penaltyApplied: false, hasPackage: false };
       }
 
       // Handle cancellation with package credit management
@@ -52,13 +56,13 @@ export function useCancelEvent() {
       // Delete the event
       await deleteEvent(eventId);
       
-      return { event, penaltyApplied, hasPackage: true };
+      return { event, clientId, penaltyApplied, hasPackage: true };
     },
-    onSuccess: ({ event, penaltyApplied, hasPackage }) => {
+    onSuccess: ({ event, clientId, penaltyApplied, hasPackage }) => {
       // Log activity
-      if (event.client_id) {
+      if (clientId) {
         logClientActivity(
-          event.client_id,
+          clientId,
           "EVENT_DELETED",
           `Appuntamento cancellato: ${event.title || "Sessione"}`
         );

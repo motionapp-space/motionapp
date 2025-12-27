@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getClientCoachClientId } from "@/lib/coach-client";
 import type { SessionStatus, SessionSource, ExerciseActual } from "@/features/sessions/types";
 
 export interface ClientSession {
@@ -11,11 +12,13 @@ export interface ClientSession {
   day_id: string | null;
 }
 
-export async function getClientSessions(clientId: string): Promise<ClientSession[]> {
+export async function getClientSessions(): Promise<ClientSession[]> {
+  const { coachClientId } = await getClientCoachClientId();
+
   const { data, error } = await supabase
     .from("training_sessions")
     .select("id, status, started_at, ended_at, source, plan_id, day_id")
-    .eq("client_id", clientId)
+    .eq("coach_client_id", coachClientId)
     .eq("status", "completed")
     .order("started_at", { ascending: false })
     .limit(30);

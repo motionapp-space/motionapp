@@ -2,25 +2,33 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteEvent, getEventById } from "../api/events.api";
 import { toast } from "@/hooks/use-toast";
 import { logClientActivity } from "@/features/clients/api/activities.api";
+import { getCoachClientDetails } from "@/lib/coach-client";
 
 export function useDeleteEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // Get event before deletion to have client_id and title
+      // Get event before deletion to have coach_client_id and title
       const event = await getEventById(id);
       await deleteEvent(id);
       return event;
     },
     onSuccess: async (deletedEvent) => {
-      // Log activity
-      if (deletedEvent.client_id) {
-        await logClientActivity(
-          deletedEvent.client_id,
-          "EVENT_DELETED",
-          `Appuntamento eliminato: ${deletedEvent.title || "Sessione"}`
-        );
+      // Get client_id from coach_client relationship
+      try {
+        const { client_id: clientId } = await getCoachClientDetails(deletedEvent.coach_client_id);
+        
+        // Log activity
+        if (clientId) {
+          await logClientActivity(
+            clientId,
+            "EVENT_DELETED",
+            `Appuntamento eliminato: ${deletedEvent.title || "Sessione"}`
+          );
+        }
+      } catch (error) {
+        console.warn("Could not get client details for activity log:", error);
       }
 
       queryClient.invalidateQueries({ queryKey: ["events"] });
