@@ -12,8 +12,7 @@ describe('Package Business Logic Tests', () => {
     it('should calculate remaining sessions correctly', () => {
       const pkg: Package = {
         package_id: '1',
-        client_id: 'c1',
-        coach_id: 'coach1',
+        coach_client_id: 'cc1',
         name: 'Test Package',
         total_sessions: 10,
         consumed_sessions: 3,
@@ -45,8 +44,7 @@ describe('Package Business Logic Tests', () => {
     it('should never allow negative available sessions', () => {
       const pkg: Package = {
         package_id: '1',
-        client_id: 'c1',
-        coach_id: 'coach1',
+        coach_client_id: 'cc1',
         name: 'Test',
         total_sessions: 5,
         consumed_sessions: 3,
@@ -77,8 +75,7 @@ describe('Package Business Logic Tests', () => {
     it('should auto-complete when all sessions consumed', () => {
       const pkg: Package = {
         package_id: '1',
-        client_id: 'c1',
-        coach_id: 'coach1',
+        coach_client_id: 'cc1',
         name: 'Test',
         total_sessions: 5,
         consumed_sessions: 5,
@@ -188,8 +185,7 @@ describe('Package Business Logic Tests', () => {
 
       const pkg: Package = {
         package_id: '1',
-        client_id: 'c1',
-        coach_id: 'coach1',
+        coach_client_id: 'cc1',
         name: 'Expired',
         total_sessions: 10,
         consumed_sessions: 3,
@@ -232,8 +228,7 @@ describe('Package Business Logic Tests', () => {
     it('should calculate correct price per session', () => {
       const pkg: Package = {
         package_id: '1',
-        client_id: 'c1',
-        coach_id: 'coach1',
+        coach_client_id: 'cc1',
         name: 'Test',
         total_sessions: 10,
         consumed_sessions: 0,

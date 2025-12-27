@@ -12,6 +12,7 @@ import { Calendar, Clock, Loader2 } from "lucide-react";
 import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useAvailableSlots } from "@/features/bookings/hooks/useAvailableSlots";
 import { getAvailableSlots } from "@/features/bookings/api/available-slots.api";
+import { getCoachClientId } from "@/lib/coach-client";
 
 interface ClientAppointmentModalProps {
   open: boolean;
@@ -104,8 +105,11 @@ export function ClientAppointmentModal({
     const slotStart = new Date(selectedSlot);
     const slotEnd = addMinutes(slotStart, durationMinutes);
 
+    // Get coach_client_id
+    const coachClientId = await getCoachClientId(clientId);
+
     await createEvent.mutateAsync({
-      client_id: clientId,
+      coach_client_id: coachClientId,
       title: "Sessione di allenamento",
       start_at: slotStart.toISOString(),
       end_at: slotEnd.toISOString(),

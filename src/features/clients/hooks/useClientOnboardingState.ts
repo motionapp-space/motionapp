@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getCoachClientId } from "@/lib/coach-client";
 
 export interface ClientOnboardingState {
   needsOnboarding: boolean;
@@ -17,10 +18,12 @@ export function useClientOnboardingState(clientId: string): ClientOnboardingStat
   const plansQuery = useQuery({
     queryKey: ['client-onboarding-plans', clientId],
     queryFn: async () => {
+      const coachClientId = await getCoachClientId(clientId);
+      
       const { data, error } = await supabase
         .from('client_plans')
         .select('id')
-        .eq('client_id', clientId)
+        .eq('coach_client_id', coachClientId)
         .neq('status', 'ELIMINATO')
         .limit(1);
 
@@ -35,10 +38,12 @@ export function useClientOnboardingState(clientId: string): ClientOnboardingStat
   const eventsQuery = useQuery({
     queryKey: ['client-onboarding-events', clientId],
     queryFn: async () => {
+      const coachClientId = await getCoachClientId(clientId);
+      
       const { data, error } = await supabase
         .from('events')
         .select('id')
-        .eq('client_id', clientId)
+        .eq('coach_client_id', coachClientId)
         .limit(1);
 
       if (error) throw error;

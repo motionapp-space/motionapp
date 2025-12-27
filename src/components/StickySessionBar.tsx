@@ -66,14 +66,12 @@ export function StickySessionBar() {
     if ((e.target as HTMLElement).closest("button")) return;
     
     if (activeSession) {
-      navigate(`/session/live?sessionId=${activeSession.id}&clientId=${activeSession.client_id}`);
+      navigate(`/session/live?sessionId=${activeSession.id}`);
     }
   };
 
   const handleComplete = async () => {
     if (!activeSession) return;
-    
-    const clientId = activeSession.client_id;
     
     try {
       await updateSession.mutateAsync({
@@ -90,11 +88,6 @@ export function StickySessionBar() {
       setIsVisible(false);
       setTimeout(() => {
         clearActiveSession();
-        
-        // Se siamo sulla pagina LiveSession, naviga al dettaglio cliente
-        if (isOnLiveSessionPage && clientId) {
-          navigate(`/clients/${clientId}?tab=sessions`);
-        }
       }, 700);
     } catch (error) {
       console.error("Error completing session:", error);
@@ -105,8 +98,6 @@ export function StickySessionBar() {
 
   const handleCancel = async () => {
     if (!activeSession) return;
-    
-    const clientId = activeSession.client_id;
     
     try {
       await updateSession.mutateAsync({
@@ -123,11 +114,6 @@ export function StickySessionBar() {
       setIsVisible(false);
       setTimeout(() => {
         clearActiveSession();
-        
-        // Se siamo sulla pagina LiveSession, naviga al dettaglio cliente
-        if (isOnLiveSessionPage && clientId) {
-          navigate(`/clients/${clientId}?tab=sessions`);
-        }
       }, 700);
     } catch (error) {
       console.error("Error canceling session:", error);
@@ -203,7 +189,7 @@ export function StickySessionBar() {
               size="icon"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/session/live?sessionId=${activeSession.id}&clientId=${activeSession.client_id}`);
+                navigate(`/session/live?sessionId=${activeSession.id}`);
               }}
               title="Apri sessione"
             >

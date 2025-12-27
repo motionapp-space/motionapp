@@ -20,7 +20,7 @@ export function BookingRequestCard({
   onClick,
   positioning,
 }: BookingRequestCardProps) {
-  const { bg, text, ring } = colorClassesForClient(request.client_id);
+  const { bg, text, ring } = colorClassesForClient(request.coach_client_id);
 
   const baseClasses = cn(
     "rounded-md p-2 cursor-pointer transition-all",

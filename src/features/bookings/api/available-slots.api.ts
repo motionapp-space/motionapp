@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateAvailableSlots, generateFullDayGrid } from "../utils/slot-generator";
 import type { AvailableSlot } from "../types";
 import type { CalendarMode } from "@/features/events/types";
+import { getCoachClientId } from "@/lib/coach-client";
 
 interface GetAvailableSlotsParams {
   coachId: string;
@@ -17,11 +18,19 @@ interface GetAvailableSlotsParams {
  * FASE 3 Extended: Client-specific rules check
  */
 async function getClientSpecificRules(clientId: string, coachId: string) {
+  // Get coach_client_id first
+  let coachClientId: string;
+  try {
+    coachClientId = await getCoachClientId(clientId);
+  } catch {
+    // No coach-client relationship
+    return { hasActivePackage: false, hasAvailableSessions: false, canBook: false };
+  }
+
   const { data: packages } = await supabase
     .from("package")
     .select("*")
-    .eq("client_id", clientId)
-    .eq("coach_id", coachId)
+    .eq("coach_client_id", coachClientId)
     .eq("usage_status", "active")
     .order("created_at", { ascending: false })
     .limit(1)
@@ -121,21 +130,39 @@ export async function getAvailableSlots({
 
   if (oooError) throw oooError;
 
+  // Fetch coach_clients for this coach
+  const { data: coachClients } = await supabase
+    .from("coach_clients")
+    .select("id, client_id")
+    .eq("coach_id", coachId);
+
+  const coachClientIds = coachClients?.map(cc => cc.id) || [];
+
   // Fetch existing events (both confirmed and pending requests)
   const { data: events, error: eventsError } = await supabase
     .from("events")
-    .select("*, clients!events_client_id_fkey(first_name, last_name)")
-    .eq("coach_id", coachId)
+    .select("id, coach_client_id, title, start_at, end_at, created_at, updated_at")
+    .in("coach_client_id", coachClientIds)
     .gte("end_at", startDate)
     .lte("start_at", endDate);
 
   if (eventsError) throw eventsError;
 
+  // Build client map for names
+  const clientIds = coachClients?.map(cc => cc.client_id) || [];
+  const { data: clientsData } = await supabase
+    .from("clients")
+    .select("id, first_name, last_name")
+    .in("id", clientIds);
+  
+  const clientMap = new Map(clientsData?.map(c => [c.id, c]) || []);
+  const ccToClientMap = new Map(coachClients?.map(cc => [cc.id, cc.client_id]) || []);
+
   // Fetch pending booking requests
   const { data: requests, error: requestsError } = await supabase
     .from("booking_requests")
     .select("*")
-    .eq("coach_id", coachId)
+    .in("coach_client_id", coachClientIds)
     .eq("status", "PENDING")
     .gte("requested_end_at", startDate)
     .lte("requested_start_at", endDate);
@@ -145,8 +172,7 @@ export async function getAvailableSlots({
   // Convert pending requests to event-like objects for overlap checking
   const requestEvents = requests?.map(req => ({
     id: req.id,
-    coach_id: req.coach_id,
-    client_id: req.client_id,
+    coach_client_id: req.coach_client_id,
     title: "Richiesta di prenotazione",
     start_at: req.requested_start_at,
     end_at: req.requested_end_at,
@@ -156,12 +182,14 @@ export async function getAvailableSlots({
   })) || [];
 
   // Map events to include client_name
-  const mappedEvents = events?.map(event => ({
-    ...event,
-    client_name: event.clients
-      ? `${event.clients.first_name} ${event.clients.last_name}`.trim()
-      : "",
-  })) || [];
+  const mappedEvents = events?.map(event => {
+    const clientId = ccToClientMap.get(event.coach_client_id);
+    const client = clientId ? clientMap.get(clientId) : null;
+    return {
+      ...event,
+      client_name: client ? `${client.first_name} ${client.last_name}`.trim() : "",
+    };
+  }) || [];
 
   const allEvents = [...mappedEvents, ...requestEvents];
 

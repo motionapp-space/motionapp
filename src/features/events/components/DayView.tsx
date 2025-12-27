@@ -69,7 +69,7 @@ export function DayView({
         id: e.id,
         start_at: e.start_at,
         end_at: e.end_at,
-        client_id: e.client_id,
+        client_id: e.coach_client_id,
       }))
     );
   }, [events, date]);
@@ -90,7 +90,7 @@ export function DayView({
         id: r.id,
         start_at: r.requested_start_at,
         end_at: r.requested_end_at,
-        client_id: r.client_id,
+        client_id: r.coach_client_id,
       }))
     );
   }, [bookingRequests, date]);

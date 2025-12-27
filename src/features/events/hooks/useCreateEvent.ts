@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createEvent } from "../api/events.api";
 import { toast } from "sonner";
 import { logClientActivity } from "@/features/clients/api/activities.api";
+import { getCoachClientDetails } from "@/lib/coach-client";
 
 /**
  * Hook for creating events
@@ -14,23 +15,29 @@ export function useCreateEvent() {
   return useMutation({
     mutationFn: createEvent,
     onSuccess: async (createdEvent) => {
-      // Log activity
-      if (createdEvent.client_id) {
-        await logClientActivity(
-          createdEvent.client_id,
-          "EVENT_CREATED",
-          `Appuntamento programmato: ${createdEvent.title || "Sessione"}`
-        );
+      // Get client_id from coach_client relationship
+      try {
+        const { client_id: clientId } = await getCoachClientDetails(createdEvent.coach_client_id);
+        
+        // Log activity
+        if (clientId) {
+          await logClientActivity(
+            clientId,
+            "EVENT_CREATED",
+            `Appuntamento programmato: ${createdEvent.title || "Sessione"}`
+          );
+          
+          queryClient.invalidateQueries({ 
+            queryKey: ['client-onboarding-events', clientId] 
+          });
+        }
+      } catch (error) {
+        console.warn("Could not get client details for activity log:", error);
       }
 
       // Invalidate queries (housekeeping)
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      if (createdEvent.client_id) {
-        queryClient.invalidateQueries({ 
-          queryKey: ['client-onboarding-events', createdEvent.client_id] 
-        });
-      }
       
       // NO toast here - handled by EventEditorModal
       // NO package logic here - handled by EventEditorModal

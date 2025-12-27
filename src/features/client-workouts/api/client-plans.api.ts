@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getClientCoachClientId } from "@/lib/coach-client";
 import type { Plan } from "@/types/plan";
 
 export interface ClientActivePlan {
@@ -9,11 +10,13 @@ export interface ClientActivePlan {
   is_in_use: boolean;
 }
 
-export async function getClientActivePlan(clientId: string): Promise<ClientActivePlan | null> {
+export async function getClientActivePlan(): Promise<ClientActivePlan | null> {
+  const { coachClientId } = await getClientCoachClientId();
+
   const { data, error } = await supabase
     .from("client_plans")
     .select("id, name, data, status, is_in_use")
-    .eq("client_id", clientId)
+    .eq("coach_client_id", coachClientId)
     .eq("is_in_use", true)
     .order("created_at", { ascending: false })
     .limit(1)

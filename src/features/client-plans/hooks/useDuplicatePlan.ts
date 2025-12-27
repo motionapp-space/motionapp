@@ -7,14 +7,13 @@ export function useDuplicatePlan() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ planId }: { planId: string }) => {
+    mutationFn: async ({ planId, clientId }: { planId: string; clientId: string }) => {
       const original = await getClientPlan(planId);
       
       const { data, error } = await supabase
         .from("client_plans")
         .insert({
-          client_id: original.client_id,
-          coach_id: original.coach_id,
+          coach_client_id: original.coach_client_id,
           name: `${original.name} (Copia)`,
           description: original.description,
           data: original.data,
@@ -26,10 +25,10 @@ export function useDuplicatePlan() {
         .single();
 
       if (error) throw error;
-      return data;
+      return { ...data, clientId };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["clientPlans", data.client_id] });
+      queryClient.invalidateQueries({ queryKey: ["clientPlans", data.clientId] });
       toast.success("Piano duplicato");
     },
     onError: (error: Error) => {

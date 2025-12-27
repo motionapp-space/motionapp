@@ -75,7 +75,7 @@ export function CalendarMonthCell({
             style={{ height: `${rowHeight}px` }}
             title={`${event.title} • ${event.client_name}`}
           >
-            <ClientColorDot clientId={event.client_id} />
+            <ClientColorDot clientId={event.coach_client_id} />
             <span className="truncate text-[11px] leading-none">
               {event.title}
               {rowHeight >= 24 && <span className="opacity-70"> · {event.client_name}</span>}

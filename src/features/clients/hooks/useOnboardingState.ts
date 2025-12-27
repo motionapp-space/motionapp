@@ -55,17 +55,36 @@ export function useOnboardingState(): OnboardingState {
     includeArchived: false 
   });
 
+  // Get coach_clients for plans check
+  const coachClientsQuery = useQuery({
+    queryKey: ['onboarding-coach-clients'],
+    queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return [];
+
+      const { data, error } = await supabase
+        .from('coach_clients')
+        .select('id')
+        .eq('coach_id', user.user.id);
+
+      if (error) throw error;
+      return data?.map(cc => cc.id) || [];
+    },
+    staleTime: 30000,
+    enabled: isAuthenticated === true,
+  });
+
   // Check esistenza piano attivo (ottimizzato: limit 1, solo id)
   const plansQuery = useQuery({
     queryKey: ['onboarding-plans-check'],
     queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return false;
+      const coachClientIds = coachClientsQuery.data || [];
+      if (coachClientIds.length === 0) return false;
 
       const { data, error } = await supabase
         .from('client_plans')
         .select('id')
-        .eq('coach_id', user.user.id)
+        .in('coach_client_id', coachClientIds)
         .eq('status', 'IN_CORSO')
         .limit(1);
 
@@ -73,27 +92,27 @@ export function useOnboardingState(): OnboardingState {
       return (data?.length || 0) > 0;
     },
     staleTime: 30000, // 30s cache
-    enabled: isAuthenticated === true,
+    enabled: isAuthenticated === true && (coachClientsQuery.data?.length || 0) > 0,
   });
 
   // Check esistenza appuntamento futuro (ottimizzato: limit 1, solo id)
   const eventsQuery = useQuery({
     queryKey: ['onboarding-events-check'],
     queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return false;
+      const coachClientIds = coachClientsQuery.data || [];
+      if (coachClientIds.length === 0) return false;
 
       const { data, error } = await supabase
         .from('events')
         .select('id')
-        .eq('coach_id', user.user.id)
+        .in('coach_client_id', coachClientIds)
         .limit(1);
 
       if (error) throw error;
       return (data?.length || 0) > 0;
     },
     staleTime: 30000, // 30s cache
-    enabled: isAuthenticated === true,
+    enabled: isAuthenticated === true && (coachClientsQuery.data?.length || 0) > 0,
   });
 
   // Check esistenza clienti archiviati (ottimizzato: limit 1, solo id)
@@ -118,7 +137,7 @@ export function useOnboardingState(): OnboardingState {
   });
 
   // Calcola isLoading dai veri stati delle query
-  const isLoading = clientsQuery.isLoading || nonArchivedCountQuery.isLoading || plansQuery.isLoading || eventsQuery.isLoading || archivedQuery.isLoading;
+  const isLoading = clientsQuery.isLoading || nonArchivedCountQuery.isLoading || coachClientsQuery.isLoading || plansQuery.isLoading || eventsQuery.isLoading || archivedQuery.isLoading;
 
   // Valori sicuri (defaults)
   const clientsCount = nonArchivedCountQuery.data || 0;  // Count reale di clienti non archiviati

@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { getClientCoachClientId } from "@/lib/coach-client";
 import type { 
   ClientBookingSettings, 
   ClientAppointmentView, 
@@ -109,14 +110,14 @@ export async function getClientBookingSettings(): Promise<ClientBookingSettings>
  * Get all appointments for current client (unified view)
  */
 export async function getClientAppointments(): Promise<ClientAppointmentView[]> {
-  const { id: clientId, coach_id } = await getCurrentClientData();
+  const { coachClientId } = await getClientCoachClientId();
   const settings = await getClientBookingSettings();
   
   // Fetch events
   const { data: events, error: eventsError } = await supabase
     .from("events")
     .select("id, title, start_at, end_at, location, notes, session_status, proposal_status, proposed_start_at, proposed_end_at")
-    .eq("client_id", clientId)
+    .eq("coach_client_id", coachClientId)
     .order("start_at", { ascending: false });
 
   if (eventsError) throw eventsError;
@@ -125,7 +126,7 @@ export async function getClientAppointments(): Promise<ClientAppointmentView[]> 
   const { data: requests, error: requestsError } = await supabase
     .from("booking_requests")
     .select("id, requested_start_at, requested_end_at, notes, status")
-    .eq("client_id", clientId)
+    .eq("coach_client_id", coachClientId)
     .order("requested_start_at", { ascending: false });
 
   if (requestsError) throw requestsError;
@@ -189,13 +190,12 @@ export async function getClientAppointments(): Promise<ClientAppointmentView[]> 
  * Create a new booking request
  */
 export async function createBookingRequest(input: CreateBookingRequestInput): Promise<void> {
-  const { id: clientId, coach_id } = await getCurrentClientData();
+  const { coachClientId } = await getClientCoachClientId();
 
   const { error } = await supabase
     .from("booking_requests")
     .insert({
-      client_id: clientId,
-      coach_id: coach_id,
+      coach_client_id: coachClientId,
       requested_start_at: input.requestedStartAt,
       requested_end_at: input.requestedEndAt,
       notes: input.notes || null,
@@ -284,7 +284,7 @@ export async function getAvailableSlotsForClient(
   startDate: Date,
   endDate: Date
 ): Promise<AvailableSlot[]> {
-  const { coach_id } = await getCurrentClientData();
+  const { coachId } = await getClientCoachClientId();
   const settings = await getClientBookingSettings();
 
   if (!settings.enabled) return [];
@@ -293,16 +293,24 @@ export async function getAvailableSlotsForClient(
   const { data: windows, error: windowsError } = await supabase
     .from("availability_windows")
     .select("day_of_week, start_time, end_time")
-    .eq("coach_id", coach_id)
+    .eq("coach_id", coachId)
     .eq("is_active", true);
 
   if (windowsError) throw windowsError;
+
+  // Get coach_clients for this coach
+  const { data: coachClients } = await supabase
+    .from("coach_clients")
+    .select("id")
+    .eq("coach_id", coachId);
+
+  const coachClientIds = coachClients?.map(cc => cc.id) || [];
 
   // Get existing events (to exclude occupied slots)
   const { data: events, error: eventsError } = await supabase
     .from("events")
     .select("start_at, end_at")
-    .eq("coach_id", coach_id)
+    .in("coach_client_id", coachClientIds)
     .neq("session_status", "canceled")
     .gte("start_at", startDate.toISOString())
     .lte("start_at", endDate.toISOString());
