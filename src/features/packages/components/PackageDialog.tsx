@@ -28,7 +28,7 @@ import { usePackageSettings } from "../hooks/usePackageSettings";
 interface PackageDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  clientId: string;
+  coachClientId: string;
   onSubmit: (data: CreatePackageInput) => void;
   isLoading?: boolean;
 }
@@ -36,7 +36,7 @@ interface PackageDialogProps {
 export function PackageDialog({
   open,
   onOpenChange,
-  clientId,
+  coachClientId,
   onSubmit,
   isLoading,
 }: PackageDialogProps) {
@@ -47,12 +47,17 @@ export function PackageDialog({
   
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<CreatePackageInput>({
     defaultValues: {
-      client_id: clientId,
+      coach_client_id: coachClientId,
       total_sessions: 10,
       name: suggestPackageName(10),
       duration_months: 6,
     },
   });
+
+  // Update coach_client_id when it changes
+  useEffect(() => {
+    setValue("coach_client_id", coachClientId);
+  }, [coachClientId, setValue]);
 
   const priceValue = watch("price_total_cents");
   const durationValue = watch("duration_months");

@@ -5,6 +5,7 @@ import {
 } from "../api/packages.api";
 import { toast } from "sonner";
 import { logClientActivity } from "@/features/clients/api/activities.api";
+import { getCoachClientDetails } from "@/lib/coach-client";
 
 export function useArchivePackage() {
   const queryClient = useQueryClient();
@@ -15,9 +16,12 @@ export function useArchivePackage() {
       queryClient.invalidateQueries({ queryKey: ["package", data.package_id] });
       queryClient.invalidateQueries({ queryKey: ["packages"] });
       
+      // Get client_id from coach_client relationship for activity logging
+      const details = await getCoachClientDetails(data.coach_client_id);
+      
       // Log activity
       await logClientActivity(
-        data.client_id,
+        details.client_id,
         "PACKAGE_UPDATED",
         `Pacchetto "${data.name}" archiviato`
       );
@@ -43,9 +47,12 @@ export function useToggleSuspension() {
       
       const action = data.usage_status === 'suspended' ? 'sospeso' : 'riattivato';
       
+      // Get client_id from coach_client relationship for activity logging
+      const details = await getCoachClientDetails(data.coach_client_id);
+      
       // Log activity
       await logClientActivity(
-        data.client_id,
+        details.client_id,
         "PACKAGE_UPDATED",
         `Pacchetto "${data.name}" ${action}`
       );
@@ -59,4 +66,3 @@ export function useToggleSuspension() {
     },
   });
 }
-

@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getClientActivePlan } from "../api/client-plans.api";
 
-export function useClientActivePlan(clientId: string | undefined) {
+export function useClientActivePlan() {
   return useQuery({
-    queryKey: ["client-active-plan", clientId],
-    queryFn: () => getClientActivePlan(clientId!),
-    enabled: !!clientId,
+    queryKey: ["client-active-plan"],
+    queryFn: () => getClientActivePlan(),
     staleTime: 60_000,
   });
 }

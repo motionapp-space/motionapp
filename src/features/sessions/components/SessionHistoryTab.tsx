@@ -11,6 +11,7 @@ import { listSessions } from "../api/sessions.api";
 import type { TrainingSessionWithClient } from "../types";
 import { SessionDetailDrawer } from "./SessionDetailDrawer";
 import { cn } from "@/lib/utils";
+import { getCoachClientId } from "@/lib/coach-client";
 
 interface SessionHistoryTabProps {
   clientId: string;
@@ -21,7 +22,11 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
 
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["sessions", clientId],
-    queryFn: () => listSessions({ client_id: clientId }),
+    queryFn: async () => {
+      const coachClientId = await getCoachClientId(clientId);
+      return listSessions({ coach_client_id: coachClientId });
+    },
+    enabled: !!clientId,
   });
 
   // Separate sessions by source

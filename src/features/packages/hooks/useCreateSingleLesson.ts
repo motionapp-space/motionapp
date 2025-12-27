@@ -19,7 +19,7 @@ export function useCreateSingleLesson() {
     },
     onSuccess: (pkg) => {
       queryClient.invalidateQueries({ queryKey: ["packages"] });
-      queryClient.invalidateQueries({ queryKey: ["packages", "client", pkg.client_id] });
+      queryClient.invalidateQueries({ queryKey: ["packages", "coach-client", pkg.coach_client_id] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
       
       toast.success("Lezione singola creata", {

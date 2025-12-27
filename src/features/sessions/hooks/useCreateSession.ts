@@ -3,6 +3,7 @@ import { createSession } from "../api/sessions.api";
 import { toast } from "sonner";
 import { logClientActivity } from "@/features/clients/api/activities.api";
 import { useSessionStore } from "@/stores/useSessionStore";
+import { getCoachClientDetails } from "@/lib/coach-client";
 
 export function useCreateSession() {
   const queryClient = useQueryClient();
@@ -10,9 +11,12 @@ export function useCreateSession() {
   return useMutation({
     mutationFn: createSession,
     onSuccess: async (session) => {
+      // Get client_id from coach_client relationship
+      const details = await getCoachClientDetails(session.coach_client_id);
+      
       // Log activity
       await logClientActivity(
-        session.client_id,
+        details.client_id,
         "SESSION_STARTED",
         "Sessione live iniziata"
       );

@@ -11,11 +11,12 @@ export function useSessionByEventId(eventId: string | undefined) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Query via coach_clients to ensure coach owns the session
       const { data, error } = await supabase
         .from("training_sessions")
-        .select("*")
+        .select("*, coach_clients!inner(coach_id)")
         .eq("event_id", eventId)
-        .eq("coach_id", user.id)
+        .eq("coach_clients.coach_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();

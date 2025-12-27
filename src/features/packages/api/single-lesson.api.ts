@@ -10,6 +10,7 @@ import { createLedgerEntry } from "./ledger.api";
 import type { Package } from "../types";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { getCoachClientId } from "@/lib/coach-client";
 
 /**
  * Create a single lesson package for an event
@@ -26,10 +27,13 @@ export async function createSingleLessonPackage(
   const settings = await getPackageSettings();
   const eventDate = format(new Date(eventStartAt), "d MMMM yyyy", { locale: it });
 
+  // Get the coach_client_id for this client
+  const coachClientId = await getCoachClientId(clientId);
+
   // 1. Create single lesson package
   // createPackage does NOT create ledger entries - verified
   const pkg = await createPackage({
-    client_id: clientId,
+    coach_client_id: coachClientId,
     name: `Lezione singola - ${eventDate}`,
     total_sessions: 1,
     price_total_cents: settings.sessions_1_price,

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updatePackage } from "../api/packages.api";
 import { toast } from "sonner";
 import { logClientActivity } from "@/features/clients/api/activities.api";
+import { getCoachClientDetails } from "@/lib/coach-client";
 
 export function useUpdatePackage() {
   const queryClient = useQueryClient();
@@ -11,12 +12,15 @@ export function useUpdatePackage() {
       updatePackage(packageId, input),
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["package", data.package_id] });
-      queryClient.invalidateQueries({ queryKey: ["packages", "client", data.client_id] });
+      queryClient.invalidateQueries({ queryKey: ["packages", "coach-client", data.coach_client_id] });
       queryClient.invalidateQueries({ queryKey: ["packages"] });
+      
+      // Get client_id from coach_client relationship for activity logging
+      const details = await getCoachClientDetails(data.coach_client_id);
       
       // Log activity
       await logClientActivity(
-        data.client_id,
+        details.client_id,
         "PACKAGE_UPDATED",
         `Pacchetto "${data.name}" aggiornato`
       );
