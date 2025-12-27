@@ -266,7 +266,8 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { data, error } = await supabase
+  // Step 1: Create the client
+  const { data: client, error } = await supabase
     .from("clients")
     .insert({
       ...input,
@@ -277,7 +278,23 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
     .single();
 
   if (error) throw error;
-  return data;
+
+  // Step 2: Create the coach_clients relationship
+  const { error: relationError } = await supabase
+    .from("coach_clients")
+    .insert({
+      coach_id: user.id,
+      client_id: client.id,
+      role: "primary",
+      status: "active",
+    });
+
+  if (relationError) {
+    console.error("Failed to create coach_clients relationship:", relationError);
+    throw relationError;
+  }
+
+  return client;
 }
 
 export async function updateClient(id: string, input: UpdateClientInput): Promise<Client> {
