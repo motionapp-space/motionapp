@@ -3,8 +3,7 @@ export type ApprovalMode = 'AUTO' | 'MANUAL';
 
 export interface BookingRequest {
   id: string;
-  coach_id: string;
-  client_id: string;
+  coach_client_id: string;
   requested_start_at: string;
   requested_end_at: string;
   status: BookingRequestStatus;
@@ -20,7 +19,7 @@ export interface BookingRequestWithClient extends BookingRequest {
 }
 
 export interface CreateBookingRequestInput {
-  client_id: string;
+  coach_client_id: string;
   requested_start_at: string;
   requested_end_at: string;
   notes?: string;

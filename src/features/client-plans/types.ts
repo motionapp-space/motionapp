@@ -2,8 +2,7 @@ import { PlanStatus } from "@/features/clients/types";
 
 export interface ClientPlan {
   id: string;
-  client_id: string;
-  coach_id: string;
+  coach_client_id: string;
   name: string;
   description?: string;
   objective?: string;
@@ -18,6 +17,7 @@ export interface ClientPlan {
   created_at: string;
   updated_at: string;
   derived_from_template_id?: string;
+  duration_weeks?: number;
 }
 
 export interface UpdateClientPlanInput {
