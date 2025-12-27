@@ -52,6 +52,7 @@ import { useSaveAsTemplate } from "@/features/client-plans/hooks/useSaveAsTempla
 import { useAssignTemplate } from "@/features/client-plans/hooks/useAssignTemplate";
 import { useCreateClientPlan } from "@/features/client-plans/hooks/useCreateClientPlan";
 import { useTemplate } from "@/features/templates/hooks/useTemplate";
+import { getClientIdFromCoachClient, getCoachClientId } from "@/lib/coach-client";
 import type { ClientPlan } from "@/types/template";
 import {
   makeDay,
@@ -86,6 +87,7 @@ const ClientPlanEditor = () => {
   };
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<ClientPlan | null>(null);
+  const [resolvedClientId, setResolvedClientId] = useState<string | null>(null);
   const [days, setDays] = useState<Day[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -110,12 +112,21 @@ const ClientPlanEditor = () => {
 
   const { data: derivedTemplate } = useTemplate(plan?.derived_from_template_id || undefined);
 
+  // Resolve client_id from coach_client_id when plan is loaded
+  useEffect(() => {
+    if (plan?.coach_client_id) {
+      getClientIdFromCoachClient(plan.coach_client_id)
+        .then(setResolvedClientId)
+        .catch(console.error);
+    }
+  }, [plan?.coach_client_id]);
+
   // Set topbar (must be before any early returns)
   useTopbar({
     title: name || "Nuovo piano",
     showBack: true,
     onBack: () => {
-      const targetClientId = plan?.client_id || clientId;
+      const targetClientId = resolvedClientId || clientId;
       if (targetClientId) {
         navigate(`/clients/${targetClientId}?tab=plans`);
       } else {
@@ -517,7 +528,7 @@ const ClientPlanEditor = () => {
     );
   }
 
-  const clientName = plan?.client_id ? "Cliente" : "Cliente";
+  const clientName = resolvedClientId ? "Cliente" : "Cliente";
 
   return (
     <div className="min-h-screen bg-background">
@@ -550,7 +561,7 @@ const ClientPlanEditor = () => {
                   if (id) {
                     toRead();
                   } else {
-                    const targetClientId = plan?.client_id || clientId;
+                    const targetClientId = resolvedClientId || clientId;
                     if (targetClientId) {
                       navigate(`/clients/${targetClientId}?tab=plans`);
                     } else {
@@ -723,8 +734,9 @@ const ClientPlanEditor = () => {
           onOpenChange={setDayPickerOpen}
           clientId={clientId}
           onConfirm={async (planId, dayId) => {
+            const coachClientId = await getCoachClientId(clientId);
             const session = await createSession.mutateAsync({
-              client_id: clientId,
+              coach_client_id: coachClientId,
               plan_id: planId,
               day_id: dayId,
             });

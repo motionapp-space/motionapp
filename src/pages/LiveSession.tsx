@@ -15,6 +15,7 @@ import { useCreateActual } from "@/features/sessions/hooks/useCreateActual";
 import { useDeleteActual } from "@/features/sessions/hooks/useDeleteActual";
 import { getClientPlan } from "@/features/client-plans/api/client-plans.api";
 import { ExerciseHistoryDrawer } from "@/features/sessions/components/ExerciseHistoryDrawer";
+import { getClientIdFromCoachClient } from "@/lib/coach-client";
 import type { Day, Phase, ExerciseGroup, Exercise } from "@/types/plan";
 import type { ExerciseActual } from "@/features/sessions/types";
 import { migratePhaseToGroups } from "@/types/plan";
@@ -51,6 +52,7 @@ export default function LiveSession() {
   const [restTimers, setRestTimers] = useState<Record<string, number>>({});
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [historyDrawerExercise, setHistoryDrawerExercise] = useState<{ id: string; name: string } | null>(null);
+  const [resolvedClientId, setResolvedClientId] = useState<string | null>(null);
   
   // State per tracciare i valori modificabili per ogni esercizio
   const [editableValues, setEditableValues] = useState<Record<string, {
@@ -84,6 +86,15 @@ export default function LiveSession() {
         });
     }
   }, [session]);
+
+  // Resolve client_id from coach_client_id
+  useEffect(() => {
+    if (session?.coach_client_id) {
+      getClientIdFromCoachClient(session.coach_client_id)
+        .then(setResolvedClientId)
+        .catch(console.error);
+    }
+  }, [session?.coach_client_id]);
 
   // Session timer
   useEffect(() => {
@@ -255,7 +266,7 @@ export default function LiveSession() {
       // Events = calendar/payment tracking (handled by auto-complete-events edge function)
 
       toast.success("Sessione salvata");
-      navigate(`/clients/${session.client_id}?tab=sessions`);
+      if (resolvedClientId) navigate(`/clients/${resolvedClientId}?tab=sessions`);
     } catch (error) {
       toast.error("Errore nel salvare la sessione");
     }
@@ -268,7 +279,7 @@ export default function LiveSession() {
         updates: { status: "cancelled" },
       });
       toast.success("Sessione annullata");
-      navigate(`/clients/${session.client_id}?tab=sessions`);
+      if (resolvedClientId) navigate(`/clients/${resolvedClientId}?tab=sessions`);
     } catch (error) {
       toast.error("Errore nell'annullare la sessione");
     }
@@ -617,7 +628,7 @@ export default function LiveSession() {
         <ExerciseHistoryDrawer
           open={historyDrawerOpen}
           onOpenChange={setHistoryDrawerOpen}
-          clientId={session.client_id}
+          clientId={resolvedClientId || ''}
           exerciseId={historyDrawerExercise.id}
           exerciseName={historyDrawerExercise.name}
         />

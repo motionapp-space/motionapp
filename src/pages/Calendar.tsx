@@ -28,6 +28,7 @@ import { EventModal } from "@/features/events/components/EventModal";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 import { ClientViewBanner } from "@/features/events/components/ClientViewBanner";
+import { getCoachClientId } from "@/lib/coach-client";
 
 import { PREVIEW_MESSAGES } from "@/features/events/utils/preview-messages";
 
@@ -137,8 +138,9 @@ const Calendar = () => {
   const handleDayPickerConfirm = async (planId: string, dayId: string) => {
     if (!sessionEventData) return;
     
+    const coachClientId = await getCoachClientId(sessionEventData.clientId);
     const session = await createSession.mutateAsync({
-      client_id: sessionEventData.clientId,
+      coach_client_id: coachClientId,
       plan_id: planId,
       day_id: dayId,
       event_id: sessionEventData.eventId,

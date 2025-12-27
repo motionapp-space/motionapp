@@ -51,7 +51,7 @@ export default function ClientHome() {
 }
 
 function ClientHomeContent({ clientId, clientName }: { clientId: string; clientName: string }) {
-  const { data: activePlan, isLoading: isPlanLoading } = useClientActivePlan(clientId);
+  const { data: activePlan, isLoading: isPlanLoading } = useClientActivePlan();
   const { data: appointments, isLoading: isAppointmentsLoading } = useClientAppointmentsView();
 
   const isLoading = isPlanLoading || isAppointmentsLoading;
