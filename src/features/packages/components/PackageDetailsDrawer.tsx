@@ -17,6 +17,7 @@ import { it } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logClientActivity } from "@/features/clients/api/activities.api";
 import { toast } from "sonner";
+import { getCoachClientDetails } from "@/lib/coach-client";
 
 interface PackageDetailsDrawerProps {
   package: Package | null;
@@ -134,8 +135,11 @@ export function PackageDetailsDrawer({
           refunded: "Rimborsato"
         };
         
+        // Get client_id from coach_client relationship
+        const details = await getCoachClientDetails(pkg.coach_client_id);
+        
         await logClientActivity(
-          pkg.client_id,
+          details.client_id,
           "PACKAGE_UPDATED",
           `Stato pagamento pacchetto "${pkg.name}" modificato in: ${statusLabels[paymentStatus]}`
         );
@@ -411,79 +415,47 @@ export function PackageDetailsDrawer({
                   <div>
                     <Label className="text-sm text-muted-foreground mb-2 block">Stato pagamento</Label>
                     {editMode ? (
-                      <Select value={paymentStatus} onValueChange={(value) => setPaymentStatus(value as PackagePaymentStatus)}>
-                        <SelectTrigger className="h-10">
+                      <Select value={paymentStatus} onValueChange={(v) => setPaymentStatus(v as PackagePaymentStatus)}>
+                        <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {PAYMENT_STATUS_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
+                          {PAYMENT_STATUS_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge variant={paymentStatusMap[paymentStatus]?.variant || "default"} className="rounded-md">
+                      <Badge variant={paymentStatusMap[paymentStatus]?.variant || "default"}>
                         {paymentStatusMap[paymentStatus]?.label || paymentStatus}
                       </Badge>
                     )}
                   </div>
 
-                  <Separator />
-
-                  <div className="flex justify-between items-center py-2">
-                    <Label className="text-sm text-muted-foreground">Importo totale</Label>
-                    <p className="text-lg font-semibold text-foreground">
-                      {effectivePriceTotalCents ? formatCurrency(effectivePriceTotalCents) : "—"}
-                    </p>
-                  </div>
-
-                  {editMode && paymentStatus === 'partial' && (
-                    <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">
-                        Importo pagato (€) <span className="text-destructive">*</span>
-                      </Label>
+                  {(editMode && paymentStatus === 'partial') && (
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-2 block">Importo pagato (€)</Label>
                       <Input
                         type="number"
                         step="0.01"
                         min="0"
-                        max={priceTotal || (pkg.price_total_cents / 100)}
                         value={partialPaymentEuros}
                         onChange={(e) => setPartialPaymentEuros(e.target.value)}
                         placeholder="Es: 200.00"
                         className="h-10"
-                        required
                       />
-                      <p className="text-sm text-muted-foreground">
-                        Rimanente: {formatCurrency(
-                          Math.max(0, ((priceTotal ? Math.round(parseFloat(priceTotal) * 100) : pkg.price_total_cents) || 0) - 
-                          Math.round((parseFloat(partialPaymentEuros) || 0) * 100))
-                        )}
-                      </p>
                     </div>
                   )}
 
-                  {!editMode && paymentStatus === 'partial' && partialPaymentEuros && parseFloat(partialPaymentEuros) > 0 && (
-                    <>
-                      <div className="flex justify-between items-center py-2">
-                        <Label className="text-sm text-muted-foreground">Importo pagato</Label>
-                        <p className="text-lg font-semibold text-accent">
-                          {formatCurrency(Math.round(parseFloat(partialPaymentEuros) * 100))}
-                        </p>
-                      </div>
-                      <div className="flex justify-between items-center py-2">
-                        <Label className="text-sm text-muted-foreground">Rimanente</Label>
-                        <p className="text-lg font-semibold text-destructive">
-                          {formatCurrency(
-                            Math.max(
-                              0,
-                              (effectivePriceTotalCents || 0) - Math.round(parseFloat(partialPaymentEuros) * 100)
-                            )
-                          )}
-                        </p>
-                      </div>
-                    </>
+                  {!editMode && paymentStatus === 'partial' && pkg.partial_payment_cents && (
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-1.5 block">Importo pagato</Label>
+                      <p className="text-base text-foreground">
+                        {formatCurrency(pkg.partial_payment_cents)} / {formatCurrency(effectivePriceTotalCents || 0)}
+                      </p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -499,41 +471,25 @@ export function PackageDetailsDrawer({
               </div>
 
               <Card className="border-border">
-                <CardContent className="p-0">
+                <CardContent className="p-4">
                   {ledgerEntries.length === 0 ? (
-                    <p className="p-6 text-sm text-muted-foreground text-center">
+                    <p className="text-sm text-muted-foreground text-center py-4">
                       Nessun movimento registrato
                     </p>
                   ) : (
-                    <div className="divide-y divide-border">
-                      {ledgerEntries.slice(0, 15).map((entry) => (
-                        <div key={entry.ledger_id} className="p-4 space-y-1">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground">
-                                {getSimpleLabel(entry.type, entry.reason)}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {format(new Date(entry.created_at), "dd MMM yyyy · HH:mm", { locale: it })}
-                              </p>
-                              {entry.note && (
-                                <p className="text-xs text-muted-foreground italic mt-1">
-                                  {entry.note}
-                                </p>
-                              )}
-                            </div>
-                            <div className="text-right shrink-0">
-                              {entry.delta_consumed !== 0 && (
-                                <p className="text-sm font-medium text-foreground">
-                                  {entry.delta_consumed > 0 ? '+' : ''}{entry.delta_consumed}
-                                </p>
-                              )}
-                              {entry.delta_hold !== 0 && (
-                                <p className="text-xs text-muted-foreground">
-                                  {entry.delta_hold > 0 ? '+' : ''}{entry.delta_hold} attesa
-                                </p>
-                              )}
-                            </div>
+                    <div className="space-y-2">
+                      {ledgerEntries.slice(0, 10).map((entry) => (
+                        <div
+                          key={entry.ledger_id}
+                          className="flex items-center justify-between py-2 border-b last:border-0"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {getSimpleLabel(entry.type, entry.reason)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(entry.created_at), "dd MMM yyyy HH:mm", { locale: it })}
+                            </p>
                           </div>
                         </div>
                       ))}
@@ -544,36 +500,23 @@ export function PackageDetailsDrawer({
             </section>
           </div>
 
-          {/* Footer con azioni - sticky bottom */}
+          {/* Footer Actions */}
           <div className="px-6 py-4 border-t bg-background sticky bottom-0">
             {editMode ? (
               <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={handleCancel}
-                  className="flex-1"
-                  disabled={updateMutation.isPending}
-                >
+                <Button variant="outline" onClick={handleCancel} className="flex-1">
                   <X className="h-4 w-4 mr-2" />
                   Annulla
                 </Button>
-                <Button 
-                  onClick={handleSave}
-                  className="flex-1"
-                  disabled={updateMutation.isPending}
-                >
+                <Button onClick={handleSave} className="flex-1" disabled={updateMutation.isPending}>
                   <Check className="h-4 w-4 mr-2" />
-                  {updateMutation.isPending ? "Salvataggio..." : "Salva modifiche"}
+                  Salva
                 </Button>
               </div>
             ) : (
-              <Button 
-                variant="outline"
-                onClick={() => setEditMode(true)}
-                className="w-full"
-              >
+              <Button variant="outline" onClick={() => setEditMode(true)} className="w-full">
                 <Edit2 className="h-4 w-4 mr-2" />
-                Modifica informazioni
+                Modifica
               </Button>
             )}
           </div>

@@ -4,7 +4,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { getActivePackage, getPackageSettings } from "./packages.api";
+import { getActivePackageByCoachClient, getPackageSettings } from "./packages.api";
 import { createLedgerEntry } from "./ledger.api";
 import type { Package } from "../types";
 
@@ -15,14 +15,14 @@ import type { Package } from "../types";
  */
 export async function handleEventConfirm(
   eventId: string,
-  clientId: string,
+  coachClientId: string,
   startAt: string
 ): Promise<{ package: Package; holdCreated: boolean } | null> {
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new Error("Non autenticato");
 
   // Get active package - DO NOT auto-create
-  const pkg = await getActivePackage(clientId);
+  const pkg = await getActivePackageByCoachClient(coachClientId);
   
   if (!pkg) {
     // Return null - UI will show SingleLessonDialog for explicit coach decision
@@ -86,12 +86,11 @@ export async function handleEventComplete(
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new Error("Non autenticato");
 
-  // Get package
+  // Get package via view to verify coach access
   const { data: pkg, error: pkgError } = await supabase
     .from("package")
-    .select("*")
+    .select("*, coach_clients!inner(coach_id)")
     .eq("package_id", packageId)
-    .eq("coach_id", session.session.user.id)
     .single();
 
   if (pkgError) throw pkgError;
@@ -146,12 +145,11 @@ export async function handleEventCancel(
   // Determine if within cancel policy window (skip if forceFree)
   const isLateCancellation = !options?.forceFree && hoursUntilStart < settings.lock_window_hours;
 
-  // Get package
+  // Get package via view to verify coach access
   const { data: pkg, error: pkgError } = await supabase
     .from("package")
-    .select("*")
+    .select("*, coach_clients!inner(coach_id)")
     .eq("package_id", packageId)
-    .eq("coach_id", session.session.user.id)
     .single();
 
   if (pkgError) throw pkgError;

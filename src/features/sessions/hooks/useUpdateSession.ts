@@ -3,6 +3,7 @@ import { updateSession } from "../api/sessions.api";
 import { toast } from "sonner";
 import { logClientActivity } from "@/features/clients/api/activities.api";
 import { useSessionStore } from "@/stores/useSessionStore";
+import { getCoachClientDetails } from "@/lib/coach-client";
 
 /**
  * Hook for updating training sessions
@@ -18,8 +19,11 @@ export function useUpdateSession() {
     onSuccess: async (session) => {
       // Log activity when session is completed
       if (session.status === "completed") {
+        // Get client_id from coach_client relationship
+        const details = await getCoachClientDetails(session.coach_client_id);
+        
         await logClientActivity(
-          session.client_id,
+          details.client_id,
           "SESSION_COMPLETED",
           "Sessione live completata"
         );
