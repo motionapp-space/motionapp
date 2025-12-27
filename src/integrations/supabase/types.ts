@@ -194,8 +194,7 @@ export type Database = {
       }
       booking_requests: {
         Row: {
-          client_id: string
-          coach_id: string
+          coach_client_id: string
           counter_proposal_end_at: string | null
           counter_proposal_start_at: string | null
           created_at: string
@@ -207,8 +206,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          client_id: string
-          coach_id: string
+          coach_client_id: string
           counter_proposal_end_at?: string | null
           counter_proposal_start_at?: string | null
           created_at?: string
@@ -220,8 +218,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          client_id?: string
-          coach_id?: string
+          coach_client_id?: string
           counter_proposal_end_at?: string | null
           counter_proposal_start_at?: string | null
           created_at?: string
@@ -234,18 +231,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "booking_requests_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: "booking_requests_coach_client_id_fkey"
+            columns: ["coach_client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "coach_clients"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "booking_requests_coach_id_fkey"
-            columns: ["coach_id"]
+            foreignKeyName: "booking_requests_coach_client_id_fkey"
+            columns: ["coach_client_id"]
             isOneToOne: false
-            referencedRelation: "coaches"
-            referencedColumns: ["id"]
+            referencedRelation: "v_coach_client_details"
+            referencedColumns: ["coach_client_id"]
           },
         ]
       }
@@ -340,60 +337,6 @@ export type Database = {
           },
         ]
       }
-      client_packages: {
-        Row: {
-          client_id: string
-          created_at: string
-          id: string
-          package_type_id: string
-          purchased_at: string
-          sessions_remaining: number
-          sessions_total: number
-          status: string
-          updated_at: string
-          valid_until: string | null
-        }
-        Insert: {
-          client_id: string
-          created_at?: string
-          id?: string
-          package_type_id: string
-          purchased_at?: string
-          sessions_remaining: number
-          sessions_total: number
-          status?: string
-          updated_at?: string
-          valid_until?: string | null
-        }
-        Update: {
-          client_id?: string
-          created_at?: string
-          id?: string
-          package_type_id?: string
-          purchased_at?: string
-          sessions_remaining?: number
-          sessions_total?: number
-          status?: string
-          updated_at?: string
-          valid_until?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "client_packages_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_packages_package_type_id_fkey"
-            columns: ["package_type_id"]
-            isOneToOne: false
-            referencedRelation: "package_types"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       client_plan_assignments: {
         Row: {
           assigned_at: string
@@ -435,8 +378,7 @@ export type Database = {
       }
       client_plans: {
         Row: {
-          client_id: string
-          coach_id: string
+          coach_client_id: string
           completed_at: string | null
           created_at: string
           data: Json
@@ -455,8 +397,7 @@ export type Database = {
           version: number
         }
         Insert: {
-          client_id: string
-          coach_id: string
+          coach_client_id: string
           completed_at?: string | null
           created_at?: string
           data?: Json
@@ -475,8 +416,7 @@ export type Database = {
           version?: number
         }
         Update: {
-          client_id?: string
-          coach_id?: string
+          coach_client_id?: string
           completed_at?: string | null
           created_at?: string
           data?: Json
@@ -496,11 +436,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "client_plans_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: "client_plans_coach_client_id_fkey"
+            columns: ["coach_client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "coach_clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_plans_coach_client_id_fkey"
+            columns: ["coach_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_coach_client_details"
+            referencedColumns: ["coach_client_id"]
           },
           {
             foreignKeyName: "client_plans_derived_from_template_id_fkey"
@@ -823,8 +770,7 @@ export type Database = {
       events: {
         Row: {
           aligned_to_slot: boolean | null
-          client_id: string
-          coach_id: string
+          coach_client_id: string
           color: string | null
           created_at: string
           end_at: string
@@ -847,8 +793,7 @@ export type Database = {
         }
         Insert: {
           aligned_to_slot?: boolean | null
-          client_id: string
-          coach_id: string
+          coach_client_id: string
           color?: string | null
           created_at?: string
           end_at: string
@@ -871,8 +816,7 @@ export type Database = {
         }
         Update: {
           aligned_to_slot?: boolean | null
-          client_id?: string
-          coach_id?: string
+          coach_client_id?: string
           color?: string | null
           created_at?: string
           end_at?: string
@@ -895,11 +839,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "events_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: "events_coach_client_id_fkey"
+            columns: ["coach_client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "coach_clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_coach_client_id_fkey"
+            columns: ["coach_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_coach_client_details"
+            referencedColumns: ["coach_client_id"]
           },
         ]
       }
@@ -1009,45 +960,6 @@ export type Database = {
           },
         ]
       }
-      measurement_types: {
-        Row: {
-          code: string
-          created_at: string
-          decimals: number | null
-          id: string
-          is_active: boolean | null
-          max_value: number | null
-          min_value: number | null
-          name: string
-          unit: string | null
-          updated_at: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          decimals?: number | null
-          id?: string
-          is_active?: boolean | null
-          max_value?: number | null
-          min_value?: number | null
-          name: string
-          unit?: string | null
-          updated_at?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          decimals?: number | null
-          id?: string
-          is_active?: boolean | null
-          max_value?: number | null
-          min_value?: number | null
-          name?: string
-          unit?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       measurements: {
         Row: {
           arm_cm: number | null
@@ -1150,8 +1062,7 @@ export type Database = {
       }
       package: {
         Row: {
-          client_id: string
-          coach_id: string
+          coach_client_id: string
           consumed_sessions: number
           created_at: string
           currency_code: string
@@ -1172,8 +1083,7 @@ export type Database = {
           usage_status: Database["public"]["Enums"]["package_usage_status"]
         }
         Insert: {
-          client_id: string
-          coach_id: string
+          coach_client_id: string
           consumed_sessions?: number
           created_at?: string
           currency_code?: string
@@ -1194,8 +1104,7 @@ export type Database = {
           usage_status?: Database["public"]["Enums"]["package_usage_status"]
         }
         Update: {
-          client_id?: string
-          coach_id?: string
+          coach_client_id?: string
           consumed_sessions?: number
           created_at?: string
           currency_code?: string
@@ -1217,63 +1126,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "package_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: "package_coach_client_id_fkey"
+            columns: ["coach_client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "coach_clients"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "package_coach_id_fkey"
-            columns: ["coach_id"]
+            foreignKeyName: "package_coach_client_id_fkey"
+            columns: ["coach_client_id"]
             isOneToOne: false
-            referencedRelation: "coaches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      package_consumptions: {
-        Row: {
-          client_package_id: string
-          consumed_at: string
-          created_at: string
-          id: string
-          reason: string | null
-          session_id: string | null
-          units: number
-        }
-        Insert: {
-          client_package_id: string
-          consumed_at?: string
-          created_at?: string
-          id?: string
-          reason?: string | null
-          session_id?: string | null
-          units?: number
-        }
-        Update: {
-          client_package_id?: string
-          consumed_at?: string
-          created_at?: string
-          id?: string
-          reason?: string | null
-          session_id?: string | null
-          units?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "package_consumptions_client_package_id_fkey"
-            columns: ["client_package_id"]
-            isOneToOne: false
-            referencedRelation: "client_packages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "package_consumptions_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: true
-            referencedRelation: "training_sessions"
-            referencedColumns: ["id"]
+            referencedRelation: "v_coach_client_details"
+            referencedColumns: ["coach_client_id"]
           },
         ]
       }
@@ -1390,53 +1254,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "package_settings_coach_id_fkey"
-            columns: ["coach_id"]
-            isOneToOne: false
-            referencedRelation: "coaches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      package_types: {
-        Row: {
-          coach_id: string
-          created_at: string
-          description: string | null
-          duration_days: number | null
-          id: string
-          is_active: boolean
-          name: string
-          price_cents: number
-          total_sessions: number
-          updated_at: string
-        }
-        Insert: {
-          coach_id: string
-          created_at?: string
-          description?: string | null
-          duration_days?: number | null
-          id?: string
-          is_active?: boolean
-          name: string
-          price_cents: number
-          total_sessions: number
-          updated_at?: string
-        }
-        Update: {
-          coach_id?: string
-          created_at?: string
-          description?: string | null
-          duration_days?: number | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          price_cents?: number
-          total_sessions?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "package_types_coach_id_fkey"
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "coaches"
@@ -1714,8 +1531,7 @@ export type Database = {
       }
       training_sessions: {
         Row: {
-          client_id: string
-          coach_id: string
+          coach_client_id: string
           created_at: string
           day_id: string | null
           ended_at: string | null
@@ -1730,8 +1546,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          client_id: string
-          coach_id: string
+          coach_client_id: string
           created_at?: string
           day_id?: string | null
           ended_at?: string | null
@@ -1746,8 +1561,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          client_id?: string
-          coach_id?: string
+          coach_client_id?: string
           created_at?: string
           day_id?: string | null
           ended_at?: string | null
@@ -1763,17 +1577,52 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "training_sessions_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: "training_sessions_coach_client_id_fkey"
+            columns: ["coach_client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "coach_clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_coach_client_id_fkey"
+            columns: ["coach_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_coach_client_details"
+            referencedColumns: ["coach_client_id"]
           },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      v_coach_client_details: {
+        Row: {
+          client_id: string | null
+          client_status: Database["public"]["Enums"]["client_status"] | null
+          coach_client_id: string | null
+          coach_id: string | null
+          email: string | null
+          first_name: string | null
+          last_name: string | null
+          phone: string | null
+          relationship_status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_clients_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       compute_client_table_data_batch: {

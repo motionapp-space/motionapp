@@ -11,21 +11,27 @@ export async function listSessions(filters: SessionsFilters = {}): Promise<Train
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  // Get coach_clients for this coach
+  const { data: coachClients } = await supabase
+    .from("coach_clients")
+    .select("id, client_id")
+    .eq("coach_id", user.id);
+
+  if (!coachClients || coachClients.length === 0) return [];
+
+  let coachClientIds = coachClients.map(cc => cc.id);
+
+  // If filtering by coach_client_id, use that directly
+  if (filters.coach_client_id) {
+    coachClientIds = [filters.coach_client_id];
+  }
+
   let query = supabase
     .from("training_sessions")
-    .select(`
-      *,
-      clients (
-        first_name,
-        last_name
-      )
-    `)
-    .eq("coach_id", user.id)
+    .select("*")
+    .in("coach_client_id", coachClientIds)
     .order("started_at", { ascending: false, nullsFirst: false });
 
-  if (filters.client_id) {
-    query = query.eq("client_id", filters.client_id);
-  }
   if (filters.status) {
     query = query.eq("status", filters.status);
   }
@@ -39,13 +45,22 @@ export async function listSessions(filters: SessionsFilters = {}): Promise<Train
   const { data, error } = await query;
   if (error) throw error;
 
+  // Get client details
+  const clientIds = coachClients.map(cc => cc.client_id);
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("id, first_name, last_name")
+    .in("id", clientIds);
+
+  const clientMap = new Map(clients?.map(c => [c.id, c]) || []);
+  const ccMap = new Map(coachClients.map(cc => [cc.id, cc.client_id]));
+
   return (data || []).map((session: any) => {
-    const clients = session.clients as any;
+    const clientId = ccMap.get(session.coach_client_id);
+    const client = clientId ? clientMap.get(clientId) : null;
     return {
       ...session,
-      client_name: clients
-        ? `${clients.first_name} ${clients.last_name}`
-        : "Unknown",
+      client_name: client ? `${client.first_name} ${client.last_name}` : "Unknown",
     };
   });
 }
@@ -56,38 +71,41 @@ export async function getSession(id: string): Promise<TrainingSessionWithClient>
 
   const { data, error } = await supabase
     .from("training_sessions")
-    .select(`
-      *,
-      clients (
-        first_name,
-        last_name
-      )
-    `)
+    .select("*")
     .eq("id", id)
-    .eq("coach_id", user.id)
     .single();
 
   if (error) throw error;
   if (!data) throw new Error("Session not found");
 
-  const clients = (data as any).clients;
+  // Get coach_client details
+  const { data: cc } = await supabase
+    .from("coach_clients")
+    .select("client_id")
+    .eq("id", data.coach_client_id)
+    .single();
+
+  const { data: client } = await supabase
+    .from("clients")
+    .select("first_name, last_name")
+    .eq("id", cc?.client_id)
+    .single();
+
   return {
     ...data,
-    client_name: clients
-      ? `${clients.first_name} ${clients.last_name}`
-      : "Unknown",
+    client_name: client ? `${client.first_name} ${client.last_name}` : "Unknown",
   } as TrainingSessionWithClient;
 }
 
 export async function createSession(input: CreateSessionInput): Promise<TrainingSession> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
   const { data, error } = await supabase
     .from("training_sessions")
     .insert({
-      ...input,
-      coach_id: user.id,
+      coach_client_id: input.coach_client_id,
+      plan_id: input.plan_id,
+      day_id: input.day_id,
+      event_id: input.event_id,
+      scheduled_at: input.scheduled_at,
       status: "in_progress",
       started_at: new Date().toISOString(),
       source: input.source || "with_coach",
@@ -124,20 +142,22 @@ export async function getActiveSession(): Promise<TrainingSessionWithClient | nu
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  // Get coach_clients for this coach
+  const { data: coachClients } = await supabase
+    .from("coach_clients")
+    .select("id, client_id")
+    .eq("coach_id", user.id);
+
+  if (!coachClients || coachClients.length === 0) return null;
+
   // Solo sessioni avviate nelle ultime 12 ore (ignora sessioni "zombie")
   const twelveHoursAgo = new Date();
   twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
 
   const { data, error } = await supabase
     .from("training_sessions")
-    .select(`
-      *,
-      clients (
-        first_name,
-        last_name
-      )
-    `)
-    .eq("coach_id", user.id)
+    .select("*")
+    .in("coach_client_id", coachClients.map(cc => cc.id))
     .eq("status", "in_progress")
     .gte("started_at", twelveHoursAgo.toISOString())
     .order("started_at", { ascending: false })
@@ -147,11 +167,15 @@ export async function getActiveSession(): Promise<TrainingSessionWithClient | nu
   if (error) throw error;
   if (!data) return null;
 
-  const clients = (data as any).clients;
+  const cc = coachClients.find(c => c.id === data.coach_client_id);
+  const { data: client } = await supabase
+    .from("clients")
+    .select("first_name, last_name")
+    .eq("id", cc?.client_id)
+    .single();
+
   return {
     ...data,
-    client_name: clients
-      ? `${clients.first_name} ${clients.last_name}`
-      : "Unknown",
+    client_name: client ? `${client.first_name} ${client.last_name}` : "Unknown",
   } as TrainingSessionWithClient;
 }

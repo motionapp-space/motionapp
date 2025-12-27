@@ -3,28 +3,31 @@ import type { ClientPlanWithTemplate, AssignTemplateInput, SaveAsTemplateInput }
 import type { ClientPlan } from "@/features/client-plans/types";
 import { getTemplate } from "@/features/templates/api/templates.api";
 import { assignPlanToClient } from "@/features/clients/api/client-fsm.api";
+import { getCoachClientId } from "@/lib/coach-client";
 
 export async function getClientPlans(clientId: string) {
+  const coachClientId = await getCoachClientId(clientId);
+
   const { data, error } = await supabase
     .from("client_plans")
     .select("*")
-    .eq("client_id", clientId)
+    .eq("coach_client_id", coachClientId)
     .order("updated_at", { ascending: false });
 
   if (error) throw error;
 
   // Fetch templates for plans with derived_from_template_id
   const plansWithTemplates = await Promise.all(
-    (data as ClientPlan[]).map(async (plan) => {
+    (data || []).map(async (plan: any) => {
       if (plan.derived_from_template_id) {
         try {
           const template = await getTemplate(plan.derived_from_template_id);
-          return { ...plan, template };
+          return { ...plan, template } as ClientPlanWithTemplate;
         } catch {
-          return plan;
+          return plan as ClientPlan;
         }
       }
-      return plan;
+      return plan as ClientPlan;
     })
   );
 
@@ -83,14 +86,12 @@ export async function createClientPlanFromScratch(
   clientId: string,
   input: { name: string; description?: string; objective?: string; data: any }
 ) {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) throw new Error("Not authenticated");
+  const coachClientId = await getCoachClientId(clientId);
 
   const { data, error } = await supabase
     .from("client_plans")
     .insert({
-      client_id: clientId,
-      coach_id: auth.user.id,
+      coach_client_id: coachClientId,
       name: input.name,
       description: input.description,
       objective: input.objective,
@@ -145,26 +146,35 @@ export async function saveClientPlanAsTemplate(planId: string, input: SaveAsTemp
 
   // Optionally assign this new template to the client
   if (input.also_assign) {
-    // Use FSM to assign plan properly
-    await assignPlanToClient(plan.client_id, {
-      name: input.name,
-      description: input.description,
-      data: plan.data,
-    });
-
-    // Update the newly created plan to link it to the template
-    const { data: clientPlan } = await supabase
-      .from("client_plans")
-      .select("*")
-      .eq("client_id", plan.client_id)
-      .eq("status", "IN_CORSO")
+    // Get the coach_client_id from the plan
+    const { data: cc } = await supabase
+      .from("coach_clients")
+      .select("client_id")
+      .eq("id", plan.coach_client_id)
       .single();
 
-    if (clientPlan) {
-      await supabase
+    if (cc) {
+      // Use FSM to assign plan properly
+      await assignPlanToClient(cc.client_id, {
+        name: input.name,
+        description: input.description,
+        data: plan.data,
+      });
+
+      // Update the newly created plan to link it to the template
+      const { data: clientPlan } = await supabase
         .from("client_plans")
-        .update({ derived_from_template_id: newTemplate.id })
-        .eq("id", clientPlan.id);
+        .select("*")
+        .eq("coach_client_id", plan.coach_client_id)
+        .eq("status", "IN_CORSO")
+        .single();
+
+      if (clientPlan) {
+        await supabase
+          .from("client_plans")
+          .update({ derived_from_template_id: newTemplate.id })
+          .eq("id", clientPlan.id);
+      }
     }
   }
 

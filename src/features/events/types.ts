@@ -1,7 +1,6 @@
 export interface Event {
   id: string;
-  coach_id: string;
-  client_id: string;
+  coach_client_id: string;
   title: string;
   start_at: string;
   end_at: string;
@@ -16,6 +15,9 @@ export interface Event {
   session_status?: "scheduled" | "done" | "canceled" | "no_show";
   aligned_to_slot?: boolean;
   source?: 'manual' | 'generated' | 'client';
+  proposal_status?: string;
+  proposed_start_at?: string;
+  proposed_end_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -25,7 +27,7 @@ export interface EventWithClient extends Event {
 }
 
 export interface CreateEventInput {
-  client_id: string;
+  coach_client_id: string;
   title: string;
   start_at: string;
   end_at: string;
@@ -44,7 +46,7 @@ export interface CreateEventInput {
 
 export interface UpdateEventInput {
   title?: string;
-  client_id?: string;
+  coach_client_id?: string;
   start_at?: string;
   end_at?: string;
   location?: string;
@@ -58,6 +60,9 @@ export interface UpdateEventInput {
   session_status?: "scheduled" | "done" | "canceled" | "no_show";
   aligned_to_slot?: boolean;
   source?: 'manual' | 'generated' | 'client';
+  proposal_status?: string;
+  proposed_start_at?: string;
+  proposed_end_at?: string;
 }
 
 export interface EventsFilters {

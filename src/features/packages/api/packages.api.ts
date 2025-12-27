@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logClientActivity } from "@/features/clients/api/activities.api";
+import { getCoachClientId } from "@/lib/coach-client";
 import type { 
   Package, 
   PackageWithClient, 
@@ -13,14 +14,12 @@ import type {
  * Get all packages for a specific client
  */
 export async function getClientPackages(clientId: string): Promise<Package[]> {
-  const { data: session } = await supabase.auth.getSession();
-  if (!session.session) throw new Error("Non autenticato");
+  const coachClientId = await getCoachClientId(clientId);
 
   const { data, error } = await supabase
     .from("package")
     .select("*")
-    .eq("client_id", clientId)
-    .eq("coach_id", session.session.user.id)
+    .eq("coach_client_id", coachClientId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -31,14 +30,10 @@ export async function getClientPackages(clientId: string): Promise<Package[]> {
  * Get a single package by ID
  */
 export async function getPackage(packageId: string): Promise<Package> {
-  const { data: session } = await supabase.auth.getSession();
-  if (!session.session) throw new Error("Non autenticato");
-
   const { data, error } = await supabase
     .from("package")
     .select("*")
     .eq("package_id", packageId)
-    .eq("coach_id", session.session.user.id)
     .single();
 
   if (error) throw error;
@@ -49,14 +44,12 @@ export async function getPackage(packageId: string): Promise<Package> {
  * Get active package for a client (if exists)
  */
 export async function getActivePackage(clientId: string): Promise<Package | null> {
-  const { data: session } = await supabase.auth.getSession();
-  if (!session.session) throw new Error("Non autenticato");
+  const coachClientId = await getCoachClientId(clientId);
 
   const { data, error } = await supabase
     .from("package")
     .select("*")
-    .eq("client_id", clientId)
-    .eq("coach_id", session.session.user.id)
+    .eq("coach_client_id", coachClientId)
     .eq("usage_status", "active")
     .maybeSingle();
 
@@ -68,11 +61,23 @@ export async function getActivePackage(clientId: string): Promise<Package | null
  * Create a new package
  */
 export async function createPackage(input: CreatePackageInput): Promise<Package> {
-  const { data: session } = await supabase.auth.getSession();
-  if (!session.session) throw new Error("Non autenticato");
+  // Get client_id from coach_client
+  const { data: cc } = await supabase
+    .from("coach_clients")
+    .select("client_id")
+    .eq("id", input.coach_client_id)
+    .single();
+
+  if (!cc) throw new Error("Coach-client relationship not found");
 
   // Check if an active package already exists for this client
-  const existingActive = await getActivePackage(input.client_id);
+  const { data: existingActive } = await supabase
+    .from("package")
+    .select("package_id")
+    .eq("coach_client_id", input.coach_client_id)
+    .eq("usage_status", "active")
+    .maybeSingle();
+
   if (existingActive) {
     throw new Error("Esiste già un pacchetto attivo per questo cliente");
   }
@@ -107,8 +112,9 @@ export async function createPackage(input: CreatePackageInput): Promise<Package>
   const { data, error } = await supabase
     .from("package")
     .insert({
-      ...input,
-      coach_id: session.session.user.id,
+      coach_client_id: input.coach_client_id,
+      name: input.name,
+      total_sessions: input.total_sessions,
       price_total_cents: price,
       price_source,
       duration_months,
@@ -116,6 +122,8 @@ export async function createPackage(input: CreatePackageInput): Promise<Package>
       usage_status: 'active',
       payment_status: input.payment_status || 'unpaid',
       is_single_technical: input.is_single_technical || false,
+      payment_method: input.payment_method,
+      notes_internal: input.notes_internal,
     })
     .select()
     .single();
@@ -124,7 +132,7 @@ export async function createPackage(input: CreatePackageInput): Promise<Package>
   
   // Log activity
   await logClientActivity(
-    data.client_id,
+    cc.client_id,
     "PACKAGE_CREATED",
     `Pacchetto "${data.name}" creato`
   );
@@ -139,9 +147,6 @@ export async function updatePackage(
   packageId: string, 
   input: UpdatePackageInput
 ): Promise<Package> {
-  const { data: session } = await supabase.auth.getSession();
-  if (!session.session) throw new Error("Non autenticato");
-
   // If changing price, mark as custom
   const updates: any = { ...input };
   if (input.price_total_cents !== undefined) {
@@ -152,7 +157,6 @@ export async function updatePackage(
     .from("package")
     .update(updates)
     .eq("package_id", packageId)
-    .eq("coach_id", session.session.user.id)
     .select()
     .single();
 
@@ -244,13 +248,18 @@ export async function listAllPackages(filters?: PackageFilters): Promise<Package
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new Error("Non autenticato");
 
+  // Get coach_clients
+  const { data: coachClients } = await supabase
+    .from("coach_clients")
+    .select("id, client_id")
+    .eq("coach_id", session.session.user.id);
+
+  if (!coachClients || coachClients.length === 0) return [];
+
   let query = supabase
     .from("package")
-    .select(`
-      *,
-      clients!package_client_id_fkey(first_name, last_name)
-    `)
-    .eq("coach_id", session.session.user.id);
+    .select("*")
+    .in("coach_client_id", coachClients.map(cc => cc.id));
 
   if (filters?.usage_status && filters.usage_status.length > 0) {
     query = query.in("usage_status", filters.usage_status);
@@ -267,12 +276,25 @@ export async function listAllPackages(filters?: PackageFilters): Promise<Package
   query = query.order("created_at", { ascending: false });
 
   const { data, error } = await query;
-
   if (error) throw error;
+
+  // Get client details
+  const clientIds = coachClients.map(cc => cc.client_id);
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("id, first_name, last_name")
+    .in("id", clientIds);
+
+  const clientMap = new Map(clients?.map(c => [c.id, c]) || []);
+  const ccMap = new Map(coachClients.map(cc => [cc.id, cc.client_id]));
   
-  return (data || []).map(pkg => ({
-    ...pkg,
-    client_first_name: pkg.clients?.first_name || '',
-    client_last_name: pkg.clients?.last_name || '',
-  }));
+  return (data || []).map(pkg => {
+    const clientId = ccMap.get(pkg.coach_client_id);
+    const client = clientId ? clientMap.get(clientId) : null;
+    return {
+      ...pkg,
+      client_first_name: client?.first_name || '',
+      client_last_name: client?.last_name || '',
+    };
+  });
 }

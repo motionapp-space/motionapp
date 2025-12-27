@@ -27,8 +27,7 @@ export interface ExerciseActual {
 
 export interface TrainingSession {
   id: string;
-  coach_id: string;
-  client_id: string;
+  coach_client_id: string;
   plan_id?: string;
   day_id?: string;
   event_id?: string;
@@ -47,7 +46,7 @@ export interface TrainingSessionWithClient extends TrainingSession {
 }
 
 export interface CreateSessionInput {
-  client_id: string;
+  coach_client_id: string;
   plan_id?: string;
   day_id?: string;
   event_id?: string;
@@ -75,7 +74,7 @@ export interface CreateActualInput {
 }
 
 export interface SessionsFilters {
-  client_id?: string;
+  coach_client_id?: string;
   status?: SessionStatus;
   start_date?: string;
   end_date?: string;

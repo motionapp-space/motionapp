@@ -7,8 +7,7 @@ export type LedgerReason = 'CONFIRM' | 'CANCEL_GT_24H' | 'CANCEL_LT_24H' | 'COMP
 
 export interface Package {
   package_id: string;
-  client_id: string;
-  coach_id: string;
+  coach_client_id: string;
   name: string;
   total_sessions: number; // DB constraint ensures 1|5|10|20
   consumed_sessions: number;
@@ -89,7 +88,7 @@ export interface PackageSettings {
 }
 
 export interface CreatePackageInput {
-  client_id: string;
+  coach_client_id: string;
   name: string;
   total_sessions: number; // Should be 1, 5, 10, or 20
   price_total_cents?: number | null;
