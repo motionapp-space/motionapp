@@ -42,8 +42,10 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
         tag:client_tags(*)
       ),
       current_plan:client_plans!active_plan_id(name),
-      packages:package(package_id, consumed_sessions, total_sessions),
-      sessions:training_sessions(id, started_at)
+      coach_client:coach_clients!coach_clients_client_id_fkey(
+        packages:package(package_id, consumed_sessions, total_sessions),
+        sessions:training_sessions(id, started_at)
+      )
     `, { count: "exact" })
     .eq("coach_id", user.id);
 
@@ -136,8 +138,10 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
 
   // Transform data structure
   let items: ClientWithDetails[] = (data || []).map((client: any) => {
-    const activePackage = client.packages?.find((p: any) => p.consumed_sessions < p.total_sessions);
-    const lastSession = client.sessions?.sort((a: any, b: any) => 
+    // Extract packages and sessions from the coach_client relationship
+    const coachClient = client.coach_client?.[0]; // First (primary) coach_client
+    const activePackage = coachClient?.packages?.find((p: any) => p.consumed_sessions < p.total_sessions);
+    const lastSession = coachClient?.sessions?.sort((a: any, b: any) => 
       new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
     )[0];
 
@@ -155,8 +159,7 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       appointment_status: computed?.appointment_status,
       activity_status: computed?.activity_status,
       next_appointment_date: computed?.next_appointment_date,
-      packages: undefined,
-      sessions: undefined,
+      coach_client: undefined, // Remove the nested object
       current_plan: undefined,
     };
   });
