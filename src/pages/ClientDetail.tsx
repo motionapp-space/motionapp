@@ -111,7 +111,7 @@ const ClientDetail = () => {
   };
 
   const handleDuplicatePlan = (planId: string) => {
-    duplicatePlanMutation.mutate({ planId });
+    duplicatePlanMutation.mutate({ planId, clientId: id! });
   };
 
   const handleCompletePlan = async (planId: string) => {

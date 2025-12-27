@@ -48,12 +48,12 @@ export default function ClientWorkouts() {
     );
   }
 
-  return <ClientWorkoutsContent clientId={client.id} />;
+  return <ClientWorkoutsContent />;
 }
 
-function ClientWorkoutsContent({ clientId }: { clientId: string }) {
-  const { data: activePlan, isLoading: isPlanLoading } = useClientActivePlan(clientId);
-  const { data: sessions, isLoading: isSessionsLoading } = useClientSessions(clientId);
+function ClientWorkoutsContent() {
+  const { data: activePlan, isLoading: isPlanLoading } = useClientActivePlan();
+  const { data: sessions, isLoading: isSessionsLoading } = useClientSessions();
 
   return (
     <div className="px-5 py-5 space-y-6 pb-24">

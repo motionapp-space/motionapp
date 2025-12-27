@@ -58,6 +58,21 @@ export async function getActivePackage(clientId: string): Promise<Package | null
 }
 
 /**
+ * Get active package by coach_client_id directly (if exists)
+ */
+export async function getActivePackageByCoachClient(coachClientId: string): Promise<Package | null> {
+  const { data, error } = await supabase
+    .from("package")
+    .select("*")
+    .eq("coach_client_id", coachClientId)
+    .eq("usage_status", "active")
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
  * Create a new package
  */
 export async function createPackage(input: CreatePackageInput): Promise<Package> {

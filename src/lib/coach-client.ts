@@ -77,6 +77,23 @@ export async function getCoachClientDetails(coachClientId: string): Promise<{
 }
 
 /**
+ * Get client_id from a coach_client_id (sync version using cached data)
+ */
+export async function getClientIdFromCoachClient(coachClientId: string): Promise<string> {
+  const { data, error } = await supabase
+    .from("coach_clients")
+    .select("client_id")
+    .eq("id", coachClientId)
+    .single();
+
+  if (error || !data) {
+    throw new Error("Coach-client relationship not found");
+  }
+
+  return data.client_id;
+}
+
+/**
  * Get coach_client_id for client user (from auth_user_id)
  */
 export async function getClientCoachClientId(): Promise<{

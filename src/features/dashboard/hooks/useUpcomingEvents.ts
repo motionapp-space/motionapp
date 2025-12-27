@@ -8,7 +8,7 @@ interface EventWithClient {
   start_at: string;
   end_at: string;
   client_name: string;
-  client_id: string;
+  coach_client_id: string;
 }
 
 interface UpcomingEventsData {
@@ -27,18 +27,30 @@ async function fetchUpcomingEvents(): Promise<UpcomingEventsData> {
   const prev7DaysStart = startOfDay(subDays(now, 7));
   const prev7DaysEnd = endOfDay(now);
 
+  // Get coach_clients for this coach
+  const { data: coachClients } = await supabase
+    .from("coach_clients")
+    .select("id, client_id")
+    .eq("coach_id", user.id);
+
+  if (!coachClients || coachClients.length === 0) {
+    return { events: [], count: 0, change: 0 };
+  }
+
+  // Get clients for names
+  const { data: clientsData } = await supabase
+    .from("clients")
+    .select("id, first_name, last_name")
+    .in("id", coachClients.map(cc => cc.client_id));
+
+  const clientMap = new Map(clientsData?.map(c => [c.id, c]) || []);
+  const ccToClientMap = new Map(coachClients.map(cc => [cc.id, cc.client_id]));
+
   // Fetch upcoming events (next 7 days)
   const { data: upcomingEvents, error: upcomingError } = await supabase
     .from("events")
-    .select(`
-      id,
-      title,
-      start_at,
-      end_at,
-      client_id,
-      clients!inner(first_name, last_name)
-    `)
-    .eq("coach_id", user.id)
+    .select("id, title, start_at, end_at, coach_client_id")
+    .in("coach_client_id", coachClients.map(cc => cc.id))
     .gte("start_at", todayStart.toISOString())
     .lte("start_at", next7Days.toISOString())
     .order("start_at", { ascending: true });
@@ -49,20 +61,24 @@ async function fetchUpcomingEvents(): Promise<UpcomingEventsData> {
   const { data: prevEvents, error: prevError } = await supabase
     .from("events")
     .select("id")
-    .eq("coach_id", user.id)
+    .in("coach_client_id", coachClients.map(cc => cc.id))
     .gte("start_at", prev7DaysStart.toISOString())
     .lte("start_at", prev7DaysEnd.toISOString());
 
   if (prevError) throw prevError;
 
-  const events: EventWithClient[] = (upcomingEvents || []).map((event: any) => ({
-    id: event.id,
-    title: event.title,
-    start_at: event.start_at,
-    end_at: event.end_at,
-    client_id: event.client_id,
-    client_name: `${event.clients.first_name} ${event.clients.last_name}`,
-  }));
+  const events: EventWithClient[] = (upcomingEvents || []).map((event) => {
+    const clientId = ccToClientMap.get(event.coach_client_id);
+    const client = clientId ? clientMap.get(clientId) : null;
+    return {
+      id: event.id,
+      title: event.title,
+      start_at: event.start_at,
+      end_at: event.end_at,
+      coach_client_id: event.coach_client_id,
+      client_name: client ? `${client.first_name} ${client.last_name}` : 'Cliente',
+    };
+  });
 
   const currentCount = events.length;
   const previousCount = (prevEvents || []).length;

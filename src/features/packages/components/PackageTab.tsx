@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -28,6 +28,7 @@ import {
 } from "../hooks/usePackageActions";
 import type { CreatePackageInput, PackagePaymentStatus, Package } from "../types";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
+import { getCoachClientId } from "@/lib/coach-client";
 
 interface PackageTabProps {
   clientId: string;
@@ -39,6 +40,7 @@ export function PackageTab({ clientId }: PackageTabProps) {
   const [packageToArchive, setPackageToArchive] = useState<string | null>(null);
   const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
+  const [coachClientId, setCoachClientId] = useState<string | null>(null);
   
   const { data: packages, isLoading, error } = useClientPackages(clientId);
   const { data: clients } = useClientsQuery({});
@@ -46,6 +48,11 @@ export function PackageTab({ clientId }: PackageTabProps) {
   const updateMutation = useUpdatePackage();
   const archiveMutation = useArchivePackage();
   const suspensionMutation = useToggleSuspension();
+
+  // Get coach_client_id for this client
+  useEffect(() => {
+    getCoachClientId(clientId).then(setCoachClientId).catch(console.error);
+  }, [clientId]);
 
   const client = clients?.items.find(c => c.id === clientId);
   const activePackage = packages?.find(p => p.usage_status === 'active');
@@ -184,13 +191,15 @@ export function PackageTab({ clientId }: PackageTabProps) {
         </>
       )}
 
-      <PackageDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        clientId={clientId}
-        onSubmit={handleCreate}
-        isLoading={createMutation.isPending}
-      />
+      {coachClientId && (
+        <PackageDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          coachClientId={coachClientId}
+          onSubmit={handleCreate}
+          isLoading={createMutation.isPending}
+        />
+      )}
 
       <AlertDialog open={archiveConfirmOpen} onOpenChange={setArchiveConfirmOpen}>
         <AlertDialogContent>

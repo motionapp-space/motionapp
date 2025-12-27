@@ -8,10 +8,18 @@ export function usePendingCount() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return 0;
 
+      // Get coach_clients for this coach
+      const { data: coachClients } = await supabase
+        .from("coach_clients")
+        .select("id")
+        .eq("coach_id", user.id);
+
+      if (!coachClients || coachClients.length === 0) return 0;
+
       const { count, error } = await supabase
         .from("booking_requests")
         .select("*", { count: "exact", head: true })
-        .eq("coach_id", user.id)
+        .in("coach_client_id", coachClients.map(cc => cc.id))
         .eq("status", "PENDING");
 
       if (error) throw error;
