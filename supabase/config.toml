@@ -2,3 +2,6 @@ project_id = "qadgzwsmiadxwwvsrauz"
 
 [functions.auto-complete-events]
 verify_jwt = false
+
+[functions.create-client-auth]
+verify_jwt = false
