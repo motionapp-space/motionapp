@@ -161,11 +161,23 @@ async function assignPlan(supabase: any, client: any, userId: string, metadata: 
 
   const fromClientStatus = client.status;
 
+  // First get the coach_client relationship
+  const { data: coachClient } = await supabase
+    .from('coach_clients')
+    .select('id')
+    .eq('client_id', client.id)
+    .eq('coach_id', userId)
+    .single();
+
+  if (!coachClient) {
+    throw new Error('Coach-client relationship not found');
+  }
+
   // Check if there are any existing IN_CORSO plans (handle multiple)
   const { data: existingPlans } = await supabase
     .from('client_plans')
     .select('*')
-    .eq('client_id', client.id)
+    .eq('coach_client_id', coachClient.id)
     .eq('status', 'IN_CORSO')
     .eq('is_visible', true);
 
@@ -191,8 +203,7 @@ async function assignPlan(supabase: any, client: any, userId: string, metadata: 
   const { data: newPlan, error: planError } = await supabase
     .from('client_plans')
     .insert({
-      client_id: client.id,
-      coach_id: userId,
+      coach_client_id: coachClient.id,
       name: metadata?.name || 'New Plan',
       description: metadata?.description,
       data: metadata?.data || { days: [] },
@@ -321,11 +332,18 @@ async function unarchiveClient(supabase: any, client: any, userId: string) {
 }
 
 async function deletePlan(supabase: any, client: any, planId: string, userId: string) {
+  // Get coach_client relationship for this client
+  const { data: coachClient } = await supabase
+    .from('coach_clients')
+    .select('id')
+    .eq('client_id', client.id)
+    .single();
+
   const { data: plan, error: planError } = await supabase
     .from('client_plans')
     .select('*')
     .eq('id', planId)
-    .eq('client_id', client.id)
+    .eq('coach_client_id', coachClient?.id)
     .single();
 
   if (planError || !plan) {
@@ -367,11 +385,18 @@ async function deletePlan(supabase: any, client: any, planId: string, userId: st
 }
 
 async function completePlan(supabase: any, client: any, planId: string, userId: string) {
+  // Get coach_client relationship for this client
+  const { data: coachClient } = await supabase
+    .from('coach_clients')
+    .select('id')
+    .eq('client_id', client.id)
+    .single();
+
   const { data: plan, error: planError } = await supabase
     .from('client_plans')
     .select('*')
     .eq('id', planId)
-    .eq('client_id', client.id)
+    .eq('coach_client_id', coachClient?.id)
     .single();
 
   if (planError || !plan) {
