@@ -17,6 +17,7 @@ export interface ClientBookingSettings {
   slotDurationMinutes: number;
   minAdvanceNoticeHours: number;
   maxFutureDays: number | null;
+  bufferBetweenMinutes: number;
 }
 
 export interface ClientAppointmentView {
