@@ -27,6 +27,7 @@ export async function listEvents(filters: EventsFilters = {}): Promise<EventWith
     .from("events")
     .select("*")
     .in("coach_client_id", coachClientIds)
+    .or("session_status.is.null,session_status.neq.canceled")
     .order("start_at", { ascending: true });
 
   if (filters.start_date) {
@@ -141,6 +142,7 @@ export async function getNextAppointment(clientId: string): Promise<EventWithCli
     .from("events")
     .select("*")
     .eq("coach_client_id", coachClientId)
+    .or("session_status.is.null,session_status.neq.canceled")
     .gte("start_at", now)
     .order("start_at", { ascending: true })
     .limit(1)
@@ -178,6 +180,7 @@ export async function getLastAppointment(clientId: string): Promise<EventWithCli
     .from("events")
     .select("*")
     .eq("coach_client_id", coachClientId)
+    .or("session_status.is.null,session_status.neq.canceled")
     .lt("end_at", now)
     .order("end_at", { ascending: false })
     .limit(1)
@@ -223,6 +226,7 @@ export async function getUpcomingCoachEvent(): Promise<EventWithClient | null> {
     .from("events")
     .select("*")
     .in("coach_client_id", coachClients.map(cc => cc.id))
+    .or("session_status.is.null,session_status.neq.canceled")
     .gte("start_at", now.toISOString())
     .lte("start_at", fifteenMinutesLater.toISOString())
     .order("start_at", { ascending: true })
