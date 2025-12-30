@@ -1,21 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { getClientSessions } from "../api/client-sessions.api";
-import { useEffect, useState } from "react";
+import { useClientAuth } from "@/contexts/ClientAuthContext";
 
 export function useClientSessions() {
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data.user?.id ?? null);
-    });
-  }, []);
+  const { userId } = useClientAuth();
 
   return useQuery({
     queryKey: ["client-sessions", userId],
-    queryFn: () => getClientSessions(),
-    enabled: !!userId,
+    queryFn: getClientSessions,
     staleTime: 60_000,
   });
 }

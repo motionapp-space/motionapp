@@ -3,6 +3,7 @@ import { Outlet, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useCurrentClient } from "@/features/client/hooks/useCurrentClient";
+import { ClientAuthProvider } from "@/contexts/ClientAuthContext";
 import ClientTopbar from "./ClientTopbar";
 import ClientBottomNav from "./ClientBottomNav";
 import { Card, CardContent } from "@/components/ui/card";
@@ -94,15 +95,17 @@ function AuthenticatedClientLayout({ userId }: { userId: string }) {
 
   // Fully authenticated and linked - render the app
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <ClientTopbar />
-      
-      <main className="flex-1 px-4 py-4 pb-20">
-        <Outlet />
-      </main>
-      
-      <ClientBottomNav />
-    </div>
+    <ClientAuthProvider userId={userId}>
+      <div className="flex flex-col min-h-screen bg-background">
+        <ClientTopbar />
+        
+        <main className="flex-1 px-4 py-4 pb-20">
+          <Outlet />
+        </main>
+        
+        <ClientBottomNav />
+      </div>
+    </ClientAuthProvider>
   );
 }
 
