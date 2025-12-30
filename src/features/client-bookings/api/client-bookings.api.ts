@@ -174,17 +174,35 @@ export async function getClientAppointments(): Promise<ClientAppointmentView[]> 
       request.requested_start_at
     );
 
+    // Titolo dinamico: "Appuntamento" se confermato, altrimenti "Richiesta appuntamento"
+    const title = status === 'CONFIRMED' ? 'Appuntamento' : 'Richiesta appuntamento';
+
+    // Calcola canCancel e cancelDeadline in base allo status
+    let canCancel = false;
+    let cancelDeadline: string | undefined;
+
+    if (status === 'REQUESTED' || status === 'COUNTER_PROPOSAL') {
+      // Richieste in attesa: sempre annullabili
+      canCancel = true;
+    } else if (status === 'CONFIRMED') {
+      // Appuntamenti confermati: applicare la finestra di cancellazione
+      const cancelInfo = canCancelAppointment(request.requested_start_at, settings.cancelPolicyHours);
+      canCancel = cancelInfo.canCancel;
+      cancelDeadline = cancelInfo.deadline;
+    }
+
     appointments.push({
       id: request.id,
       type: 'booking_request',
       status,
-      title: 'Richiesta appuntamento',
+      title,
       startAt: request.requested_start_at,
       endAt: request.requested_end_at,
       notes: request.notes || undefined,
       counterProposedStartAt: request.counter_proposal_start_at || undefined,
       counterProposedEndAt: request.counter_proposal_end_at || undefined,
-      canCancel: status === 'REQUESTED' || status === 'COUNTER_PROPOSAL',
+      canCancel,
+      cancelDeadline,
     });
   }
 
