@@ -52,11 +52,20 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Split name into first_name and last_name for Unified Identity
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || null;
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { name },
+          data: { 
+            first_name: firstName,
+            last_name: lastName,
+            name: name.trim(), // Keep for backward compatibility
+          },
           emailRedirectTo: `${window.location.origin}/`,
         },
       });

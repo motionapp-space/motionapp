@@ -30,6 +30,21 @@ serve(async (req) => {
 
     console.log(`Creating auth user for email: ${email}, clientId: ${clientId}`);
 
+    // Fetch client data to populate users table
+    const { data: clientData, error: clientFetchError } = await supabaseAdmin
+      .from('clients')
+      .select('first_name, last_name, email')
+      .eq('id', clientId)
+      .single();
+
+    if (clientFetchError || !clientData) {
+      console.error('Error fetching client data:', clientFetchError);
+      return new Response(
+        JSON.stringify({ error: 'Client not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Create the auth user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -47,15 +62,63 @@ serve(async (req) => {
 
     console.log(`Auth user created with id: ${authData.user.id}`);
 
-    // Update the client record with the auth_user_id
+    // Insert into public.users table (Unified Identity)
+    const { error: usersError } = await supabaseAdmin
+      .from('users')
+      .insert({
+        id: authData.user.id,
+        email: email,
+        first_name: clientData.first_name,
+        last_name: clientData.last_name,
+      });
+
+    if (usersError) {
+      console.error('Error creating users record:', usersError);
+      // Clean up auth user
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      return new Response(
+        JSON.stringify({ error: usersError.message }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Users record created for: ${authData.user.id}`);
+
+    // Assign 'client' role in user_roles table
+    const { error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .insert({
+        user_id: authData.user.id,
+        role: 'client',
+      });
+
+    if (roleError) {
+      console.error('Error assigning role:', roleError);
+      // Clean up: delete users record and auth user
+      await supabaseAdmin.from('users').delete().eq('id', authData.user.id);
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      return new Response(
+        JSON.stringify({ error: roleError.message }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Role 'client' assigned to user: ${authData.user.id}`);
+
+    // Update the client record with auth_user_id and user_id
     const { error: updateError } = await supabaseAdmin
       .from('clients')
-      .update({ auth_user_id: authData.user.id })
+      .update({ 
+        auth_user_id: authData.user.id,
+        user_id: authData.user.id 
+      })
       .eq('id', clientId);
 
     if (updateError) {
       console.error('Error updating client:', updateError);
-      // Try to clean up the auth user if client update fails
+      // Clean up everything
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', authData.user.id);
+      await supabaseAdmin.from('users').delete().eq('id', authData.user.id);
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       return new Response(
         JSON.stringify({ error: updateError.message }),
@@ -63,7 +126,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Client ${clientId} updated with auth_user_id: ${authData.user.id}`);
+    console.log(`Client ${clientId} updated with auth_user_id and user_id: ${authData.user.id}`);
 
     return new Response(
       JSON.stringify({ 

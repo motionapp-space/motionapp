@@ -80,17 +80,17 @@ const App = () => {
     let cancelled = false;
 
     const initializeForCoach = async () => {
-      // Check if the authenticated user is a client (has auth_user_id linked)
-      const { data: clientRecord } = await supabase
-        .from("clients")
-        .select("id")
-        .eq("auth_user_id", user.id)
+      // Check user role from user_roles table (Unified Identity pattern)
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (cancelled) return;
 
-      // Only coaches (users without a linked client record) should fetch active session
-      if (!clientRecord) {
+      // Only coaches should fetch active session and start polling
+      if (roleData?.role === 'coach') {
         fetchActiveSession();
         startPolling();
       }
