@@ -1636,6 +1636,14 @@ export type Database = {
           plan_weeks_since_assignment: number
         }[]
       }
+      get_coach_occupied_slots: {
+        Args: { p_coach_id: string; p_end_date: string; p_start_date: string }
+        Returns: {
+          end_at: string
+          slot_type: string
+          start_at: string
+        }[]
+      }
       get_shared_plan: {
         Args: { share_token: string }
         Returns: {
