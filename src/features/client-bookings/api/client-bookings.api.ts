@@ -80,7 +80,7 @@ export async function getClientBookingSettings(): Promise<ClientBookingSettings>
 
   const { data, error } = await supabase
     .from("booking_settings")
-    .select("enabled, cancel_policy_hours, slot_duration_minutes, min_advance_notice_hours, max_future_days")
+    .select("enabled, cancel_policy_hours, slot_duration_minutes, min_advance_notice_hours, max_future_days, buffer_between_minutes")
     .eq("coach_id", coach_id)
     .single();
 
@@ -92,7 +92,8 @@ export async function getClientBookingSettings(): Promise<ClientBookingSettings>
         cancelPolicyHours: 24,
         slotDurationMinutes: 60,
         minAdvanceNoticeHours: 24,
-        maxFutureDays: null
+        maxFutureDays: null,
+        bufferBetweenMinutes: 0
       };
     }
     throw error;
@@ -103,7 +104,8 @@ export async function getClientBookingSettings(): Promise<ClientBookingSettings>
     cancelPolicyHours: data.cancel_policy_hours ?? 24,
     slotDurationMinutes: data.slot_duration_minutes,
     minAdvanceNoticeHours: data.min_advance_notice_hours,
-    maxFutureDays: data.max_future_days
+    maxFutureDays: data.max_future_days,
+    bufferBetweenMinutes: data.buffer_between_minutes ?? 0
   };
 }
 
@@ -344,9 +346,37 @@ export async function getAvailableSlotsForClient(
 
   if (eventsError) throw eventsError;
 
+  // Get out-of-office blocks
+  const { data: oooBlocks, error: oooError } = await supabase
+    .from("out_of_office_blocks")
+    .select("start_at, end_at")
+    .eq("coach_id", coachId)
+    .gte("end_at", startDate.toISOString())
+    .lte("start_at", endDate.toISOString());
+
+  if (oooError) throw oooError;
+
+  // Get pending booking requests (to exclude already requested slots)
+  const { data: pendingRequests, error: requestsError } = await supabase
+    .from("booking_requests")
+    .select("requested_start_at, requested_end_at")
+    .in("coach_client_id", coachClientIds)
+    .eq("status", "PENDING")
+    .gte("requested_end_at", startDate.toISOString())
+    .lte("requested_start_at", endDate.toISOString());
+
+  if (requestsError) throw requestsError;
+
+  // Merge events with pending requests for conflict checking
+  const allOccupiedSlots = [
+    ...(events || []).map(e => ({ start_at: e.start_at, end_at: e.end_at })),
+    ...(pendingRequests || []).map(r => ({ start_at: r.requested_start_at, end_at: r.requested_end_at }))
+  ];
+
   // Generate slots based on availability windows
   const slots: AvailableSlot[] = [];
   const minNoticeTime = addHours(new Date(), settings.minAdvanceNoticeHours);
+  const bufferMinutes = settings.bufferBetweenMinutes;
   
   // Iterate through each day in range
   const currentDate = new Date(startDate);
@@ -377,23 +407,34 @@ export async function getAvailableSlotsForClient(
         if (slotEnd <= windowEnd) {
           // Check if slot is after minimum notice time
           if (slotStart > minNoticeTime) {
-            // Check if slot conflicts with existing events
-            const isOccupied = (events || []).some(event => {
-              const eventStart = new Date(event.start_at);
-              const eventEnd = new Date(event.end_at);
-              return slotStart < eventEnd && slotEnd > eventStart;
+            // Check out-of-office overlap
+            const overlapsOOO = (oooBlocks || []).some(block => {
+              const blockStart = new Date(block.start_at);
+              const blockEnd = new Date(block.end_at);
+              return slotStart < blockEnd && slotEnd > blockStart;
             });
 
-            if (!isOccupied) {
-              slots.push({
-                start: slotStart.toISOString(),
-                end: slotEnd.toISOString()
+            if (!overlapsOOO) {
+              // Check if slot conflicts with existing events OR pending requests
+              const isOccupied = allOccupiedSlots.some(occupied => {
+                const occStart = new Date(occupied.start_at);
+                const occEnd = new Date(occupied.end_at);
+                return slotStart < occEnd && slotEnd > occStart;
               });
+
+              if (!isOccupied) {
+                slots.push({
+                  start: slotStart.toISOString(),
+                  end: slotEnd.toISOString()
+                });
+              }
             }
           }
         }
 
-        slotStart = slotEnd;
+        // Move to next slot with buffer
+        slotStart = new Date(slotStart);
+        slotStart.setMinutes(slotStart.getMinutes() + settings.slotDurationMinutes + bufferMinutes);
       }
     }
 
