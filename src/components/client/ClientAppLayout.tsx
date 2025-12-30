@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useCurrentClient } from "@/features/client/hooks/useCurrentClient";
@@ -9,12 +9,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
 const ClientAppLayout = () => {
-  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const { data: client, isLoading: clientLoading } = useCurrentClient();
 
-  // Controlla autenticazione Supabase
+  // Auth check - runs before any data fetching
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -30,15 +28,8 @@ const ClientAppLayout = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Redirect a /client/auth se non autenticato
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/client/auth");
-    }
-  }, [authLoading, user, navigate]);
-
-  // Stato di caricamento
-  if (authLoading || clientLoading) {
+  // Loading state - show spinner while checking auth
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
@@ -49,8 +40,36 @@ const ClientAppLayout = () => {
     );
   }
 
-  // Utente autenticato ma non collegato a un profilo cliente
-  if (user && !client) {
+  // Not authenticated - redirect immediately (render-time protection)
+  if (!user) {
+    return <Navigate to="/client/auth" replace />;
+  }
+
+  // Authenticated - render the protected content
+  return <AuthenticatedClientLayout userId={user.id} />;
+};
+
+/**
+ * Inner component that only mounts when user is authenticated.
+ * This ensures no data queries run before authentication is confirmed.
+ */
+function AuthenticatedClientLayout({ userId }: { userId: string }) {
+  const { data: client, isLoading: clientLoading } = useCurrentClient();
+
+  // Loading client data
+  if (clientLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Caricamento profilo...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated but no linked client profile
+  if (!client) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
@@ -73,7 +92,7 @@ const ClientAppLayout = () => {
     );
   }
 
-  // Utente autenticato e client collegato → mostra l'app
+  // Fully authenticated and linked - render the app
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <ClientTopbar />
@@ -85,6 +104,6 @@ const ClientAppLayout = () => {
       <ClientBottomNav />
     </div>
   );
-};
+}
 
 export default ClientAppLayout;
