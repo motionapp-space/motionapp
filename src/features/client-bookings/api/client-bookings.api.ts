@@ -327,24 +327,15 @@ export async function getAvailableSlotsForClient(
 
   if (windowsError) throw windowsError;
 
-  // Get coach_clients for this coach
-  const { data: coachClients } = await supabase
-    .from("coach_clients")
-    .select("id")
-    .eq("coach_id", coachId);
+  // Get all occupied slots using database function (bypasses RLS to see all coach's bookings)
+  const { data: occupiedSlots, error: occupiedError } = await supabase
+    .rpc('get_coach_occupied_slots', {
+      p_coach_id: coachId,
+      p_start_date: startDate.toISOString(),
+      p_end_date: endDate.toISOString()
+    });
 
-  const coachClientIds = coachClients?.map(cc => cc.id) || [];
-
-  // Get existing events (to exclude occupied slots)
-  const { data: events, error: eventsError } = await supabase
-    .from("events")
-    .select("start_at, end_at")
-    .in("coach_client_id", coachClientIds)
-    .neq("session_status", "canceled")
-    .gte("start_at", startDate.toISOString())
-    .lte("start_at", endDate.toISOString());
-
-  if (eventsError) throw eventsError;
+  if (occupiedError) throw occupiedError;
 
   // Get out-of-office blocks
   const { data: oooBlocks, error: oooError } = await supabase
@@ -356,21 +347,10 @@ export async function getAvailableSlotsForClient(
 
   if (oooError) throw oooError;
 
-  // Get pending booking requests (to exclude already requested slots)
-  const { data: pendingRequests, error: requestsError } = await supabase
-    .from("booking_requests")
-    .select("requested_start_at, requested_end_at")
-    .in("coach_client_id", coachClientIds)
-    .eq("status", "PENDING")
-    .gte("requested_end_at", startDate.toISOString())
-    .lte("requested_start_at", endDate.toISOString());
-
-  if (requestsError) throw requestsError;
-
-  // Merge events with pending requests for conflict checking
+  // Merge occupied slots with out-of-office blocks
   const allOccupiedSlots = [
-    ...(events || []).map(e => ({ start_at: e.start_at, end_at: e.end_at })),
-    ...(pendingRequests || []).map(r => ({ start_at: r.requested_start_at, end_at: r.requested_end_at }))
+    ...(occupiedSlots || []).map(s => ({ start_at: s.start_at, end_at: s.end_at })),
+    ...(oooBlocks || []).map(b => ({ start_at: b.start_at, end_at: b.end_at }))
   ];
 
   // Generate slots based on availability windows
@@ -407,27 +387,18 @@ export async function getAvailableSlotsForClient(
         if (slotEnd <= windowEnd) {
           // Check if slot is after minimum notice time
           if (slotStart > minNoticeTime) {
-            // Check out-of-office overlap
-            const overlapsOOO = (oooBlocks || []).some(block => {
-              const blockStart = new Date(block.start_at);
-              const blockEnd = new Date(block.end_at);
-              return slotStart < blockEnd && slotEnd > blockStart;
+            // Check if slot conflicts with occupied slots (events + pending requests + OOO)
+            const isOccupied = allOccupiedSlots.some(occupied => {
+              const occStart = new Date(occupied.start_at);
+              const occEnd = new Date(occupied.end_at);
+              return slotStart < occEnd && slotEnd > occStart;
             });
 
-            if (!overlapsOOO) {
-              // Check if slot conflicts with existing events OR pending requests
-              const isOccupied = allOccupiedSlots.some(occupied => {
-                const occStart = new Date(occupied.start_at);
-                const occEnd = new Date(occupied.end_at);
-                return slotStart < occEnd && slotEnd > occStart;
+            if (!isOccupied) {
+              slots.push({
+                start: slotStart.toISOString(),
+                end: slotEnd.toISOString()
               });
-
-              if (!isOccupied) {
-                slots.push({
-                  start: slotStart.toISOString(),
-                  end: slotEnd.toISOString()
-                });
-              }
             }
           }
         }
