@@ -4,11 +4,12 @@
  */
 
 export type ClientAppointmentStatus = 
-  | 'REQUESTED'       // booking_request con status PENDING
-  | 'CONFIRMED'       // event con session_status = scheduled (no proposal pending)
-  | 'CHANGE_PROPOSED' // event con proposal_status = pending
-  | 'CANCELLED'       // event canceled o booking_request DECLINED/CANCELED_BY_CLIENT
-  | 'COMPLETED';      // evento passato non canceled
+  | 'REQUESTED'        // booking_request con status PENDING
+  | 'CONFIRMED'        // event con session_status = scheduled (no proposal pending)
+  | 'CHANGE_PROPOSED'  // event con proposal_status = pending
+  | 'COUNTER_PROPOSAL' // booking_request con status COUNTER_PROPOSED
+  | 'CANCELLED'        // event canceled o booking_request DECLINED/CANCELED_BY_CLIENT
+  | 'COMPLETED';       // evento passato non canceled
 
 export interface ClientBookingSettings {
   enabled: boolean;
@@ -27,9 +28,12 @@ export interface ClientAppointmentView {
   endAt: string;
   location?: string;
   notes?: string;
-  // Per CHANGE_PROPOSED
+  // Per CHANGE_PROPOSED (eventi)
   proposedStartAt?: string;
   proposedEndAt?: string;
+  // Per COUNTER_PROPOSAL (booking requests)
+  counterProposedStartAt?: string;
+  counterProposedEndAt?: string;
   // Metadati per UI
   canCancel: boolean;
   cancelDeadline?: string;
