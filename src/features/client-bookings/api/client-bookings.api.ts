@@ -45,6 +45,7 @@ function deriveClientAppointmentStatus(
 
   if (type === 'booking_request') {
     if (bookingRequestStatus === 'PENDING') return 'REQUESTED';
+    if (bookingRequestStatus === 'COUNTER_PROPOSED') return 'COUNTER_PROPOSAL';
     if (bookingRequestStatus === 'DECLINED' || bookingRequestStatus === 'CANCELED_BY_CLIENT') return 'CANCELLED';
     if (bookingRequestStatus === 'APPROVED') return 'CONFIRMED'; // Should become an event
     return 'CANCELLED';
@@ -122,10 +123,10 @@ export async function getClientAppointments(): Promise<ClientAppointmentView[]> 
 
   if (eventsError) throw eventsError;
 
-  // Fetch booking requests
+  // Fetch booking requests (include counter proposal fields)
   const { data: requests, error: requestsError } = await supabase
     .from("booking_requests")
-    .select("id, requested_start_at, requested_end_at, notes, status")
+    .select("id, requested_start_at, requested_end_at, notes, status, counter_proposal_start_at, counter_proposal_end_at")
     .eq("coach_client_id", coachClientId)
     .order("requested_start_at", { ascending: false });
 
@@ -179,7 +180,9 @@ export async function getClientAppointments(): Promise<ClientAppointmentView[]> 
       startAt: request.requested_start_at,
       endAt: request.requested_end_at,
       notes: request.notes || undefined,
-      canCancel: status === 'REQUESTED', // Can always cancel pending requests
+      counterProposedStartAt: request.counter_proposal_start_at || undefined,
+      counterProposedEndAt: request.counter_proposal_end_at || undefined,
+      canCancel: status === 'REQUESTED' || status === 'COUNTER_PROPOSAL',
     });
   }
 
@@ -273,6 +276,30 @@ export async function rejectChangeProposal(eventId: string): Promise<void> {
       proposal_status: null
     })
     .eq("id", eventId);
+
+  if (error) throw error;
+}
+
+/**
+ * Accept a counter-proposal from coach (set booking request to APPROVED)
+ */
+export async function acceptCounterProposal(requestId: string): Promise<void> {
+  const { error } = await supabase
+    .from("booking_requests")
+    .update({ status: 'APPROVED' })
+    .eq("id", requestId);
+
+  if (error) throw error;
+}
+
+/**
+ * Reject a counter-proposal from coach (set booking request to CANCELED_BY_CLIENT)
+ */
+export async function rejectCounterProposal(requestId: string): Promise<void> {
+  const { error } = await supabase
+    .from("booking_requests")
+    .update({ status: 'CANCELED_BY_CLIENT' })
+    .eq("id", requestId);
 
   if (error) throw error;
 }

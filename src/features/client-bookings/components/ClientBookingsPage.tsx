@@ -8,24 +8,27 @@ import { useClientAppointmentsView } from "../hooks/useClientAppointmentsView";
 import { NextAppointmentCard } from "./NextAppointmentCard";
 import { FutureAppointmentsSection } from "./FutureAppointmentsSection";
 import { ChangeProposalBanner } from "./ChangeProposalBanner";
+import { CounterProposalBanner } from "./CounterProposalBanner";
 import { AppointmentDetailSheet } from "./AppointmentDetailSheet";
 import { SlotSelectorSheet } from "./SlotSelectorSheet";
 import { useRespondToChangeProposal } from "../hooks/useRespondToChangeProposal";
+import { useRespondToCounterProposal } from "../hooks/useRespondToCounterProposal";
 import type { ClientAppointmentView } from "../types";
 
 export function ClientBookingsPage() {
   const { data: settings, isLoading: settingsLoading } = useClientBookingSettings();
   const { data: appointments, isLoading: appointmentsLoading } = useClientAppointmentsView();
   const { accept: acceptProposal, reject: rejectProposal, isPending: proposalLoading } = useRespondToChangeProposal();
+  const { accept: acceptCounterProposal, reject: rejectCounterProposal, isPending: counterProposalLoading } = useRespondToCounterProposal();
   
   const [selectedAppointment, setSelectedAppointment] = useState<ClientAppointmentView | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
 
   // Separate appointments: upcoming (future, not cancelled), and filter by status
-  const { nextAppointment, futureAppointments, proposalAppointment } = useMemo(() => {
+  const { nextAppointment, futureAppointments, proposalAppointment, counterProposalAppointment } = useMemo(() => {
     if (!appointments) {
-      return { nextAppointment: null, futureAppointments: [], proposalAppointment: null };
+      return { nextAppointment: null, futureAppointments: [], proposalAppointment: null, counterProposalAppointment: null };
     }
 
     const now = new Date();
@@ -33,19 +36,27 @@ export function ClientBookingsPage() {
       .filter(a => new Date(a.startAt) > now && a.status !== 'CANCELLED' && a.status !== 'COMPLETED')
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
 
-    // Check if there's a proposal that needs attention
+    // Check if there's a change proposal (event) that needs attention
     const proposal = upcoming.find(a => a.status === 'CHANGE_PROPOSED');
     
-    // Next appointment is the first upcoming one
-    const next = upcoming[0] || null;
+    // Check if there's a counter proposal (booking request) that needs attention
+    const counterProposal = upcoming.find(a => a.status === 'COUNTER_PROPOSAL');
     
-    // Future appointments exclude the first one (shown in NextAppointmentCard)
-    const future = upcoming.slice(1);
+    // Next appointment is the first upcoming confirmed or requested one
+    const next = upcoming.find(a => a.status === 'CONFIRMED' || a.status === 'REQUESTED') || null;
+    
+    // Future appointments exclude the next one and any proposals
+    const future = upcoming.filter(a => 
+      a !== next && 
+      a.status !== 'CHANGE_PROPOSED' && 
+      a.status !== 'COUNTER_PROPOSAL'
+    );
 
     return { 
       nextAppointment: next, 
       futureAppointments: future,
-      proposalAppointment: proposal 
+      proposalAppointment: proposal,
+      counterProposalAppointment: counterProposal
     };
   }, [appointments]);
 
@@ -67,6 +78,18 @@ export function ClientBookingsPage() {
   const handleRejectProposal = () => {
     if (proposalAppointment) {
       rejectProposal(proposalAppointment.id);
+    }
+  };
+
+  const handleAcceptCounterProposal = () => {
+    if (counterProposalAppointment) {
+      acceptCounterProposal(counterProposalAppointment.id);
+    }
+  };
+
+  const handleRejectCounterProposal = () => {
+    if (counterProposalAppointment) {
+      rejectCounterProposal(counterProposalAppointment.id);
     }
   };
 
@@ -96,7 +119,17 @@ export function ClientBookingsPage() {
         description="Gestisci i tuoi appuntamenti con il coach"
       />
 
-      {/* Change Proposal Banner - shown above next appointment if there's a proposal */}
+      {/* Counter Proposal Banner - shown if coach proposed alternative time for booking request */}
+      {counterProposalAppointment && (
+        <CounterProposalBanner
+          appointment={counterProposalAppointment}
+          onAccept={handleAcceptCounterProposal}
+          onReject={handleRejectCounterProposal}
+          isLoading={counterProposalLoading}
+        />
+      )}
+
+      {/* Change Proposal Banner - shown if coach proposed alternative time for existing event */}
       {proposalAppointment && (
         <ChangeProposalBanner
           appointment={proposalAppointment}
