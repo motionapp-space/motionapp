@@ -580,6 +580,7 @@ export type Database = {
           sex: Database["public"]["Enums"]["sex"] | null
           status: Database["public"]["Enums"]["client_status"]
           updated_at: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -600,6 +601,7 @@ export type Database = {
           sex?: Database["public"]["Enums"]["sex"] | null
           status?: Database["public"]["Enums"]["client_status"]
           updated_at?: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -620,6 +622,7 @@ export type Database = {
           sex?: Database["public"]["Enums"]["sex"] | null
           status?: Database["public"]["Enums"]["client_status"]
           updated_at?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -628,6 +631,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -1592,6 +1602,62 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       v_coach_client_details: {
@@ -1654,6 +1720,17 @@ export type Database = {
           plan_name: string
         }[]
       }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       activity_type:
@@ -1671,6 +1748,7 @@ export type Database = {
         | "PACKAGE_UPDATED"
         | "SESSION_STARTED"
         | "SESSION_COMPLETED"
+      app_role: "coach" | "client" | "admin"
       approval_mode: "AUTO" | "MANUAL"
       booking_request_status:
         | "PENDING"
@@ -1839,6 +1917,7 @@ export const Constants = {
         "SESSION_STARTED",
         "SESSION_COMPLETED",
       ],
+      app_role: ["coach", "client", "admin"],
       approval_mode: ["AUTO", "MANUAL"],
       booking_request_status: [
         "PENDING",
