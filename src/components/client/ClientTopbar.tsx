@@ -1,3 +1,5 @@
+import { ClientUserMenu } from "./ClientUserMenu";
+
 const ClientTopbar = () => {
   return (
     <header className="sticky top-0 z-40 h-14 border-b bg-background/95 backdrop-blur-sm shadow-sm">
@@ -6,6 +8,7 @@ const ClientTopbar = () => {
           <span className="text-base font-semibold text-foreground">Studio AI</span>
           <span className="text-xs text-muted-foreground">Area Cliente</span>
         </div>
+        <ClientUserMenu />
       </div>
     </header>
   );
