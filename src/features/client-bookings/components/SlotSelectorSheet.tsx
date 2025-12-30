@@ -20,14 +20,15 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
   const { data: slots, isLoading } = useClientAvailableSlots(28);
   const createBooking = useCreateBookingRequest();
 
-  // Generate week of dates starting from selectedDate's week start
+  // Generate 7 days starting from today + week offset
   const weekDates = useMemo(() => {
-    const dates: Date[] = [];
     const today = startOfDay(new Date());
-    for (let i = 0; i < 7; i++) {
-      dates.push(addDays(today, i + Math.floor((selectedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 7)) * 7));
-    }
-    return dates;
+    const daysDiff = Math.floor(
+      (selectedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const weekOffset = Math.max(0, Math.floor(daysDiff / 7));
+    const startDate = addDays(today, weekOffset * 7);
+    return Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
   }, [selectedDate]);
 
   // Filter slots for selected date
@@ -87,7 +88,7 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
         </div>
 
         {/* Date strip */}
-        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+        <div className="grid grid-cols-7 gap-1 pb-4">
           {weekDates.map((date) => {
             const isSelected = isSameDay(date, selectedDate);
             const hasSlots = slots?.some(s => isSameDay(parseISO(s.start), date));
@@ -96,7 +97,7 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
               <button
                 key={date.toISOString()}
                 onClick={() => setSelectedDate(date)}
-                className={`flex-shrink-0 flex flex-col items-center p-2 rounded-lg min-w-[60px] transition-colors ${
+                className={`flex flex-col items-center py-2 px-1 rounded-lg transition-colors ${
                   isSelected 
                     ? 'bg-primary text-primary-foreground' 
                     : hasSlots 
@@ -104,10 +105,10 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
                       : 'opacity-50'
                 }`}
               >
-                <span className="text-xs uppercase">
+                <span className="text-[10px] uppercase">
                   {format(date, "EEE", { locale: it })}
                 </span>
-                <span className="text-lg font-semibold">
+                <span className="text-base font-semibold">
                   {format(date, "d")}
                 </span>
               </button>
