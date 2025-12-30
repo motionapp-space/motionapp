@@ -57,14 +57,29 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Initialize session store when user logs in
+  // Initialize session store when user logs in (only for coaches, not clients)
   useEffect(() => {
-    if (user) {
-      fetchActiveSession();
-      startPolling();
-    } else {
-      stopPolling();
-    }
+    const initializeForCoach = async () => {
+      if (!user) {
+        stopPolling();
+        return;
+      }
+
+      // Check if the authenticated user is a client (has auth_user_id linked)
+      const { data: clientRecord } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+
+      // Only coaches (users without a linked client record) should fetch active session
+      if (!clientRecord) {
+        fetchActiveSession();
+        startPolling();
+      }
+    };
+
+    initializeForCoach();
 
     return () => {
       stopPolling();
