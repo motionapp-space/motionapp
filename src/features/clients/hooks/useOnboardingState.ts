@@ -29,23 +29,34 @@ export function useOnboardingState(): OnboardingState {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Query per ottenere il count reale dei clienti NON archiviati
+  // Query per ottenere il count reale dei clienti NON archiviati (via coach_clients)
   const nonArchivedCountQuery = useQuery({
     queryKey: ['onboarding-non-archived-count'],
     queryFn: async () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return 0;
 
+      // Get client IDs from coach_clients
+      const { data: ccData, error: ccError } = await supabase
+        .from('coach_clients')
+        .select('client_id')
+        .eq('coach_id', user.user.id)
+        .eq('status', 'active');
+
+      if (ccError) throw ccError;
+      const clientIds = ccData?.map(cc => cc.client_id) || [];
+      if (clientIds.length === 0) return 0;
+
       const { count, error } = await supabase
         .from('clients')
         .select('id', { count: 'exact', head: true })
-        .eq('coach_id', user.user.id)
+        .in('id', clientIds)
         .is('archived_at', null);
 
       if (error) throw error;
       return count || 0;
     },
-    staleTime: 30000, // 30s cache
+    staleTime: 30000,
     enabled: isAuthenticated === true,
   });
 
@@ -115,24 +126,37 @@ export function useOnboardingState(): OnboardingState {
     enabled: isAuthenticated === true && (coachClientsQuery.data?.length || 0) > 0,
   });
 
-  // Check esistenza clienti archiviati (ottimizzato: limit 1, solo id)
+  // Check esistenza clienti archiviati (via coach_clients)
   const archivedQuery = useQuery({
     queryKey: ['onboarding-archived-check'],
     queryFn: async () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return false;
 
+      const coachClientIds = coachClientsQuery.data || [];
+      if (coachClientIds.length === 0) return false;
+
+      // Get client_ids from coach_clients
+      const { data: ccData, error: ccError } = await supabase
+        .from('coach_clients')
+        .select('client_id')
+        .eq('coach_id', user.user.id);
+
+      if (ccError) throw ccError;
+      const clientIds = ccData?.map(cc => cc.client_id) || [];
+      if (clientIds.length === 0) return false;
+
       const { data, error } = await supabase
         .from('clients')
         .select('id')
-        .eq('coach_id', user.user.id)
+        .in('id', clientIds)
         .not('archived_at', 'is', null)
         .limit(1);
 
       if (error) throw error;
       return (data?.length || 0) > 0;
     },
-    staleTime: 30000, // 30s cache
+    staleTime: 30000,
     enabled: isAuthenticated === true,
   });
 

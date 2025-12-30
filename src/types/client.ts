@@ -19,7 +19,6 @@ export type ActivityType =
 
 export interface Client {
   id: string;
-  coach_id: string;
   created_at: string;
   updated_at: string;
   first_name: string;
@@ -31,12 +30,15 @@ export interface Client {
   sex?: Sex;
   status: ClientStatus;
   notes?: string;
-  auth_user_id?: string;
+  user_id?: string;
+  active_plan_id?: string;
+  last_access_at?: string;
+  archived_at?: string;
+  version?: number;
 }
 
 export interface ClientTag {
   id: string;
-  coach_id: string;
   label: string;
   color?: string;
   created_at: string;

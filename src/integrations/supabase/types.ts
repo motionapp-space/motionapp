@@ -565,9 +565,7 @@ export type Database = {
         Row: {
           active_plan_id: string | null
           archived_at: string | null
-          auth_user_id: string | null
           birth_date: string | null
-          coach_id: string
           created_at: string
           email: string | null
           first_name: string
@@ -586,9 +584,7 @@ export type Database = {
         Insert: {
           active_plan_id?: string | null
           archived_at?: string | null
-          auth_user_id?: string | null
           birth_date?: string | null
-          coach_id: string
           created_at?: string
           email?: string | null
           first_name: string
@@ -607,9 +603,7 @@ export type Database = {
         Update: {
           active_plan_id?: string | null
           archived_at?: string | null
-          auth_user_id?: string | null
           birth_date?: string | null
-          coach_id?: string
           created_at?: string
           email?: string | null
           first_name?: string
@@ -626,13 +620,6 @@ export type Database = {
           version?: number
         }
         Relationships: [
-          {
-            foreignKeyName: "clients_coach_id_fkey"
-            columns: ["coach_id"]
-            isOneToOne: false
-            referencedRelation: "coaches"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "clients_user_id_fkey"
             columns: ["user_id"]
@@ -752,28 +739,19 @@ export type Database = {
       }
       coaches: {
         Row: {
-          avatar_url: string | null
           created_at: string
-          email: string
           id: string
           locale: string | null
-          name: string | null
         }
         Insert: {
-          avatar_url?: string | null
           created_at?: string
-          email: string
           id?: string
           locale?: string | null
-          name?: string | null
         }
         Update: {
-          avatar_url?: string | null
           created_at?: string
-          email?: string
           id?: string
           locale?: string | null
-          name?: string | null
         }
         Relationships: []
       }
