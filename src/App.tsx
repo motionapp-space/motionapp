@@ -34,50 +34,60 @@ import { useSessionStore } from "@/stores/useSessionStore";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { useRef } from "react";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const previousUserIdRef = useRef<string | null>(null);
   const { fetchActiveSession, startPolling, stopPolling } = useSessionStore();
 
+  // Auth state initialization - runs ONCE on mount
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      previousUserIdRef.current = currentUser?.id ?? null;
       setLoading(false);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      const previousUser = user;
       const newUser = session?.user ?? null;
-      setUser(newUser);
       
-      // Clear React Query cache on auth state change to prevent stale data
-      if (previousUser?.id !== newUser?.id) {
+      // Clear React Query cache only when user actually changes
+      if (previousUserIdRef.current !== (newUser?.id ?? null)) {
         queryClient.clear();
+        previousUserIdRef.current = newUser?.id ?? null;
       }
+      
+      setUser(newUser);
     });
 
     return () => subscription.unsubscribe();
-  }, [user]);
+  }, []); // NO dependencies - runs once on mount
 
   // Initialize session store when user logs in (only for coaches, not clients)
   useEffect(() => {
-    const initializeForCoach = async () => {
-      if (!user) {
-        stopPolling();
-        return;
-      }
+    if (!user) {
+      stopPolling();
+      return;
+    }
 
+    let cancelled = false;
+
+    const initializeForCoach = async () => {
       // Check if the authenticated user is a client (has auth_user_id linked)
       const { data: clientRecord } = await supabase
         .from("clients")
         .select("id")
         .eq("auth_user_id", user.id)
         .maybeSingle();
+
+      if (cancelled) return;
 
       // Only coaches (users without a linked client record) should fetch active session
       if (!clientRecord) {
@@ -89,9 +99,10 @@ const App = () => {
     initializeForCoach();
 
     return () => {
+      cancelled = true;
       stopPolling();
     };
-  }, [user, fetchActiveSession, startPolling, stopPolling]);
+  }, [user?.id, fetchActiveSession, startPolling, stopPolling]);
 
   if (loading) {
     return (
