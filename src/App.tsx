@@ -50,12 +50,19 @@ const App = () => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      const previousUser = user;
+      const newUser = session?.user ?? null;
+      setUser(newUser);
+      
+      // Clear React Query cache on auth state change to prevent stale data
+      if (previousUser?.id !== newUser?.id) {
+        queryClient.clear();
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [user]);
 
   // Initialize session store when user logs in (only for coaches, not clients)
   useEffect(() => {
