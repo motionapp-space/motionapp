@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { useCurrentClient } from "@/features/client/hooks/useCurrentClient";
+import { useCurrentClientWithAuth } from "@/features/client/hooks/useCurrentClientWithAuth";
 import { ClientAuthProvider } from "@/contexts/ClientAuthContext";
 import ClientTopbar from "./ClientTopbar";
 import ClientBottomNav from "./ClientBottomNav";
@@ -55,7 +55,7 @@ const ClientAppLayout = () => {
  * This ensures no data queries run before authentication is confirmed.
  */
 function AuthenticatedClientLayout({ userId }: { userId: string }) {
-  const { data: client, isLoading: clientLoading } = useCurrentClient();
+  const { data: client, isLoading: clientLoading } = useCurrentClientWithAuth(userId);
 
   // Loading client data
   if (clientLoading) {
