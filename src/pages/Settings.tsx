@@ -31,17 +31,25 @@ const Settings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
-        .from("coaches")
-        .select("*")
+      // Fetch from users table (Unified Identity)
+      const { data: userData } = await supabase
+        .from("users")
+        .select("first_name, last_name, email")
         .eq("id", user.id)
         .single();
 
-      if (data) {
+      // Fetch locale from coaches table
+      const { data: coachData } = await supabase
+        .from("coaches")
+        .select("locale")
+        .eq("id", user.id)
+        .single();
+
+      if (userData) {
         setProfile({ 
-          name: data.name || "", 
-          email: data.email || "",
-          locale: data.locale || "it"
+          name: [userData.first_name, userData.last_name].filter(Boolean).join(' ') || "", 
+          email: userData.email || "",
+          locale: coachData?.locale || "it"
         });
       }
     } catch (error: any) {
@@ -55,12 +63,26 @@ const Settings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { error } = await supabase
-        .from("coaches")
-        .update({ name: profile.name, locale: profile.locale })
+      // Split name into first_name and last_name
+      const nameParts = profile.name.trim().split(/\s+/);
+      const first_name = nameParts[0] || '';
+      const last_name = nameParts.slice(1).join(' ') || '';
+
+      // Update users table
+      const { error: usersError } = await supabase
+        .from("users")
+        .update({ first_name, last_name })
         .eq("id", user.id);
 
-      if (error) throw error;
+      if (usersError) throw usersError;
+
+      // Update coaches table (locale)
+      const { error: coachError } = await supabase
+        .from("coaches")
+        .update({ locale: profile.locale })
+        .eq("id", user.id);
+
+      if (coachError) throw coachError;
       toast.success("Profilo aggiornato");
     } catch (error: any) {
       toast.error("Errore nell'aggiornamento del profilo");

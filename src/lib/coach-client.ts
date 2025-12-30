@@ -94,7 +94,7 @@ export async function getClientIdFromCoachClient(coachClientId: string): Promise
 }
 
 /**
- * Get coach_client_id for client user (from auth_user_id)
+ * Get coach_client_id for client user (from user_id)
  */
 export async function getClientCoachClientId(): Promise<{
   coachClientId: string;
@@ -104,11 +104,11 @@ export async function getClientCoachClientId(): Promise<{
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Get the client record for this auth user
+  // Get the client record for this auth user via user_id
   const { data: client, error: clientError } = await supabase
     .from("clients")
-    .select("id, coach_id")
-    .eq("auth_user_id", user.id)
+    .select("id")
+    .eq("user_id", user.id)
     .single();
 
   if (clientError || !client) {
@@ -118,9 +118,9 @@ export async function getClientCoachClientId(): Promise<{
   // Get the coach_clients relationship
   const { data: cc, error: ccError } = await supabase
     .from("coach_clients")
-    .select("id")
-    .eq("coach_id", client.coach_id)
+    .select("id, coach_id")
     .eq("client_id", client.id)
+    .eq("status", "active")
     .single();
 
   if (ccError || !cc) {
@@ -130,6 +130,6 @@ export async function getClientCoachClientId(): Promise<{
   return {
     coachClientId: cc.id,
     clientId: client.id,
-    coachId: client.coach_id,
+    coachId: cc.coach_id,
   };
 }

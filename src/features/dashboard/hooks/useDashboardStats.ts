@@ -23,11 +23,34 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
   const previousMonthStart = startOfMonth(subMonths(now, 1));
   const previousMonthEnd = startOfDay(currentMonthStart);
 
-  // Fetch all clients
+  // Get client IDs from coach_clients
+  const { data: ccData, error: ccError } = await supabase
+    .from("coach_clients")
+    .select("client_id")
+    .eq("coach_id", user.id)
+    .eq("status", "active");
+
+  if (ccError) throw ccError;
+  const clientIds = ccData?.map(cc => cc.client_id) || [];
+  if (clientIds.length === 0) {
+    return {
+      activeClients: 0,
+      activeClientsChange: 0,
+      newClients: 0,
+      newClientsChange: 0,
+      terminatedClients: 0,
+      terminatedClientsChange: 0,
+      totalClients: 0,
+      totalClientsChange: 0,
+      trendData: []
+    };
+  }
+
+  // Fetch all clients for this coach
   const { data: allClients, error: allError } = await supabase
     .from("clients")
     .select("id, status, created_at")
-    .eq("coach_id", user.id);
+    .in("id", clientIds);
 
   if (allError) throw allError;
 
@@ -39,11 +62,11 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
   const totalClients = clients.length;
   const newClients = clients.filter(c => new Date(c.created_at) >= currentMonthStart).length;
 
-  // Previous month stats for comparison
+  // Previous month stats for comparison - use same client IDs (they were part of this coach at some point)
   const { data: prevMonthClients, error: prevError } = await supabase
     .from("clients")
     .select("id, status, created_at")
-    .eq("coach_id", user.id)
+    .in("id", clientIds)
     .lt("created_at", currentMonthStart.toISOString());
 
   if (prevError) throw prevError;

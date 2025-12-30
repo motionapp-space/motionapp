@@ -34,6 +34,21 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
     activityStatuses
   } = filters;
   
+  // Get client IDs for this coach via coach_clients
+  const { data: coachClients, error: ccError } = await supabase
+    .from("coach_clients")
+    .select("client_id")
+    .eq("coach_id", user.id)
+    .eq("status", "active");
+
+  if (ccError) throw ccError;
+  
+  const clientIds = coachClients?.map(cc => cc.client_id) || [];
+  
+  if (clientIds.length === 0) {
+    return { items: [], total: 0, page, limit };
+  }
+
   let query = supabase
     .from("clients")
     .select(`
@@ -47,7 +62,7 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
         sessions:training_sessions(id, started_at)
       )
     `, { count: "exact" })
-    .eq("coach_id", user.id);
+    .in("id", clientIds);
 
   // Archive filter (default excludes archived)
   if (!includeArchived) {
@@ -113,15 +128,15 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
   if (error) throw error;
 
   // Get client IDs for batch computation
-  const clientIds = (data || []).map((c: any) => c.id);
+  const batchClientIds = (data || []).map((c: any) => c.id);
 
   // Compute additional data via edge function
   let computedDataMap: Record<string, ComputedClientData> = {};
-  if (clientIds.length > 0) {
+  if (batchClientIds.length > 0) {
     try {
       const { data: computedData, error: computeError } = await supabase.functions.invoke(
         'compute-client-data',
-        { body: { clientIds } }
+        { body: { clientIds: batchClientIds } }
       );
 
       if (!computeError && computedData?.data) {
@@ -245,6 +260,17 @@ export async function getClientById(id: string): Promise<ClientWithTags> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  // Verify coach-client relationship exists
+  const { data: ccData, error: ccError } = await supabase
+    .from("coach_clients")
+    .select("id")
+    .eq("coach_id", user.id)
+    .eq("client_id", id)
+    .maybeSingle();
+
+  if (ccError) throw ccError;
+  if (!ccData) throw new Error("Client not found or not accessible");
+
   const { data, error } = await supabase
     .from("clients")
     .select(`
@@ -254,7 +280,6 @@ export async function getClientById(id: string): Promise<ClientWithTags> {
       )
     `)
     .eq("id", id)
-    .eq("coach_id", user.id)
     .single();
 
   if (error) throw error;
@@ -269,12 +294,11 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Step 1: Create the client
+  // Step 1: Create the client (no coach_id needed anymore)
   const { data: client, error } = await supabase
     .from("clients")
     .insert({
       ...input,
-      coach_id: user.id,
       status: "POTENZIALE",
     })
     .select()
@@ -294,6 +318,8 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
 
   if (relationError) {
     console.error("Failed to create coach_clients relationship:", relationError);
+    // Try to clean up the orphan client
+    await supabase.from("clients").delete().eq("id", client.id);
     throw relationError;
   }
 

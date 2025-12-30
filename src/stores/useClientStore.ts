@@ -62,6 +62,21 @@ export const useClientStore = create<ClientStore>((set, get) => ({
       const { user } = (await supabase.auth.getUser()).data;
       if (!user) throw new Error("Not authenticated");
 
+      // Get client IDs from coach_clients
+      const { data: ccData, error: ccError } = await supabase
+        .from("coach_clients")
+        .select("client_id")
+        .eq("coach_id", user.id)
+        .eq("status", "active");
+
+      if (ccError) throw ccError;
+      const clientIds = ccData?.map(cc => cc.client_id) || [];
+
+      if (clientIds.length === 0) {
+        set({ clients: [] });
+        return;
+      }
+
       let query = supabase
         .from("clients")
         .select(`
@@ -70,7 +85,7 @@ export const useClientStore = create<ClientStore>((set, get) => ({
             tag:client_tags(*)
           )
         `)
-        .eq("coach_id", user.id);
+        .in("id", clientIds);
 
       const { filters } = get();
 
@@ -139,9 +154,20 @@ export const useClientStore = create<ClientStore>((set, get) => ({
       const { user } = (await supabase.auth.getUser()).data;
       if (!user) throw new Error("Not authenticated");
 
+      // Verify access via coach_clients
+      const { data: ccData, error: ccError } = await supabase
+        .from("coach_clients")
+        .select("id")
+        .eq("coach_id", user.id)
+        .eq("client_id", id)
+        .maybeSingle();
+
+      if (ccError) throw ccError;
+      if (!ccData) throw new Error("Client not found or not accessible");
+
       // Load client with all related data
       const [clientRes, tagsRes, measurementsRes, activitiesRes] = await Promise.all([
-        supabase.from("clients").select("*").eq("id", id).eq("coach_id", user.id).single(),
+        supabase.from("clients").select("*").eq("id", id).single(),
         supabase
           .from("client_tag_on_client")
           .select("tag:client_tags(*)")

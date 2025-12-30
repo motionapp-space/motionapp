@@ -105,11 +105,10 @@ serve(async (req) => {
 
     console.log(`Role 'client' assigned to user: ${authData.user.id}`);
 
-    // Update the client record with auth_user_id and user_id
+    // Update the client record with user_id only (auth_user_id column removed)
     const { error: updateError } = await supabaseAdmin
       .from('clients')
       .update({ 
-        auth_user_id: authData.user.id,
         user_id: authData.user.id 
       })
       .eq('id', clientId);
@@ -126,7 +125,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Client ${clientId} updated with auth_user_id and user_id: ${authData.user.id}`);
+    console.log(`Client ${clientId} updated with user_id: ${authData.user.id}`);
 
     return new Response(
       JSON.stringify({ 

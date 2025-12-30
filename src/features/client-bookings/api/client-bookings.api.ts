@@ -1,6 +1,6 @@
 /**
  * API functions for Client Bookings
- * All functions operate from the client's perspective using auth_user_id
+ * All functions operate from the client's perspective using user_id
  */
 
 import { supabase } from "@/integrations/supabase/client";
@@ -15,20 +15,32 @@ import type {
 import { addHours, isBefore, parseISO, subHours } from "date-fns";
 
 /**
- * Helper: Get current client's data from auth_user_id
+ * Helper: Get current client's data from user_id via coach_clients
  */
 async function getCurrentClientData() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { data: client, error } = await supabase
+  // Get client via user_id
+  const { data: client, error: clientError } = await supabase
     .from("clients")
-    .select("id, coach_id")
-    .eq("auth_user_id", user.id)
+    .select("id")
+    .eq("user_id", user.id)
     .single();
 
-  if (error || !client) throw new Error("Client profile not found");
-  return client;
+  if (clientError || !client) throw new Error("Client profile not found");
+
+  // Get coach_id from coach_clients relationship
+  const { data: ccData, error: ccError } = await supabase
+    .from("coach_clients")
+    .select("coach_id")
+    .eq("client_id", client.id)
+    .eq("status", "active")
+    .single();
+
+  if (ccError || !ccData) throw new Error("Coach relationship not found");
+
+  return { id: client.id, coach_id: ccData.coach_id };
 }
 
 /**

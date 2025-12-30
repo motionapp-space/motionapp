@@ -5,7 +5,6 @@ import { Client } from "@/types/client";
  * Recupera il client associato all'utente autenticato corrente
  * 
  * Unified Identity pattern: cerca tramite user_id (FK a users.id)
- * Fallback: cerca tramite auth_user_id per retrocompatibilità
  */
 export async function getCurrentClient(): Promise<Client | null> {
   try {
@@ -16,24 +15,12 @@ export async function getCurrentClient(): Promise<Client | null> {
       return null;
     }
 
-    // Try user_id first (Unified Identity)
-    let { data, error } = await supabase
+    // Fetch client via user_id (Unified Identity)
+    const { data, error } = await supabase
       .from("clients")
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle();
-
-    // Fallback to auth_user_id for backward compatibility
-    if (!data && !error) {
-      const result = await supabase
-        .from("clients")
-        .select("*")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
-      
-      data = result.data;
-      error = result.error;
-    }
 
     if (error) {
       console.error("Error fetching current client:", error);
