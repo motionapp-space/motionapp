@@ -141,8 +141,8 @@ export function WeekView({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Day Headers - FIXED h-10 (40px), STICKY top-12 (below SubHeader 48px), z-30 */}
-      <div className="sticky top-12 z-30 h-10 bg-background border-b border-border flex shrink-0">
+      {/* Day Headers - IN FLOW (not absolute), h-10 (40px), z-30 for stacking */}
+      <div className="h-10 bg-background border-b border-border flex shrink-0">
         {/* Spacer for hour column */}
         <div className="w-14 shrink-0 border-r border-border/50" />
         
@@ -176,11 +176,10 @@ export function WeekView({
         })}
       </div>
 
-      {/* Scrollable Grid - h-[calc(100%-48px-40px)] = remaining after SubHeader + DayHeaders */}
+      {/* Scrollable Grid - flex-1 takes all remaining space, ONLY scrollable element */}
       <div 
         ref={scrollContainerRef} 
-        className="overflow-y-auto overflow-x-hidden flex"
-        style={{ height: 'calc(100% - 48px - 40px)' }}
+        className="flex-1 overflow-y-auto overflow-x-hidden flex"
       >
         {/* Hour column */}
         <div className="w-14 shrink-0 border-r border-border/50 text-[11px] text-muted-foreground">
