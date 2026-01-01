@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
@@ -193,7 +194,7 @@ export function BookingSettingsForm() {
             Gestisci le prenotazioni self-service dei tuoi clienti
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className={cn("space-y-8", hasUnsavedChanges && "pb-24")}>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               {/* Prominent Toggle Section */}
