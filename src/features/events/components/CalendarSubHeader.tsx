@@ -103,7 +103,7 @@ export function CalendarSubHeader({
   // Mobile layout - fixed h-24 (two rows)
   if (isMobile) {
     return (
-      <div className="sticky top-0 z-40 h-24 bg-background border-b border-border shrink-0">
+      <div className="sticky top-0 z-40 h-24 bg-background shrink-0 mb-2">
         {/* Row 1: Navigation - h-12 */}
         <div className="h-12 flex items-center justify-between px-3 border-b border-border/50">
           <div className="flex items-center gap-1">
@@ -169,7 +169,7 @@ export function CalendarSubHeader({
 
   // Desktop layout - FIXED h-12 (48px), sticky top-0 relative to AgendaViewport
   return (
-    <div className="sticky top-0 z-40 h-12 bg-background border-b border-border shrink-0">
+    <div className="sticky top-0 z-40 h-12 bg-background shrink-0 mb-3">
       <div className="h-full flex items-center gap-3 px-4 max-w-[1440px] mx-auto">
         {/* Left: Search + Filter */}
         <div className="flex items-center gap-2 shrink-0">
