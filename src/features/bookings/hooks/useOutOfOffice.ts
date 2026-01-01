@@ -5,7 +5,6 @@ import {
   updateOutOfOfficeBlock,
   deleteOutOfOfficeBlock,
 } from "../api/out-of-office.api";
-import { toast } from "@/hooks/use-toast";
 import type { CreateOutOfOfficeBlockInput, UpdateOutOfOfficeBlockInput } from "../types";
 
 export function useOutOfOfficeBlocksQuery() {
@@ -22,17 +21,6 @@ export function useCreateOutOfOfficeBlock() {
     mutationFn: createOutOfOfficeBlock,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["out-of-office-blocks"] });
-      toast({
-        title: "Fuori ufficio aggiunto",
-        description: "Il periodo fuori ufficio è stato aggiunto.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Errore",
-        description: error.message || "Impossibile aggiungere il periodo fuori ufficio.",
-        variant: "destructive",
-      });
     },
   });
 }
@@ -45,17 +33,6 @@ export function useUpdateOutOfOfficeBlock() {
       updateOutOfOfficeBlock(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["out-of-office-blocks"] });
-      toast({
-        title: "Fuori ufficio aggiornato",
-        description: "Il periodo fuori ufficio è stato aggiornato.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Errore",
-        description: error.message || "Impossibile aggiornare il periodo fuori ufficio.",
-        variant: "destructive",
-      });
     },
   });
 }
@@ -67,17 +44,6 @@ export function useDeleteOutOfOfficeBlock() {
     mutationFn: deleteOutOfOfficeBlock,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["out-of-office-blocks"] });
-      toast({
-        title: "Fuori ufficio rimosso",
-        description: "Il periodo fuori ufficio è stato rimosso.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Errore",
-        description: error.message || "Impossibile rimuovere il periodo fuori ufficio.",
-        variant: "destructive",
-      });
     },
   });
 }
