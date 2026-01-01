@@ -176,7 +176,7 @@ const Calendar = () => {
 
   return (
     // AgendaViewport: h-[calc(100vh-64px)] to account for topbar, NO scroll here
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-background w-full overflow-hidden">
+    <div className="h-full flex flex-col bg-background w-full overflow-hidden">
       {/* SubHeader: FIRST child, sticky top-0 relative to this container, h-12 (48px), z-40 */}
       <CalendarSubHeader
         searchQuery={searchQuery}
