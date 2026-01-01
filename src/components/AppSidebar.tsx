@@ -26,7 +26,7 @@ export function AppSidebar() {
       </div>
       
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-3 pt-4">
+      <div className="flex-1 overflow-y-auto px-3 pt-2">
         <nav className="flex flex-col gap-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
