@@ -467,7 +467,7 @@ const Clients = () => {
                 onKeyDown={(e) => {
                   if (e.key === "Escape") setFilters({ q: "" });
                 }}
-                className="pl-10 pr-10 h-11"
+                className="pl-10 pr-10 h-10 text-sm"
               />
               {filters.q && (
                 <button
@@ -479,7 +479,7 @@ const Clients = () => {
                 </button>
               )}
             </div>
-            <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
+            <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0 h-10 px-4">
               <Plus className="h-4 w-4" />
               Nuovo cliente
             </Button>
@@ -1002,41 +1002,36 @@ const Clients = () => {
 
   // STATO 3: ACTIVE_USER - Vista completa con tutti i filtri (codice esistente)
   return (
-    <div className="min-h-screen flex flex-col bg-background w-full">
-      {/* Toolbar section */}
-      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6">
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Cerca clienti per nome o email..."
-              value={filters.q}
-              onChange={(e) => setFilters({ q: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") setFilters({ q: "" });
-              }}
-              className="pl-10 pr-10 h-11"
-            />
-            {filters.q && (
-              <button
-                onClick={() => setFilters({ q: "" })}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Clear search"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+    <div className="flex flex-col bg-background w-full">
+      {/* Sticky Header: Search + CTA + Filters */}
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm shadow-sm">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-3 pb-3 md:pt-4 md:pb-4 space-y-3">
+          {/* Toolbar Row: Search + CTA */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Cerca clienti per nome o email..."
+                value={filters.q}
+                onChange={(e) => setFilters({ q: e.target.value })}
+                onKeyDown={(e) => { if (e.key === "Escape") setFilters({ q: "" }); }}
+                className="pl-10 pr-10 h-10 text-sm"
+              />
+              {filters.q && (
+                <button
+                  onClick={() => setFilters({ q: "" })}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Cancella ricerca"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0 h-10 px-4">
+              <Plus className="h-4 w-4" />
+              Nuovo cliente
+            </Button>
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)} className="shrink-0">
-            <Plus className="h-4 w-4" />
-            Nuovo cliente
-          </Button>
-        </div>
-      </div>
-
-      {/* Filters Section */}
-      <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-4 space-y-3">
 
           {/* Quick Filters Pills - solo se > 1 cliente non archiviato */}
           {showFilters && (
@@ -1168,7 +1163,7 @@ const Clients = () => {
 
           {/* Active Filters Summary */}
           {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground">Filtri attivi:</span>
               
               {filters.withoutPlan && (
@@ -1281,9 +1276,9 @@ const Clients = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6">
+      {/* Content - Scroll wrapper dedicato */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-3 pb-6">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
