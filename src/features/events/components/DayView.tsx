@@ -90,21 +90,20 @@ export function DayView({
     const el = scrollContainerRef.current;
     if (!el) return;
     
-    if (currentHour >= DAY_START_H && currentHour <= DAY_END_H) {
-      const mNowTotal = currentHour * 60 + currentMinutes;
-      const mFromStart = mNowTotal - DAY_START_H * 60;
-      const targetPosition = mFromStart * MINUTE_HEIGHT;
-      const scrollOffset = targetPosition - (el.clientHeight * 0.35);
-      el.scrollTo({ top: Math.max(0, scrollOffset), behavior: 'auto' });
-    }
-  }, [currentHour, currentMinutes]);
+    // Always scroll - DAY_START_H is now 0, DAY_END_H is 24
+    const mNowTotal = currentHour * 60 + currentMinutes;
+    const mFromStart = mNowTotal - DAY_START_H * 60;
+    const targetPosition = mFromStart * MINUTE_HEIGHT;
+    const scrollOffset = targetPosition - (el.clientHeight * 0.35);
+    el.scrollTo({ top: Math.max(0, scrollOffset), behavior: 'auto' });
+  }, []);
 
   const gridHeight = minutesVisible() * MINUTE_HEIGHT;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Sticky Day Header */}
-      <div className="sticky top-0 z-20 bg-card border-b flex">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Day Header - shrink-0 keeps it visible, not sticky */}
+      <div className="shrink-0 z-20 bg-card border-b flex">
         {/* Spacer for hour column */}
         <div className="w-14 shrink-0 border-r border-border/50" />
         
@@ -191,7 +190,7 @@ export function DayView({
           <OutOfOfficeOverlay date={date} blocks={oooBlocks} />
 
           {/* Current time line - more prominent */}
-          {isToday && currentHour >= DAY_START_H && currentHour <= DAY_END_H && (
+          {isToday && (
             <div 
               className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
               style={{ top: minutesFromDayStart(new Date()) * MINUTE_HEIGHT }}
