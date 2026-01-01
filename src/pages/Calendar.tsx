@@ -2,14 +2,10 @@ import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { parseISO, format } from "date-fns";
 import { useTopbar } from "@/contexts/TopbarContext";
-import { Input } from "@/components/ui/input";
-import { Search, Calendar as CalendarIcon, Plus, Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useEventsQuery } from "@/features/events/hooks/useEventsQuery";
-import { CalendarToolbar } from "@/features/events/components/CalendarToolbar";
+import { CalendarSubHeader } from "@/features/events/components/CalendarSubHeader";
 import { DayView } from "@/features/events/components/DayView";
 import { WeekView } from "@/features/events/components/WeekView";
 import { MonthView } from "@/features/events/components/MonthView";
@@ -20,16 +16,14 @@ import { useBookingRequestsQuery } from "@/features/bookings/hooks/useBookingReq
 import { useAvailabilityWindowsQuery } from "@/features/bookings/hooks/useAvailability";
 import { useOutOfOfficeBlocksQuery } from "@/features/bookings/hooks/useOutOfOffice";
 import { usePendingCount } from "@/features/bookings/hooks/usePendingCount";
-import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettings";
-import type { CalendarView, EventWithClient, CalendarViewMode } from "@/features/events/types";
+import type { CalendarView as CalendarViewType, EventWithClient, CalendarViewMode } from "@/features/events/types";
 import type { BookingRequestWithClient } from "@/features/bookings/types";
 import { EventModal } from "@/features/events/components/EventModal";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 import { ClientViewBanner } from "@/features/events/components/ClientViewBanner";
 import { getCoachClientId } from "@/lib/coach-client";
-
 import { PREVIEW_MESSAGES } from "@/features/events/utils/preview-messages";
 
 type FilterOption = "all" | "approved" | "pending" | "ooo" | "availability";
@@ -41,10 +35,9 @@ const Calendar = () => {
     const dateParam = sp.get("date");
     return dateParam ? parseISO(dateParam) : new Date();
   });
-  const [view, setView] = useState<CalendarView>((sp.get("view") as CalendarView) || "week");
+  const [view, setView] = useState<CalendarViewType>((sp.get("view") as CalendarViewType) || "week");
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Set page title in Topbar
   useTopbar({ title: "Agenda" });
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -57,43 +50,33 @@ const Calendar = () => {
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
 
-  // Stato semplificato: un solo boolean per vista cliente
   const [isClientView, setIsClientView] = useState<boolean>(() => {
     return localStorage.getItem('calendar-client-view') === 'true';
   });
 
-  // Query booking settings
   const { data: bookingSettings } = useBookingSettingsQuery();
   const hasSelfServiceBooking = bookingSettings?.enabled === true;
-
-  // Fetch pending count
   const { data: pendingCount = 0 } = usePendingCount();
-
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  // Persist isClientView in localStorage
   useEffect(() => {
     localStorage.setItem('calendar-client-view', String(isClientView));
   }, [isClientView]);
 
-  // PATCH 1: Force sync - se booking disabilitati, forza coach mode
   useEffect(() => {
     if (!hasSelfServiceBooking && isClientView) {
       setIsClientView(false);
     }
   }, [hasSelfServiceBooking, isClientView]);
 
-  // Fetch booking data
   const { data: bookingRequests = [] } = useBookingRequestsQuery({ status: "PENDING" });
   const { data: availabilityWindows = [] } = useAvailabilityWindowsQuery();
   const { data: oooBlocks = [] } = useOutOfOfficeBlocksQuery();
 
-  // Derivazione viewMode semplificata
   const viewMode: CalendarViewMode = isClientView ? 'client-preview' : 'coach';
   const isPreviewMode = isClientView;
 
-  // Update URL when view or date changes
-  const handleViewChange = (newView: CalendarView) => {
+  const handleViewChange = (newView: CalendarViewType) => {
     setView(newView);
     sp.set("view", newView);
     setSp(sp);
@@ -109,12 +92,10 @@ const Calendar = () => {
     handleDateChange(new Date());
   };
 
-  // Fetch events for the visible range
   const { data: events = [], isLoading } = useEventsQuery({
     q: debouncedSearch,
   });
 
-  // Filter events based on search
   const filteredEvents = useMemo(() => {
     if (!debouncedSearch) return events;
     const query = debouncedSearch.toLowerCase();
@@ -155,7 +136,7 @@ const Calendar = () => {
   };
 
   const handleToggleClientView = () => {
-    if (!hasSelfServiceBooking) return; // Safety check
+    if (!hasSelfServiceBooking) return;
     setIsClientView(prev => !prev);
   };
 
@@ -171,7 +152,6 @@ const Calendar = () => {
   };
 
   const handleNewEvent = () => {
-    // FASE 5: Block modal opening in preview mode
     if (viewMode !== 'coach') {
       toast.error(PREVIEW_MESSAGES.BLOCKED_ACTION);
       return;
@@ -187,7 +167,6 @@ const Calendar = () => {
     setSp(sp);
   };
 
-  // Determine which layers to show based on filter
   const showApproved = filterOption === "all" || filterOption === "approved";
   const showPending = filterOption === "all" || filterOption === "pending";
   const showOoo = filterOption === "all" || filterOption === "ooo";
@@ -197,54 +176,15 @@ const Calendar = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background w-full">
-      {/* Toolbar with search and filters */}
-      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Cerca per cliente o tipo di sessione..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10"
-            />
-          </div>
-          <Select value={filterOption} onValueChange={(v) => setFilterOption(v as FilterOption)}>
-            <SelectTrigger className="w-[160px] h-10">
-              <SelectValue placeholder="Mostra" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti</SelectItem>
-              <SelectItem value="approved">Approvati</SelectItem>
-              <SelectItem value="pending">In attesa</SelectItem>
-              <SelectItem value="ooo">Fuori ufficio</SelectItem>
-              <SelectItem value="availability">Disponibilità</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <div className="flex-1" />
-          
-          <Button
-            variant="outline"
-            onClick={() => navigate("/calendar/manage")}
-            className="h-10 flex items-center gap-2"
-          >
-            Gestione prenotazioni
-            {pendingCount > 0 && (
-              <Badge variant="secondary">{pendingCount}</Badge>
-            )}
-          </Button>
-          
-          <Button onClick={handleNewEvent} className="h-10 flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Nuovo appuntamento
-          </Button>
-        </div>
-      </div>
-
-      {/* Calendar toolbar */}
-      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
-      <CalendarToolbar
+      {/* Unified Sub-Header */}
+      <CalendarSubHeader
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        filterOption={filterOption}
+        onFilterChange={setFilterOption}
+        pendingCount={pendingCount}
+        onManageBookings={() => navigate("/calendar/manage")}
+        onNewEvent={handleNewEvent}
         view={view}
         currentDate={currentDate}
         onViewChange={handleViewChange}
@@ -254,15 +194,16 @@ const Calendar = () => {
         isClientView={isClientView}
         onToggleClientView={handleToggleClientView}
       />
+
+      {/* Client View Banner */}
       {isClientView && (
-        <div className="mt-4">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-2">
           <ClientViewBanner onBackToCoach={handleBackToCoach} />
         </div>
       )}
-      </div>
 
-      {/* Calendar Views with lateral padding */}
-      <div className="flex-1 overflow-auto mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
+      {/* Calendar Views */}
+      <div className="flex-1 overflow-hidden mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -293,7 +234,6 @@ const Calendar = () => {
                     return;
                   }
                   setCreateModalOpen(true);
-                  // TODO: Pass prefill data to modal
                 }}
               />
             )}
@@ -314,7 +254,6 @@ const Calendar = () => {
                     return;
                   }
                   setCreateModalOpen(true);
-                  // TODO: Pass prefill data to modal
                 }}
               />
             )}
@@ -336,14 +275,13 @@ const Calendar = () => {
         )}
       </div>
 
-      {/* Create Appointment Modal */}
+      {/* Modals */}
       <EventModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
         mode="coach-create"
       />
 
-      {/* Edit Event Modal */}
       {selectedEvent && (
         <EventModal
           open={editModalOpen}
@@ -354,15 +292,12 @@ const Calendar = () => {
         />
       )}
 
-
-      {/* Booking Request Drawer */}
       <BookingRequestDrawer
         open={requestDrawerOpen}
         onOpenChange={setRequestDrawerOpen}
         request={selectedRequest}
       />
 
-      {/* Day Picker for Session */}
       {sessionEventData && (
         <DayPicker
           open={dayPickerOpen}

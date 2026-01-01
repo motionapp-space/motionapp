@@ -1,7 +1,9 @@
 // Time utilities for calendar views
-export const DAY_START_H = 0;   // 00:00
-export const DAY_END_H = 24;    // 24:00
-export const MINUTE_HEIGHT = 1; // 1px per minute
+// Optimized for 11+ hours visible in viewport
+
+export const DAY_START_H = 6;    // 06:00 - coach working hours
+export const DAY_END_H = 22;     // 22:00 - 16 hours total
+export const MINUTE_HEIGHT = 0.68; // 0.68px per minute → ~11h visible in 500px
 
 export const toMinutes = (d: Date) => d.getHours() * 60 + d.getMinutes();
 
@@ -14,7 +16,7 @@ export const minutesFromDayStart = (date: Date) => {
   return Math.max(0, m - startM);
 };
 
-export const minutesVisible = () => (DAY_END_H - DAY_START_H) * 60; // 18h -> 1080m
+export const minutesVisible = () => (DAY_END_H - DAY_START_H) * 60; // 16h → 960m
 
 export const hoursArray = () => {
   const out: number[] = [];
