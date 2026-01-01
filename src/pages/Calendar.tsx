@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { parseISO, format } from "date-fns";
 import { useTopbar } from "@/contexts/TopbarContext";
@@ -203,8 +204,11 @@ const Calendar = () => {
         </div>
       )}
 
-      {/* Calendar Views Container - takes remaining height, NO overflow here */}
-      <div className="flex-1 overflow-hidden mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
+      {/* Calendar Views Container - takes remaining height, conditional overflow for year view */}
+      <div className={cn(
+        "flex-1 min-h-0 mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10",
+        view === "year" ? "overflow-y-auto overflow-x-hidden overscroll-contain" : "overflow-hidden"
+      )}>
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
