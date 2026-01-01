@@ -12,10 +12,11 @@ import { useUpdateBookingSettings } from "../hooks/useUpdateBookingSettings";
 import { useUpdateAvailabilityWindows } from "../hooks/useUpdateAvailabilityWindows";
 import { useAvailabilityWindowsQuery } from "../hooks/useAvailabilityWindowsQuery";
 import { AvailabilityEditor } from "./AvailabilityEditor";
-import { OutOfOfficeManager } from "./OutOfOfficeManager";
+import { OutOfOfficeManager, OutOfOfficeManagerHandle } from "./OutOfOfficeManager";
 import { GlobalSaveBar } from "./GlobalSaveBar";
 import { Loader2, CheckCircle2, Clock, Info, Calendar, CalendarX } from "lucide-react";
 import type { CreateAvailabilityWindowInput } from "../types";
+import { useCreateOutOfOfficeBlock, useDeleteOutOfOfficeBlock, useUpdateOutOfOfficeBlock } from "../hooks/useOutOfOffice";
 
 interface BookingSettingsFormValues {
   enabled: boolean;
@@ -40,6 +41,13 @@ export function BookingSettingsForm() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [resetAvailability, setResetAvailability] = useState(0);
   const availabilityChangesRef = useRef<Record<number, TimeRange[]>>({});
+  const oooManagerRef = useRef<OutOfOfficeManagerHandle>(null);
+
+  // OOO mutations
+  const createOOOMutation = useCreateOutOfOfficeBlock();
+  const deleteOOOMutation = useDeleteOutOfOfficeBlock();
+  const updateOOOMutation = useUpdateOutOfOfficeBlock();
+  const [isSavingOOO, setIsSavingOOO] = useState(false);
 
   const form = useForm<BookingSettingsFormValues>({
     defaultValues: {
@@ -82,7 +90,39 @@ export function BookingSettingsForm() {
     return endMinutes > startMinutes;
   };
 
-  const onSubmit = (values: BookingSettingsFormValues) => {
+  const commitOOOChanges = async () => {
+    if (!oooManagerRef.current) return;
+    
+    const pending = oooManagerRef.current.getPendingChanges();
+    if (!pending.creates.length && !pending.deletes.length && !pending.updates.length) {
+      return;
+    }
+
+    setIsSavingOOO(true);
+    try {
+      // Execute deletes
+      for (const id of pending.deletes) {
+        await deleteOOOMutation.mutateAsync(id);
+      }
+      
+      // Execute creates
+      for (const input of pending.creates) {
+        await createOOOMutation.mutateAsync(input);
+      }
+      
+      // Execute updates
+      for (const { id, input } of pending.updates) {
+        await updateOOOMutation.mutateAsync({ id, input });
+      }
+
+      // Clear pending changes after successful commit
+      oooManagerRef.current.discardChanges();
+    } finally {
+      setIsSavingOOO(false);
+    }
+  };
+
+  const onSubmit = async (values: BookingSettingsFormValues) => {
     // Validate availability changes before saving
     const availabilityChanges = availabilityChangesRef.current;
     if (Object.keys(availabilityChanges).length > 0) {
@@ -107,7 +147,7 @@ export function BookingSettingsForm() {
 
     // Save form settings
     updateSettings(values, {
-      onSuccess: () => {
+      onSuccess: async () => {
         // Save availability changes if any
         if (Object.keys(availabilityChanges).length > 0) {
           const allWindows: CreateAvailabilityWindowInput[] = [];
@@ -139,7 +179,10 @@ export function BookingSettingsForm() {
           }
 
           updateAvailability(allWindows, {
-            onSuccess: () => {
+            onSuccess: async () => {
+              // Also commit OOO changes
+              await commitOOOChanges();
+              
               form.reset(values);
               availabilityChangesRef.current = {};
               setHasUnsavedChanges(false);
@@ -147,6 +190,9 @@ export function BookingSettingsForm() {
             },
           });
         } else {
+          // Also commit OOO changes
+          await commitOOOChanges();
+          
           form.reset(values);
           setHasUnsavedChanges(false);
           toast.success("Impostazioni salvate");
@@ -172,7 +218,17 @@ export function BookingSettingsForm() {
     availabilityChangesRef.current = {};
     setResetAvailability(prev => prev + 1);
     
+    // Reset OOO changes
+    if (oooManagerRef.current) {
+      oooManagerRef.current.discardChanges();
+    }
+    
     setHasUnsavedChanges(false);
+  };
+
+  // Handle OOO change detection
+  const handleOOOChangeDetected = () => {
+    setHasUnsavedChanges(true);
   };
 
   if (isLoading) {
@@ -510,7 +566,10 @@ export function BookingSettingsForm() {
                         Blocca date specifiche in cui non sei disponibile per i clienti
                       </p>
                     </div>
-                    <OutOfOfficeManager onChangeDetected={() => setHasUnsavedChanges(true)} />
+                    <OutOfOfficeManager 
+                      ref={oooManagerRef}
+                      onChangeDetected={handleOOOChangeDetected} 
+                    />
                   </div>
                 </>
               )}
@@ -522,7 +581,7 @@ export function BookingSettingsForm() {
             show={hasUnsavedChanges}
             onSave={form.handleSubmit(onSubmit)}
             onCancel={handleCancelChanges}
-            isSaving={isPending || isUpdatingAvailability}
+            isSaving={isPending || isUpdatingAvailability || isSavingOOO}
             error={error?.message}
           />
         </CardContent>
