@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { PackageSettingsForm } from "@/features/packages/components/PackageSetti
 
 const Settings = () => {
   const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const initialTab = searchParams.get('tab') || 'profile';
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState({ name: "", email: "", locale: "it" });
@@ -83,6 +85,9 @@ const Settings = () => {
         .eq("id", user.id);
 
       if (coachError) throw coachError;
+      
+      // Invalida la query per aggiornare UserMenu
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       toast.success("Profilo aggiornato");
     } catch (error: any) {
       toast.error("Errore nell'aggiornamento del profilo");
