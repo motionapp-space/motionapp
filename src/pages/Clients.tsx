@@ -643,7 +643,7 @@ const Clients = () => {
                               <Label htmlFor="apt-planned" className="cursor-pointer font-normal">Pianificato</Label>
                             </div>
                             <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="not_planned" id="apt-not-planned" />
+                              <RadioGroupItem value="unplanned" id="apt-not-planned" />
                               <Label htmlFor="apt-not-planned" className="cursor-pointer font-normal">Da pianificare</Label>
                             </div>
                           </RadioGroup>
@@ -1191,7 +1191,7 @@ const Clients = () => {
                               <Label htmlFor="apt-planned-active" className="cursor-pointer font-normal">Pianificato</Label>
                             </div>
                             <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="not_planned" id="apt-not-planned-active" />
+                              <RadioGroupItem value="unplanned" id="apt-not-planned-active" />
                               <Label htmlFor="apt-not-planned-active" className="cursor-pointer font-normal">Da pianificare</Label>
                             </div>
                           </RadioGroup>
