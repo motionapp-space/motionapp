@@ -175,8 +175,9 @@ const Calendar = () => {
   const calendarMode = viewMode === 'coach' ? 'coach' : 'client';
 
   return (
+    // AgendaViewport: h-[calc(100vh-64px)] to account for topbar, NO scroll here
     <div className="h-[calc(100vh-64px)] flex flex-col bg-background w-full overflow-hidden">
-      {/* SubHeader: STICKY top-16, h-12 (48px), z-40 */}
+      {/* SubHeader: FIRST child, sticky top-0 relative to this container, h-12 (48px), z-40 */}
       <CalendarSubHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -202,7 +203,7 @@ const Calendar = () => {
         </div>
       )}
 
-      {/* Calendar Views Container - flex-1 takes remaining space */}
+      {/* Calendar Views Container - takes remaining height, NO overflow here */}
       <div className="flex-1 overflow-hidden mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
