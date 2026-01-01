@@ -110,18 +110,16 @@ export const OutOfOfficeManager = forwardRef<OutOfOfficeManagerHandle, OutOfOffi
     };
 
     const handleDelete = (id: string) => {
-      if (confirm("Sei sicuro di voler eliminare questo periodo di assenza?")) {
-        // Check if it's a pending create (temp id)
-        if (id.startsWith("temp_")) {
-          setPendingCreates(prev => prev.filter(p => p.temp_id !== id));
-        } else {
-          // Mark for deletion
-          setPendingDeletes(prev => [...prev, id]);
-          // Remove from pending updates if exists
-          setPendingUpdates(prev => prev.filter(u => u.id !== id));
-        }
-        onChangeDetected?.();
+      // Check if it's a pending create (temp id)
+      if (id.startsWith("temp_")) {
+        setPendingCreates(prev => prev.filter(p => p.temp_id !== id));
+      } else {
+        // Mark for deletion
+        setPendingDeletes(prev => [...prev, id]);
+        // Remove from pending updates if exists
+        setPendingUpdates(prev => prev.filter(u => u.id !== id));
       }
+      onChangeDetected?.();
     };
 
     const startEdit = (block: OutOfOfficeBlock) => {
