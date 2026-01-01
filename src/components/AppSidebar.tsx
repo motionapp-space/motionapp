@@ -21,7 +21,7 @@ export function AppSidebar() {
       data-testid="sidebar"
     >
       {/* Logo in alto */}
-      <div className="h-16 flex items-center px-5 border-b border-border/60">
+      <div className="h-16 flex items-center px-5">
         <span className="text-xl font-bold tracking-tight">Studio AI</span>
       </div>
       
