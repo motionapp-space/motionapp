@@ -118,8 +118,8 @@ export function DayView({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Day Header - FIXED h-10 (40px), STICKY below SubHeader */}
-      <div className="sticky top-[112px] z-30 h-10 bg-background border-b border-border flex shrink-0">
+      {/* Day Header - FIXED h-10 (40px), STICKY top-12 (below SubHeader 48px), z-30 */}
+      <div className="sticky top-12 z-30 h-10 bg-background border-b border-border flex shrink-0">
         {/* Spacer for hour column */}
         <div className="w-14 shrink-0 border-r border-border/50" />
         
@@ -143,11 +143,11 @@ export function DayView({
         </div>
       </div>
 
-      {/* Scrollable Grid - calculated height for proper scroll */}
+      {/* Scrollable Grid - h-[calc(100%-48px-40px)] = remaining after SubHeader + DayHeader */}
       <div 
         ref={scrollContainerRef} 
-        className="flex-1 overflow-y-auto overflow-x-hidden flex"
-        style={{ height: 'calc(100vh - 64px - 48px - 40px)' }}
+        className="overflow-y-auto overflow-x-hidden flex"
+        style={{ height: 'calc(100% - 48px - 40px)' }}
       >
         {/* Hour column */}
         <div className="w-14 shrink-0 border-r border-border/50 text-[11px] text-muted-foreground">

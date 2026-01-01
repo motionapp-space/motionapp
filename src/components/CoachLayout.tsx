@@ -17,9 +17,10 @@ const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
     <TopbarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <div className="flex flex-1 flex-col">
+        <div className="relative flex flex-1 flex-col h-screen overflow-hidden">
           <Topbar />
-          <main className="flex-1 overflow-y-auto pb-16">
+          {/* pt-16 is the ONLY vertical offset (64px for topbar) */}
+          <main className="pt-16 h-full overflow-hidden">
             <Outlet />
           </main>
         </div>
