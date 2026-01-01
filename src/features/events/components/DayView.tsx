@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import type { EventWithClient } from "../types";
 import type { BookingRequestWithClient, AvailabilityWindow, OutOfOfficeBlock } from "@/features/bookings/types";
 
+const HOUR_LABEL_OFFSET = -4; // Offset verticale per etichette orarie
+
 interface DayViewProps {
   date: Date;
   events: EventWithClient[];
@@ -121,7 +123,7 @@ export function DayView({
       {/* Day Header - IN FLOW (not absolute), h-10 (40px) */}
       <div className="h-10 bg-white flex shrink-0 shadow-sm">
         {/* Spacer for hour column */}
-        <div className="w-14 shrink-0 border-r border-border/50" />
+        <div className="w-14 shrink-0 border-r border-slate-200/40" />
         
         {/* Day header content */}
         <div className={cn(
@@ -150,13 +152,13 @@ export function DayView({
       >
         <div className="flex pt-2">
         {/* Hour column */}
-        <div className="w-14 shrink-0 border-r border-border/50 text-[11px] text-muted-foreground">
+        <div className="w-14 shrink-0 border-r border-slate-200/40 text-[11px] text-muted-foreground">
           <div className="relative" style={{ height: gridHeight }}>
             {hours.map((hour, i) => (
               <div 
                 key={hour} 
                 className="absolute w-full flex items-center justify-end pr-2" 
-                style={{ top: i * 60 * MINUTE_HEIGHT - 6 }}
+                style={{ top: i * 60 * MINUTE_HEIGHT + HOUR_LABEL_OFFSET }}
               >
                 {format(new Date().setHours(hour, 0), "HH:mm")}
               </div>
@@ -200,7 +202,7 @@ export function DayView({
           {hours.map((_, i) => (
             <div 
               key={i} 
-              className="absolute left-0 right-0 border-t border-border/30" 
+              className="absolute left-0 right-0 border-t border-slate-200/80" 
               style={{ top: i * 60 * MINUTE_HEIGHT }} 
             />
           ))}

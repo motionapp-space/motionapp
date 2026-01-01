@@ -3,7 +3,7 @@
 
 export const DAY_START_H = 0;    // 00:00 - full 24h visible
 export const DAY_END_H = 24;     // 24:00 - full day (shows 00:00-23:00 labels)
-export const MINUTE_HEIGHT = 1; // 1px per minute → 60px per hour → ≥11h visible in viewport
+export const MINUTE_HEIGHT = 0.94; // ~56.4px/ora → rendering sub-pixel stabile, ~11h visibili a zoom 90%
 
 export const toMinutes = (d: Date) => d.getHours() * 60 + d.getMinutes();
 
