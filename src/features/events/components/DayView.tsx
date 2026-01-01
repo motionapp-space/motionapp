@@ -119,7 +119,7 @@ export function DayView({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Day Header - IN FLOW (not absolute), h-10 (40px) */}
-      <div className="h-10 bg-background border-b border-border flex shrink-0 shadow-sm">
+      <div className="h-10 bg-white flex shrink-0 shadow-sm">
         {/* Spacer for hour column */}
         <div className="w-14 shrink-0 border-r border-border/50" />
         
