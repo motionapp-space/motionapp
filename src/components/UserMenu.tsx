@@ -21,46 +21,17 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useUpdateSession } from "@/features/sessions/hooks/useUpdateSession";
-import type { User as UserProfile } from "@/types/user";
 import { getUserFullName, getUserInitials } from "@/types/user";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 
 export function UserMenu() {
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const { activeSession, clearActiveSession } = useSessionStore();
   const { mutateAsync: updateSession } = useUpdateSession();
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Fetch from users table (Unified Identity)
-      const { data: profile } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profile) {
-        setUserProfile(profile);
-      } else {
-        // Fallback to auth user email
-        setUserProfile({
-          id: user.id,
-          email: user.email || '',
-          first_name: null,
-          last_name: null,
-          avatar_url: null,
-          created_at: user.created_at,
-        });
-      }
-    };
-    fetchProfile();
-  }, []);
+  const { data: currentUser } = useCurrentUser();
 
   const handleLogoutClick = () => {
     if (activeSession) {
@@ -125,7 +96,7 @@ export function UserMenu() {
               <Button variant="ghost" size="icon" className="relative rounded-full hover:ring-2 hover:ring-primary/20 transition-all">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-primary/10 text-primary">
-                    {getUserInitials(userProfile)}
+                    {getUserInitials(currentUser)}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -137,8 +108,8 @@ export function UserMenu() {
           <div className="flex items-center gap-2 px-2 py-1.5">
             <User className="h-4 w-4 text-muted-foreground" />
             <div className="flex flex-col gap-0.5">
-              <p className="text-sm font-medium">{getUserFullName(userProfile) || "Account"}</p>
-              <p className="text-xs text-muted-foreground truncate">{userProfile?.email || ""}</p>
+              <p className="text-sm font-medium">{getUserFullName(currentUser) || "Account"}</p>
+              <p className="text-xs text-muted-foreground truncate">{currentUser?.email || ""}</p>
             </div>
           </div>
           <DropdownMenuSeparator />
