@@ -19,8 +19,8 @@ const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
         <AppSidebar />
         <div className="relative flex flex-1 flex-col h-screen overflow-hidden">
           <Topbar />
-          {/* pt-16 is the ONLY vertical offset (64px for topbar) */}
-          <main className="pt-16 h-full overflow-hidden">
+          {/* No pt-16: Topbar is sticky and already reserves 64px */}
+          <main className="h-full overflow-hidden">
             <Outlet />
           </main>
         </div>
