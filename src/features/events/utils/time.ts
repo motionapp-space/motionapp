@@ -1,9 +1,9 @@
 // Time utilities for calendar views
-// Optimized for 11+ hours visible in viewport
+// Optimized for ≥11 hours visible at 90% zoom on laptop
 
 export const DAY_START_H = 0;    // 00:00 - full 24h visible
-export const DAY_END_H = 24;     // 24:00 - full day
-export const MINUTE_HEIGHT = 0.68; // 0.68px per minute → ~11h visible in 500px
+export const DAY_END_H = 24;     // 24:00 - full day (shows 00:00-23:00 labels)
+export const MINUTE_HEIGHT = 1; // 1px per minute → 60px per hour → ≥11h visible in viewport
 
 export const toMinutes = (d: Date) => d.getHours() * 60 + d.getMinutes();
 
@@ -16,10 +16,11 @@ export const minutesFromDayStart = (date: Date) => {
   return Math.max(0, m - startM);
 };
 
-export const minutesVisible = () => (DAY_END_H - DAY_START_H) * 60; // 16h → 960m
+export const minutesVisible = () => (DAY_END_H - DAY_START_H) * 60; // 24h → 1440m
 
 export const hoursArray = () => {
   const out: number[] = [];
-  for (let h = DAY_START_H; h <= DAY_END_H; h++) out.push(h);
+  // Show 00:00 to 23:00 labels (24 hour markers)
+  for (let h = DAY_START_H; h < DAY_END_H; h++) out.push(h);
   return out;
 };
