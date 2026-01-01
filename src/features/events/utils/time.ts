@@ -1,8 +1,8 @@
 // Time utilities for calendar views
 // Optimized for 11+ hours visible in viewport
 
-export const DAY_START_H = 6;    // 06:00 - coach working hours
-export const DAY_END_H = 22;     // 22:00 - 16 hours total
+export const DAY_START_H = 0;    // 00:00 - full 24h visible
+export const DAY_END_H = 24;     // 24:00 - full day
 export const MINUTE_HEIGHT = 0.68; // 0.68px per minute → ~11h visible in 500px
 
 export const toMinutes = (d: Date) => d.getHours() * 60 + d.getMinutes();
