@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { format, startOfDay, endOfDay, isSameDay } from "date-fns";
 import { it } from "date-fns/locale";
 import { toast } from "sonner";
@@ -39,6 +39,7 @@ export function DayView({
 }: DayViewProps) {
   const hours = useMemo(() => hoursArray(), []);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [hasUserScrolled, setHasUserScrolled] = useState(false);
   const currentHour = new Date().getHours();
   const currentMinutes = new Date().getMinutes();
   const isToday = isSameDay(date, new Date());
@@ -85,50 +86,69 @@ export function DayView({
     );
   }, [bookingRequests, date]);
 
-  // Auto-scroll to position current time at 35% from top
+  // Auto-scroll to position current time at 30% from top - only on initial load
+  useEffect(() => {
+    if (hasUserScrolled) return;
+    
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    
+    const mNowTotal = currentHour * 60 + currentMinutes;
+    const mFromStart = mNowTotal - DAY_START_H * 60;
+    const targetPosition = mFromStart * MINUTE_HEIGHT;
+    // Position current time at 30% from top
+    const scrollOffset = targetPosition - (el.clientHeight * 0.30);
+    el.scrollTo({ top: Math.max(0, scrollOffset), behavior: 'auto' });
+  }, [hasUserScrolled]);
+
+  // Track user scroll
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
     
-    // Always scroll - DAY_START_H is now 0, DAY_END_H is 24
-    const mNowTotal = currentHour * 60 + currentMinutes;
-    const mFromStart = mNowTotal - DAY_START_H * 60;
-    const targetPosition = mFromStart * MINUTE_HEIGHT;
-    const scrollOffset = targetPosition - (el.clientHeight * 0.35);
-    el.scrollTo({ top: Math.max(0, scrollOffset), behavior: 'auto' });
+    const handleScroll = () => {
+      setHasUserScrolled(true);
+    };
+    
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
   }, []);
 
   const gridHeight = minutesVisible() * MINUTE_HEIGHT;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Day Header - shrink-0 keeps it visible, not sticky */}
-      <div className="shrink-0 z-20 bg-card border-b flex">
+      {/* Day Header - FIXED h-10 (40px), STICKY below SubHeader */}
+      <div className="sticky top-[112px] z-30 h-10 bg-background border-b border-border flex shrink-0">
         {/* Spacer for hour column */}
         <div className="w-14 shrink-0 border-r border-border/50" />
         
-        {/* Day header */}
+        {/* Day header content */}
         <div className={cn(
-          "flex-1 text-center py-2",
+          "flex-1 flex items-center justify-center gap-2",
           isToday && "bg-primary/5"
         )}>
-          <div className="text-xs text-muted-foreground uppercase">
+          <span className="text-xs text-muted-foreground uppercase">
             {format(date, "EEEE", { locale: it })}
-          </div>
-          <div className={cn(
-            "text-lg font-semibold",
-            isToday && "bg-primary text-primary-foreground rounded-full w-8 h-8 mx-auto flex items-center justify-center"
+          </span>
+          <span className={cn(
+            "text-sm font-semibold",
+            isToday && "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs"
           )}>
             {format(date, "d")}
-          </div>
-          <div className="text-xs text-muted-foreground">
+          </span>
+          <span className="text-xs text-muted-foreground">
             {format(date, "MMMM yyyy", { locale: it })}
-          </div>
+          </span>
         </div>
       </div>
 
-      {/* Scrollable Grid */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto flex">
+      {/* Scrollable Grid - calculated height for proper scroll */}
+      <div 
+        ref={scrollContainerRef} 
+        className="flex-1 overflow-y-auto overflow-x-hidden flex"
+        style={{ height: 'calc(100vh - 64px - 48px - 40px)' }}
+      >
         {/* Hour column */}
         <div className="w-14 shrink-0 border-r border-border/50 text-[11px] text-muted-foreground">
           <div className="relative" style={{ height: gridHeight }}>

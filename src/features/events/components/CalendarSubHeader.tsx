@@ -100,12 +100,12 @@ export function CalendarSubHeader({
     return "";
   };
 
-  // Mobile layout
+  // Mobile layout - fixed h-24 (two rows)
   if (isMobile) {
     return (
-      <div className="sticky top-16 z-40 bg-background border-b">
-        {/* Row 1: Navigation */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
+      <div className="sticky top-16 z-40 h-24 bg-background border-b border-border shrink-0">
+        {/* Row 1: Navigation - h-12 */}
+        <div className="h-12 flex items-center justify-between px-3 border-b border-border/50">
           <div className="flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={onToday} className="h-8 px-2 text-xs">
               Oggi
@@ -130,8 +130,8 @@ export function CalendarSubHeader({
           </Select>
         </div>
         
-        {/* Row 2: Search + Actions */}
-        <div className="flex items-center gap-2 px-3 py-2">
+        {/* Row 2: Search + Actions - h-12 */}
+        <div className="h-12 flex items-center gap-2 px-3">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -167,23 +167,23 @@ export function CalendarSubHeader({
     );
   }
 
-  // Desktop layout - single compact row
+  // Desktop layout - FIXED h-12 (48px), single compact row
   return (
-    <div className="sticky top-16 z-40 bg-background border-b">
-      <div className="flex items-center gap-3 py-2 px-4 max-w-[1440px] mx-auto">
+    <div className="sticky top-16 z-40 h-12 bg-background border-b border-border shrink-0">
+      <div className="h-full flex items-center gap-3 px-4 max-w-[1440px] mx-auto">
         {/* Left: Search + Filter */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Cerca..."
-              className="pl-8 w-44 h-9"
+              className="pl-8 w-44 h-9 text-sm"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
           <Select value={filterOption} onValueChange={(v) => onFilterChange(v as FilterOption)}>
-            <SelectTrigger className="w-32 h-9">
+            <SelectTrigger className="w-28 h-9 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -198,7 +198,7 @@ export function CalendarSubHeader({
 
         {/* Center: Navigation */}
         <div className="flex-1 flex items-center justify-center gap-1">
-          <Button variant="outline" size="sm" onClick={onToday} className="h-9 px-3">
+          <Button variant="outline" size="sm" onClick={onToday} className="h-9 px-3 text-sm">
             Oggi
           </Button>
           <Button variant="ghost" size="icon" onClick={handlePrev} className="h-9 w-9">
@@ -218,7 +218,7 @@ export function CalendarSubHeader({
             variant="outline"
             size="sm"
             onClick={onManageBookings}
-            className="h-9 gap-1.5"
+            className="h-9 gap-1.5 text-sm"
           >
             Gestione prenotazioni
             {pendingCount > 0 && (
@@ -226,7 +226,7 @@ export function CalendarSubHeader({
             )}
           </Button>
 
-          <Button size="sm" onClick={onNewEvent} className="h-9 gap-1.5">
+          <Button size="sm" onClick={onNewEvent} className="h-9 gap-1.5 text-sm">
             <Plus className="h-4 w-4" />
             Nuovo
           </Button>
@@ -234,7 +234,7 @@ export function CalendarSubHeader({
           <Separator orientation="vertical" className="h-6 mx-1" />
 
           <Select value={view} onValueChange={(v) => onViewChange(v as CalendarView)}>
-            <SelectTrigger className="w-28 h-9">
+            <SelectTrigger className="w-28 h-9 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

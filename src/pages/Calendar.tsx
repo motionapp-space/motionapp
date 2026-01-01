@@ -175,8 +175,8 @@ const Calendar = () => {
   const calendarMode = viewMode === 'coach' ? 'coach' : 'client';
 
   return (
-    <div className="min-h-screen flex flex-col bg-background w-full">
-      {/* Unified Sub-Header */}
+    <div className="h-[calc(100vh-64px)] flex flex-col bg-background w-full overflow-hidden">
+      {/* SubHeader: STICKY top-16, h-12 (48px), z-40 */}
       <CalendarSubHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -195,14 +195,14 @@ const Calendar = () => {
         onToggleClientView={handleToggleClientView}
       />
 
-      {/* Client View Banner */}
+      {/* Client View Banner - only shows when in client view */}
       {isClientView && (
-        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-2">
+        <div className="shrink-0 mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-2">
           <ClientViewBanner onBackToCoach={handleBackToCoach} />
         </div>
       )}
 
-      {/* Calendar Views */}
+      {/* Calendar Views Container - flex-1 takes remaining space */}
       <div className="flex-1 overflow-hidden mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
