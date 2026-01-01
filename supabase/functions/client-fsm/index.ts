@@ -43,12 +43,27 @@ serve(async (req) => {
 
     console.log(`FSM Action: ${action} for client ${clientId}`);
 
-    // Fetch current client state (without inner join to avoid issues with clients without plans)
+    // First verify the coach-client relationship
+    const { data: coachClientCheck, error: ccError } = await supabaseClient
+      .from('coach_clients')
+      .select('id, client_id')
+      .eq('client_id', clientId)
+      .eq('coach_id', user.id)
+      .single();
+
+    if (ccError || !coachClientCheck) {
+      console.error('Coach-client relationship not found:', ccError);
+      return new Response(JSON.stringify({ error: 'Client not found or unauthorized' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Then fetch the client data
     const { data: client, error: clientError } = await supabaseClient
       .from('clients')
       .select('*')
       .eq('id', clientId)
-      .eq('coach_id', user.id)
       .single();
 
     if (clientError || !client) {
@@ -58,6 +73,9 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Attach coach_client_id for use in handlers
+    client.coach_client_id = coachClientCheck.id;
 
     console.log(`Client status: ${client.status}, active_plan_id: ${client.active_plan_id}`);
 
@@ -161,15 +179,9 @@ async function assignPlan(supabase: any, client: any, userId: string, metadata: 
 
   const fromClientStatus = client.status;
 
-  // First get the coach_client relationship
-  const { data: coachClient } = await supabase
-    .from('coach_clients')
-    .select('id')
-    .eq('client_id', client.id)
-    .eq('coach_id', userId)
-    .single();
-
-  if (!coachClient) {
+  // Use the coach_client_id already attached to client
+  const coachClientId = client.coach_client_id;
+  if (!coachClientId) {
     throw new Error('Coach-client relationship not found');
   }
 
@@ -177,7 +189,7 @@ async function assignPlan(supabase: any, client: any, userId: string, metadata: 
   const { data: existingPlans } = await supabase
     .from('client_plans')
     .select('*')
-    .eq('coach_client_id', coachClient.id)
+    .eq('coach_client_id', coachClientId)
     .eq('status', 'IN_CORSO')
     .eq('is_visible', true);
 
@@ -203,7 +215,7 @@ async function assignPlan(supabase: any, client: any, userId: string, metadata: 
   const { data: newPlan, error: planError } = await supabase
     .from('client_plans')
     .insert({
-      coach_client_id: coachClient.id,
+      coach_client_id: coachClientId,
       name: metadata?.name || 'New Plan',
       description: metadata?.description,
       data: metadata?.data || { days: [] },
@@ -332,18 +344,14 @@ async function unarchiveClient(supabase: any, client: any, userId: string) {
 }
 
 async function deletePlan(supabase: any, client: any, planId: string, userId: string) {
-  // Get coach_client relationship for this client
-  const { data: coachClient } = await supabase
-    .from('coach_clients')
-    .select('id')
-    .eq('client_id', client.id)
-    .single();
+  // Use the coach_client_id already attached to client
+  const coachClientId = client.coach_client_id;
 
   const { data: plan, error: planError } = await supabase
     .from('client_plans')
     .select('*')
     .eq('id', planId)
-    .eq('coach_client_id', coachClient?.id)
+    .eq('coach_client_id', coachClientId)
     .single();
 
   if (planError || !plan) {
@@ -385,18 +393,14 @@ async function deletePlan(supabase: any, client: any, planId: string, userId: st
 }
 
 async function completePlan(supabase: any, client: any, planId: string, userId: string) {
-  // Get coach_client relationship for this client
-  const { data: coachClient } = await supabase
-    .from('coach_clients')
-    .select('id')
-    .eq('client_id', client.id)
-    .single();
+  // Use the coach_client_id already attached to client
+  const coachClientId = client.coach_client_id;
 
   const { data: plan, error: planError } = await supabase
     .from('client_plans')
     .select('*')
     .eq('id', planId)
-    .eq('coach_client_id', coachClient?.id)
+    .eq('coach_client_id', coachClientId)
     .single();
 
   if (planError || !plan) {
