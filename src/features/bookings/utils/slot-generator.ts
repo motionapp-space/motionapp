@@ -148,13 +148,20 @@ export function generateAvailableSlots({
 
 /**
  * Finds the 3 nearest available slots to a requested time
+ * @param excludeStart - Optional ISO string to exclude (e.g., the originally requested slot)
  */
 export function findNearestSlots(
   requestedStart: Date,
-  allSlots: AvailableSlot[]
+  allSlots: AvailableSlot[],
+  excludeStart?: string
 ): AvailableSlot[] {
+  // Filter out the excluded slot (e.g., the original request)
+  const filteredSlots = excludeStart
+    ? allSlots.filter(slot => slot.start !== excludeStart)
+    : allSlots;
+
   // Sort slots by distance from requested time
-  const sorted = allSlots
+  const sorted = filteredSlots
     .map(slot => ({
       slot,
       distance: Math.abs(parseISO(slot.start).getTime() - requestedStart.getTime()),
