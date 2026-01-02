@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, User, MapPin, MessageSquare, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { Calendar, Clock, User, MessageSquare, CheckCircle, XCircle, RefreshCw, ArrowRight } from "lucide-react";
 import { formatTimeRange, getEventDuration } from "@/features/events/utils/calendar-utils";
 import { generateAvailableSlots, findNearestSlots } from "../utils/slot-generator";
 import {
@@ -47,9 +47,9 @@ export function BookingRequestDrawer({
   const { data: oooBlocks = [] } = useOutOfOfficeBlocksQuery();
   const { data: events = [] } = useEventsQuery();
 
-  // Generate smart alternative slots
+  // Generate smart alternative slots (only for PENDING status)
   const alternatives = useMemo(() => {
-    if (!request || !settings) return [];
+    if (!request || !settings || request.status !== 'PENDING') return [];
 
     const requestedDate = parseISO(request.requested_start_at);
     const allSlots = generateAvailableSlots({
@@ -70,6 +70,11 @@ export function BookingRequestDrawer({
     request.requested_start_at,
     request.requested_end_at
   );
+
+  const isCounterProposed = request.status === 'COUNTER_PROPOSED';
+  const hasCounterProposal = isCounterProposed && 
+    request.counter_proposal_start_at && 
+    request.counter_proposal_end_at;
 
   const handleApprove = async () => {
     await approveMutation.mutateAsync(request.id);
@@ -116,10 +121,17 @@ export function BookingRequestDrawer({
         <div className="space-y-6 mt-6">
           {/* Status Badge */}
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-amber-600 border-amber-600">
-              <Clock className="h-3 w-3 mr-1" />
-              In attesa di approvazione
-            </Badge>
+            {isCounterProposed ? (
+              <Badge variant="outline" className="text-amber-600 border-amber-600">
+                <MessageSquare className="h-3 w-3 mr-1" />
+                In attesa risposta cliente
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-blue-600 border-blue-600">
+                <Clock className="h-3 w-3 mr-1" />
+                In attesa di approvazione
+              </Badge>
+            )}
           </div>
 
           {/* Client Info */}
@@ -132,24 +144,53 @@ export function BookingRequestDrawer({
               </div>
             </div>
 
+            {/* Original requested slot */}
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <div className="text-sm font-medium">
+              <div className={isCounterProposed ? "opacity-50" : ""}>
+                <div className={`text-sm font-medium ${isCounterProposed ? "line-through text-muted-foreground" : ""}`}>
                   {format(parseISO(request.requested_start_at), "EEEE d MMMM yyyy", {
                     locale: it,
                   })}
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className={`text-xs ${isCounterProposed ? "line-through text-muted-foreground" : "text-muted-foreground"}`}>
                   {formatTimeRange(
                     request.requested_start_at,
                     request.requested_end_at,
                     false
                   )}{" "}
                   · {duration} min
+                  {isCounterProposed && " (richiesta originale)"}
                 </div>
               </div>
             </div>
+
+            {/* Counter proposal slot (if COUNTER_PROPOSED) */}
+            {hasCounterProposal && (
+              <div className="flex items-center gap-3 bg-primary/5 rounded-lg p-3 -mx-3">
+                <ArrowRight className="h-5 w-5 text-primary" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-primary">
+                      {format(parseISO(request.counter_proposal_start_at!), "EEEE d MMMM yyyy", {
+                        locale: it,
+                      })}
+                    </span>
+                    <Badge className="bg-primary/10 text-primary border-0 text-xs">
+                      Proposto
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-primary/80">
+                    {formatTimeRange(
+                      request.counter_proposal_start_at!,
+                      request.counter_proposal_end_at!,
+                      false
+                    )}{" "}
+                    · {getEventDuration(request.counter_proposal_start_at!, request.counter_proposal_end_at!)} min
+                  </div>
+                </div>
+              </div>
+            )}
 
             {request.notes && (
               <div className="flex items-start gap-3">
@@ -166,8 +207,8 @@ export function BookingRequestDrawer({
 
           <Separator />
 
-          {/* Smart Alternatives */}
-          {alternatives.length > 0 && (
+          {/* Smart Alternatives - only for PENDING */}
+          {!isCounterProposed && alternatives.length > 0 && (
             <>
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
@@ -207,39 +248,63 @@ export function BookingRequestDrawer({
 
           {/* Actions */}
           <div className="space-y-3">
-            <Button
-              onClick={handleApprove}
-              disabled={isLoading}
-              className="w-full"
-              size="lg"
-            >
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Approva appuntamento
-            </Button>
+            {/* For PENDING: show approve, counter propose, decline */}
+            {!isCounterProposed && (
+              <>
+                <Button
+                  onClick={handleApprove}
+                  disabled={isLoading}
+                  className="w-full"
+                  size="lg"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Approva appuntamento
+                </Button>
 
-            {selectedAlternative && (
-              <Button
-                onClick={handleCounterPropose}
-                disabled={isLoading}
-                variant="outline"
-                className="w-full"
-                size="lg"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Proponi orario alternativo
-              </Button>
+                {selectedAlternative && (
+                  <Button
+                    onClick={handleCounterPropose}
+                    disabled={isLoading}
+                    variant="outline"
+                    className="w-full"
+                    size="lg"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Proponi orario alternativo
+                  </Button>
+                )}
+
+                <Button
+                  onClick={handleDecline}
+                  disabled={isLoading}
+                  variant="destructive"
+                  className="w-full"
+                  size="lg"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Rifiuta richiesta
+                </Button>
+              </>
             )}
 
-            <Button
-              onClick={handleDecline}
-              disabled={isLoading}
-              variant="destructive"
-              className="w-full"
-              size="lg"
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Rifiuta richiesta
-            </Button>
+            {/* For COUNTER_PROPOSED: show modify and cancel options */}
+            {isCounterProposed && (
+              <>
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  In attesa che il cliente accetti o rifiuti la proposta
+                </p>
+                <Button
+                  onClick={handleDecline}
+                  disabled={isLoading}
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Annulla richiesta
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </SheetContent>

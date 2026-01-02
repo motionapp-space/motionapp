@@ -313,15 +313,20 @@ export async function rejectChangeProposal(eventId: string): Promise<void> {
 }
 
 /**
- * Accept a counter-proposal from coach (set booking request to APPROVED)
+ * Accept a counter-proposal from coach (finalizes request and creates event via RPC)
  */
-export async function acceptCounterProposal(requestId: string): Promise<void> {
-  const { error } = await supabase
-    .from("booking_requests")
-    .update({ status: 'APPROVED' })
-    .eq("id", requestId);
-
-  if (error) throw error;
+export async function acceptCounterProposal(requestId: string): Promise<{ event_id: string }> {
+  const { data, error } = await supabase.rpc("finalize_booking_request", {
+    p_request_id: requestId,
+  });
+  
+  if (error) {
+    // Propagate standardized error message
+    throw new Error(error.message === 'Slot non disponibile' 
+      ? 'Slot non disponibile' 
+      : error.message);
+  }
+  return { event_id: data };
 }
 
 /**

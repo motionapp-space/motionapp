@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { ArrowLeft, Clock, CheckCircle2, CalendarX } from "lucide-react";
+import { Clock, CheckCircle2, CalendarX, MessageCircle } from "lucide-react";
 import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 import { BookingRequestCard } from "@/features/bookings/components/BookingRequestCard";
 import { BookingRequestDrawer } from "@/features/bookings/components/BookingRequestDrawer";
@@ -15,16 +14,14 @@ import type { BookingRequestWithClient } from "@/features/bookings/types";
 const BookingManagement = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { data: allRequests = [] } = useBookingRequestsQuery({});
+  
+  // Query only PENDING and COUNTER_PROPOSED (no allRequests - performance optimization)
   const { data: pendingRequests = [] } = useBookingRequestsQuery({ status: "PENDING" });
+  const { data: counterProposedRequests = [] } = useBookingRequestsQuery({ status: "COUNTER_PROPOSED" });
   const { data: bookingSettings, isLoading: isLoadingSettings } = useBookingSettingsQuery();
 
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
-
-  // Count requests by status
-  const approvedCount = allRequests.filter(r => r.status === "APPROVED").length;
-  const declinedCount = allRequests.filter(r => r.status === "DECLINED").length;
 
   // Set topbar
   useTopbar({
@@ -90,20 +87,10 @@ const BookingManagement = () => {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Approvate</p>
-                    <p className="text-3xl font-bold text-green-600">{approvedCount}</p>
+                    <p className="text-sm text-muted-foreground">In attesa risposta</p>
+                    <p className="text-3xl font-bold text-amber-600">{counterProposedRequests.length}</p>
                   </div>
-                  <CheckCircle2 className="h-8 w-8 text-green-600 opacity-50" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="flex-1 min-w-[200px]">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Eliminate</p>
-                    <p className="text-3xl font-bold text-muted-foreground">{declinedCount}</p>
-                  </div>
+                  <MessageCircle className="h-8 w-8 text-amber-600 opacity-50" />
                 </div>
               </CardContent>
             </Card>
@@ -138,6 +125,29 @@ const BookingManagement = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Counter Proposed Requests List */}
+          {counterProposedRequests.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>In attesa risposta cliente</CardTitle>
+                <CardDescription>
+                  Controproposte inviate, in attesa di accettazione
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {counterProposedRequests.map((request) => (
+                    <BookingRequestCard
+                      key={request.id}
+                      request={request}
+                      onClick={() => handleRequestClick(request)}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

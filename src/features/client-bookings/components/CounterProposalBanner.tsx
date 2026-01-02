@@ -37,18 +37,26 @@ export function CounterProposalBanner({
       <CalendarClock className="h-4 w-4 text-amber-600" />
       <AlertTitle className="text-amber-900">Controproposta dal coach</AlertTitle>
       <AlertDescription className="text-amber-700">
-        <p className="mb-2">
-          Hai richiesto un appuntamento per:
+        <p className="mb-2 text-amber-800">
+          Il coach non è disponibile nell'orario richiesto. Puoi accettare l'alternativa o rifiutare.
         </p>
-        <p className="text-sm text-muted-foreground line-through mb-3 capitalize">
-          {originalFormattedDay} alle {originalFormattedTime}
-        </p>
-        <p className="mb-2">
-          Il coach propone invece:
-        </p>
-        <p className="font-medium capitalize mb-4">
-          {proposedFormattedDay} alle {proposedFormattedTime}
-        </p>
+        
+        {/* Original slot - barrato */}
+        <div className="mb-3">
+          <p className="text-xs text-muted-foreground mb-1">Orario richiesto:</p>
+          <p className="text-sm text-muted-foreground line-through capitalize">
+            {originalFormattedDay} alle {originalFormattedTime}
+          </p>
+        </div>
+        
+        {/* Proposed slot - evidenziato */}
+        <div className="mb-4">
+          <p className="text-xs text-amber-600 mb-1">Orario proposto:</p>
+          <p className="font-semibold text-amber-900 capitalize">
+            {proposedFormattedDay} alle {proposedFormattedTime}
+          </p>
+        </div>
+        
         <div className="flex gap-2">
           <Button 
             size="sm" 
