@@ -15,6 +15,7 @@ import { AvailabilityEditor } from "./AvailabilityEditor";
 import { OutOfOfficeManager, OutOfOfficeManagerHandle } from "./OutOfOfficeManager";
 import { GlobalSaveBar } from "./GlobalSaveBar";
 import { Loader2, CheckCircle2, Clock, Info, Calendar, CalendarX } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import type { CreateAvailabilityWindowInput } from "../types";
 import { useCreateOutOfOfficeBlock, useDeleteOutOfOfficeBlock, useUpdateOutOfOfficeBlock } from "../hooks/useOutOfOffice";
 
@@ -68,7 +69,8 @@ export function BookingSettingsForm() {
         slot_duration_minutes: settings.slot_duration_minutes ?? 60,
         buffer_between_minutes: settings.buffer_between_minutes ?? 0,
         cancel_policy_hours: settings.cancel_policy_hours || 24,
-        approval_mode: settings.approval_mode,
+        // Force MANUAL if AUTO is saved (AUTO not yet implemented)
+        approval_mode: settings.approval_mode === "AUTO" ? "MANUAL" : settings.approval_mode,
       });
     }
   }, [settings, form]);
@@ -503,17 +505,14 @@ export function BookingSettingsForm() {
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="max-w-xs">
-                                <p>
-                                  {field.value === "AUTO" 
-                                    ? "Le richieste vengono approvate automaticamente"
-                                    : "Dovrai approvare manualmente ogni richiesta"}
-                                </p>
+                                <p>Dovrai approvare manualmente ogni richiesta</p>
                               </TooltipContent>
                             </Tooltip>
                           </div>
                           <Select 
                             value={field.value} 
                             onValueChange={(value) => {
+                              if (value === "AUTO") return; // AUTO not yet implemented
                               field.onChange(value);
                               setHasUnsavedChanges(true);
                             }}
@@ -524,10 +523,11 @@ export function BookingSettingsForm() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="AUTO">
+                              <SelectItem value="AUTO" disabled className="opacity-60">
                                 <div className="flex items-center gap-2">
-                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                  <span>Automatica</span>
+                                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-muted-foreground">Automatica</span>
+                                  <Badge variant="outline" className="ml-1 text-xs">In arrivo</Badge>
                                 </div>
                               </SelectItem>
                               <SelectItem value="MANUAL">
