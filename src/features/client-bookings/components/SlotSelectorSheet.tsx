@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock } from "lucide-react";
+import { useClientBookingSettings } from "../hooks/useClientBookingSettings";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,9 +16,20 @@ interface SlotSelectorSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  if (remainingMins === 0) {
+    return hours === 1 ? "1 ora" : `${hours} ore`;
+  }
+  return `${hours}h ${remainingMins}min`;
+}
+
 export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps) {
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   const { data: slots, isLoading } = useClientAvailableSlots(28);
+  const { data: settings } = useClientBookingSettings();
   const createBooking = useCreateBookingRequest();
 
   // Generate 7 days starting from today + week offset
@@ -62,7 +74,17 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
         <SheetHeader className="pb-4">
-          <SheetTitle>Seleziona data e orario</SheetTitle>
+          <SheetTitle className="text-center">Seleziona data e orario</SheetTitle>
+          {settings?.slotDurationMinutes && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10">
+                <Clock className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-primary">
+                  Durata: {formatDuration(settings.slotDurationMinutes)}
+                </span>
+              </div>
+            </div>
+          )}
         </SheetHeader>
 
         {/* Week navigator */}
