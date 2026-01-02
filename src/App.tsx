@@ -27,6 +27,7 @@ import ClientAuth from "./pages/client/ClientAuth";
 import ClientHome from "./pages/client/ClientHome";
 import ClientWorkouts from "./pages/client/ClientWorkouts";
 import ClientAppointments from "./pages/client/ClientAppointments";
+import ClientAllAppointments from "./pages/client/ClientAllAppointments";
 import ClientAppLayout from "./components/client/ClientAppLayout";
 import CoachLayout from "./components/CoachLayout";
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -129,6 +130,7 @@ const App = () => {
               <Route index element={<ClientHome />} />
               <Route path="workouts" element={<ClientWorkouts />} />
               <Route path="appointments" element={<ClientAppointments />} />
+              <Route path="appointments/all" element={<ClientAllAppointments />} />
             </Route>
 
             {/* Public routes - accessible without authentication */}

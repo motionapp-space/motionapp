@@ -1,62 +1,68 @@
 import { useState, useMemo } from "react";
-import { Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClientPageHeader } from "@/components/client/ClientPageHeader";
 import { useClientBookingSettings } from "../hooks/useClientBookingSettings";
 import { useClientAppointmentsView } from "../hooks/useClientAppointmentsView";
-import { NextAppointmentCard } from "./NextAppointmentCard";
-import { FutureAppointmentsSection } from "./FutureAppointmentsSection";
-import { ChangeProposalBanner } from "./ChangeProposalBanner";
-import { CounterProposalBanner } from "./CounterProposalBanner";
+import { useClientRecentActivity } from "../hooks/useClientRecentActivity";
+import { useRespondToCounterProposal } from "../hooks/useRespondToCounterProposal";
+import { NextAppointmentHeroCard } from "./NextAppointmentHeroCard";
+import { BookingCTA } from "./BookingCTA";
+import { ActiveRequestsSection } from "./ActiveRequestsSection";
+import { FutureAppointmentsPreview } from "./FutureAppointmentsPreview";
+import { RecentActivitySection } from "./RecentActivitySection";
 import { AppointmentDetailSheet } from "./AppointmentDetailSheet";
 import { SlotSelectorSheet } from "./SlotSelectorSheet";
-import { useRespondToChangeProposal } from "../hooks/useRespondToChangeProposal";
-import { useRespondToCounterProposal } from "../hooks/useRespondToCounterProposal";
 import type { ClientAppointmentView } from "../types";
 
 export function ClientBookingsPage() {
   const { data: settings, isLoading: settingsLoading } = useClientBookingSettings();
   const { data: appointments, isLoading: appointmentsLoading } = useClientAppointmentsView();
-  const { accept: acceptProposal, reject: rejectProposal, isPending: proposalLoading } = useRespondToChangeProposal();
+  const { data: recentActivity = [], isLoading: activityLoading } = useClientRecentActivity();
   const { accept: acceptCounterProposal, reject: rejectCounterProposal, isPending: counterProposalLoading } = useRespondToCounterProposal();
   
   const [selectedAppointment, setSelectedAppointment] = useState<ClientAppointmentView | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
 
-  // Separate appointments: upcoming (future, not cancelled), and filter by status
-  const { nextAppointment, futureAppointments, proposalAppointment, counterProposalAppointment } = useMemo(() => {
+  // Derive views from appointments data
+  const { 
+    nextConfirmed,
+    activeRequests,
+    futureConfirmed,
+    hasMoreFuture
+  } = useMemo(() => {
     if (!appointments) {
-      return { nextAppointment: null, futureAppointments: [], proposalAppointment: null, counterProposalAppointment: null };
+      return { 
+        nextConfirmed: null, 
+        activeRequests: [], 
+        futureConfirmed: [],
+        hasMoreFuture: false
+      };
     }
 
     const now = new Date();
-    const upcoming = appointments
-      .filter(a => new Date(a.startAt) > now && a.status !== 'CANCELLED' && a.status !== 'COMPLETED')
+
+    // Confirmed future appointments (sorted by date)
+    const confirmed = appointments
+      .filter(a => a.status === 'CONFIRMED' && new Date(a.startAt) > now)
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
 
-    // Check if there's a change proposal (event) that needs attention
-    const proposal = upcoming.find(a => a.status === 'CHANGE_PROPOSED');
-    
-    // Check if there's a counter proposal (booking request) that needs attention
-    const counterProposal = upcoming.find(a => a.status === 'COUNTER_PROPOSAL');
-    
-    // Next appointment is the first upcoming confirmed or requested one
-    const next = upcoming.find(a => a.status === 'CONFIRMED' || a.status === 'REQUESTED') || null;
-    
-    // Future appointments exclude the next one and any proposals
-    const future = upcoming.filter(a => 
-      a !== next && 
-      a.status !== 'CHANGE_PROPOSED' && 
-      a.status !== 'COUNTER_PROPOSAL'
-    );
+    // Active requests: COUNTER_PROPOSAL first, then REQUESTED (sorted by date within each group)
+    const requests = appointments
+      .filter(a => a.status === 'COUNTER_PROPOSAL' || a.status === 'REQUESTED')
+      .sort((a, b) => {
+        // COUNTER_PROPOSAL before REQUESTED
+        if (a.status === 'COUNTER_PROPOSAL' && b.status !== 'COUNTER_PROPOSAL') return -1;
+        if (b.status === 'COUNTER_PROPOSAL' && a.status !== 'COUNTER_PROPOSAL') return 1;
+        // Within same status, sort by date
+        return new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
+      });
 
-    return { 
-      nextAppointment: next, 
-      futureAppointments: future,
-      proposalAppointment: proposal,
-      counterProposalAppointment: counterProposal
+    return {
+      nextConfirmed: confirmed[0] || null,
+      activeRequests: requests,
+      futureConfirmed: confirmed.slice(1, 4), // Max 3, excluding hero
+      hasMoreFuture: confirmed.length > 4     // More than hero + 3
     };
   }, [appointments]);
 
@@ -69,28 +75,12 @@ export function ClientBookingsPage() {
     setBookingOpen(true);
   };
 
-  const handleAcceptProposal = () => {
-    if (proposalAppointment) {
-      acceptProposal(proposalAppointment.id);
-    }
+  const handleAcceptCounterProposal = (id: string) => {
+    acceptCounterProposal(id);
   };
 
-  const handleRejectProposal = () => {
-    if (proposalAppointment) {
-      rejectProposal(proposalAppointment.id);
-    }
-  };
-
-  const handleAcceptCounterProposal = () => {
-    if (counterProposalAppointment) {
-      acceptCounterProposal(counterProposalAppointment.id);
-    }
-  };
-
-  const handleRejectCounterProposal = () => {
-    if (counterProposalAppointment) {
-      rejectCounterProposal(counterProposalAppointment.id);
-    }
+  const handleRejectCounterProposal = (id: string) => {
+    rejectCounterProposal(id);
   };
 
   const isLoading = settingsLoading || appointmentsLoading;
@@ -105,7 +95,7 @@ export function ClientBookingsPage() {
         </div>
         <Skeleton className="h-24 rounded-xl" />
         <Skeleton className="h-12 rounded-xl" />
-        <Skeleton className="h-16 rounded-xl" />
+        <Skeleton className="h-20 rounded-xl" />
         <Skeleton className="h-16 rounded-xl" />
       </div>
     );
@@ -119,55 +109,43 @@ export function ClientBookingsPage() {
         description="Gestisci i tuoi appuntamenti con il coach"
       />
 
-      {/* Counter Proposal Banner - shown if coach proposed alternative time for booking request */}
-      {counterProposalAppointment && (
-        <CounterProposalBanner
-          appointment={counterProposalAppointment}
-          onAccept={handleAcceptCounterProposal}
-          onReject={handleRejectCounterProposal}
-          isLoading={counterProposalLoading}
-        />
-      )}
-
-      {/* Change Proposal Banner - shown if coach proposed alternative time for existing event */}
-      {proposalAppointment && (
-        <ChangeProposalBanner
-          appointment={proposalAppointment}
-          onAccept={handleAcceptProposal}
-          onReject={handleRejectProposal}
-          isLoading={proposalLoading}
-        />
-      )}
-
-      {/* Next Appointment Section */}
+      {/* Section 1: Next Appointment Hero */}
       <section>
         <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
           Prossimo appuntamento
         </p>
-        <NextAppointmentCard
-          appointment={nextAppointment}
-          isLoading={false}
-          onClick={() => nextAppointment && handleViewDetail(nextAppointment)}
+        <NextAppointmentHeroCard
+          appointment={nextConfirmed}
+          onClick={() => nextConfirmed && handleViewDetail(nextConfirmed)}
         />
       </section>
 
-      {/* CTA - only if booking enabled */}
-      {bookingEnabled && (
-        <Button 
-          className="w-full h-12" 
-          size="lg"
-          onClick={handleOpenBooking}
-        >
-          <Calendar className="h-4 w-4 mr-2" />
-          Prenota un appuntamento
-        </Button>
-      )}
-
-      {/* Future Appointments Section */}
-      <FutureAppointmentsSection
-        appointments={futureAppointments}
-        isLoading={false}
+      {/* CTA: Book Appointment */}
+      <BookingCTA 
+        enabled={bookingEnabled}
+        onBook={handleOpenBooking}
       />
+
+      {/* Section 2: Active Requests */}
+      <ActiveRequestsSection
+        requests={activeRequests}
+        onAcceptCounter={handleAcceptCounterProposal}
+        onRejectCounter={handleRejectCounterProposal}
+        isLoading={counterProposalLoading}
+      />
+
+      {/* Section 3: Future Appointments Preview */}
+      <FutureAppointmentsPreview
+        appointments={futureConfirmed}
+        hasMore={hasMoreFuture}
+        hasNextAppointment={!!nextConfirmed}
+        onAppointmentClick={handleViewDetail}
+      />
+
+      {/* Section 4: Recent Activity (Collapsible) */}
+      {!activityLoading && (
+        <RecentActivitySection items={recentActivity} />
+      )}
 
       {/* Detail Sheet */}
       <AppointmentDetailSheet
