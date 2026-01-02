@@ -61,7 +61,7 @@ export function BookingRequestDrawer({
       existingEvents: events,
     });
 
-    return findNearestSlots(requestedDate, allSlots);
+    return findNearestSlots(requestedDate, allSlots, request.requested_start_at);
   }, [request, settings, availabilityWindows, oooBlocks, events]);
 
   if (!request) return null;
