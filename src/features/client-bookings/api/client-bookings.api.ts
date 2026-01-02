@@ -59,7 +59,9 @@ function deriveClientAppointmentStatus(
     if (bookingRequestStatus === 'PENDING') return 'REQUESTED';
     if (bookingRequestStatus === 'COUNTER_PROPOSED') return 'COUNTER_PROPOSAL';
     if (bookingRequestStatus === 'DECLINED' || bookingRequestStatus === 'CANCELED_BY_CLIENT') return 'CANCELLED';
-    if (bookingRequestStatus === 'APPROVED') return 'CONFIRMED'; // Should become an event
+    // APPROVED requests should NOT reach UI - they become events
+    // If we somehow get one, treat as cancelled (defensive)
+    if (bookingRequestStatus === 'APPROVED') return 'CANCELLED';
     return 'CANCELLED';
   }
 
@@ -137,11 +139,13 @@ export async function getClientAppointments(): Promise<ClientAppointmentView[]> 
 
   if (eventsError) throw eventsError;
 
-  // Fetch booking requests (include counter proposal fields)
+  // Fetch booking requests - only active ones (PENDING, COUNTER_PROPOSED)
+  // APPROVED requests become events, DECLINED/CANCELED go to recent activity
   const { data: requests, error: requestsError } = await supabase
     .from("booking_requests")
-    .select("id, requested_start_at, requested_end_at, notes, status, counter_proposal_start_at, counter_proposal_end_at")
+    .select("id, requested_start_at, requested_end_at, notes, status, counter_proposal_start_at, counter_proposal_end_at, updated_at")
     .eq("coach_client_id", coachClientId)
+    .in("status", ["PENDING", "COUNTER_PROPOSED"])
     .order("requested_start_at", { ascending: false });
 
   if (requestsError) throw requestsError;
