@@ -11,14 +11,17 @@ export function useApproveBookingRequest() {
       queryClient.invalidateQueries({ queryKey: ["booking-requests"] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
       toast({
-        title: "Appuntamento approvato",
-        description: "La richiesta è stata approvata con successo.",
+        title: "Appuntamento confermato",
+        description: "L'evento è stato creato nel calendario.",
       });
     },
     onError: (error: Error) => {
+      const message = error.message === "Slot non disponibile"
+        ? "Slot non disponibile. Un altro appuntamento occupa già questo orario."
+        : error.message || "Impossibile approvare la richiesta.";
       toast({
         title: "Errore",
-        description: error.message || "Impossibile approvare la richiesta.",
+        description: message,
         variant: "destructive",
       });
     },

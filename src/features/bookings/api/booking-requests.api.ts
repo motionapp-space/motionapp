@@ -129,8 +129,18 @@ export async function deleteBookingRequest(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function approveBookingRequest(id: string): Promise<BookingRequest> {
-  return updateBookingRequest(id, { status: "APPROVED" });
+export async function approveBookingRequest(id: string): Promise<{ event_id: string }> {
+  const { data, error } = await supabase.rpc("finalize_booking_request", {
+    p_request_id: id,
+  });
+  
+  if (error) {
+    // Propagate standardized error message
+    throw new Error(error.message === 'Slot non disponibile' 
+      ? 'Slot non disponibile' 
+      : error.message);
+  }
+  return { event_id: data };
 }
 
 export async function declineBookingRequest(id: string): Promise<BookingRequest> {
@@ -142,6 +152,11 @@ export async function counterProposeBookingRequest(
   counterProposalStartAt: string,
   counterProposalEndAt: string
 ): Promise<BookingRequest> {
+  // Validate NOT NULL for counter proposal times
+  if (!counterProposalStartAt || !counterProposalEndAt) {
+    throw new Error("Counter proposal start and end times are required");
+  }
+  
   return updateBookingRequest(id, {
     status: "COUNTER_PROPOSED",
     counter_proposal_start_at: counterProposalStartAt,

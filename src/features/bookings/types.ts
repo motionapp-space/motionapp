@@ -8,8 +8,12 @@ export interface BookingRequest {
   requested_end_at: string;
   status: BookingRequestStatus;
   notes?: string;
-  counter_proposal_start_at?: string;
-  counter_proposal_end_at?: string;
+  counter_proposal_start_at?: string | null;
+  counter_proposal_end_at?: string | null;
+  event_id?: string | null;
+  finalized_start_at?: string | null;
+  finalized_end_at?: string | null;
+  approved_at?: string | null;
   created_at: string;
   updated_at: string;
 }

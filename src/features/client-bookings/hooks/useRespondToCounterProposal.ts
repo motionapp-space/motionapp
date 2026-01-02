@@ -11,10 +11,16 @@ export function useRespondToCounterProposal() {
     mutationFn: acceptCounterProposal,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["client-appointments-view", userId] });
-      toast.success("Controproposta accettata");
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      toast.success("Appuntamento confermato", { 
+        description: "L'appuntamento è stato aggiunto al calendario" 
+      });
     },
     onError: (error: Error) => {
-      toast.error("Errore", { description: error.message });
+      const message = error.message === "Slot non disponibile" 
+        ? "Slot non disponibile" 
+        : error.message;
+      toast.error("Errore", { description: message });
     },
   });
 
