@@ -1,14 +1,17 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import type { ClientAppointmentView } from "../types";
 
 interface PendingRequestCardProps {
   request: ClientAppointmentView;
+  onCancel: () => void;
+  isLoading?: boolean;
 }
 
-export function PendingRequestCard({ request }: PendingRequestCardProps) {
+export function PendingRequestCard({ request, onCancel, isLoading }: PendingRequestCardProps) {
   const startDate = new Date(request.startAt);
   const endDate = new Date(request.endAt);
   
@@ -31,6 +34,17 @@ export function PendingRequestCard({ request }: PendingRequestCardProps) {
         <p className="text-xs text-muted-foreground mt-3">
           In attesa di conferma dal coach.
         </p>
+        <div className="mt-3 pt-3 border-t">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={onCancel}
+            disabled={isLoading}
+          >
+            Annulla richiesta
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

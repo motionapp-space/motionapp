@@ -6,6 +6,7 @@ interface ActiveRequestsSectionProps {
   requests: ClientAppointmentView[];
   onAcceptCounter: (id: string) => void;
   onRejectCounter: (id: string) => void;
+  onCancelRequest: (id: string) => void;
   isLoading?: boolean;
 }
 
@@ -13,6 +14,7 @@ export function ActiveRequestsSection({
   requests, 
   onAcceptCounter, 
   onRejectCounter,
+  onCancelRequest,
   isLoading 
 }: ActiveRequestsSectionProps) {
   if (requests.length === 0) return null;
@@ -40,6 +42,8 @@ export function ActiveRequestsSection({
             <PendingRequestCard
               key={request.id}
               request={request}
+              onCancel={() => onCancelRequest(request.id)}
+              isLoading={isLoading}
             />
           );
         })}
