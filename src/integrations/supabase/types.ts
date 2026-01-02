@@ -194,10 +194,14 @@ export type Database = {
       }
       booking_requests: {
         Row: {
+          approved_at: string | null
           coach_client_id: string
           counter_proposal_end_at: string | null
           counter_proposal_start_at: string | null
           created_at: string
+          event_id: string | null
+          finalized_end_at: string | null
+          finalized_start_at: string | null
           id: string
           notes: string | null
           requested_end_at: string
@@ -206,10 +210,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
           coach_client_id: string
           counter_proposal_end_at?: string | null
           counter_proposal_start_at?: string | null
           created_at?: string
+          event_id?: string | null
+          finalized_end_at?: string | null
+          finalized_start_at?: string | null
           id?: string
           notes?: string | null
           requested_end_at: string
@@ -218,10 +226,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
           coach_client_id?: string
           counter_proposal_end_at?: string | null
           counter_proposal_start_at?: string | null
           created_at?: string
+          event_id?: string | null
+          finalized_end_at?: string | null
+          finalized_start_at?: string | null
           id?: string
           notes?: string | null
           requested_end_at?: string
@@ -243,6 +255,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_coach_client_details"
             referencedColumns: ["coach_client_id"]
+          },
+          {
+            foreignKeyName: "booking_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
           },
         ]
       }
