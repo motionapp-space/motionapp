@@ -2,8 +2,8 @@ import { useState } from "react";
 import { User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { ClientPageHeader } from "@/components/client/ClientPageHeader";
+import { ClientPageShell } from "@/components/client/ClientPageShell";
 import { ClientEmptyState } from "@/components/client/ClientEmptyState";
 import { useCurrentClient } from "@/features/client/hooks/useCurrentClient";
 import { useClientActivePlan } from "@/features/client-workouts/hooks/useClientActivePlan";
@@ -20,7 +20,7 @@ export default function ClientWorkouts() {
 
   if (isClientLoading) {
     return (
-      <div className="px-5 py-5 space-y-6 pb-24">
+      <ClientPageShell>
         <div className="space-y-2">
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-4 w-56" />
@@ -28,13 +28,13 @@ export default function ClientWorkouts() {
         <Skeleton className="h-20 w-full rounded-xl" />
         <Skeleton className="h-20 w-full rounded-xl" />
         <Skeleton className="h-16 w-full rounded-xl" />
-      </div>
+      </ClientPageShell>
     );
   }
 
   if (!client) {
     return (
-      <div className="px-5 py-5 space-y-6 pb-24">
+      <ClientPageShell>
         <ClientPageHeader 
           title="Allenamenti" 
           description="Il tuo piano di allenamento e lo storico delle sessioni"
@@ -48,7 +48,7 @@ export default function ClientWorkouts() {
             />
           </CardContent>
         </Card>
-      </div>
+      </ClientPageShell>
     );
   }
 
@@ -66,7 +66,7 @@ function ClientWorkoutsContent() {
   const isLoading = isPlanLoading || isSessionsLoading;
 
   return (
-    <div className="px-5 py-5 space-y-6 pb-24">
+    <ClientPageShell>
       <ClientPageHeader 
         title="Allenamenti" 
         description="Il tuo piano e le sessioni registrate"
@@ -118,6 +118,6 @@ function ClientWorkoutsContent() {
         open={planOverviewOpen}
         onOpenChange={setPlanOverviewOpen}
       />
-    </div>
+    </ClientPageShell>
   );
 }

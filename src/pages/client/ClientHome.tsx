@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClientPageHeader } from "@/components/client/ClientPageHeader";
+import { ClientPageShell } from "@/components/client/ClientPageShell";
 import { ClientEmptyState } from "@/components/client/ClientEmptyState";
 import { useCurrentClient } from "@/features/client/hooks/useCurrentClient";
 import { useClientActivePlan } from "@/features/client-workouts/hooks/useClientActivePlan";
@@ -15,7 +16,7 @@ export default function ClientHome() {
 
   if (isClientLoading) {
     return (
-      <div className="px-5 py-5 space-y-6 pb-24">
+      <ClientPageShell>
         <div className="space-y-2">
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-4 w-48" />
@@ -23,13 +24,13 @@ export default function ClientHome() {
         <Skeleton className="h-24 w-full rounded-xl" />
         <Skeleton className="h-24 w-full rounded-xl" />
         <Skeleton className="h-20 w-full rounded-xl" />
-      </div>
+      </ClientPageShell>
     );
   }
 
   if (!client) {
     return (
-      <div className="px-5 py-5 space-y-6 pb-24">
+      <ClientPageShell>
         <ClientPageHeader 
           title="Home" 
           description="Benvenuto nella tua area personale"
@@ -43,7 +44,7 @@ export default function ClientHome() {
             />
           </CardContent>
         </Card>
-      </div>
+      </ClientPageShell>
     );
   }
 
@@ -72,19 +73,19 @@ function ClientHomeContent({ clientId, clientName }: { clientId: string; clientN
 
   if (isLoading) {
     return (
-      <div className="px-5 py-5 space-y-6 pb-24">
+      <ClientPageShell>
         <div className="space-y-2">
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-4 w-48" />
         </div>
         <Skeleton className="h-24 w-full rounded-xl" />
         <Skeleton className="h-24 w-full rounded-xl" />
-      </div>
+      </ClientPageShell>
     );
   }
 
   return (
-    <div className="px-5 py-5 space-y-6 pb-24">
+    <ClientPageShell>
       <ClientPageHeader 
         title="Home" 
         description={`Bentornato, ${clientName}`}
@@ -192,6 +193,6 @@ function ClientHomeContent({ clientId, clientName }: { clientId: string; clientN
           )}
         </>
       )}
-    </div>
+    </ClientPageShell>
   );
 }

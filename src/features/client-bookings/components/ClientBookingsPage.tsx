@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClientPageHeader } from "@/components/client/ClientPageHeader";
+import { ClientPageShell } from "@/components/client/ClientPageShell";
 import { useClientBookingSettings } from "../hooks/useClientBookingSettings";
 import { useClientAppointmentsView } from "../hooks/useClientAppointmentsView";
 import { useClientRecentActivity } from "../hooks/useClientRecentActivity";
@@ -94,7 +95,7 @@ export function ClientBookingsPage() {
 
   if (isLoading) {
     return (
-      <div className="px-5 py-5 space-y-6 pb-24">
+      <ClientPageShell>
         <div className="space-y-2">
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-4 w-52" />
@@ -103,12 +104,12 @@ export function ClientBookingsPage() {
         <Skeleton className="h-12 rounded-xl" />
         <Skeleton className="h-20 rounded-xl" />
         <Skeleton className="h-16 rounded-xl" />
-      </div>
+      </ClientPageShell>
     );
   }
 
   return (
-    <div className="px-5 py-5 space-y-6 pb-24">
+    <ClientPageShell>
       {/* Header */}
       <ClientPageHeader 
         title="Prenotazioni" 
@@ -166,6 +167,6 @@ export function ClientBookingsPage() {
         open={bookingOpen}
         onOpenChange={setBookingOpen}
       />
-    </div>
+    </ClientPageShell>
   );
 }
