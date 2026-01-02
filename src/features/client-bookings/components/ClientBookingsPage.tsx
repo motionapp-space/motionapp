@@ -5,6 +5,7 @@ import { useClientBookingSettings } from "../hooks/useClientBookingSettings";
 import { useClientAppointmentsView } from "../hooks/useClientAppointmentsView";
 import { useClientRecentActivity } from "../hooks/useClientRecentActivity";
 import { useRespondToCounterProposal } from "../hooks/useRespondToCounterProposal";
+import { useCancelBookingRequest } from "../hooks/useCancelBookingRequest";
 import { NextAppointmentHeroCard } from "./NextAppointmentHeroCard";
 import { BookingCTA } from "./BookingCTA";
 import { ActiveRequestsSection } from "./ActiveRequestsSection";
@@ -19,6 +20,7 @@ export function ClientBookingsPage() {
   const { data: appointments, isLoading: appointmentsLoading } = useClientAppointmentsView();
   const { data: recentActivity = [], isLoading: activityLoading } = useClientRecentActivity();
   const { accept: acceptCounterProposal, reject: rejectCounterProposal, isPending: counterProposalLoading } = useRespondToCounterProposal();
+  const cancelRequestMutation = useCancelBookingRequest();
   
   const [selectedAppointment, setSelectedAppointment] = useState<ClientAppointmentView | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -83,6 +85,10 @@ export function ClientBookingsPage() {
     rejectCounterProposal(id);
   };
 
+  const handleCancelRequest = (id: string) => {
+    cancelRequestMutation.mutate(id);
+  };
+
   const isLoading = settingsLoading || appointmentsLoading;
   const bookingEnabled = settings?.enabled ?? false;
 
@@ -131,7 +137,8 @@ export function ClientBookingsPage() {
         requests={activeRequests}
         onAcceptCounter={handleAcceptCounterProposal}
         onRejectCounter={handleRejectCounterProposal}
-        isLoading={counterProposalLoading}
+        onCancelRequest={handleCancelRequest}
+        isLoading={counterProposalLoading || cancelRequestMutation.isPending}
       />
 
       {/* Section 3: Future Appointments Preview */}
