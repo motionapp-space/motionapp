@@ -60,19 +60,19 @@ interface EventEditorModalProps {
   onStartSession?: (clientId: string, eventId: string, linkedPlanId?: string, linkedDayId?: string) => void;
 }
 
-// Helper function to round time to nearest 5 minutes
-function roundToNearest5Minutes(date: Date): string {
-  const minutes = Math.ceil(date.getMinutes() / 5) * 5;
+// Helper function to round time to nearest 15 minutes
+function roundToNearest15Minutes(date: Date): string {
+  const minutes = Math.ceil(date.getMinutes() / 15) * 15;
   const hours = date.getHours() + Math.floor(minutes / 60);
   const roundedMinutes = minutes % 60;
   return `${hours.toString().padStart(2, '0')}:${roundedMinutes.toString().padStart(2, '0')}`;
 }
 
-// Generate time slots with 5-minute intervals
+// Generate time slots with 15-minute intervals (Google Calendar style)
 function generateTimeSlots() {
   const slots: string[] = [];
   for (let hour = 0; hour < 24; hour++) {
-    for (let minute = 0; minute < 60; minute += 5) {
+    for (let minute = 0; minute < 60; minute += 15) {
       const h = hour.toString().padStart(2, '0');
       const m = minute.toString().padStart(2, '0');
       slots.push(`${h}:${m}`);
@@ -82,6 +82,24 @@ function generateTimeSlots() {
 }
 
 const TIME_SLOTS = generateTimeSlots();
+
+// Format duration for display next to end time
+function formatDurationLabel(startTime: string, endTime: string): string {
+  const [startH, startM] = startTime.split(':').map(Number);
+  const [endH, endM] = endTime.split(':').map(Number);
+  const mins = (endH * 60 + endM) - (startH * 60 + startM);
+  
+  if (mins <= 0) return "";
+  if (mins < 60) return `(${mins} min)`;
+  
+  const hours = Math.floor(mins / 60);
+  const remainingMins = mins % 60;
+  
+  if (remainingMins === 0) {
+    return hours === 1 ? "(1 ora)" : `(${hours} ore)`;
+  }
+  return `(${hours}h ${remainingMins}min)`;
+}
 
 export function EventEditorModal({
   mode,
@@ -197,8 +215,8 @@ export function EventEditorModal({
           defaultStart = format(initialStartTime, 'HH:mm');
           defaultEnd = format(initialEndTime, 'HH:mm');
         } else {
-          // Round current time to nearest 5 minutes
-          defaultStart = roundToNearest5Minutes(now);
+          // Round current time to nearest 15 minutes
+          defaultStart = roundToNearest15Minutes(now);
           
           // Calculate end time by adding duration from settings
           const [h, m] = defaultStart.split(':').map(Number);
@@ -314,6 +332,11 @@ export function EventEditorModal({
     activePackage ? calculatePackageKPI(activePackage).available : 0,
     [activePackage]
   );
+
+  // Filter end time slots to only show times >= start time
+  const endTimeSlots = useMemo(() => {
+    return TIME_SLOTS.filter(time => time >= formData.startTime);
+  }, [formData.startTime]);
 
   // Available packages with credits for recurrence selection
   const availablePackages = useMemo(() => {
@@ -913,20 +936,34 @@ export function EventEditorModal({
                 {/* Dalle */}
                 <div className="space-y-2">
                   <Label htmlFor="start-time">Dalle</Label>
-                  <Select 
-                    value={formData.startTime} 
+                  <Select
+                    value={formData.startTime}
                     onValueChange={(value) => {
-                      // When start time changes, automatically update end time based on duration
-                      const duration = bookingSettings?.slot_duration_minutes || 45;
+                      // Calculate current duration
+                      const [oldStartH, oldStartM] = formData.startTime.split(':').map(Number);
+                      const [oldEndH, oldEndM] = formData.endTime.split(':').map(Number);
+                      const currentDuration = (oldEndH * 60 + oldEndM) - (oldStartH * 60 + oldStartM);
+                      
+                      // Use current duration if valid, otherwise use default from settings
+                      const duration = currentDuration > 0 ? currentDuration : (bookingSettings?.slot_duration_minutes || 45);
+                      
                       const [h, m] = value.split(':').map(Number);
                       const startDate = setMinutes(setHours(new Date(), h), m);
                       const endDate = addMinutes(startDate, duration);
-                      const endTime = format(endDate, 'HH:mm');
+                      
+                      // Round end time to nearest 15 minutes
+                      const endMinutes = Math.ceil((endDate.getHours() * 60 + endDate.getMinutes()) / 15) * 15;
+                      const endH = Math.floor(endMinutes / 60) % 24;
+                      const endM = endMinutes % 60;
+                      const endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+                      
+                      // Ensure end time is not before start time
+                      const finalEndTime = endTime >= value ? endTime : value;
                       
                       setFormData(prev => ({ 
                         ...prev, 
                         startTime: value,
-                        endTime: endTime
+                        endTime: finalEndTime
                       }));
                     }}
                   >
@@ -951,9 +988,14 @@ export function EventEditorModal({
                       <SelectValue placeholder="Fine" />
                     </SelectTrigger>
                     <SelectContent>
-                      {TIME_SLOTS.map((time) => (
+                      {endTimeSlots.map((time) => (
                         <SelectItem key={time} value={time}>
-                          {time}
+                          <span className="flex items-center gap-2">
+                            {time}
+                            <span className="text-muted-foreground text-xs">
+                              {formatDurationLabel(formData.startTime, time)}
+                            </span>
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
