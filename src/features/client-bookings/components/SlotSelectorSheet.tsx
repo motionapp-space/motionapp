@@ -1,5 +1,15 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Calendar, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, CalendarDays } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { useClientBookingSettings } from "../hooks/useClientBookingSettings";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -28,6 +38,7 @@ function formatDuration(minutes: number): string {
 
 export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps) {
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
+  const [pendingSlot, setPendingSlot] = useState<AvailableSlot | null>(null);
   const { data: slots, isLoading } = useClientAvailableSlots(28);
   const { data: settings } = useClientBookingSettings();
   const createBooking = useCreateBookingRequest();
@@ -51,11 +62,17 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
     );
   }, [slots, selectedDate]);
 
-  const handleSelectSlot = async (slot: AvailableSlot) => {
+  const handleSelectSlot = (slot: AvailableSlot) => {
+    setPendingSlot(slot);
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!pendingSlot) return;
     await createBooking.mutateAsync({
-      requestedStartAt: slot.start,
-      requestedEndAt: slot.end
+      requestedStartAt: pendingSlot.start,
+      requestedEndAt: pendingSlot.end
     });
+    setPendingSlot(null);
     onOpenChange(false);
   };
 
@@ -176,6 +193,55 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
           )}
         </div>
       </SheetContent>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!pendingSlot} onOpenChange={(open) => !open && setPendingSlot(null)}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center">Conferma appuntamento</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Vuoi richiedere questo appuntamento?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          {pendingSlot && (
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <CalendarDays className="h-5 w-5 text-primary flex-shrink-0" />
+                <span className="font-medium capitalize">
+                  {format(parseISO(pendingSlot.start), "EEEE d MMMM yyyy", { locale: it })}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-primary flex-shrink-0" />
+                <span>
+                  {format(parseISO(pendingSlot.start), "HH:mm")} - {format(parseISO(pendingSlot.end), "HH:mm")}
+                </span>
+              </div>
+              {settings?.slotDurationMinutes && (
+                <div className="text-sm text-muted-foreground pl-8">
+                  Durata: {formatDuration(settings.slotDurationMinutes)}
+                </div>
+              )}
+            </div>
+          )}
+          
+          <p className="text-sm text-muted-foreground text-center">
+            Il coach confermerà la disponibilità.
+          </p>
+          
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-center">
+            <AlertDialogCancel className="flex-1 mt-0">Annulla</AlertDialogCancel>
+            <AlertDialogAction 
+              className="flex-1"
+              onClick={handleConfirmBooking}
+              disabled={createBooking.isPending}
+            >
+              {createBooking.isPending ? "Invio..." : "Conferma"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }
