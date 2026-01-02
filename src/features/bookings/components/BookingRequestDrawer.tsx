@@ -82,10 +82,8 @@ export function BookingRequestDrawer({
   };
 
   const handleDecline = async () => {
-    if (confirm("Sei sicuro di voler rifiutare questa richiesta?")) {
-      await declineMutation.mutateAsync(request.id);
-      onOpenChange(false);
-    }
+    await declineMutation.mutateAsync(request.id);
+    onOpenChange(false);
   };
 
   const handleCounterPropose = async () => {
