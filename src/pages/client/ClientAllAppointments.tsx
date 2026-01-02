@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClientPageHeader } from "@/components/client/ClientPageHeader";
+import { ClientPageShell } from "@/components/client/ClientPageShell";
 import { useClientAppointmentsView } from "@/features/client-bookings/hooks/useClientAppointmentsView";
 import { AppointmentDetailSheet } from "@/features/client-bookings/components/AppointmentDetailSheet";
 import type { ClientAppointmentView } from "@/features/client-bookings/types";
@@ -85,18 +86,18 @@ export default function ClientAllAppointments() {
 
   if (isLoading) {
     return (
-      <div className="px-5 py-5 space-y-4 pb-24">
+      <ClientPageShell className="space-y-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-20 rounded-xl" />
         <Skeleton className="h-20 rounded-xl" />
         <Skeleton className="h-20 rounded-xl" />
-      </div>
+      </ClientPageShell>
     );
   }
 
   return (
-    <div className="px-5 py-5 space-y-4 pb-24">
+    <ClientPageShell className="space-y-4">
       {/* Back link */}
       <Link 
         to="/client/app/appointments" 
@@ -141,6 +142,6 @@ export default function ClientAllAppointments() {
         open={!!selectedAppointment}
         onOpenChange={(open) => !open && setSelectedAppointment(null)}
       />
-    </div>
+    </ClientPageShell>
   );
 }
