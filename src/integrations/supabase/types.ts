@@ -1699,6 +1699,10 @@ export type Database = {
           plan_weeks_since_assignment: number
         }[]
       }
+      finalize_booking_request: {
+        Args: { p_request_id: string }
+        Returns: string
+      }
       get_coach_occupied_slots: {
         Args: { p_coach_id: string; p_end_date: string; p_start_date: string }
         Returns: {
