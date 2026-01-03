@@ -79,7 +79,7 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
         <>
           {upcomingEvents.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-muted-foreground">Prossimi</h4>
+              <h4 className="text-sm font-medium text-muted-foreground">Prossimi ({upcomingEvents.length})</h4>
               {upcomingEvents.map((event) => (
                 <Card
                   key={event.id}
@@ -121,7 +121,7 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
 
           {pastEvents.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-muted-foreground">Passati</h4>
+              <h4 className="text-sm font-medium text-muted-foreground">Passati ({pastEvents.length})</h4>
               {pastEvents.map((event) => (
                 <Card
                   key={event.id}
