@@ -46,6 +46,7 @@ import { toast } from "sonner";
 import type { EventWithClient, Event } from "../types";
 import { Badge } from "@/components/ui/badge";
 import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettingsQuery";
+import { deriveEventBadge } from "../utils/deriveEventBadge";
 
 interface EventEditorModalProps {
   mode: 'new' | 'edit';
@@ -656,37 +657,39 @@ export function EventEditorModal({
 
   const canStartSession = isEditMode && !!event && !!onStartSession;
 
-  // Determina lo stato dell'appuntamento per il badge
+  // Determina lo stato dell'appuntamento per il badge usando helper centralizzato
   const getEventStatusBadge = () => {
     if (!event) return null;
     
-    const now = new Date();
-    const eventEnd = new Date(event.end_at);
+    const badgeType = deriveEventBadge(event);
     
-    // Completato se end_at è nel passato
-    if (eventEnd < now) {
-      return (
-        <Badge className="bg-muted/80 text-muted-foreground/80 border-0 text-xs font-normal">
-          Completato
-        </Badge>
-      );
+    switch (badgeType) {
+      case "CANCELED":
+        return (
+          <Badge className="bg-red-50 text-red-700 border-0 text-xs font-normal">
+            Annullato
+          </Badge>
+        );
+      case "PROPOSAL_PENDING":
+        return (
+          <Badge className="bg-amber-50 text-amber-700 border-0 text-xs font-normal">
+            In proposta
+          </Badge>
+        );
+      case "COMPLETED":
+        return (
+          <Badge className="bg-muted/80 text-muted-foreground/80 border-0 text-xs font-normal">
+            Completato
+          </Badge>
+        );
+      case "CONFIRMED":
+      default:
+        return (
+          <Badge className="bg-emerald-50 text-emerald-700 border-0 text-xs font-normal">
+            Confermato
+          </Badge>
+        );
     }
-    
-    // Da confermare se creato dal cliente con approvazione manuale
-    if (event.source === 'client' && bookingSettings?.approval_mode === 'MANUAL' && event.session_status === 'scheduled') {
-      return (
-        <Badge className="bg-amber-50 text-amber-700 border-0 text-xs font-normal">
-          Da confermare
-        </Badge>
-      );
-    }
-    
-    // Confermato in tutti gli altri casi
-    return (
-      <Badge className="bg-emerald-50 text-emerald-700 border-0 text-xs font-normal">
-        Confermato
-      </Badge>
-    );
   };
 
   // Formatta il campo "Creato da"
