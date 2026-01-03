@@ -155,9 +155,14 @@ export function findNearestSlots(
   allSlots: AvailableSlot[],
   excludeStart?: string
 ): AvailableSlot[] {
-  // Filter out the excluded slot (e.g., the original request)
-  const filteredSlots = excludeStart
-    ? allSlots.filter(slot => slot.start !== excludeStart)
+  // Parse excludeStart to timestamp for reliable comparison (handles different ISO formats)
+  const excludeTimestamp = excludeStart 
+    ? parseISO(excludeStart).getTime() 
+    : null;
+
+  // Filter out the excluded slot using timestamp comparison
+  const filteredSlots = excludeTimestamp
+    ? allSlots.filter(slot => parseISO(slot.start).getTime() !== excludeTimestamp)
     : allSlots;
 
   // Sort slots by distance from requested time
