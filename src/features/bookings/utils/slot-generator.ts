@@ -1,4 +1,4 @@
-import { parseISO, startOfDay, addMinutes, format, isBefore, isAfter, addHours, setHours } from "date-fns";
+import { parseISO, startOfDay, addMinutes, format, isBefore, isAfter, addHours, setHours, startOfMinute } from "date-fns";
 import type { AvailabilityWindow, OutOfOfficeBlock, AvailableSlot } from "../types";
 import type { EventWithClient } from "@/features/events/types";
 
@@ -155,14 +155,18 @@ export function findNearestSlots(
   allSlots: AvailableSlot[],
   excludeStart?: string
 ): AvailableSlot[] {
-  // Parse excludeStart to timestamp for reliable comparison (handles different ISO formats)
-  const excludeTimestamp = excludeStart 
-    ? parseISO(excludeStart).getTime() 
+  // Normalize excludeStart to minute precision for reliable comparison
+  // This handles: different ISO formats, timezone offsets, seconds/milliseconds differences
+  const excludeMinuteTimestamp = excludeStart 
+    ? startOfMinute(parseISO(excludeStart)).getTime() 
     : null;
 
-  // Filter out the excluded slot using timestamp comparison
-  const filteredSlots = excludeTimestamp
-    ? allSlots.filter(slot => parseISO(slot.start).getTime() !== excludeTimestamp)
+  // Filter out the excluded slot using normalized timestamp comparison
+  const filteredSlots = excludeMinuteTimestamp
+    ? allSlots.filter(slot => {
+        const slotMinuteTimestamp = startOfMinute(parseISO(slot.start)).getTime();
+        return slotMinuteTimestamp !== excludeMinuteTimestamp;
+      })
     : allSlots;
 
   // Sort slots by distance from requested time
