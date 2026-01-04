@@ -1,6 +1,6 @@
 import { Phase, Exercise, ExerciseGroup, GroupType, migratePhaseToGroups } from "@/types/plan";
 import { UnifiedSortableItem } from "./UnifiedSortableItem";
-import { AddMenu } from "./AddMenu";
+import { ExerciseTableHeader } from "./ExerciseTableHeader";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -65,7 +65,7 @@ export const PhaseSectionCompact = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Require 8px movement before drag starts
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -83,18 +83,9 @@ export const PhaseSectionCompact = ({
 
     if (!activeData || !overData) return;
 
-    // Extract level data from drag payload
     const activeLevel = active.data.current?.level;
     const overLevel = over.data.current?.level;
 
-    console.log("Block-item drag:", {
-      activeLevel,
-      overLevel,
-      activeType: activeData.itemType,
-      overType: overData.itemType,
-    });
-
-    // Validate level - only allow same-level reordering
     if (activeLevel && overLevel && !canDrop(activeLevel, overLevel)) {
       toast.error("Spostamento non consentito", {
         description: "Puoi riordinare solo elementi dello stesso livello",
@@ -102,28 +93,21 @@ export const PhaseSectionCompact = ({
       return;
     }
 
-    // Find indices in the block-top list
     const oldIndex = groups.findIndex((g) => g.id === activeData.itemId);
     const newIndex = groups.findIndex((g) => g.id === overData.itemId);
 
-    if (oldIndex === -1 || newIndex === -1) {
-      console.warn("Invalid indices for drag", { oldIndex, newIndex });
-      return;
-    }
+    if (oldIndex === -1 || newIndex === -1) return;
 
     try {
-      // Reorder block-top items (heterogeneous: exercise, superset, circuit)
       const newGroups = moveWithin(groups, oldIndex, newIndex);
       setGroups(newGroups);
 
-      // Update order for all groups
       newGroups.forEach((group, index) => {
         onUpdateGroup(group.id, { order: index + 1 });
       });
     } catch (error) {
       console.error("Drag & drop error:", error);
       toast.error("Errore durante il riordino");
-      // Rollback on error
       setGroups([...groups]);
     }
   };
@@ -131,31 +115,21 @@ export const PhaseSectionCompact = ({
   const totalExercises = groups.reduce((sum, g) => sum + g.exercises.length, 0);
 
   return (
-    <div className="space-y-6">
-      {/* Phase Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <h3 className="text-base font-semibold text-foreground">
-            {phaseLabels[phase.type] || phase.type}
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {totalExercises} {totalExercises === 1 ? "esercizio" : "esercizi"}
-          </p>
-        </div>
-        {!readonly && (
-          <AddMenu
-            context="day"
-            onAddExercise={() => onAddGroup("single")}
-            onAddSuperset={() => onAddGroup("superset")}
-            onAddCircuit={() => onAddGroup("circuit")}
-          />
-        )}
+    <div className="space-y-4">
+      {/* Phase Header - Minimal */}
+      <div className="flex items-baseline gap-2">
+        <h3 className="text-sm font-semibold text-foreground">
+          {phaseLabels[phase.type] || phase.type}
+        </h3>
+        <span className="text-xs text-muted-foreground">
+          {totalExercises} {totalExercises === 1 ? "esercizio" : "esercizi"}
+        </span>
       </div>
 
-      {/* Phase/Block Objective */}
+      {/* Phase Objective - Compact */}
       {(phase.objective || !readonly) && onUpdatePhaseObjective && (
-        <div className="flex flex-col gap-2">
-          <Label htmlFor={`phase-objective-${phase.id}`} className="text-sm font-semibold text-foreground">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={`phase-objective-${phase.id}`} className="text-xs font-medium text-muted-foreground">
             Obiettivo del blocco
           </Label>
           <div className="relative">
@@ -166,90 +140,122 @@ export const PhaseSectionCompact = ({
                 const value = e.target.value.slice(0, 120);
                 onUpdatePhaseObjective(value);
               }}
-              placeholder="Descrivi l'obiettivo di questo blocco (max 120 caratteri)…"
-              className="resize-none text-sm pr-16"
+              placeholder="Descrivi l'obiettivo di questo blocco..."
+              className="resize-none text-sm pr-14 min-h-[60px] border-0 bg-muted/30 focus:bg-muted/50"
               rows={2}
               maxLength={120}
-              aria-describedby={`phase-objective-count-${phase.id}`}
               disabled={readonly}
             />
-            <div
-              id={`phase-objective-count-${phase.id}`}
-              className="absolute bottom-2 right-3 text-xs text-muted-foreground select-none pointer-events-none"
-            >
+            <div className="absolute bottom-2 right-3 text-xs text-muted-foreground/60">
               {(phase.objective || "").length}/120
             </div>
           </div>
         </div>
       )}
 
-      {/* Groups List with Drag & Drop */}
+      {/* Groups List */}
       {groups.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
-          <p>Nessun esercizio ancora</p>
+        // Empty state - Minimal inline CTAs
+        <div className="flex items-center gap-3 py-3 text-sm text-muted-foreground">
+          <button
+            onClick={() => onAddGroup("single")}
+            className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
+            disabled={readonly}
+          >
+            + Aggiungi esercizio
+          </button>
+          <span className="text-muted-foreground/40">·</span>
+          <button
+            onClick={() => onAddGroup("superset")}
+            className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
+            disabled={readonly}
+          >
+            Superset
+          </button>
+          <span className="text-muted-foreground/40">·</span>
+          <button
+            onClick={() => onAddGroup("circuit")}
+            className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
+            disabled={readonly}
+          >
+            Circuit
+          </button>
         </div>
       ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={groups.map((g) => {
-              if (g.type === "single") {
-                return getDragId("exercise", g.id);
-              }
-              const itemType: DnDItemType = g.type === "superset" ? "group:superset" : "group:circuit";
-              return getDragId(itemType, g.id);
-            })}
-            strategy={verticalListSortingStrategy}
+        <>
+          {/* Table Header - only for single exercises on desktop */}
+          <ExerciseTableHeader visible={groups.some(g => g.type === "single")} />
+          
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            <div className="space-y-2" data-drop-level="block-item">
-              {groups
-                .sort((a, b) => a.order - b.order)
-                .map((group) => {
-                  // Render single exercises as flat rows
-                  if (group.type === "single" && group.exercises.length === 1) {
-                    const exercise = group.exercises[0];
+            <SortableContext
+              items={groups.map((g) => {
+                if (g.type === "single") {
+                  return getDragId("exercise", g.id);
+                }
+                const itemType: DnDItemType = g.type === "superset" ? "group:superset" : "group:circuit";
+                return getDragId(itemType, g.id);
+              })}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-0" data-drop-level="block-item">
+                {groups
+                  .sort((a, b) => a.order - b.order)
+                  .map((group) => {
+                    if (group.type === "single" && group.exercises.length === 1) {
+                      const exercise = group.exercises[0];
+                      return (
+                        <UnifiedSortableItem
+                          key={group.id}
+                          item={{ type: "exercise", exercise, groupId: group.id }}
+                          phaseType={phase.type}
+                          onUpdateExercise={(patch) => onUpdateExercise(group.id, exercise.id, patch)}
+                          onDuplicateExercise={() => onDuplicateExercise(group.id, exercise.id)}
+                          onDeleteExercise={() => onDeleteGroup(group.id)}
+                          readonly={readonly}
+                        />
+                      );
+                    }
+
                     return (
                       <UnifiedSortableItem
                         key={group.id}
-                        item={{ type: "exercise", exercise, groupId: group.id }}
+                        item={{ type: "group", group }}
                         phaseType={phase.type}
-                        onUpdateExercise={(patch) => onUpdateExercise(group.id, exercise.id, patch)}
-                        onDuplicateExercise={() => onDuplicateExercise(group.id, exercise.id)}
-                        onDeleteExercise={() => onDeleteGroup(group.id)}
+                        onUpdateGroup={(updates) => onUpdateGroup(group.id, updates)}
+                        onDuplicateGroup={() => onDuplicateGroup(group.id)}
+                        onDeleteGroup={() => onDeleteGroup(group.id)}
+                        onAddExercise={() => onAddExerciseToGroup(group.id)}
+                        onUpdateGroupExercise={(exerciseId, patch) =>
+                          onUpdateExercise(group.id, exerciseId, patch)
+                        }
+                        onDuplicateGroupExercise={(exerciseId) =>
+                          onDuplicateExercise(group.id, exerciseId)
+                        }
+                        onDeleteGroupExercise={(exerciseId) =>
+                          onDeleteExercise(group.id, exerciseId)
+                        }
                         readonly={readonly}
                       />
                     );
-                  }
-                  
-                  // Render supersets and circuits as grouped cards
-                  return (
-                    <UnifiedSortableItem
-                      key={group.id}
-                      item={{ type: "group", group }}
-                      phaseType={phase.type}
-                      onUpdateGroup={(updates) => onUpdateGroup(group.id, updates)}
-                      onDuplicateGroup={() => onDuplicateGroup(group.id)}
-                      onDeleteGroup={() => onDeleteGroup(group.id)}
-                      onAddExercise={() => onAddExerciseToGroup(group.id)}
-                      onUpdateGroupExercise={(exerciseId, patch) =>
-                        onUpdateExercise(group.id, exerciseId, patch)
-                      }
-                      onDuplicateGroupExercise={(exerciseId) =>
-                        onDuplicateExercise(group.id, exerciseId)
-                      }
-                      onDeleteGroupExercise={(exerciseId) =>
-                        onDeleteExercise(group.id, exerciseId)
-                      }
-                      readonly={readonly}
-                    />
-                  );
-                })}
-            </div>
-          </SortableContext>
-        </DndContext>
+                  })}
+              </div>
+            </SortableContext>
+          </DndContext>
+          
+          {/* Quick Add - Always visible at end */}
+          {!readonly && (
+            <button
+              onClick={() => onAddGroup("single")}
+              className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2 py-2 transition-colors"
+            >
+              + Aggiungi esercizio
+            </button>
+          )}
+        </>
       )}
     </div>
   );
