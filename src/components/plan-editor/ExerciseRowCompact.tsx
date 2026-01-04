@@ -82,7 +82,9 @@ export const ExerciseRowCompact = ({
         ) : (
           <div
             onClick={() => !readonly && setIsEditingName(true)}
-            className="h-8 flex items-center text-sm font-medium text-foreground cursor-text truncate max-w-[260px] md:max-w-[320px] px-3"
+            className={`h-8 flex items-center text-sm font-medium text-foreground px-3 truncate ${
+              readonly ? "cursor-default" : "cursor-text max-w-[260px] md:max-w-[320px]"
+            }`}
           >
             {exercise.name}
           </div>
@@ -95,7 +97,7 @@ export const ExerciseRowCompact = ({
             onUpdate({ sets: Math.max(1, parseInt(e.target.value) || 1) })
           }
           disabled={readonly}
-          className="h-8 text-sm text-center border border-transparent bg-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0"
+          className="h-8 text-sm text-center border border-transparent bg-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
           min={1}
           max={99}
           aria-label="Serie"
@@ -105,7 +107,7 @@ export const ExerciseRowCompact = ({
           value={exercise.reps}
           onChange={(e) => onUpdate({ reps: e.target.value })}
           disabled={readonly}
-          className="h-8 text-sm text-center border border-transparent bg-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0"
+          className="h-8 text-sm text-center border border-transparent bg-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
           aria-label="Ripetizioni"
           placeholder="Rip"
         />
@@ -114,7 +116,7 @@ export const ExerciseRowCompact = ({
           value={exercise.load || ""}
           onChange={(e) => onUpdate({ load: e.target.value })}
           disabled={readonly}
-          className="h-8 text-sm text-center border border-transparent bg-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0"
+          className="h-8 text-sm text-center border border-transparent bg-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
           aria-label="Carico"
           placeholder="Carico"
         />
@@ -123,7 +125,7 @@ export const ExerciseRowCompact = ({
           value={exercise.rest || ""}
           onChange={(e) => onUpdate({ rest: e.target.value })}
           disabled={readonly}
-          className="h-8 text-sm text-center border border-transparent bg-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0"
+          className="h-8 text-sm text-center border border-transparent bg-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
           aria-label="Recupero"
           placeholder="Rec"
         />
@@ -243,7 +245,7 @@ export const ExerciseRowCompact = ({
               onUpdate({ sets: Math.max(1, parseInt(e.target.value) || 1) })
             }
             disabled={readonly}
-            className="h-9 text-sm text-center border-0 bg-muted/30"
+            className="h-9 text-sm text-center border-0 bg-muted/30 disabled:text-foreground disabled:opacity-100"
             placeholder="Serie"
             min={1}
             aria-label="Serie"
@@ -252,7 +254,7 @@ export const ExerciseRowCompact = ({
             value={exercise.reps}
             onChange={(e) => onUpdate({ reps: e.target.value })}
             disabled={readonly}
-            className="h-9 text-sm text-center border-0 bg-muted/30"
+            className="h-9 text-sm text-center border-0 bg-muted/30 disabled:text-foreground disabled:opacity-100"
             placeholder="Rip"
             aria-label="Ripetizioni"
           />
@@ -260,7 +262,7 @@ export const ExerciseRowCompact = ({
             value={exercise.load || ""}
             onChange={(e) => onUpdate({ load: e.target.value })}
             disabled={readonly}
-            className="h-9 text-sm text-center border-0 bg-muted/30"
+            className="h-9 text-sm text-center border-0 bg-muted/30 disabled:text-foreground disabled:opacity-100"
             placeholder="Carico"
             aria-label="Carico"
           />
@@ -268,7 +270,7 @@ export const ExerciseRowCompact = ({
             value={exercise.rest || ""}
             onChange={(e) => onUpdate({ rest: e.target.value })}
             disabled={readonly}
-            className="h-9 text-sm text-center border-0 bg-muted/30"
+            className="h-9 text-sm text-center border-0 bg-muted/30 disabled:text-foreground disabled:opacity-100"
             placeholder="Rec"
             aria-label="Recupero"
           />
@@ -284,7 +286,7 @@ export const ExerciseRowCompact = ({
               onChange={(e) => onUpdate({ goal: e.target.value })}
               placeholder="Obiettivo (es. Controllo eccentrico)"
               disabled={readonly}
-              className="h-9 text-sm border-0 bg-background/50 focus:bg-background"
+              className="h-9 text-sm border-0 bg-background/50 focus:bg-background disabled:text-foreground disabled:opacity-100"
               maxLength={120}
             />
           </div>
@@ -294,7 +296,7 @@ export const ExerciseRowCompact = ({
               onChange={(e) => onUpdate({ notes: e.target.value })}
               placeholder="Note aggiuntive..."
               disabled={readonly}
-              className="min-h-[60px] text-sm resize-none border-0 bg-background/50 focus:bg-background"
+              className="min-h-[60px] text-sm resize-none border-0 bg-background/50 focus:bg-background disabled:text-foreground disabled:opacity-100"
               maxLength={240}
             />
             <div className="text-xs text-muted-foreground text-right mt-1">
