@@ -2,7 +2,6 @@ import { ExerciseGroup, Exercise, PhaseType } from "@/types/plan";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SortableExerciseInGroup } from "./SortableExerciseInGroup";
-import { ExerciseTableHeader } from "./ExerciseTableHeader";
 import { DraggableHandle } from "./DraggableHandle";
 import { useState, useEffect } from "react";
 import {
@@ -225,10 +224,8 @@ export const GroupCard = ({
         )}
       </div>
 
-      {/* Exercises List */}
+      {/* Exercises List - No header here, it's at phase level */}
       <div className="space-y-0">
-        <ExerciseTableHeader visible={exercises.length > 0} />
-        
         {exercises.length > 0 && (
           <DndContext
             sensors={sensors}
