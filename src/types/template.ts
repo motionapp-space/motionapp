@@ -38,13 +38,14 @@ export interface UpdateTemplateInput {
   tags?: string[];
 }
 
-// Re-export ClientPlan from the features module to avoid duplication
-export type { ClientPlan } from '@/features/client-plans/types';
+// Re-export types from the features module to avoid duplication
+export type { ClientPlan, ClientPlanWithActive, PlanDaySnapshot } from '@/features/client-plans/types';
 
 export interface ClientPlanWithTemplate {
   id: string;
   client_id: string;
   coach_id: string;
+  coach_client_id: string;
   name: string;
   description?: string;
   data: any;
@@ -58,6 +59,8 @@ export interface ClientPlanWithTemplate {
   created_at: string;
   updated_at: string;
   derived_from_template_id?: string;
+  in_use_at?: string;
+  last_used_at?: string;
   template?: PlanTemplate;
 }
 

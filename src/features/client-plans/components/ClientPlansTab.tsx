@@ -3,75 +3,33 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FileText, Plus } from "lucide-react";
+import { FileText, Plus, Star } from "lucide-react";
 import { toSentenceCase } from "@/lib/text";
 import { ClientPlanCard } from "./ClientPlanCard";
 import { CreatePlanDialog } from "./CreatePlanDialog";
-import type { ClientPlanWithTemplate } from "@/types/template";
+import type { ClientPlanWithActive } from "../types";
 
 interface ClientPlansTabProps {
   clientId: string;
-  plans: ClientPlanWithTemplate[];
+  plans: ClientPlanWithActive[];
   isLoading: boolean;
+  onSetActive: (planId: string | null) => void;
   onDuplicate: (planId: string) => void;
-  onToggleInUse: (planId: string, currentValue: boolean) => void;
-  onComplete: (planId: string) => void;
-  onArchive: (planId: string) => void;
   onDelete: (planId: string) => void;
-  onToggleVisibility: (planId: string, currentValue: boolean) => void;
   onSaveAsTemplate: (planId: string) => void;
 }
-
-type FilterType = "all" | "in-use" | "active" | "completed" | "archived";
 
 export function ClientPlansTab({
   clientId,
   plans,
   isLoading,
+  onSetActive,
   onDuplicate,
-  onToggleInUse,
-  onComplete,
-  onArchive,
   onDelete,
-  onToggleVisibility,
   onSaveAsTemplate,
 }: ClientPlansTabProps) {
   const navigate = useNavigate();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
-
-  const filters: { value: FilterType; label: string }[] = [
-    { value: "all", label: "Tutti" },
-    { value: "in-use", label: "In uso" },
-    { value: "active", label: "Attivi" },
-    { value: "completed", label: "Completati" },
-    { value: "archived", label: "Archiviati" },
-  ];
-
-  const filteredPlans = plans.filter((plan) => {
-    switch (activeFilter) {
-      case "in-use":
-        return plan.is_in_use;
-      case "active":
-        return plan.status === "IN_CORSO";
-      case "completed":
-        return plan.status === "COMPLETATO";
-      case "archived":
-        return plan.status === "ELIMINATO";
-      default:
-        return true;
-    }
-  });
-
-  const sortedPlans = [...filteredPlans].sort((a, b) => {
-    // Prima i piani In Uso
-    if (a.is_in_use && !b.is_in_use) return -1;
-    if (!a.is_in_use && b.is_in_use) return 1;
-
-    // Poi per status: IN_CORSO > COMPLETATO > ELIMINATO
-    const statusOrder = { IN_CORSO: 0, COMPLETATO: 1, ELIMINATO: 2 };
-    return statusOrder[a.status] - statusOrder[b.status];
-  });
 
   if (isLoading) {
     return (
@@ -80,6 +38,10 @@ export function ClientPlansTab({
       </div>
     );
   }
+
+  // Split plans into active and others
+  const activePlan = plans.find((p) => p.isActiveForClient);
+  const otherPlans = plans.filter((p) => !p.isActiveForClient);
 
   return (
     <div className="space-y-6">
@@ -91,38 +53,17 @@ export function ClientPlansTab({
               {toSentenceCase("Piani di allenamento")}
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {toSentenceCase("Gestisci i piani assegnati a questo cliente.")}
+              Il piano "In uso" è quello visibile al cliente e usato per scegliere i giorni quando crei una nuova sessione.
             </p>
           </div>
-          {plans.length > 0 && (
-            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 shrink-0">
-              <Plus className="h-4 w-4" />
-              {toSentenceCase("Nuovo piano")}
-            </Button>
-          )}
+          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 shrink-0">
+            <Plus className="h-4 w-4" />
+            {toSentenceCase("Nuovo piano")}
+          </Button>
         </div>
-
-        {/* Filters */}
-        {plans.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {filters.map((filter) => (
-              <button
-                key={filter.value}
-                onClick={() => setActiveFilter(filter.value)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-                  activeFilter === filter.value
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
-              >
-                {toSentenceCase(filter.label)}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Plans List or Empty State */}
+      {/* No plans at all */}
       {plans.length === 0 ? (
         <Card>
           <CardContent className="p-0">
@@ -137,30 +78,59 @@ export function ClientPlansTab({
             />
           </CardContent>
         </Card>
-      ) : sortedPlans.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              {toSentenceCase("Nessun piano trovato per questo filtro.")}
-            </p>
-          </CardContent>
-        </Card>
       ) : (
-        <div className="grid gap-3">
-          {sortedPlans.map((plan) => (
-            <ClientPlanCard
-              key={plan.id}
-              plan={plan}
-              onEdit={() => navigate(`/client-plans/${plan.id}/edit`)}
-              onDuplicate={() => onDuplicate(plan.id)}
-              onToggleInUse={() => onToggleInUse(plan.id, plan.is_in_use)}
-              onComplete={() => onComplete(plan.id)}
-              onArchive={() => onArchive(plan.id)}
-              onDelete={() => onDelete(plan.id)}
-              onToggleVisibility={() => onToggleVisibility(plan.id, plan.is_visible)}
-              onSaveAsTemplate={() => onSaveAsTemplate(plan.id)}
-            />
-          ))}
+        <div className="space-y-6">
+          {/* Section: Piano in uso */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Star className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Piano in uso
+              </h3>
+            </div>
+            
+            {activePlan ? (
+              <ClientPlanCard
+                plan={activePlan}
+                isActive={true}
+                onEdit={() => navigate(`/client-plans/${activePlan.id}/edit`)}
+                onDuplicate={() => onDuplicate(activePlan.id)}
+                onDelete={() => onDelete(activePlan.id)}
+                onSaveAsTemplate={() => onSaveAsTemplate(activePlan.id)}
+              />
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="py-8 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Nessun piano in uso. Imposta un piano come in uso per renderlo visibile al cliente.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Section: Altri piani */}
+          {otherPlans.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Altri piani
+              </h3>
+              <div className="grid gap-3">
+                {otherPlans.map((plan) => (
+                  <ClientPlanCard
+                    key={plan.id}
+                    plan={plan}
+                    isActive={false}
+                    onEdit={() => navigate(`/client-plans/${plan.id}/edit`)}
+                    onSetActive={() => onSetActive(plan.id)}
+                    onDuplicate={() => onDuplicate(plan.id)}
+                    onDelete={() => onDelete(plan.id)}
+                    onSaveAsTemplate={() => onSaveAsTemplate(plan.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

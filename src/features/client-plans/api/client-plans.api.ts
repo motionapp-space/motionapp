@@ -1,10 +1,63 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ClientPlanWithTemplate, AssignTemplateInput, SaveAsTemplateInput } from "@/types/template";
-import type { ClientPlan } from "@/features/client-plans/types";
+import type { ClientPlan, ClientPlanWithActive } from "@/features/client-plans/types";
 import { getTemplate } from "@/features/templates/api/templates.api";
 import { assignPlanToClient } from "@/features/clients/api/client-fsm.api";
 import { getCoachClientId } from "@/lib/coach-client";
 
+/**
+ * Get all client plans with active_plan_id resolution
+ * Returns plans with isActiveForClient flag based on coach_clients.active_plan_id
+ */
+export async function getClientPlansWithActive(clientId: string): Promise<ClientPlanWithActive[]> {
+  const coachClientId = await getCoachClientId(clientId);
+
+  // Fetch active_plan_id from coach_clients
+  const { data: cc, error: ccError } = await supabase
+    .from("coach_clients")
+    .select("active_plan_id")
+    .eq("id", coachClientId)
+    .single();
+
+  if (ccError) throw ccError;
+  const activePlanId = cc?.active_plan_id;
+
+  // Fetch all non-deleted plans
+  const { data, error } = await supabase
+    .from("client_plans")
+    .select("*")
+    .eq("coach_client_id", coachClientId)
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+
+  // Fetch templates for plans with derived_from_template_id
+  const plansWithTemplates = await Promise.all(
+    (data || []).map(async (plan: any) => {
+      let template = null;
+      if (plan.derived_from_template_id) {
+        try {
+          const templateData = await getTemplate(plan.derived_from_template_id);
+          template = { id: templateData.id, name: templateData.name };
+        } catch {
+          // Template may have been deleted
+        }
+      }
+      return {
+        ...plan,
+        template,
+        isActiveForClient: plan.id === activePlanId,
+      } as ClientPlanWithActive;
+    })
+  );
+
+  return plansWithTemplates;
+}
+
+/**
+ * @deprecated Use getClientPlansWithActive instead
+ */
 export async function getClientPlans(clientId: string) {
   const coachClientId = await getCoachClientId(clientId);
 
