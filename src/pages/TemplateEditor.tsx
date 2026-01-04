@@ -251,11 +251,13 @@ const TemplateEditor = () => {
     if (id && id !== "new") {
       loadTemplate(id);
     } else {
-      // New template - initialize with empty state
+      // New template - auto-create Giorno 1 for immediate editing (Notion-style)
       setName("");
       setDescription("");
       setCategories([]);
-      setDays([]);
+      const initialDay = makeDay(1);
+      setDays([initialDay]);
+      setIsEditorMode(true); // Enter editor mode immediately
       setLoading(false);
       setHasUnsavedChanges(false);
     }
@@ -877,7 +879,7 @@ const TemplateEditor = () => {
                   </span>
                 )}
               </div>
-              {!readonly && days.length > 0 && (
+              {!readonly && (
                 <div className="flex items-center gap-2">
                   <Button onClick={handleAddDay} variant="outline" size="sm" className="gap-2 h-11">
                     <Plus className="h-4 w-4" />
@@ -887,59 +889,40 @@ const TemplateEditor = () => {
               )}
             </div>
 
-            {days.length === 0 ? (
-              <div className="text-center py-12 border border-dashed rounded-lg">
-                <p className="text-muted-foreground mb-4">
-                  Nessun giorno ancora
-                </p>
-                {!readonly && (
-                  <Button 
-                    onClick={handleAddDay} 
-                    variant="default" 
-                    className="gap-2 min-w-[44px] min-h-[44px]"
-                    aria-label="Aggiungi primo giorno di allenamento"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {toSentenceCase("Aggiungi giorno")}
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                modifiers={[restrictToVerticalAxis]}
-                onDragEnd={handleDayDragEnd}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              modifiers={[restrictToVerticalAxis]}
+              onDragEnd={handleDayDragEnd}
+            >
+              <SortableContext
+                items={days.map((d) => d.id)}
+                strategy={verticalListSortingStrategy}
               >
-                <SortableContext
-                  items={days.map((d) => d.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-6" role="list" aria-label="Giorni di allenamento" data-drop-level="day" style={{ overflow: 'visible' }}>
-                    {days
-                      .sort((a, b) => a.order - b.order)
-                      .map((day) => (
-                        <SortableDay
-                          key={day.id}
-                          day={day}
-                          onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
-                          onDuplicate={() => handleDuplicateDay(day.id)}
-                          onDelete={() => handleDeleteDay(day.id)}
-                          onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
-                          onUpdateGroup={(phaseType, groupId, updates) => handleUpdateGroup(day.id, phaseType, groupId, updates)}
-                          onDuplicateGroup={(phaseType, groupId) => handleDuplicateGroup(day.id, phaseType, groupId)}
-                          onDeleteGroup={(phaseType, groupId) => handleDeleteGroup(day.id, phaseType, groupId)}
-                          onAddExerciseToGroup={(phaseType, groupId) => handleAddExerciseToGroup(day.id, phaseType, groupId)}
-                          onUpdateExercise={(phaseType, groupId, exerciseId, patch) => handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)}
-                          onDuplicateExercise={(phaseType, groupId, exerciseId) => handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)}
-                          onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
-                          readonly={readonly}
-                        />
-                      ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
+                <div className="space-y-6" role="list" aria-label="Giorni di allenamento" data-drop-level="day" style={{ overflow: 'visible' }}>
+                  {days
+                    .sort((a, b) => a.order - b.order)
+                    .map((day) => (
+                      <SortableDay
+                        key={day.id}
+                        day={day}
+                        onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
+                        onDuplicate={() => handleDuplicateDay(day.id)}
+                        onDelete={() => handleDeleteDay(day.id)}
+                        onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
+                        onUpdateGroup={(phaseType, groupId, updates) => handleUpdateGroup(day.id, phaseType, groupId, updates)}
+                        onDuplicateGroup={(phaseType, groupId) => handleDuplicateGroup(day.id, phaseType, groupId)}
+                        onDeleteGroup={(phaseType, groupId) => handleDeleteGroup(day.id, phaseType, groupId)}
+                        onAddExerciseToGroup={(phaseType, groupId) => handleAddExerciseToGroup(day.id, phaseType, groupId)}
+                        onUpdateExercise={(phaseType, groupId, exerciseId, patch) => handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)}
+                        onDuplicateExercise={(phaseType, groupId, exerciseId) => handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)}
+                        onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
+                        readonly={readonly}
+                      />
+                    ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
       </div>
