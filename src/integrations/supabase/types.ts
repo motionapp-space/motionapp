@@ -406,8 +406,10 @@ export type Database = {
           description: string | null
           duration_weeks: number | null
           id: string
+          in_use_at: string | null
           is_in_use: boolean
           is_visible: boolean
+          last_used_at: string | null
           locked_at: string | null
           name: string
           objective: string | null
@@ -425,8 +427,10 @@ export type Database = {
           description?: string | null
           duration_weeks?: number | null
           id?: string
+          in_use_at?: string | null
           is_in_use?: boolean
           is_visible?: boolean
+          last_used_at?: string | null
           locked_at?: string | null
           name: string
           objective?: string | null
@@ -444,8 +448,10 @@ export type Database = {
           description?: string | null
           duration_weeks?: number | null
           id?: string
+          in_use_at?: string | null
           is_in_use?: boolean
           is_visible?: boolean
+          last_used_at?: string | null
           locked_at?: string | null
           name?: string
           objective?: string | null
@@ -657,6 +663,7 @@ export type Database = {
       }
       coach_clients: {
         Row: {
+          active_plan_id: string | null
           client_id: string
           coach_id: string
           created_at: string
@@ -669,6 +676,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_plan_id?: string | null
           client_id: string
           coach_id: string
           created_at?: string
@@ -681,6 +689,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_plan_id?: string | null
           client_id?: string
           coach_id?: string
           created_at?: string
@@ -693,6 +702,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "coach_clients_active_plan_id_fkey"
+            columns: ["active_plan_id"]
+            isOneToOne: false
+            referencedRelation: "client_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "coach_clients_client_id_fkey"
             columns: ["client_id"]
@@ -1545,6 +1561,7 @@ export type Database = {
           event_id: string | null
           id: string
           notes: string | null
+          plan_day_snapshot: Json | null
           plan_id: string | null
           scheduled_at: string | null
           source: string
@@ -1560,6 +1577,7 @@ export type Database = {
           event_id?: string | null
           id?: string
           notes?: string | null
+          plan_day_snapshot?: Json | null
           plan_id?: string | null
           scheduled_at?: string | null
           source?: string
@@ -1575,6 +1593,7 @@ export type Database = {
           event_id?: string | null
           id?: string
           notes?: string | null
+          plan_day_snapshot?: Json | null
           plan_id?: string | null
           scheduled_at?: string | null
           source?: string
@@ -1688,6 +1707,10 @@ export type Database = {
       }
     }
     Functions: {
+      capture_session_snapshot: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
       compute_client_table_data_batch: {
         Args: { p_client_ids: string[] }
         Returns: {
@@ -1698,6 +1721,10 @@ export type Database = {
           package_status: string
           plan_weeks_since_assignment: number
         }[]
+      }
+      delete_plan: {
+        Args: { p_coach_client_id: string; p_plan_id: string }
+        Returns: boolean
       }
       finalize_booking_request: {
         Args: { p_request_id: string }
@@ -1732,6 +1759,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      set_active_plan: {
+        Args: { p_coach_client_id: string; p_plan_id?: string }
+        Returns: string
       }
     }
     Enums: {

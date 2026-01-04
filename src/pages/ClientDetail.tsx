@@ -10,14 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, X, FileText, Pencil, Activity } from "lucide-react";
-import { EmptyState } from "@/components/ui/empty-state";
+import { Plus, X, Pencil, Activity } from "lucide-react";
 import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
 import { useClientPlansQuery } from "@/features/client-plans/hooks/useClientPlansQuery";
-import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClientPlan";
-import { useToggleInUse } from "@/features/client-plans/hooks/useToggleInUse";
+import { useSetActivePlan } from "@/features/client-plans/hooks/useSetActivePlan";
+import { useDeletePlanPermanent } from "@/features/client-plans/hooks/useDeletePlanPermanent";
 import { useDuplicatePlan } from "@/features/client-plans/hooks/useDuplicatePlan";
 import { useSaveAsTemplate } from "@/features/client-plans/hooks/useSaveAsTemplate";
 import { ClientPlansTab } from "@/features/client-plans/components/ClientPlansTab";
@@ -61,8 +59,8 @@ const ClientDetail = () => {
   });
 
   const { data: clientPlans = [], isLoading: plansLoading } = useClientPlansQuery(id || "");
-  const updatePlanMutation = useUpdateClientPlan();
-  const toggleInUseMutation = useToggleInUse();
+  const setActivePlanMutation = useSetActivePlan();
+  const deletePlanMutation = useDeletePlanPermanent();
   const duplicatePlanMutation = useDuplicatePlan();
   const saveAsTemplateMutation = useSaveAsTemplate();
   const onboardingState = useClientOnboardingState(id || "");
@@ -105,55 +103,18 @@ const ClientDetail = () => {
     setTagInput("");
   };
 
-  const handleToggleInUse = (planId: string, currentValue: boolean) => {
+  const handleSetActivePlan = (planId: string | null) => {
     if (!id) return;
-    toggleInUseMutation.mutate({ planId, clientId: id, currentValue });
+    setActivePlanMutation.mutate({ clientId: id, planId });
   };
 
   const handleDuplicatePlan = (planId: string) => {
     duplicatePlanMutation.mutate({ planId, clientId: id! });
   };
 
-  const handleCompletePlan = async (planId: string) => {
-    try {
-      await updatePlanMutation.mutateAsync({ id: planId, updates: { status: "COMPLETATO", completed_at: new Date().toISOString() } });
-      toast.success("Piano completato", {
-        description: "Vuoi archiviare questo piano?",
-        action: {
-          label: "Archivia",
-          onClick: () => handleArchivePlan(planId)
-        }
-      });
-    } catch (error) {
-      toast.error("Errore");
-    }
-  };
-
-  const handleArchivePlan = async (planId: string) => {
-    try {
-      await updatePlanMutation.mutateAsync({ id: planId, updates: { status: "ELIMINATO", deleted_at: new Date().toISOString() } });
-      toast.success("Piano archiviato");
-    } catch (error) {
-      toast.error("Errore");
-    }
-  };
-
-  const handleDeletePlan = async (planId: string) => {
-    try {
-      await updatePlanMutation.mutateAsync({ id: planId, updates: { status: "ELIMINATO", deleted_at: new Date().toISOString() } });
-      toast.success("Piano eliminato");
-    } catch (error) {
-      toast.error("Errore");
-    }
-  };
-
-  const handleToggleVisibility = async (planId: string, currentValue: boolean) => {
-    try {
-      await updatePlanMutation.mutateAsync({ id: planId, updates: { is_visible: !currentValue } });
-      toast.success(currentValue ? "Piano nascosto" : "Piano visibile");
-    } catch (error) {
-      toast.error("Errore");
-    }
+  const handleDeletePlan = (planId: string) => {
+    if (!id) return;
+    deletePlanMutation.mutate({ clientId: id, planId });
   };
 
   const handleSaveAsTemplate = (planId: string) => {
@@ -181,14 +142,7 @@ const ClientDetail = () => {
     }
   };
 
-  const handleUpdatePlanStatus = async (planId: string, status: "IN_CORSO" | "COMPLETATO" | "ELIMINATO") => {
-    try {
-      await updatePlanMutation.mutateAsync({ id: planId, updates: { status } });
-      toast.success("Stato aggiornato");
-    } catch (error) {
-      toast.error("Errore nell'aggiornamento");
-    }
-  };
+  // handleUpdatePlanStatus removed - using new simplified plan management
 
   if (isLoading) {
     return (
@@ -423,12 +377,9 @@ const ClientDetail = () => {
               clientId={id!}
               plans={clientPlans}
               isLoading={plansLoading}
+              onSetActive={handleSetActivePlan}
               onDuplicate={handleDuplicatePlan}
-              onToggleInUse={handleToggleInUse}
-              onComplete={handleCompletePlan}
-              onArchive={handleArchivePlan}
               onDelete={handleDeletePlan}
-              onToggleVisibility={handleToggleVisibility}
               onSaveAsTemplate={handleSaveAsTemplate}
             />
           </TabsContent>
