@@ -14,37 +14,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Download,
-  CheckCircle,
   Loader2,
   Save,
-  FileText,
-  MoreVertical,
-  Eye,
-  EyeOff,
-  Lock,
-  Unlock,
-  Star,
-  Pencil,
+  Plus,
 } from "lucide-react";
 import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 import { exportPlanToPDF } from "@/lib/pdfExport";
 import { toSentenceCase } from "@/lib/text";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { getClientPlan } from "@/features/client-plans/api/client-plans.api";
 import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClientPlan";
@@ -71,20 +50,10 @@ const ClientPlanEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
-  // Mode logic (read-only for existing plans, edit for new)
-  const modeParam = searchParams.get("mode");
-  const mode = id ? (modeParam ?? "read") : "edit";
-  const readonly = mode === "read";
-
-  const toEdit = () => {
-    setSearchParams({ mode: "edit" }, { replace: true });
-  };
-
-  const toRead = () => {
-    setSearchParams({ mode: "read" }, { replace: true });
-  };
+  // Always in edit mode (aligned to TemplateEditor)
+  const readonly = false;
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<ClientPlan | null>(null);
   const [resolvedClientId, setResolvedClientId] = useState<string | null>(null);
@@ -535,45 +504,14 @@ const ClientPlanEditor = () => {
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
         {/* Action toolbar */}
         <div className="flex items-center justify-end gap-2 mb-6">
-          {mode === "read" ? (
-            // Read mode: Modifica + PDF
-            <>
-              <Button onClick={toEdit} size="sm">
-                <Pencil className="h-4 w-4" />
-                Modifica
-              </Button>
-              <Button onClick={handleExportPDF} variant="outline" size="sm">
-                <Download className="h-4 w-4" />
-                PDF
-              </Button>
-            </>
-          ) : (
-            // Edit mode: Salva + Annulla
-            <>
-              <Button onClick={handleSave} size="sm" disabled={!id && !name.trim()}>
-                <Save className="h-4 w-4" />
-                Salva
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  if (id) {
-                    toRead();
-                  } else {
-                    const targetClientId = resolvedClientId || clientId;
-                    if (targetClientId) {
-                      navigate(`/clients/${targetClientId}?tab=plans`);
-                    } else {
-                      navigate("/");
-                    }
-                  }
-                }}
-              >
-                Annulla
-              </Button>
-            </>
-          )}
+          <Button onClick={handleSave} size="sm" disabled={!id && !name.trim()}>
+            <Save className="h-4 w-4" />
+            Salva
+          </Button>
+          <Button onClick={handleExportPDF} variant="outline" size="sm">
+            <Download className="h-4 w-4" />
+            PDF
+          </Button>
         </div>
 
         {isNewFromTemplate && (
