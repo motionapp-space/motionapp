@@ -31,7 +31,7 @@ export const ExerciseRowCompact = ({
   dragHandleProps,
 }: ExerciseRowCompactProps) => {
   const [notesExpanded, setNotesExpanded] = useState(false);
-  const [isEditingName, setIsEditingName] = useState(!exercise.name);
+  const [isEditingName, setIsEditingName] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   const hasNotesOrGoals = Boolean(
@@ -190,7 +190,6 @@ export const ExerciseRowCompact = ({
               disabled={readonly}
               className="flex-1 h-9 text-sm font-medium border-0 bg-transparent focus:bg-muted/20"
               aria-label="Nome esercizio"
-              autoFocus
             />
           ) : (
             <div
