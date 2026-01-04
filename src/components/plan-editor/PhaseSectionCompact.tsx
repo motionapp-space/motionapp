@@ -115,13 +115,13 @@ export const PhaseSectionCompact = ({
   const totalExercises = groups.reduce((sum, g) => sum + g.exercises.length, 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Phase Header - Minimal */}
       <div className="flex items-baseline gap-2">
-        <h3 className="text-sm font-semibold text-foreground">
+        <h3 className="text-sm font-medium text-foreground/90">
           {phaseLabels[phase.type] || phase.type}
         </h3>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground/60">
           {totalExercises} {totalExercises === 1 ? "esercizio" : "esercizi"}
         </span>
       </div>
@@ -155,8 +155,8 @@ export const PhaseSectionCompact = ({
 
       {/* Groups List */}
       {groups.length === 0 ? (
-        // Empty state - Minimal inline CTAs
-        <div className="flex items-center gap-3 py-3 text-sm text-muted-foreground">
+        // Empty state - Anchored CTAs with pl-6
+        <div className="pl-6 mt-1 flex items-center gap-3 text-sm text-muted-foreground">
           <button
             onClick={() => onAddGroup("single")}
             className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
@@ -164,7 +164,7 @@ export const PhaseSectionCompact = ({
           >
             + Aggiungi esercizio
           </button>
-          <span className="text-muted-foreground/40">·</span>
+          <span className="text-muted-foreground/30">·</span>
           <button
             onClick={() => onAddGroup("superset")}
             className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
@@ -172,7 +172,7 @@ export const PhaseSectionCompact = ({
           >
             Superset
           </button>
-          <span className="text-muted-foreground/40">·</span>
+          <span className="text-muted-foreground/30">·</span>
           <button
             onClick={() => onAddGroup("circuit")}
             className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
@@ -248,21 +248,21 @@ export const PhaseSectionCompact = ({
           
           {/* Quick Add - Always visible at end with ALL options */}
           {!readonly && (
-            <div className="flex items-center gap-3 py-3 text-sm text-muted-foreground">
+            <div className="pl-6 mt-2 flex items-center gap-3 text-sm text-muted-foreground/80">
               <button
                 onClick={() => onAddGroup("single")}
                 className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
               >
                 + Aggiungi esercizio
               </button>
-              <span className="text-muted-foreground/40">·</span>
+              <span className="text-muted-foreground/30">·</span>
               <button
                 onClick={() => onAddGroup("superset")}
                 className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
               >
                 Superset
               </button>
-              <span className="text-muted-foreground/40">·</span>
+              <span className="text-muted-foreground/30">·</span>
               <button
                 onClick={() => onAddGroup("circuit")}
                 className="hover:text-foreground hover:underline underline-offset-2 transition-colors"

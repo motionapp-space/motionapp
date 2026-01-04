@@ -88,11 +88,11 @@ export const DayCardCompact = ({
           aria-label="Nome del giorno"
         />
 
-        <span className="text-sm text-muted-foreground">
-          {summary.exercises === 0
-            ? "Nessun esercizio"
-            : `${summary.exercises} esercizi · ~${summary.estimatedMinutes} min`}
-        </span>
+        {summary.exercises > 0 && (
+          <span className="text-xs text-muted-foreground/60">
+            {summary.exercises} es. · ~{summary.estimatedMinutes} min
+          </span>
+        )}
 
         <div className="ml-auto flex items-center gap-1 text-sm">
           {!readonly && (
@@ -139,10 +139,10 @@ export const DayCardCompact = ({
 
       {/* Day Content */}
       {isExpanded && (
-        <div className="pb-6 px-2 space-y-6">
+        <div className="pb-4 px-2">
           {/* Day Objective */}
           {(day.objective || !readonly) && onUpdateObjective && (
-            <div className="flex flex-col gap-1.5 pl-8">
+            <div className="flex flex-col gap-1.5 pl-8 mt-4">
               <Label
                 htmlFor={`day-objective-${day.id}`}
                 className="text-xs font-medium text-muted-foreground"
@@ -168,10 +168,10 @@ export const DayCardCompact = ({
           )}
 
           {/* Phases */}
-          <div className="space-y-6 pl-8">
-            {day.phases.map((phase) => (
+          <div className="pl-8">
+            {day.phases.map((phase, index) => (
+              <div key={phase.id} className={index === 0 ? "mt-4" : "mt-6"}>
               <PhaseSectionCompact
-                key={phase.id}
                 phase={phase}
                 onAddGroup={(type) => onAddGroup(phase.type, type)}
                 onUpdateGroup={(groupId, updates) =>
@@ -198,6 +198,7 @@ export const DayCardCompact = ({
                 }
                 readonly={readonly}
               />
+              </div>
             ))}
           </div>
         </div>
