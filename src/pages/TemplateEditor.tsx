@@ -57,6 +57,8 @@ const TemplateEditor = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [isEditorMode, setIsEditorMode] = useState(false);
+  const [showDescription, setShowDescription] = useState(true);
   
   const updateMutation = useUpdateTemplate();
   const createMutation = useCreateTemplate();
@@ -357,6 +359,11 @@ const TemplateEditor = () => {
   const handleAddDay = () => {
     const newDay = makeDay(days.length + 1);
     setDays([...days, newDay]);
+    // Enter editor mode when adding a day
+    if (!isEditorMode) {
+      setIsEditorMode(true);
+      setShowDescription(false);
+    }
   };
 
   const handleUpdateDayTitle = (dayId: string, title: string) => {
@@ -649,153 +656,215 @@ const TemplateEditor = () => {
 
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-[1280px]">
         <div className="space-y-8">
-          {/* Metadata Section */}
-          <div className="space-y-6 pb-8 border-b border-border">
-            {/* Row 1: Name (7 cols) + Category (5 cols) */}
-            <div className="grid gap-6 md:grid-cols-12">
-              {/* Name Field */}
-              <div className="md:col-span-7 space-y-4">
-                <Label 
-                  htmlFor="template-name" 
-                  className="text-sm font-normal text-[#4B5563]"
-                >
-                  Nome
-                </Label>
-                <div className="space-y-2">
-                  <Input
-                    id="template-name"
-                    value={name}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    onBlur={() => validateName(name)}
-                    placeholder="Es: Piano Forza 8 Settimane"
-                    disabled={readonly}
-                    maxLength={80}
-                    aria-invalid={!!nameError}
-                    aria-describedby={nameError ? "name-error" : undefined}
-                    className="h-10 text-sm"
-                  />
-                  {nameError && (
-                    <p id="name-error" className="text-xs text-destructive">
-                      {nameError}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Category Field - Multi-select Combobox */}
-              <div className="md:col-span-5 space-y-4">
-                <Label 
-                  htmlFor="template-category" 
-                  className="text-sm font-normal text-[#4B5563]"
-                >
-                  Categoria
-                </Label>
-                <div className="space-y-2">
-                  <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        id="template-category"
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={categoryOpen}
-                        disabled={readonly}
-                        className="w-full h-10 justify-between font-normal"
-                      >
-                        <span className="text-sm text-muted-foreground">
-                          {categories.length === 0 ? "Seleziona categoria..." : `${categories.length} selezionate`}
-                        </span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                      <Command>
-                        <CommandInput 
-                          placeholder="Cerca o aggiungi..." 
-                          value={categoryInput}
-                          onValueChange={setCategoryInput}
-                        />
-                        <CommandList>
-                          <CommandEmpty>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full"
-                              onClick={() => categoryInput.trim() && addCategory(categoryInput)}
-                            >
-                              Crea "{categoryInput}"
-                            </Button>
-                          </CommandEmpty>
-                          <CommandGroup>
-                            {suggestedCategories
-                              .filter(cat => !categories.includes(cat))
-                              .map((cat) => (
-                                <CommandItem
-                                  key={cat}
-                                  onSelect={() => addCategory(cat)}
-                                >
-                                  {cat}
-                                </CommandItem>
-                              ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  
-                  {/* Selected Categories as Chips */}
-                  {categories.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map((cat) => (
-                        <Badge 
-                          key={cat} 
-                          variant="secondary" 
-                          className="gap-1 pr-1"
-                        >
-                          {cat}
-                          {!readonly && (
-                            <button
-                              onClick={() => removeCategory(cat)}
-                              className="ml-1 hover:bg-muted rounded-sm p-0.5"
-                              aria-label={`Rimuovi ${cat}`}
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          )}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Row 2: Description (full width) */}
-            <div className="space-y-4">
-              <Label 
-                htmlFor="template-description" 
-                className="text-sm font-normal text-[#4B5563]"
-              >
-                Descrizione
-              </Label>
-              <div className="relative">
-                <Textarea
-                  id="template-description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value.slice(0, 280))}
-                  placeholder="Descrivi il template e gli obiettivi principali..."
+          {/* Metadata Section - Compact when in editor mode */}
+          <div className={`pb-6 border-b border-border transition-all ${isEditorMode ? 'space-y-3' : 'space-y-6'}`}>
+            {isEditorMode ? (
+              // Compact editor mode header
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <Input
+                  value={name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  onBlur={() => validateName(name)}
+                  placeholder="Nome template"
                   disabled={readonly}
-                  maxLength={280}
-                  rows={2}
-                  aria-describedby="description-counter"
-                  className="min-h-[64px] max-h-[180px] resize-y text-sm pr-16"
+                  maxLength={80}
+                  className="h-9 text-lg font-semibold border-0 bg-transparent focus:bg-muted/20 max-w-[300px] md:max-w-[400px]"
                 />
-                <div
-                  id="description-counter"
-                  className="absolute bottom-2 right-3 text-xs text-muted-foreground pointer-events-none select-none"
-                >
-                  {description.length}/280
+                
+                {/* Category chips inline */}
+                {categories.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    {categories.map((cat) => (
+                      <Badge 
+                        key={cat} 
+                        variant="secondary" 
+                        className="text-xs gap-1 pr-1"
+                      >
+                        {cat}
+                        {!readonly && (
+                          <button
+                            onClick={() => removeCategory(cat)}
+                            className="ml-0.5 hover:bg-muted rounded-sm p-0.5"
+                            aria-label={`Rimuovi ${cat}`}
+                          >
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        )}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Save status inline */}
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {getSaveStatus()}
+                </span>
+                
+                {/* Toggle description visibility */}
+                {description && (
+                  <button
+                    onClick={() => setShowDescription(!showDescription)}
+                    className="text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-2"
+                  >
+                    {showDescription ? 'Nascondi descrizione' : 'Mostra descrizione'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              // Full metadata view (initial state)
+              <>
+                {/* Row 1: Name (7 cols) + Category (5 cols) */}
+                <div className="grid gap-6 md:grid-cols-12">
+                  {/* Name Field */}
+                  <div className="md:col-span-7 space-y-4">
+                    <Label 
+                      htmlFor="template-name" 
+                      className="text-sm font-normal text-[#4B5563]"
+                    >
+                      Nome
+                    </Label>
+                    <div className="space-y-2">
+                      <Input
+                        id="template-name"
+                        value={name}
+                        onChange={(e) => handleNameChange(e.target.value)}
+                        onBlur={() => validateName(name)}
+                        placeholder="Es: Piano Forza 8 Settimane"
+                        disabled={readonly}
+                        maxLength={80}
+                        aria-invalid={!!nameError}
+                        aria-describedby={nameError ? "name-error" : undefined}
+                        className="h-10 text-sm"
+                      />
+                      {nameError && (
+                        <p id="name-error" className="text-xs text-destructive">
+                          {nameError}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Category Field - Multi-select Combobox */}
+                  <div className="md:col-span-5 space-y-4">
+                    <Label 
+                      htmlFor="template-category" 
+                      className="text-sm font-normal text-[#4B5563]"
+                    >
+                      Categoria
+                    </Label>
+                    <div className="space-y-2">
+                      <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            id="template-category"
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={categoryOpen}
+                            disabled={readonly}
+                            className="w-full h-10 justify-between font-normal"
+                          >
+                            <span className="text-sm text-muted-foreground">
+                              {categories.length === 0 ? "Seleziona categoria..." : `${categories.length} selezionate`}
+                            </span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0" align="start">
+                          <Command>
+                            <CommandInput 
+                              placeholder="Cerca o aggiungi..." 
+                              value={categoryInput}
+                              onValueChange={setCategoryInput}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full"
+                                  onClick={() => categoryInput.trim() && addCategory(categoryInput)}
+                                >
+                                  Crea "{categoryInput}"
+                                </Button>
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {suggestedCategories
+                                  .filter(cat => !categories.includes(cat))
+                                  .map((cat) => (
+                                    <CommandItem
+                                      key={cat}
+                                      onSelect={() => addCategory(cat)}
+                                    >
+                                      {cat}
+                                    </CommandItem>
+                                  ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      
+                      {/* Selected Categories as Chips */}
+                      {categories.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {categories.map((cat) => (
+                            <Badge 
+                              key={cat} 
+                              variant="secondary" 
+                              className="gap-1 pr-1"
+                            >
+                              {cat}
+                              {!readonly && (
+                                <button
+                                  onClick={() => removeCategory(cat)}
+                                  className="ml-1 hover:bg-muted rounded-sm p-0.5"
+                                  aria-label={`Rimuovi ${cat}`}
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              )}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Description - collapsible in editor mode */}
+            {(!isEditorMode || showDescription) && (
+              <div className={`space-y-4 ${isEditorMode ? 'pt-2' : ''}`}>
+                {!isEditorMode && (
+                  <Label 
+                    htmlFor="template-description" 
+                    className="text-sm font-normal text-[#4B5563]"
+                  >
+                    Descrizione
+                  </Label>
+                )}
+                <div className="relative">
+                  <Textarea
+                    id="template-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value.slice(0, 280))}
+                    placeholder="Descrivi il template e gli obiettivi principali..."
+                    disabled={readonly}
+                    maxLength={280}
+                    rows={isEditorMode ? 1 : 2}
+                    aria-describedby="description-counter"
+                    className={`resize-y text-sm pr-16 ${isEditorMode ? 'min-h-[40px] max-h-[80px] border-0 bg-muted/30' : 'min-h-[64px] max-h-[180px]'}`}
+                  />
+                  <div
+                    id="description-counter"
+                    className="absolute bottom-2 right-3 text-xs text-muted-foreground pointer-events-none select-none"
+                  >
+                    {description.length}/280
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="pt-4">

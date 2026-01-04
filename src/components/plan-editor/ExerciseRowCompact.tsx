@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Copy, Trash2, StickyNote, MoreVertical } from "lucide-react";
 import { DraggableHandle } from "./DraggableHandle";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import {
   DropdownMenu,
@@ -31,11 +31,30 @@ export const ExerciseRowCompact = ({
   dragHandleProps,
 }: ExerciseRowCompactProps) => {
   const [notesExpanded, setNotesExpanded] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(!exercise.name);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const hasNotesOrGoals = Boolean(
     (exercise.notes && exercise.notes.trim()) ||
       (exercise.goal && exercise.goal.trim())
   );
+
+  // Auto-focus input when entering edit mode
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+  }, [isEditingName]);
+
+  const handleNameBlur = () => {
+    setIsEditingName(false);
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === "Escape") {
+      setIsEditingName(false);
+    }
+  };
 
   return (
     <div className="flex flex-col">
@@ -47,14 +66,27 @@ export const ExerciseRowCompact = ({
           dragHandleProps={dragHandleProps}
         />
 
-        <Input
-          value={exercise.name}
-          onChange={(e) => onUpdate({ name: e.target.value })}
-          placeholder="Nome esercizio"
-          disabled={readonly}
-          className="h-8 text-sm font-medium border-0 bg-transparent focus:bg-muted/20 focus:ring-1 focus:ring-primary/30"
-          aria-label="Nome esercizio"
-        />
+        {/* Display-first name: text until clicked, then input */}
+        {isEditingName || !exercise.name ? (
+          <Input
+            ref={nameInputRef}
+            value={exercise.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            onBlur={handleNameBlur}
+            onKeyDown={handleNameKeyDown}
+            placeholder="Nome esercizio"
+            disabled={readonly}
+            className="h-8 text-sm font-medium border-0 bg-transparent focus:bg-muted/20 focus:ring-1 focus:ring-primary/30 max-w-[260px] md:max-w-[320px]"
+            aria-label="Nome esercizio"
+          />
+        ) : (
+          <div
+            onClick={() => !readonly && setIsEditingName(true)}
+            className="h-8 flex items-center text-sm font-medium text-foreground cursor-text truncate max-w-[260px] md:max-w-[320px] px-3"
+          >
+            {exercise.name}
+          </div>
+        )}
 
         <Input
           type="number"
@@ -145,14 +177,27 @@ export const ExerciseRowCompact = ({
             disabled={readonly}
             dragHandleProps={dragHandleProps}
           />
-          <Input
-            value={exercise.name}
-            onChange={(e) => onUpdate({ name: e.target.value })}
-            placeholder="Nome esercizio"
-            disabled={readonly}
-            className="flex-1 h-9 text-sm font-medium border-0 bg-transparent focus:bg-muted/20"
-            aria-label="Nome esercizio"
-          />
+          {/* Mobile: Display-first name */}
+          {isEditingName || !exercise.name ? (
+            <Input
+              value={exercise.name}
+              onChange={(e) => onUpdate({ name: e.target.value })}
+              onBlur={handleNameBlur}
+              onKeyDown={handleNameKeyDown}
+              placeholder="Nome esercizio"
+              disabled={readonly}
+              className="flex-1 h-9 text-sm font-medium border-0 bg-transparent focus:bg-muted/20"
+              aria-label="Nome esercizio"
+              autoFocus
+            />
+          ) : (
+            <div
+              onClick={() => !readonly && setIsEditingName(true)}
+              className="flex-1 h-9 flex items-center text-sm font-medium text-foreground cursor-text truncate"
+            >
+              {exercise.name}
+            </div>
+          )}
           <Button
             variant="ghost"
             size="icon"

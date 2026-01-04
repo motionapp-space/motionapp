@@ -6,7 +6,7 @@ export const ExerciseTableHeader = ({ visible }: ExerciseTableHeaderProps) => {
   if (!visible) return null;
 
   return (
-    <div className="hidden sm:grid sm:grid-cols-[32px_1fr_60px_60px_70px_60px_40px_40px] items-center gap-1 px-2 py-1.5 text-xs uppercase tracking-wide text-muted-foreground border-b border-border/30">
+    <div className="hidden sm:grid sm:grid-cols-[32px_1fr_60px_60px_70px_60px_40px_40px] items-center gap-1 px-2 py-1 text-[11px] uppercase tracking-wider text-muted-foreground/70 border-b border-border/20">
       <span></span> {/* Drag handle */}
       <span className="pl-1">Esercizio</span>
       <span className="text-center">Serie</span>

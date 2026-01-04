@@ -183,8 +183,8 @@ export const PhaseSectionCompact = ({
         </div>
       ) : (
         <>
-          {/* Table Header - only for single exercises on desktop */}
-          <ExerciseTableHeader visible={groups.some(g => g.type === "single")} />
+          {/* Table Header - only show if 2+ single exercises */}
+          <ExerciseTableHeader visible={groups.filter(g => g.type === "single").length >= 2} />
           
           <DndContext
             sensors={sensors}
@@ -246,14 +246,30 @@ export const PhaseSectionCompact = ({
             </SortableContext>
           </DndContext>
           
-          {/* Quick Add - Always visible at end */}
+          {/* Quick Add - Always visible at end with ALL options */}
           {!readonly && (
-            <button
-              onClick={() => onAddGroup("single")}
-              className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2 py-2 transition-colors"
-            >
-              + Aggiungi esercizio
-            </button>
+            <div className="flex items-center gap-3 py-3 text-sm text-muted-foreground">
+              <button
+                onClick={() => onAddGroup("single")}
+                className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
+              >
+                + Aggiungi esercizio
+              </button>
+              <span className="text-muted-foreground/40">·</span>
+              <button
+                onClick={() => onAddGroup("superset")}
+                className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
+              >
+                Superset
+              </button>
+              <span className="text-muted-foreground/40">·</span>
+              <button
+                onClick={() => onAddGroup("circuit")}
+                className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
+              >
+                Circuit
+              </button>
+            </div>
           )}
         </>
       )}
