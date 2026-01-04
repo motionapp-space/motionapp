@@ -183,9 +183,8 @@ export const PhaseSectionCompact = ({
         </div>
       ) : (
         <>
-          {/* Table Header - only show if 2+ single exercises */}
-          <ExerciseTableHeader visible={groups.filter(g => g.type === "single").length >= 2} />
-          
+          {/* Table Header - show if phase has at least 1 exercise */}
+          <ExerciseTableHeader visible={totalExercises >= 1} />
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
