@@ -656,10 +656,10 @@ const TemplateEditor = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-[1280px]">
-        <div className="space-y-8">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 max-w-[1280px]">
+        <div className="space-y-6">
           {/* Metadata Section - Compact when in editor mode */}
-          <div className={`pb-6 border-b border-border transition-all ${isEditorMode ? 'space-y-3' : 'space-y-6'}`}>
+          <div className={`pb-4 border-b border-border transition-all ${isEditorMode ? 'space-y-2' : 'space-y-4'}`}>
             {isEditorMode ? (
               // Compact editor mode header
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -717,9 +717,9 @@ const TemplateEditor = () => {
               // Full metadata view (initial state)
               <>
                 {/* Row 1: Name (7 cols) + Category (5 cols) */}
-                <div className="grid gap-6 md:grid-cols-12">
+                <div className="grid gap-4 md:grid-cols-12">
                   {/* Name Field */}
-                  <div className="md:col-span-7 space-y-4">
+                  <div className="md:col-span-7 space-y-1.5">
                     <Label 
                       htmlFor="template-name" 
                       className="text-sm font-normal text-[#4B5563]"
@@ -737,7 +737,7 @@ const TemplateEditor = () => {
                         maxLength={80}
                         aria-invalid={!!nameError}
                         aria-describedby={nameError ? "name-error" : undefined}
-                        className="h-10 text-sm"
+                        className="h-9 text-sm"
                       />
                       {nameError && (
                         <p id="name-error" className="text-xs text-destructive">
@@ -748,7 +748,7 @@ const TemplateEditor = () => {
                   </div>
 
                   {/* Category Field - Multi-select Combobox */}
-                  <div className="md:col-span-5 space-y-4">
+                  <div className="md:col-span-5 space-y-1.5">
                     <Label 
                       htmlFor="template-category" 
                       className="text-sm font-normal text-[#4B5563]"
