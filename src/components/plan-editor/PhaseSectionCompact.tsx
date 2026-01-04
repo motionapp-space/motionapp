@@ -201,45 +201,51 @@ export const PhaseSectionCompact = ({
               })}
               strategy={verticalListSortingStrategy}
             >
-              <div className="space-y-0" data-drop-level="block-item">
+              <div data-drop-level="block-item">
                 {groups
                   .sort((a, b) => a.order - b.order)
-                  .map((group) => {
+                  .map((group, index) => {
+                    const isGroupBlock = group.type === "superset" || group.type === "circuit";
+                    // Add mt-4 between groups for visual separation
+                    const marginClass = index > 0 && isGroupBlock ? "mt-4" : "";
+                    
                     if (group.type === "single" && group.exercises.length === 1) {
                       const exercise = group.exercises[0];
                       return (
-                        <UnifiedSortableItem
-                          key={group.id}
-                          item={{ type: "exercise", exercise, groupId: group.id }}
-                          phaseType={phase.type}
-                          onUpdateExercise={(patch) => onUpdateExercise(group.id, exercise.id, patch)}
-                          onDuplicateExercise={() => onDuplicateExercise(group.id, exercise.id)}
-                          onDeleteExercise={() => onDeleteGroup(group.id)}
-                          readonly={readonly}
-                        />
+                        <div key={group.id} className={marginClass}>
+                          <UnifiedSortableItem
+                            item={{ type: "exercise", exercise, groupId: group.id }}
+                            phaseType={phase.type}
+                            onUpdateExercise={(patch) => onUpdateExercise(group.id, exercise.id, patch)}
+                            onDuplicateExercise={() => onDuplicateExercise(group.id, exercise.id)}
+                            onDeleteExercise={() => onDeleteGroup(group.id)}
+                            readonly={readonly}
+                          />
+                        </div>
                       );
                     }
 
                     return (
-                      <UnifiedSortableItem
-                        key={group.id}
-                        item={{ type: "group", group }}
-                        phaseType={phase.type}
-                        onUpdateGroup={(updates) => onUpdateGroup(group.id, updates)}
-                        onDuplicateGroup={() => onDuplicateGroup(group.id)}
-                        onDeleteGroup={() => onDeleteGroup(group.id)}
-                        onAddExercise={() => onAddExerciseToGroup(group.id)}
-                        onUpdateGroupExercise={(exerciseId, patch) =>
-                          onUpdateExercise(group.id, exerciseId, patch)
-                        }
-                        onDuplicateGroupExercise={(exerciseId) =>
-                          onDuplicateExercise(group.id, exerciseId)
-                        }
-                        onDeleteGroupExercise={(exerciseId) =>
-                          onDeleteExercise(group.id, exerciseId)
-                        }
-                        readonly={readonly}
-                      />
+                      <div key={group.id} className={index > 0 ? "mt-4" : ""}>
+                        <UnifiedSortableItem
+                          item={{ type: "group", group }}
+                          phaseType={phase.type}
+                          onUpdateGroup={(updates) => onUpdateGroup(group.id, updates)}
+                          onDuplicateGroup={() => onDuplicateGroup(group.id)}
+                          onDeleteGroup={() => onDeleteGroup(group.id)}
+                          onAddExercise={() => onAddExerciseToGroup(group.id)}
+                          onUpdateGroupExercise={(exerciseId, patch) =>
+                            onUpdateExercise(group.id, exerciseId, patch)
+                          }
+                          onDuplicateGroupExercise={(exerciseId) =>
+                            onDuplicateExercise(group.id, exerciseId)
+                          }
+                          onDeleteGroupExercise={(exerciseId) =>
+                            onDeleteExercise(group.id, exerciseId)
+                          }
+                          readonly={readonly}
+                        />
+                      </div>
                     );
                   })}
               </div>
