@@ -114,9 +114,9 @@ export const GroupCard = ({
   };
 
   return (
-    <div className="pl-4 border-l-2 border-primary/40 space-y-2 py-2">
+    <div className="pl-4 border-l-2 border-primary/40 space-y-3 py-3">
       {/* Header - Inline with shared params */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-3 py-1 flex-wrap">
         <DraggableHandle
           level="block-item"
           disabled={readonly}
@@ -127,8 +127,8 @@ export const GroupCard = ({
           variant="secondary"
           className={
             group.type === "superset"
-              ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100"
-              : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100"
+              ? "bg-primary/10 text-primary font-medium"
+              : "bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium"
           }
         >
           {group.type === "superset" ? "Superset" : "Circuit"}
@@ -137,7 +137,7 @@ export const GroupCard = ({
         <Input
           value={group.name || ""}
           onChange={(e) => onUpdateGroup({ name: e.target.value })}
-          className="max-w-[120px] h-7 border-0 bg-transparent font-medium text-sm focus:bg-muted/30"
+          className="max-w-[120px] h-7 border border-transparent bg-transparent font-medium text-sm transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0"
           placeholder="Nome"
           disabled={readonly}
         />
@@ -152,7 +152,7 @@ export const GroupCard = ({
               onChange={(e) =>
                 onUpdateGroup({ sharedSets: parseInt(e.target.value) || undefined })
               }
-              className="w-12 h-7 text-center border-0 bg-muted/30 text-sm"
+              className="w-12 h-7 text-center border border-transparent bg-transparent text-sm transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0"
               placeholder="4"
               disabled={readonly}
             />
@@ -162,7 +162,7 @@ export const GroupCard = ({
               onChange={(e) =>
                 onUpdateGroup({ sharedRestBetweenExercises: e.target.value })
               }
-              className="w-14 h-7 text-center border-0 bg-muted/30 text-sm"
+              className="w-14 h-7 text-center border border-transparent bg-transparent text-sm transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0"
               placeholder="30s"
               disabled={readonly}
             />
@@ -178,7 +178,7 @@ export const GroupCard = ({
               onChange={(e) =>
                 onUpdateGroup({ rounds: Math.max(1, parseInt(e.target.value) || 1) })
               }
-              className="w-12 h-7 text-center border-0 bg-muted/30 text-sm"
+              className="w-12 h-7 text-center border border-transparent bg-transparent text-sm transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0"
               min={1}
               disabled={readonly}
             />
@@ -186,7 +186,7 @@ export const GroupCard = ({
             <Input
               value={group.restBetweenRounds || ""}
               onChange={(e) => onUpdateGroup({ restBetweenRounds: e.target.value })}
-              className="w-14 h-7 text-center border-0 bg-muted/30 text-sm"
+              className="w-14 h-7 text-center border border-transparent bg-transparent text-sm transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0"
               placeholder="90s"
               disabled={readonly}
             />
@@ -262,7 +262,7 @@ export const GroupCard = ({
       {!readonly && (
         <button
           onClick={handleAddExercise}
-          className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2 py-1 transition-colors"
+          className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2 mt-2 transition-colors"
         >
           + Aggiungi esercizio
         </button>
