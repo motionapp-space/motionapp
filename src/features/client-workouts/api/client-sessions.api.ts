@@ -2,6 +2,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { getClientCoachClientId } from "@/lib/coach-client";
 import type { SessionStatus, SessionSource, ExerciseActual } from "@/features/sessions/types";
 
+export type PlanDaySnapshot = {
+  captured_at?: string;
+  plan_id?: string;
+  plan_name?: string;
+  day_id?: string;
+  day_title?: string;
+  day_structure?: any;
+  warning?: 'PLAN_NOT_FOUND' | 'DAY_NOT_FOUND' | string;
+};
+
 export interface ClientSession {
   id: string;
   status: SessionStatus;
@@ -10,6 +20,7 @@ export interface ClientSession {
   source: SessionSource;
   plan_id: string | null;
   day_id: string | null;
+  plan_day_snapshot: PlanDaySnapshot | null;
 }
 
 export async function getClientSessions(): Promise<ClientSession[]> {
@@ -17,7 +28,7 @@ export async function getClientSessions(): Promise<ClientSession[]> {
 
   const { data, error } = await supabase
     .from("training_sessions")
-    .select("id, status, started_at, ended_at, source, plan_id, day_id")
+    .select("id, status, started_at, ended_at, source, plan_id, day_id, plan_day_snapshot")
     .eq("coach_client_id", coachClientId)
     .eq("status", "completed")
     .order("started_at", { ascending: false })

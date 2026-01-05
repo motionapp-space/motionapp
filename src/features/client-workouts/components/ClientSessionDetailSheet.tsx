@@ -10,9 +10,10 @@ import { Clock, User, UserCheck } from "lucide-react";
 import { format, differenceInMinutes } from "date-fns";
 import { it } from "date-fns/locale";
 import { useClientSessionDetail } from "../hooks/useClientSessionDetail";
-import type { ClientSession } from "../api/client-sessions.api";
+import type { ClientSession, PlanDaySnapshot } from "../api/client-sessions.api";
 import type { ClientActivePlan } from "../api/client-plans.api";
 import type { ExerciseActual } from "@/features/sessions/types";
+import { findExerciseNameFromDayStructure } from "../utils/countExercisesFromDayStructure";
 
 interface ClientSessionDetailSheetProps {
   session: ClientSession | null;
@@ -27,18 +28,28 @@ interface GroupedActuals {
   sets: ExerciseActual[];
 }
 
+/**
+ * Groups actuals by exercise and resolves exercise names using snapshot-first approach:
+ * 1. Try snapshot.day_structure (immutable)
+ * 2. Fallback to active plan
+ * 3. Fallback to generic name
+ */
 function groupActualsByExercise(
   actuals: ExerciseActual[],
+  snapshot: PlanDaySnapshot | null,
   plan: ClientActivePlan | null | undefined
 ): GroupedActuals[] {
   const groups: Record<string, GroupedActuals> = {};
 
   for (const actual of actuals) {
     if (!groups[actual.exercise_id]) {
-      // Try to find exercise name from plan
-      let exerciseName = `Esercizio ${actual.exercise_id.slice(0, 8)}`;
+      // Snapshot-first: try to find exercise name from snapshot
+      let exerciseName = snapshot?.day_structure 
+        ? findExerciseNameFromDayStructure(snapshot.day_structure, actual.exercise_id)
+        : null;
       
-      if (plan?.data?.days) {
+      // Fallback to active plan if not found in snapshot
+      if (!exerciseName && plan?.data?.days) {
         for (const day of plan.data.days) {
           for (const phase of day.phases || []) {
             for (const group of phase.groups || []) {
@@ -49,7 +60,13 @@ function groupActualsByExercise(
               }
             }
           }
+          if (exerciseName) break;
         }
+      }
+
+      // Final fallback
+      if (!exerciseName) {
+        exerciseName = `Esercizio ${actual.exercise_id.slice(0, 8)}`;
       }
 
       groups[actual.exercise_id] = {
@@ -127,7 +144,7 @@ export function ClientSessionDetailSheet({
     : null;
 
   const isWithCoach = session.source === "with_coach";
-  const grouped = actuals ? groupActualsByExercise(actuals, plan) : [];
+  const grouped = actuals ? groupActualsByExercise(actuals, session.plan_day_snapshot, plan) : [];
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
