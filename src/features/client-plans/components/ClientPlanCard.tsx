@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import { ExternalLink, MoreVertical, Star, Copy, Trash2, FileText } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import type { ClientPlanWithActive } from "../types";
@@ -83,6 +85,31 @@ export function ClientPlanCard({
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
+                {/* Stella cliccabile con tooltip */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isActive) onSetActive?.();
+                      }}
+                      className={cn(
+                        "shrink-0 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm",
+                        isActive 
+                          ? "text-primary cursor-default" 
+                          : "text-muted-foreground hover:text-primary cursor-pointer"
+                      )}
+                      aria-label={isActive ? "Piano in uso" : "Imposta come piano in uso"}
+                    >
+                      <Star className={cn("h-5 w-5", isActive && "fill-current")} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {isActive ? "Piano in uso" : "Imposta come piano in uso"}
+                  </TooltipContent>
+                </Tooltip>
+                
                 <h3 className="text-lg font-semibold leading-tight">
                   {plan.name}
                 </h3>
@@ -96,18 +123,6 @@ export function ClientPlanCard({
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Primary action: Metti in uso (only for non-active plans) */}
-              {!isActive && onSetActive && (
-                <Button 
-                  variant="default" 
-                  size="sm"
-                  onClick={(e) => { e.stopPropagation(); onSetActive(); }}
-                  className="gap-1.5"
-                >
-                  <Star className="h-3.5 w-3.5" />
-                  Metti in uso
-                </Button>
-              )}
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
