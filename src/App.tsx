@@ -84,13 +84,14 @@ const App = () => {
     }
 
     const checkRole = async () => {
-      const { data: roleData } = await supabase
+      const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
+        .eq("user_id", user.id);
 
-      setIsCoach(roleData?.role === 'coach');
+      // User is coach if they have the 'coach' role (handles multiple roles)
+      const hasCoachRole = roles?.some(r => r.role === 'coach') ?? false;
+      setIsCoach(hasCoachRole);
     };
 
     checkRole();
