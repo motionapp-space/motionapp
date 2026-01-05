@@ -3,77 +3,16 @@ import { useClientEvents } from "@/features/events/hooks/useClientEvents";
 import { EventModal } from "@/features/events/components/EventModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Calendar, MapPin, ChevronRight } from "lucide-react";
+import { Plus, Calendar, MapPin, Clock } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addHours } from "date-fns";
 import { it } from "date-fns/locale";
-import { formatTimeRange } from "@/features/events/utils/calendar-utils";
+import { formatTimeRange, isEventInPast } from "@/features/events/utils/calendar-utils";
 import { cn } from "@/lib/utils";
 import type { EventWithClient } from "@/features/events/types";
 
 interface ClientAppointmentsTabProps {
   clientId: string;
-}
-
-function AppointmentCard({ 
-  event, 
-  onClick, 
-  isPast = false 
-}: { 
-  event: EventWithClient; 
-  onClick: () => void; 
-  isPast?: boolean;
-}) {
-  const startDate = parseISO(event.start_at);
-  const dayNumber = format(startDate, "d");
-  const monthAbbr = format(startDate, "MMM", { locale: it }).toUpperCase();
-  const timeRange = formatTimeRange(event.start_at, event.end_at, event.is_all_day);
-
-  return (
-    <Card
-      className={cn(
-        "cursor-pointer border border-border/60 transition-all group",
-        "hover:bg-muted/20 hover:border-border hover:shadow-sm",
-        isPast && "opacity-70"
-      )}
-      onClick={onClick}
-    >
-      <CardContent className="p-0">
-        <div className="flex items-stretch">
-          {/* Colonna sinistra: data */}
-          <div className="flex flex-col items-center justify-center w-16 shrink-0 py-3 bg-muted/30 rounded-l-lg">
-            <span className="text-xl font-semibold text-primary leading-none">
-              {dayNumber}
-            </span>
-            <span className="text-[10px] font-medium text-muted-foreground uppercase mt-0.5">
-              {monthAbbr}
-            </span>
-          </div>
-          
-          {/* Contenuto principale */}
-          <div className="flex-1 min-w-0 py-3 px-4 flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="font-medium text-sm leading-tight">
-                {timeRange}
-              </p>
-              <p className="text-sm text-muted-foreground mt-0.5 truncate">
-                {event.title}
-              </p>
-              {event.location && (
-                <p className="text-xs text-muted-foreground/80 mt-1 truncate flex items-center gap-1">
-                  <MapPin className="h-3 w-3 shrink-0" />
-                  {event.location}
-                </p>
-              )}
-            </div>
-            
-            {/* Chevron - visibile su hover (desktop), sempre visibile (mobile) */}
-            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) {
@@ -140,31 +79,84 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
         <>
           {upcomingEvents.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-xs font-medium tracking-widest text-muted-foreground/70 uppercase">
-                Prossimi ({upcomingEvents.length})
-              </h4>
+              <h4 className="text-sm font-medium text-muted-foreground">Prossimi ({upcomingEvents.length})</h4>
               {upcomingEvents.map((event) => (
-                <AppointmentCard
+                <Card
                   key={event.id}
-                  event={event}
-                  onClick={() => handleEventClick(event)}
-                />
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEventClick(event);
+                  }}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-base mb-1 truncate">{event.title}</h4>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">
+                              {format(parseISO(event.start_at), "EEEE, d MMMM yyyy", { locale: it })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span>{formatTimeRange(event.start_at, event.end_at, event.is_all_day)}</span>
+                          </div>
+                          {event.location && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate">{event.location}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
 
           {pastEvents.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-xs font-medium tracking-widest text-muted-foreground/70 uppercase">
-                Passati ({pastEvents.length})
-              </h4>
+              <h4 className="text-sm font-medium text-muted-foreground">Passati ({pastEvents.length})</h4>
               {pastEvents.map((event) => (
-                <AppointmentCard
+                <Card
                   key={event.id}
-                  event={event}
-                  onClick={() => handleEventClick(event)}
-                  isPast
-                />
+                  className="cursor-pointer hover:shadow-md transition-shadow opacity-75"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEventClick(event);
+                  }}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-base mb-1 truncate">{event.title}</h4>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">
+                              {format(parseISO(event.start_at), "EEEE, d MMMM yyyy", { locale: it })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span>{formatTimeRange(event.start_at, event.end_at, event.is_all_day)}</span>
+                          </div>
+                          {event.location && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate">{event.location}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
