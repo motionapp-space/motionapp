@@ -82,10 +82,10 @@ export function ClientPlanCard({
           {/* Top Row: Title + Badges + Menu */}
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold leading-tight mb-2">
-                {plan.name}
-              </h3>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-semibold leading-tight">
+                  {plan.name}
+                </h3>
                 {isActive && (
                   <Badge className="bg-primary/10 text-primary border-primary/20">
                     <Star className="h-3 w-3 mr-1 fill-current" />
