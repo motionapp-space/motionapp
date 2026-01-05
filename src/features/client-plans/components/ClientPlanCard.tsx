@@ -1,6 +1,4 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -77,112 +75,116 @@ export function ClientPlanCard({
   return (
     <>
       <Card 
-        className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
+        className="cursor-pointer border border-border/60 transition-colors duration-150 hover:bg-muted/20 hover:border-border"
         onClick={handleCardClick}
       >
-        <CardContent className="p-5">
-          {/* Top Row: Title + Badges + Menu */}
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Stella cliccabile con tooltip */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!isActive) onSetActive?.();
-                      }}
-                      className={cn(
-                        "shrink-0 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm",
-                        isActive 
-                          ? "text-primary cursor-default" 
-                          : "text-muted-foreground hover:text-primary cursor-pointer"
-                      )}
-                      aria-label={isActive ? "Piano in uso" : "Imposta come piano in uso"}
-                    >
-                      <Star className={cn("h-5 w-5", isActive && "fill-current")} />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    {isActive ? "Piano in uso" : "Imposta come piano in uso"}
-                  </TooltipContent>
-                </Tooltip>
-                
-                <h3 className="text-lg font-semibold leading-tight">
+        <CardContent className="p-5 md:p-5 p-4">
+          {/* Top Row: Star + Title/Status + Menu */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex gap-3 flex-1 min-w-0">
+              {/* Stella cliccabile con tooltip - centrata otticamente */}
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isActive) onSetActive?.();
+                    }}
+                    className={cn(
+                      "shrink-0 mt-0.5 p-1 -m-1 rounded-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                      isActive 
+                        ? "text-primary cursor-default" 
+                        : "text-muted-foreground hover:text-primary hover:bg-muted/30 cursor-pointer"
+                    )}
+                    aria-label={isActive ? "Piano in uso" : "Imposta come piano in uso"}
+                  >
+                    <Star className={cn("h-4 w-4", isActive && "fill-current")} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {isActive ? "Piano in uso" : "Imposta come piano in uso"}
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Colonna titolo + stato */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg md:text-xl font-semibold leading-6">
                   {plan.name}
                 </h3>
                 {isActive && (
-                  <Badge className="bg-primary/10 text-primary border-primary/20">
-                    <Star className="h-3 w-3 mr-1 fill-current" />
-                    In uso • Visibile al cliente
-                  </Badge>
+                  <p className="text-sm text-muted-foreground/80 mt-0.5">
+                    In uso · visibile al cliente
+                  </p>
                 )}
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(); }}>
-                    <FileText className="h-4 w-4 mr-2" />
-                    {toSentenceCase("Apri piano")}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    {toSentenceCase("Duplica piano")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSaveAsTemplate?.(); }}>
-                    <FileText className="h-4 w-4 mr-2" />
-                    {toSentenceCase("Salva come template")}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={handleDeleteClick}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {toSentenceCase("Elimina")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {/* Menu ⋮ allineato al titolo */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className="shrink-0 p-2 rounded-md text-muted-foreground transition-colors hover:bg-muted/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(); }}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  {toSentenceCase("Apri piano")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate?.(); }}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  {toSentenceCase("Duplica piano")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSaveAsTemplate?.(); }}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  {toSentenceCase("Salva come template")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleDeleteClick}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {toSentenceCase("Elimina")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
-          {/* Template Origin */}
-          {templateId && !isError && (
-            <div className="text-sm text-muted-foreground mb-2">
-              <span>{toSentenceCase("Da template")}: </span>
-              <button
-                type="button"
-                onClick={openTemplate}
-                className="text-primary hover:underline inline-flex items-center gap-1"
-              >
-                {template?.name || toSentenceCase("Caricamento...")}
-                <ExternalLink className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-
-          {/* Temporal Metadata */}
-          <div className="text-xs text-muted-foreground">
-            {toSentenceCase("Creato il")} {formatDate(plan.created_at)}
-            {" • "}
-            {toSentenceCase("Modificato il")} {formatDate(plan.updated_at)}
-            {plan.last_used_at && (
-              <>
-                {" • "}
-                {toSentenceCase("Ultimo utilizzo")} {formatDate(plan.last_used_at)}
-              </>
+          {/* Metadata block */}
+          <div className="mt-3 text-sm text-muted-foreground/80 space-y-1">
+            {/* Template Origin */}
+            {templateId && !isError && (
+              <div>
+                <span>{toSentenceCase("Da template")}: </span>
+                <button
+                  type="button"
+                  onClick={openTemplate}
+                  className="text-primary/90 hover:text-primary underline-offset-2 hover:underline inline-flex items-center gap-1"
+                >
+                  {template?.name || toSentenceCase("Caricamento...")}
+                  <ExternalLink className="h-3 w-3" />
+                </button>
+              </div>
             )}
+
+            {/* Temporal Metadata */}
+            <div>
+              {toSentenceCase("Creato il")} {formatDate(plan.created_at)}
+              <span className="text-muted-foreground/40"> · </span>
+              {toSentenceCase("Modificato il")} {formatDate(plan.updated_at)}
+              {plan.last_used_at && (
+                <>
+                  <span className="text-muted-foreground/40"> · </span>
+                  {toSentenceCase("Ultimo utilizzo")} {formatDate(plan.last_used_at)}
+                </>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
