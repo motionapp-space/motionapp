@@ -793,9 +793,12 @@ export type Database = {
       events: {
         Row: {
           aligned_to_slot: boolean | null
+          client_request_id: string | null
           coach_client_id: string
           color: string | null
           created_at: string
+          economic_type: string
+          economic_warning: string | null
           end_at: string
           id: string
           is_all_day: boolean | null
@@ -803,11 +806,15 @@ export type Database = {
           linked_plan_id: string | null
           location: string | null
           notes: string | null
+          order_payment_id: string | null
+          package_id: string | null
           proposal_status: string | null
           proposed_end_at: string | null
           proposed_start_at: string | null
           recurrence_rule: string | null
           reminder_offset_minutes: number | null
+          series_id: string | null
+          series_request_id: string | null
           session_status: string | null
           source: string | null
           start_at: string
@@ -816,9 +823,12 @@ export type Database = {
         }
         Insert: {
           aligned_to_slot?: boolean | null
+          client_request_id?: string | null
           coach_client_id: string
           color?: string | null
           created_at?: string
+          economic_type?: string
+          economic_warning?: string | null
           end_at: string
           id?: string
           is_all_day?: boolean | null
@@ -826,11 +836,15 @@ export type Database = {
           linked_plan_id?: string | null
           location?: string | null
           notes?: string | null
+          order_payment_id?: string | null
+          package_id?: string | null
           proposal_status?: string | null
           proposed_end_at?: string | null
           proposed_start_at?: string | null
           recurrence_rule?: string | null
           reminder_offset_minutes?: number | null
+          series_id?: string | null
+          series_request_id?: string | null
           session_status?: string | null
           source?: string | null
           start_at: string
@@ -839,9 +853,12 @@ export type Database = {
         }
         Update: {
           aligned_to_slot?: boolean | null
+          client_request_id?: string | null
           coach_client_id?: string
           color?: string | null
           created_at?: string
+          economic_type?: string
+          economic_warning?: string | null
           end_at?: string
           id?: string
           is_all_day?: boolean | null
@@ -849,11 +866,15 @@ export type Database = {
           linked_plan_id?: string | null
           location?: string | null
           notes?: string | null
+          order_payment_id?: string | null
+          package_id?: string | null
           proposal_status?: string | null
           proposed_end_at?: string | null
           proposed_start_at?: string | null
           recurrence_rule?: string | null
           reminder_offset_minutes?: number | null
+          series_id?: string | null
+          series_request_id?: string | null
           session_status?: string | null
           source?: string | null
           start_at?: string
@@ -874,6 +895,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_coach_client_details"
             referencedColumns: ["coach_client_id"]
+          },
+          {
+            foreignKeyName: "fk_events_package"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "package"
+            referencedColumns: ["package_id"]
           },
         ]
       }
@@ -1036,6 +1064,93 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_payments: {
+        Row: {
+          amount_cents: number
+          canceled_at: string | null
+          coach_client_id: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          due_at: string | null
+          event_id: string | null
+          id: string
+          kind: string
+          note: string | null
+          package_id: string | null
+          paid_at: string | null
+          status: string
+        }
+        Insert: {
+          amount_cents: number
+          canceled_at?: string | null
+          coach_client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          due_at?: string | null
+          event_id?: string | null
+          id?: string
+          kind: string
+          note?: string | null
+          package_id?: string | null
+          paid_at?: string | null
+          status?: string
+        }
+        Update: {
+          amount_cents?: number
+          canceled_at?: string | null
+          coach_client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          due_at?: string | null
+          event_id?: string | null
+          id?: string
+          kind?: string
+          note?: string | null
+          package_id?: string | null
+          paid_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_order_coach_client"
+            columns: ["coach_client_id"]
+            isOneToOne: false
+            referencedRelation: "coach_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_order_coach_client"
+            columns: ["coach_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_coach_client_details"
+            referencedColumns: ["coach_client_id"]
+          },
+          {
+            foreignKeyName: "fk_order_event"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "package"
+            referencedColumns: ["package_id"]
           },
         ]
       }
@@ -1281,54 +1396,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "coaches"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      payment: {
-        Row: {
-          amount_cents: number
-          created_at: string
-          created_by: string | null
-          currency_code: string
-          kind: string
-          note: string | null
-          package_id: string
-          payment_id: string
-        }
-        Insert: {
-          amount_cents: number
-          created_at?: string
-          created_by?: string | null
-          currency_code?: string
-          kind: string
-          note?: string | null
-          package_id: string
-          payment_id?: string
-        }
-        Update: {
-          amount_cents?: number
-          created_at?: string
-          created_by?: string | null
-          currency_code?: string
-          kind?: string
-          note?: string | null
-          package_id?: string
-          payment_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payment_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "coaches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: false
-            referencedRelation: "package"
-            referencedColumns: ["package_id"]
           },
         ]
       }
@@ -1707,8 +1774,24 @@ export type Database = {
       }
     }
     Functions: {
+      cancel_event_with_ledger: {
+        Args: { p_actor: string; p_event_id: string; p_now?: string }
+        Returns: Json
+      }
+      cancel_series_with_ledger: {
+        Args: { p_actor: string; p_now?: string; p_series_id: string }
+        Returns: Json
+      }
       capture_session_snapshot: {
         Args: { p_session_id: string }
+        Returns: boolean
+      }
+      check_client_owns_coach_client: {
+        Args: { p_coach_client_id: string }
+        Returns: boolean
+      }
+      check_coach_owns_coach_client: {
+        Args: { p_coach_client_id: string }
         Returns: boolean
       }
       compute_client_table_data_batch: {
@@ -1722,14 +1805,61 @@ export type Database = {
           plan_weeks_since_assignment: number
         }[]
       }
+      create_event_with_economics: {
+        Args: {
+          p_amount_cents?: number
+          p_client_request_id?: string
+          p_coach_client_id: string
+          p_economic_type: string
+          p_end_at: string
+          p_location?: string
+          p_notes?: string
+          p_package_id?: string
+          p_series_id?: string
+          p_start_at: string
+          p_title: string
+        }
+        Returns: string
+      }
+      create_event_with_economics_internal: {
+        Args: {
+          p_amount_cents?: number
+          p_client_request_id?: string
+          p_coach_client_id: string
+          p_economic_type: string
+          p_end_at: string
+          p_location?: string
+          p_notes?: string
+          p_package_id?: string
+          p_series_id?: string
+          p_series_request_id?: string
+          p_source?: string
+          p_start_at: string
+          p_title: string
+        }
+        Returns: string
+      }
+      create_recurring_series_with_economics: {
+        Args: {
+          p_amount_cents?: number
+          p_coach_client_id: string
+          p_economic_type: string
+          p_events: Json
+          p_package_id?: string
+          p_series_request_id?: string
+        }
+        Returns: Json
+      }
       delete_plan: {
         Args: { p_coach_client_id: string; p_plan_id: string }
         Returns: boolean
       }
+      expire_packages: { Args: { p_now?: string }; Returns: Json }
       finalize_booking_request: {
         Args: { p_request_id: string }
         Returns: string
       }
+      finalize_past_events: { Args: { p_now?: string }; Returns: Json }
       get_coach_occupied_slots: {
         Args: { p_coach_id: string; p_end_date: string; p_start_date: string }
         Returns: {
@@ -1759,6 +1889,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      select_fefo_package_internal: {
+        Args: {
+          p_coach_client_id: string
+          p_latest_end?: string
+          p_required_sessions?: number
+        }
+        Returns: string
       }
       set_active_plan: {
         Args: { p_coach_client_id: string; p_plan_id?: string }

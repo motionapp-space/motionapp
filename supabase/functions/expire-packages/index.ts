@@ -17,19 +17,19 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    console.log('Starting finalize_past_events...');
+    console.log('Starting expire_packages...');
     
-    const { data, error } = await supabase.rpc('finalize_past_events');
+    const { data, error } = await supabase.rpc('expire_packages');
     
     if (error) {
-      console.error('Error finalizing events:', error);
+      console.error('Error expiring packages:', error);
       return new Response(JSON.stringify({ error: error.message }), { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log('Finalized events result:', data);
+    console.log('Expired packages result:', data);
     
     return new Response(JSON.stringify(data), { 
       status: 200,
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     });
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Fatal error in auto-complete-events:', err);
+    console.error('Fatal error in expire-packages:', err);
     return new Response(JSON.stringify({ error: errorMessage }), { 
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
