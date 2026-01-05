@@ -8,9 +8,13 @@ export function useUpdateClient(clientId: string) {
 
   return useMutation<Client, Error, UpdateClientInput>({
     mutationFn: (input) => updateClient(clientId, input),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      qc.invalidateQueries({ queryKey: ["client", clientId] });
+    onSuccess: (updated) => {
+      // Update ottimistico del detail
+      qc.setQueryData(["client", clientId], (old: Client | undefined) =>
+        old ? { ...old, ...updated } : updated
+      );
+      // Invalida liste clienti
+      qc.invalidateQueries({ queryKey: ["clients"], exact: false });
       toast.success("Cliente aggiornato con successo");
     },
     onError: (error) => {

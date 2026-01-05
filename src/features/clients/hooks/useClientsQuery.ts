@@ -60,7 +60,7 @@ export function useClientsQuery(filters: ClientsFilters) {
     }],
     queryFn: () => listClients(filters),
     placeholderData: keepPreviousData,
-    staleTime: 0,
+    
     enabled: isAuthenticated === true,
   });
 

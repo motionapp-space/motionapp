@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createSession } from "../api/sessions.api";
 import { toast } from "sonner";
 import { logClientActivity } from "@/features/clients/api/activities.api";
-import { useSessionStore } from "@/stores/useSessionStore";
+
 import { getCoachClientDetails } from "@/lib/coach-client";
 
 export function useCreateSession() {
@@ -23,8 +23,8 @@ export function useCreateSession() {
 
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       
-      // Aggiorna immediatamente lo store globale per riflettere la sessione attiva
-      useSessionStore.getState().fetchActiveSession();
+      // Invalida la query della sessione attiva per refetch
+      queryClient.invalidateQueries({ queryKey: ["activeSession"] });
     },
     onError: (error: Error) => {
       toast.error("Errore", {

@@ -69,10 +69,13 @@ export function useCancelEvent() {
       }
 
       // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
-      queryClient.invalidateQueries({ queryKey: ["packages"] });
-      queryClient.invalidateQueries({ queryKey: ["package-ledger"] });
+      queryClient.invalidateQueries({ queryKey: ["events"], exact: false });
+      
+      // Solo se ha package, invalida package-related queries
+      if (hasPackage) {
+        queryClient.invalidateQueries({ queryKey: ["packages"], exact: false });
+        queryClient.invalidateQueries({ queryKey: ["package-ledger"], exact: false });
+      }
 
       // Show appropriate toast
       if (!hasPackage) {
