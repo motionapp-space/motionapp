@@ -82,12 +82,9 @@ export function ClientPlansTab({
         <div className="mt-6">
           {/* Section: Piano in uso */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-xs font-medium tracking-widest text-muted-foreground/70 uppercase">
-                Piano in uso
-              </h3>
-              <span className="text-xs text-muted-foreground/50">— visibile al cliente</span>
-            </div>
+            <h3 className="text-xs font-medium tracking-widest text-muted-foreground/70 uppercase mb-3">
+              Piano in uso
+            </h3>
             
             {activePlan ? (
               <ClientPlanCard
