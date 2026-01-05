@@ -92,14 +92,18 @@ export function ClientPlanCard({
                       if (!isActive) onSetActive?.();
                     }}
                     className={cn(
-                      "shrink-0 mt-0.5 p-1 -m-1 rounded-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                      "shrink-0 mt-0.5 p-1 -m-1 rounded-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                       isActive 
                         ? "text-primary cursor-default" 
-                        : "text-muted-foreground hover:text-primary hover:bg-muted/30 cursor-pointer"
+                        : "text-muted-foreground hover:text-primary cursor-pointer group/star"
                     )}
                     aria-label={isActive ? "Piano in uso" : "Imposta come piano in uso"}
                   >
-                    <Star className={cn("h-4 w-4", isActive && "fill-current")} />
+                    <Star className={cn(
+                      "h-4 w-4 transition-all",
+                      isActive && "fill-current",
+                      !isActive && "group-hover/star:fill-primary/20"
+                    )} />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top">
