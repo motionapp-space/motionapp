@@ -26,8 +26,7 @@ export function useUpdateEvent() {
         console.warn("Could not get client details for activity log:", error);
       }
 
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["events"], exact: false });
       toast({
         title: "Appuntamento aggiornato",
         description: "L'appuntamento è stato aggiornato con successo.",

@@ -1,44 +1,23 @@
 import { create } from "zustand";
 import type { TrainingSessionWithClient } from "@/features/sessions/types";
-import { getActiveSession } from "@/features/sessions/api/sessions.api";
 
 interface SessionStore {
   activeSession: TrainingSessionWithClient | null;
-  isLoading: boolean;
   isPaused: boolean;
   pausedAt: number | null;
   accumulatedPauseTime: number;
-  fetchActiveSession: () => Promise<void>;
   clearActiveSession: () => void;
   setActiveSession: (session: TrainingSessionWithClient | null) => void;
   pauseSession: () => void;
   resumeSession: () => void;
   getElapsedSeconds: () => number;
-  startPolling: () => void;
-  stopPolling: () => void;
 }
-
-let pollingInterval: NodeJS.Timeout | null = null;
 
 export const useSessionStore = create<SessionStore>((set, get) => ({
   activeSession: null,
-  isLoading: false,
   isPaused: false,
   pausedAt: null,
   accumulatedPauseTime: 0,
-
-  fetchActiveSession: async () => {
-    try {
-      set({ isLoading: true });
-      const session = await getActiveSession();
-      set({ activeSession: session });
-    } catch (error) {
-      console.error("Error fetching active session:", error);
-      set({ activeSession: null });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
 
   clearActiveSession: () => {
     set({ 
@@ -81,24 +60,5 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     const totalElapsed = now - started - accumulatedPauseTime;
     
     return Math.max(0, Math.floor(totalElapsed / 1000));
-  },
-
-  startPolling: () => {
-    // Clear any existing polling
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
-
-    // Poll every 30 seconds
-    pollingInterval = setInterval(() => {
-      get().fetchActiveSession();
-    }, 30000);
-  },
-
-  stopPolling: () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-      pollingInterval = null;
-    }
   },
 }));

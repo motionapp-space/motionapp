@@ -1,9 +1,14 @@
+import { useState, useEffect, useRef } from "react";
+import { User } from "@supabase/supabase-js";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { queryClient } from "@/lib/queryClient";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { TopbarProvider } from "@/contexts/TopbarContext";
+import { supabase } from "@/integrations/supabase/client";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -31,19 +36,19 @@ import ClientAllAppointments from "./pages/client/ClientAllAppointments";
 import ClientAppLayout from "./components/client/ClientAppLayout";
 import CoachLayout from "./components/CoachLayout";
 import { ScrollToTop } from "@/components/ScrollToTop";
-import { useSessionStore } from "@/stores/useSessionStore";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
-import { useRef } from "react";
+import { useSessionBridge } from "@/hooks/useSessionBridge";
 
-const queryClient = new QueryClient();
+// Componente separato per inizializzare il bridge sessioni per i coach
+function CoachSessionInitializer({ userId }: { userId: string }) {
+  useSessionBridge(userId);
+  return null;
+}
 
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const previousUserIdRef = useRef<string | null>(null);
-  const { fetchActiveSession, startPolling, stopPolling } = useSessionStore();
+  const [isCoach, setIsCoach] = useState(false);
 
   // Auth state initialization - runs ONCE on mount
   useEffect(() => {
@@ -71,39 +76,25 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []); // NO dependencies - runs once on mount
 
-  // Initialize session store when user logs in (only for coaches, not clients)
+  // Check if user is coach
   useEffect(() => {
     if (!user) {
-      stopPolling();
+      setIsCoach(false);
       return;
     }
 
-    let cancelled = false;
-
-    const initializeForCoach = async () => {
-      // Check user role from user_roles table (Unified Identity pattern)
+    const checkRole = async () => {
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (cancelled) return;
-
-      // Only coaches should fetch active session and start polling
-      if (roleData?.role === 'coach') {
-        fetchActiveSession();
-        startPolling();
-      }
+      setIsCoach(roleData?.role === 'coach');
     };
 
-    initializeForCoach();
-
-    return () => {
-      cancelled = true;
-      stopPolling();
-    };
-  }, [user?.id, fetchActiveSession, startPolling, stopPolling]);
+    checkRole();
+  }, [user?.id]);
 
   if (loading) {
     return (
@@ -141,6 +132,9 @@ const App = () => {
             <Route path="/booking/:coachId" element={<ClientBooking />} />
 
             {/* Coach area routes - require authentication */}
+            {/* Initialize session bridge for coaches */}
+            {isCoach && user && <CoachSessionInitializer userId={user.id} />}
+            
             <Route element={<CoachLayout isAuthenticated={!!user} />}>
               <Route path="/" element={<Clients />} />
               <Route path="/library" element={<Library />} />
@@ -161,6 +155,7 @@ const App = () => {
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   );
 };

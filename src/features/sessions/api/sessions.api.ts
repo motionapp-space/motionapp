@@ -138,15 +138,15 @@ export async function deleteSession(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function getActiveSession(): Promise<TrainingSessionWithClient | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+export async function getActiveSession(userId?: string): Promise<TrainingSessionWithClient | null> {
+  const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+  if (!uid) return null;
 
   // Get coach_clients for this coach
   const { data: coachClients } = await supabase
     .from("coach_clients")
     .select("id, client_id")
-    .eq("coach_id", user.id);
+    .eq("coach_id", uid);
 
   if (!coachClients || coachClients.length === 0) return null;
 
