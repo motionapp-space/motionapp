@@ -294,34 +294,27 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Step 1: Create the client (no coach_id needed anymore)
-  const { data: client, error } = await supabase
+  // Use atomic RPC function to create client + coach_client relationship in one transaction
+  const { data: clientId, error: rpcError } = await supabase.rpc("create_client_with_coach_link", {
+    p_first_name: input.first_name,
+    p_last_name: input.last_name,
+    p_email: input.email || null,
+    p_phone: input.phone || null,
+    p_fiscal_code: input.fiscal_code || null,
+    p_notes: input.notes || null,
+  });
+
+  if (rpcError) throw rpcError;
+  if (!clientId) throw new Error("Failed to create client");
+
+  // Now fetch the created client (relationship exists, so SELECT RLS will pass)
+  const { data: client, error: fetchError } = await supabase
     .from("clients")
-    .insert({
-      ...input,
-      status: "POTENZIALE",
-    })
-    .select()
+    .select("*")
+    .eq("id", clientId)
     .single();
 
-  if (error) throw error;
-
-  // Step 2: Create the coach_clients relationship
-  const { error: relationError } = await supabase
-    .from("coach_clients")
-    .insert({
-      coach_id: user.id,
-      client_id: client.id,
-      role: "primary",
-      status: "active",
-    });
-
-  if (relationError) {
-    console.error("Failed to create coach_clients relationship:", relationError);
-    // Try to clean up the orphan client
-    await supabase.from("clients").delete().eq("id", client.id);
-    throw relationError;
-  }
+  if (fetchError) throw fetchError;
 
   return client;
 }
