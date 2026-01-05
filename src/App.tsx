@@ -115,6 +115,8 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <ScrollToTop />
+          {/* Initialize session bridge for coaches - outside Routes */}
+          {isCoach && user && <CoachSessionInitializer userId={user.id} />}
           <Routes>
             {/* Client area routes - always accessible, no coach auth required */}
             <Route path="/client/auth" element={<ClientAuth />} />
@@ -133,9 +135,6 @@ const App = () => {
             <Route path="/booking/:coachId" element={<ClientBooking />} />
 
             {/* Coach area routes - require authentication */}
-            {/* Initialize session bridge for coaches */}
-            {isCoach && user && <CoachSessionInitializer userId={user.id} />}
-            
             <Route element={<CoachLayout isAuthenticated={!!user} />}>
               <Route path="/" element={<Clients />} />
               <Route path="/library" element={<Library />} />
