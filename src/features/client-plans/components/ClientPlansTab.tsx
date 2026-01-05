@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FileText, Plus, Star } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import { toSentenceCase } from "@/lib/text";
 import { ClientPlanCard } from "./ClientPlanCard";
 import { CreatePlanDialog } from "./CreatePlanDialog";
@@ -46,13 +46,13 @@ export function ClientPlansTab({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-3">
-        <div className="flex items-start justify-between gap-4">
+      <div>
+        <div className="flex items-baseline justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight">
               {toSentenceCase("Piani di allenamento")}
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground/80 leading-5 mt-1">
               Il piano "In uso" è quello visibile al cliente e usato per scegliere i giorni quando crei una nuova sessione.
             </p>
           </div>
@@ -79,14 +79,14 @@ export function ClientPlansTab({
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="mt-6">
           {/* Section: Piano in uso */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Star className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-xs font-medium tracking-widest text-muted-foreground/70 uppercase">
                 Piano in uso
               </h3>
+              <span className="text-xs text-muted-foreground/50">— visibile al cliente</span>
             </div>
             
             {activePlan ? (
@@ -99,7 +99,7 @@ export function ClientPlansTab({
                 onSaveAsTemplate={() => onSaveAsTemplate(activePlan.id)}
               />
             ) : (
-              <Card className="border-dashed">
+              <Card className="border-dashed border-border/60">
                 <CardContent className="py-8 text-center">
                   <p className="text-sm text-muted-foreground">
                     Nessun piano in uso. Imposta un piano come in uso per renderlo visibile al cliente.
@@ -111,11 +111,11 @@ export function ClientPlansTab({
 
           {/* Section: Altri piani */}
           {otherPlans.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            <div className="mt-8">
+              <h3 className="text-xs font-medium tracking-widest text-muted-foreground/70 uppercase mb-3">
                 Altri piani
               </h3>
-              <div className="grid gap-3">
+              <div className="space-y-4">
                 {otherPlans.map((plan) => (
                   <ClientPlanCard
                     key={plan.id}
