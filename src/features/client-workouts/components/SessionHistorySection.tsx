@@ -11,6 +11,7 @@ import { ClientSessionDetailSheet } from "./ClientSessionDetailSheet";
 import type { ClientSession } from "../api/client-sessions.api";
 import type { ClientActivePlan } from "../api/client-plans.api";
 import { countDayExercises } from "../utils/plan-utils";
+import { countExercisesFromDayStructure } from "../utils/countExercisesFromDayStructure";
 
 interface SessionHistorySectionProps {
   sessions: ClientSession[] | undefined;
@@ -71,13 +72,19 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
         </Card>
       ) : (
         <div className="space-y-2">
-          {displayedSessions?.map((session) => {
-            const day = session.day_id && plan?.data?.days
+        {displayedSessions?.map((session) => {
+            // Snapshot-first: use snapshot as primary source, fallback to active plan
+            const snapshot = session.plan_day_snapshot;
+            const dayFromPlan = !snapshot && session.day_id && plan?.data?.days
               ? plan.data.days.find(d => d.id === session.day_id)
               : null;
 
-            const title = day?.title || "Sessione di allenamento";
-            const totalExercises = day ? countDayExercises(day) : 0;
+            const title = snapshot?.day_title ?? dayFromPlan?.title ?? "Sessione di allenamento";
+            
+            const totalExercises = snapshot?.day_structure 
+              ? countExercisesFromDayStructure(snapshot.day_structure)
+              : (dayFromPlan ? countDayExercises(dayFromPlan) : 0);
+            
             // For now, we use totalExercises as completed since we don't have partial tracking yet
             const completedExercises = totalExercises;
 

@@ -9,7 +9,6 @@ import { ClientEmptyState } from "@/components/client/ClientEmptyState";
 import { ClientSessionDetailSheet } from "./ClientSessionDetailSheet";
 import type { ClientSession } from "../api/client-sessions.api";
 import type { ClientActivePlan } from "../api/client-plans.api";
-import type { PlanDaySnapshot } from "@/features/client-plans/types";
 
 interface ClientSessionHistoryListProps {
   sessions: ClientSession[] | undefined;
@@ -63,13 +62,13 @@ export function ClientSessionHistoryList({ sessions, plan, isLoading }: ClientSe
               ? format(startDate, "HH:mm")
               : undefined;
 
-          // Use snapshot first (immutable history), then fallback to current plan
-          const snapshot = (session as any).plan_day_snapshot as PlanDaySnapshot | null;
+          // Snapshot-first: use snapshot as primary source, fallback to active plan
+          const snapshot = session.plan_day_snapshot;
           const dayName = snapshot?.day_title 
-            || (session.day_id && plan?.data?.days
+            ?? (session.day_id && plan?.data?.days
                 ? plan.data.days.find(d => d.id === session.day_id)?.title
                 : undefined)
-            || "Sessione di allenamento";
+            ?? "Sessione di allenamento";
 
           const isWithCoach = session.source === "with_coach";
 
