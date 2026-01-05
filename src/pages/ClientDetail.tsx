@@ -168,7 +168,7 @@ const ClientDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Content */}
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6">
         {/* Next Steps Panel - mostrato solo se il cliente non ha piani né appuntamenti */}
         {!onboardingState.isLoading && onboardingState.needsOnboarding && (
           <NextStepsPanel
