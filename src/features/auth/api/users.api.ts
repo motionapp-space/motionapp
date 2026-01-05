@@ -31,19 +31,23 @@ export async function getCurrentUserWithRole(): Promise<UserWithRole | null> {
       return null;
     }
 
-    // Fetch role from user_roles table
-    const { data: roleData, error: roleError } = await supabase
+    // Fetch all roles from user_roles table (user may have multiple roles)
+    const { data: rolesData, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', authUser.id)
-      .maybeSingle();
+      .eq('user_id', authUser.id);
 
     if (roleError) {
-      console.error('Error fetching user role:', roleError);
+      console.error('Error fetching user roles:', roleError);
     }
 
-    // Cast the role string to AppRole type
-    const role = (roleData?.role as AppRole) || 'client';
+    // Prioritize 'coach' role if present, otherwise 'client', then fallback
+    const roles = rolesData?.map(r => r.role as AppRole) || [];
+    const role: AppRole = roles.includes('coach') 
+      ? 'coach' 
+      : roles.includes('client') 
+        ? 'client' 
+        : 'client';
 
     return {
       id: profile.id,
@@ -72,18 +76,22 @@ export async function getCurrentUserRole(): Promise<AppRole | null> {
       return null;
     }
 
-    const { data: roleData, error: roleError } = await supabase
+    // Fetch all roles (user may have multiple roles)
+    const { data: rolesData, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', authUser.id)
-      .maybeSingle();
+      .eq('user_id', authUser.id);
 
     if (roleError) {
-      console.error('Error fetching user role:', roleError);
+      console.error('Error fetching user roles:', roleError);
       return null;
     }
 
-    return (roleData?.role as AppRole) || null;
+    // Prioritize 'coach' role if present
+    const roles = rolesData?.map(r => r.role as AppRole) || [];
+    return roles.includes('coach') 
+      ? 'coach' 
+      : roles[0] || null;
   } catch (error) {
     console.error('Unexpected error in getCurrentUserRole:', error);
     return null;
