@@ -111,23 +111,12 @@ export function PackageTab({ clientId }: PackageTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Info Alert */}
-      {hasActivePackage && (
-        <Alert className="bg-info/10 border-info rounded-2xl">
-          <Info className="h-4 w-4 text-info" />
-          <AlertDescription className="text-sm">
-            Puoi mantenere un solo pacchetto attivo per cliente. Completa o archivia il pacchetto corrente per crearne uno nuovo.
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* Section Header with Button */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Pacchetti attivi</h3>
         {(activePackages.length > 0 || completedPackages.length > 0) && (
           <Button 
             onClick={() => setDialogOpen(true)}
-            disabled={hasActivePackage}
             size="sm"
             className="gap-2"
           >
