@@ -86,7 +86,11 @@ export function PackageCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge 
-                  variant={pkg.payment_status === 'paid' ? 'default' : 'outline'}
+                  variant={
+                    pkg.payment_status === 'paid' ? 'default' : 
+                    pkg.payment_status === 'unpaid' ? 'destructive' : 
+                    'secondary'
+                  }
                   className="cursor-help"
                 >
                   {paymentInfo.label}
@@ -239,14 +243,6 @@ export function PackageCard({
         </Alert>
       )}
 
-      {pkg.payment_status === 'unpaid' && (
-        <Alert className="bg-warning/10 border-warning">
-          <AlertCircle className="h-4 w-4 text-warning" />
-          <AlertDescription className="text-sm text-warning-foreground">
-            Questo pacchetto risulta ancora da pagare.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <PaymentStatusDialog
         open={paymentDialogOpen}
