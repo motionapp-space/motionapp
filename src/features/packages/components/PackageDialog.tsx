@@ -54,32 +54,46 @@ export function PackageDialog({
     },
   });
 
-  // Update coach_client_id when it changes
+  // Reset form when dialog opens
   useEffect(() => {
-    setValue("coach_client_id", coachClientId);
-  }, [coachClientId, setValue]);
+    if (open) {
+      setSelectedSessions(5);
+      setCustomPrice(false);
+      setCustomDuration(false);
+      reset({
+        coach_client_id: coachClientId,
+        total_sessions: 5,
+        name: suggestPackageName(5),
+        duration_months: 3,
+      });
+    }
+  }, [open, coachClientId, reset]);
 
   const priceValue = watch("price_total_cents");
   const durationValue = watch("duration_months");
 
-  // Update default price and duration when sessions change
+  // Update default price and duration when sessions change or dialog opens
   useEffect(() => {
-    if (settings) {
+    if (settings && open) {
       // Set default price if not custom
       if (!customPrice) {
         const priceKey = `sessions_${selectedSessions}_price` as keyof typeof settings;
         const defaultPrice = settings[priceKey] as number;
-        setValue("price_total_cents", defaultPrice);
+        if (defaultPrice !== undefined) {
+          setValue("price_total_cents", defaultPrice);
+        }
       }
       
       // Set default duration if not custom
       if (!customDuration) {
         const durationKey = `sessions_${selectedSessions}_duration` as keyof typeof settings;
         const defaultDuration = settings[durationKey] as number;
-        setValue("duration_months", defaultDuration);
+        if (defaultDuration !== undefined) {
+          setValue("duration_months", defaultDuration);
+        }
       }
     }
-  }, [selectedSessions, settings, customPrice, customDuration, setValue]);
+  }, [selectedSessions, settings, customPrice, customDuration, setValue, open]);
 
   const handleSessionsChange = (value: string) => {
     const sessions = parseInt(value);
@@ -177,7 +191,7 @@ export function PackageDialog({
                 type="number"
                 step="0.01"
                 min="0"
-                value={priceValue ? (priceValue / 100).toFixed(2) : ""}
+                value={priceValue != null ? (priceValue / 100).toFixed(2) : ""}
                 onChange={handlePriceChange}
                 placeholder="0.00"
               />
