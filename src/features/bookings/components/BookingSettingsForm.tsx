@@ -249,7 +249,7 @@ export function BookingSettingsForm() {
         <CardHeader>
           <CardTitle>Prenotazioni</CardTitle>
           <CardDescription>
-            Gestisci le prenotazioni self-service dei tuoi clienti
+            Gestisci le regole di cancellazione e le prenotazioni dei clienti
           </CardDescription>
         </CardHeader>
         <CardContent className={cn("space-y-8", hasUnsavedChanges && "pb-24")}>
@@ -260,7 +260,7 @@ export function BookingSettingsForm() {
                 <div className="space-y-1">
                   <h4 className="text-lg font-semibold">Cancellazione tardiva</h4>
                   <p className="text-sm text-muted-foreground">
-                    Regole per le cancellazioni a ridosso dell'appuntamento
+                    Regole applicate a tutti gli appuntamenti
                   </p>
                 </div>
 
@@ -305,7 +305,9 @@ export function BookingSettingsForm() {
                         </SelectContent>
                       </Select>
                       <p className="text-sm text-muted-foreground leading-relaxed">
-                        Questa regola si applica a tutti gli appuntamenti, anche se le prenotazioni self-service sono disattivate.
+                        Se un appuntamento viene cancellato dopo questo limite:<br />
+                        – le lezioni da pacchetto vengono scalate<br />
+                        – le lezioni singole risultano dovute
                       </p>
                     </FormItem>
                   )}
@@ -344,19 +346,11 @@ export function BookingSettingsForm() {
                 />
               </div>
 
-              {/* Disabled State - Informative Card */}
+              {/* Disabled State - Discrete text */}
               {!form.watch("enabled") && (
-                <Card className="border-dashed bg-muted/20">
-                  <CardContent className="py-8 text-center">
-                    <div className="space-y-3">
-                      <CalendarX className="h-10 w-10 mx-auto text-muted-foreground" />
-                      <h4 className="text-lg font-semibold">Prenotazioni disabilitate</h4>
-                      <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-                        Le prenotazioni self-service sono disabilitate. I tuoi clienti non potranno prenotare autonomamente. Attiva la funzionalità per configurare disponibilità e regole.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <p className="text-sm text-muted-foreground">
+                  Le prenotazioni self-service sono disattivate. I clienti non possono prenotare autonomamente.
+                </p>
               )}
 
               {/* Conditional Configuration Sections */}
