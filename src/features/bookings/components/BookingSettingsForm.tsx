@@ -255,6 +255,63 @@ export function BookingSettingsForm() {
         <CardContent className={cn("space-y-8", hasUnsavedChanges && "pb-24")}>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              {/* Late Cancellation Section - Always visible */}
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <h4 className="text-lg font-semibold">Cancellazione tardiva</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Regole per le cancellazioni a ridosso dell'appuntamento
+                  </p>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="cancel_policy_hours"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3 max-w-xs">
+                      <div className="flex items-center gap-2">
+                        <FormLabel className="text-sm font-medium">Finestra cancellazione</FormLabel>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className="inline-flex">
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p>
+                              Periodo entro cui una cancellazione è considerata tardiva. 
+                              Dopo questo termine: le lezioni da pacchetto vengono scalate, 
+                              le lezioni singole risultano dovute.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Select
+                        value={field.value.toString()}
+                        onValueChange={(value) => {
+                          field.onChange(parseInt(value));
+                          setHasUnsavedChanges(true);
+                        }}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="12">12 ore</SelectItem>
+                          <SelectItem value="24">24 ore</SelectItem>
+                          <SelectItem value="48">48 ore</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Questa regola si applica a tutti gli appuntamenti, anche se le prenotazioni self-service sono disattivate.
+                      </p>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               {/* Prominent Toggle Section */}
               <div className="bg-muted/30 border rounded-lg p-4">
                 <FormField
@@ -447,47 +504,6 @@ export function BookingSettingsForm() {
                         )}
                       />
 
-                      {/* Cancel policy */}
-                      <FormField
-                        control={form.control}
-                        name="cancel_policy_hours"
-                        render={({ field }) => (
-                          <FormItem className="space-y-3">
-                            <div className="flex items-center gap-2">
-                              <FormLabel className="text-sm font-medium">Finestra cancellazione tardiva</FormLabel>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button type="button" className="inline-flex">
-                                    <Info className="h-4 w-4 text-muted-foreground" />
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs">
-                                  <p>
-                                    Le cancellazioni entro questo periodo consumano una sessione
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                            <Select
-                              value={field.value.toString()}
-                              onValueChange={(value) => {
-                                field.onChange(parseInt(value));
-                                setHasUnsavedChanges(true);
-                              }}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="12">12 ore</SelectItem>
-                                <SelectItem value="24">24 ore</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
                     </div>
 
                     {/* Approval mode - full width */}

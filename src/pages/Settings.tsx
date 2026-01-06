@@ -136,7 +136,7 @@ const Settings = () => {
           </TabsTrigger>
           <TabsTrigger value="packages" className="gap-2">
             <Package className="h-4 w-4" />
-            Pacchetti
+            Lezioni e pacchetti
           </TabsTrigger>
           <TabsTrigger value="privacy" className="gap-2">
             <Shield className="h-4 w-4" />

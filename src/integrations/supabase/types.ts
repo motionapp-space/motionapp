@@ -1350,8 +1350,12 @@ export type Database = {
           sessions_1_price: number
           sessions_10_duration: number
           sessions_10_price: number
+          sessions_15_duration: number
+          sessions_15_price: number
           sessions_20_duration: number
           sessions_20_price: number
+          sessions_3_duration: number
+          sessions_3_price: number
           sessions_5_duration: number
           sessions_5_price: number
           settings_id: string
@@ -1366,8 +1370,12 @@ export type Database = {
           sessions_1_price?: number
           sessions_10_duration?: number
           sessions_10_price?: number
+          sessions_15_duration?: number
+          sessions_15_price?: number
           sessions_20_duration?: number
           sessions_20_price?: number
+          sessions_3_duration?: number
+          sessions_3_price?: number
           sessions_5_duration?: number
           sessions_5_price?: number
           settings_id?: string
@@ -1382,8 +1390,12 @@ export type Database = {
           sessions_1_price?: number
           sessions_10_duration?: number
           sessions_10_price?: number
+          sessions_15_duration?: number
+          sessions_15_price?: number
           sessions_20_duration?: number
           sessions_20_price?: number
+          sessions_3_duration?: number
+          sessions_3_price?: number
           sessions_5_duration?: number
           sessions_5_price?: number
           settings_id?: string
