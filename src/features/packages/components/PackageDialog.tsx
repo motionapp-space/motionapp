@@ -204,8 +204,10 @@ export function PackageDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="1">1 mese</SelectItem>
+                <SelectItem value="2">2 mesi</SelectItem>
                 <SelectItem value="3">3 mesi</SelectItem>
                 <SelectItem value="6">6 mesi</SelectItem>
+                <SelectItem value="9">9 mesi</SelectItem>
                 <SelectItem value="12">12 mesi</SelectItem>
               </SelectContent>
             </Select>
