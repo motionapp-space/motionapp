@@ -1,25 +1,26 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { PriceInput } from "@/components/ui/price-input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePackageSettings, useUpdatePackageSettings } from "../hooks/usePackageSettings";
-import { Loader2, Package, AlertCircle, Info } from "lucide-react";
+import { Loader2, Package, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PackageSettingsFormValues {
   sessions_1_price: number;
-  sessions_1_duration: number;
+  sessions_1_duration: number; // kept for backend compatibility
+  sessions_3_price: number;
+  sessions_3_duration: number;
   sessions_5_price: number;
   sessions_5_duration: number;
   sessions_10_price: number;
   sessions_10_duration: number;
+  sessions_15_price: number;
+  sessions_15_duration: number;
   sessions_20_price: number;
   sessions_20_duration: number;
   lock_window_hours: number;
@@ -31,13 +32,17 @@ export function PackageSettingsForm() {
 
   const form = useForm<PackageSettingsFormValues>({
     defaultValues: {
-      sessions_1_price: 5000,
+      sessions_1_price: 5000,      // 50€
       sessions_1_duration: 1,
-      sessions_5_price: 22500,
+      sessions_3_price: 13500,     // 135€ (10% discount)
+      sessions_3_duration: 2,
+      sessions_5_price: 22500,     // 225€ (10% discount)
       sessions_5_duration: 3,
-      sessions_10_price: 40000,
+      sessions_10_price: 45000,    // 450€ (10% discount)
       sessions_10_duration: 6,
-      sessions_20_price: 70000,
+      sessions_15_price: 67500,    // 675€ (10% discount)
+      sessions_15_duration: 9,
+      sessions_20_price: 90000,    // 900€ (10% discount)
       sessions_20_duration: 12,
       lock_window_hours: 12,
     },
@@ -48,10 +53,14 @@ export function PackageSettingsForm() {
       form.reset({
         sessions_1_price: settings.sessions_1_price,
         sessions_1_duration: settings.sessions_1_duration,
+        sessions_3_price: settings.sessions_3_price,
+        sessions_3_duration: settings.sessions_3_duration,
         sessions_5_price: settings.sessions_5_price,
         sessions_5_duration: settings.sessions_5_duration,
         sessions_10_price: settings.sessions_10_price,
         sessions_10_duration: settings.sessions_10_duration,
+        sessions_15_price: settings.sessions_15_price,
+        sessions_15_duration: settings.sessions_15_duration,
         sessions_20_price: settings.sessions_20_price,
         sessions_20_duration: settings.sessions_20_duration,
         lock_window_hours: settings.lock_window_hours,
@@ -60,11 +69,12 @@ export function PackageSettingsForm() {
   }, [settings, form]);
 
   const onSubmit = (values: PackageSettingsFormValues) => {
-    updateSettings(values);
-  };
-
-  const formatPrice = (cents: number) => {
-    return (cents / 100).toFixed(2);
+    // Ensure single lesson price never goes to 0 - reset to default
+    const finalValues = {
+      ...values,
+      sessions_1_price: values.sessions_1_price || 5000,
+    };
+    updateSettings(finalValues);
   };
 
   const formatCurrency = (cents: number) => {
@@ -74,25 +84,21 @@ export function PackageSettingsForm() {
     }).format(cents / 100);
   };
 
-  // Calcola prezzo per sessione
+  // Calculate unit price
   const calculateUnitPrice = (totalCents: number, sessions: number) => {
     return totalCents / sessions;
   };
 
-  // Calcola sconto assoluto
-  const calculateDiscountAbs = (unitPrice: number, singlePrice: number) => {
-    return singlePrice - unitPrice;
-  };
-
-  // Calcola sconto percentuale
-  const calculateDiscountPct = (discountAbs: number, singlePrice: number) => {
+  // Calculate discount percentage
+  const calculateDiscountPct = (unitPrice: number, singlePrice: number) => {
     if (singlePrice === 0) return 0;
+    const discountAbs = singlePrice - unitPrice;
     return (discountAbs / singlePrice) * 100;
   };
 
-  // Watch per calcoli in tempo reale
+  // Watch for real-time calculations
   const watchedValues = form.watch();
-  const singleSessionPrice = watchedValues.sessions_1_price || 0;
+  const singleSessionPrice = watchedValues.sessions_1_price || 5000;
 
   if (isLoading) {
     return (
@@ -105,186 +111,171 @@ export function PackageSettingsForm() {
   }
 
   const packageTypes = [
-    { sessions: 1, priceField: "sessions_1_price" as const, durationField: "sessions_1_duration" as const },
+    { sessions: 3, priceField: "sessions_3_price" as const, durationField: "sessions_3_duration" as const },
     { sessions: 5, priceField: "sessions_5_price" as const, durationField: "sessions_5_duration" as const },
     { sessions: 10, priceField: "sessions_10_price" as const, durationField: "sessions_10_duration" as const },
+    { sessions: 15, priceField: "sessions_15_price" as const, durationField: "sessions_15_duration" as const },
     { sessions: 20, priceField: "sessions_20_price" as const, durationField: "sessions_20_duration" as const },
   ];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pacchetti</CardTitle>
+        <CardTitle>Lezioni e pacchetti</CardTitle>
         <CardDescription>
-          Definisci prezzi e durate di default per ciascun tipo di pacchetto
+          Definisci il prezzo della lezione singola e i pacchetti disponibili
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
-        {singleSessionPrice === 0 && (
-          <Alert className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Imposta un prezzo valido per la lezione singola per calcolare correttamente gli sconti.
-            </AlertDescription>
-          </Alert>
-        )}
-        
         <Form {...form}>
-          <TooltipProvider>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            {packageTypes.map(({ sessions, priceField, durationField }) => {
-              const totalPrice = watchedValues[priceField] || 0;
-              const unitPrice = calculateUnitPrice(totalPrice, sessions);
-              const discountAbs = sessions === 1 ? 0 : calculateDiscountAbs(unitPrice, singleSessionPrice);
-              const discountPct = sessions === 1 ? 0 : calculateDiscountPct(discountAbs, singleSessionPrice);
-              
-              return (
-              <div key={sessions} className="space-y-5 pb-6 border-b last:border-0 last:pb-0">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Package className="h-5 w-5 text-primary" />
-                  </div>
-          <Badge variant="secondary" className="text-base font-semibold px-3 py-1">
-            {sessions} {sessions === 1 ? 'Sessione' : 'Sessioni'}
-          </Badge>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* Single Lesson Card - Separate */}
+            <div className="p-5 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <CreditCard className="h-5 w-5 text-primary" />
                 </div>
-                
-                <div className="grid gap-5 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name={priceField}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Prezzo totale (€)</FormLabel>
-                        <FormControl>
-                          <PriceInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            onBlur={field.onBlur}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={durationField}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Durata</FormLabel>
-                        <Select
-                          value={field.value.toString()}
-                          onValueChange={(value) => field.onChange(parseInt(value))}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="1">1 mese</SelectItem>
-                            <SelectItem value="3">3 mesi</SelectItem>
-                            <SelectItem value="6">6 mesi</SelectItem>
-                            <SelectItem value="12">12 mesi</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Calcoli derivati */}
-                <div className="grid gap-5 md:grid-cols-2 pt-3 mt-3 p-3 rounded-lg bg-muted/20 border">
-                  <div className="space-y-2">
-                    <FormLabel className="text-sm font-medium text-foreground/70">Prezzo per sessione</FormLabel>
-            <div className="text-lg font-bold">
-              {formatCurrency(unitPrice)}
-            </div>
-                  </div>
-
-                  {sessions > 1 && (
-                    <div className="space-y-2">
-                      <FormLabel className="text-sm font-medium text-foreground/70">
-                        Sconto rispetto alla singola
-                      </FormLabel>
-                      <div className="flex items-center gap-3">
-                        <div className="text-xl font-bold">
-                          {discountAbs > 0 ? '−' : discountAbs < 0 ? '+' : ''}
-                          {formatCurrency(Math.abs(discountAbs))}
-                        </div>
-              <Badge 
-                variant={discountAbs > 0 ? "default" : discountAbs < 0 ? "destructive" : "secondary"}
-                className={cn(
-                  "text-sm px-2.5 py-0.5 transition-all",
-                  discountAbs > 0 && "bg-green-600 hover:bg-green-700 hover:scale-105"
-                )}
-              >
-                          {discountPct > 0 ? '−' : discountPct < 0 ? '+' : ''}
-                          {Math.abs(discountPct).toFixed(2)}%
-                        </Badge>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <h3 className="text-lg font-semibold">Lezione singola</h3>
               </div>
-              );
-            })}
-
-            <div className="pt-4 pb-5 px-5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+              
               <FormField
                 control={form.control}
-                name="lock_window_hours"
+                name="sessions_1_price"
                 render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 rounded-lg bg-amber-500/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600 dark:text-amber-400">
-                          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FormLabel className="text-base font-medium m-0">Lock Window Post Evento</FormLabel>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type="button" className="inline-flex">
-                              <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs">
-                            <p>
-                              Periodo di tempo dopo un evento durante il quale le sessioni del pacchetto 
-                              vengono automaticamente "congelate". Previene modifiche retroattive che 
-                              potrebbero alterare il conteggio delle sessioni consumate.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
-                    <Select
-                      value={field.value.toString()}
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-background">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="12">12 ore</SelectItem>
-                        <SelectItem value="24">24 ore</SelectItem>
-                        <SelectItem value="48">48 ore</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription className="text-sm leading-relaxed mt-3">
-                      Tempo dopo un evento entro cui è possibile modificare le sessioni nel pacchetto. 
-                      Trascorso questo periodo, le modifiche all'evento non influenzeranno il conteggio 
-                      delle sessioni consumate. <span className="font-medium text-foreground/80">Protegge l'integrità dei consumi.</span>
-                    </FormDescription>
+                  <FormItem className="max-w-xs">
+                    <FormLabel>Prezzo lezione singola (€)</FormLabel>
+                    <FormControl>
+                      <PriceInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={() => {
+                          // Reset to default if empty or 0
+                          if (!field.value || field.value === 0) {
+                            field.onChange(5000);
+                          }
+                        }}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />
+              
+              <p className="text-sm text-muted-foreground mt-4 leading-relaxed">
+                Questo prezzo viene usato quando crei un evento Lezione singola. 
+                Puoi modificarlo di volta in volta durante la creazione dell'evento. 
+                Il pagamento risulterà dovuto dopo l'evento o in caso di cancellazione tardiva.
+              </p>
+            </div>
+
+            {/* Packages Section */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Pacchetti</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Prezzi e durate di default per i pacchetti
+                  </p>
+                </div>
+              </div>
+
+              {packageTypes.map(({ sessions, priceField, durationField }) => {
+                const totalPrice = watchedValues[priceField] || 0;
+                const unitPrice = calculateUnitPrice(totalPrice, sessions);
+                const discountAbs = singleSessionPrice - unitPrice;
+                const discountPct = calculateDiscountPct(unitPrice, singleSessionPrice);
+                
+                return (
+                  <div key={sessions} className="space-y-5 pb-6 border-b last:border-0 last:pb-0">
+                    <div className="flex items-center gap-3 mb-5">
+                      <Badge variant="secondary" className="text-base font-semibold px-3 py-1">
+                        {sessions} Sessioni
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name={priceField}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Prezzo totale (€)</FormLabel>
+                            <FormControl>
+                              <PriceInput
+                                value={field.value}
+                                onChange={field.onChange}
+                                onBlur={field.onBlur}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={durationField}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Durata</FormLabel>
+                            <Select
+                              value={field.value.toString()}
+                              onValueChange={(value) => field.onChange(parseInt(value))}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="1">1 mese</SelectItem>
+                                <SelectItem value="2">2 mesi</SelectItem>
+                                <SelectItem value="3">3 mesi</SelectItem>
+                                <SelectItem value="6">6 mesi</SelectItem>
+                                <SelectItem value="9">9 mesi</SelectItem>
+                                <SelectItem value="12">12 mesi</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Derived calculations */}
+                    <div className="grid gap-5 md:grid-cols-2 pt-3 mt-3 p-3 rounded-lg bg-muted/20 border">
+                      <div className="space-y-2">
+                        <FormLabel className="text-sm font-medium text-foreground/70">Prezzo per sessione</FormLabel>
+                        <div className="text-lg font-bold">
+                          {formatCurrency(unitPrice)}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <FormLabel className="text-sm font-medium text-foreground/70">
+                          Risparmio rispetto alla singola
+                        </FormLabel>
+                        <div className="flex items-center gap-3">
+                          <div className="text-xl font-bold">
+                            {discountAbs > 0 ? '−' : discountAbs < 0 ? '+' : ''}
+                            {formatCurrency(Math.abs(discountAbs))}
+                          </div>
+                          <Badge 
+                            variant={discountAbs > 0 ? "default" : discountAbs < 0 ? "destructive" : "secondary"}
+                            className={cn(
+                              "text-sm px-2.5 py-0.5 transition-all",
+                              discountAbs > 0 && "bg-green-600 hover:bg-green-700 hover:scale-105"
+                            )}
+                          >
+                            {discountPct > 0 ? '−' : discountPct < 0 ? '+' : ''}
+                            {Math.abs(discountPct).toFixed(0)}%
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="pt-4 border-t">
@@ -299,12 +290,11 @@ export function PackageSettingsForm() {
                     Salvataggio...
                   </>
                 ) : (
-                  "Salva Tutte le Impostazioni"
+                  "Salva"
                 )}
               </Button>
             </div>
-            </form>
-          </TooltipProvider>
+          </form>
         </Form>
       </CardContent>
     </Card>
