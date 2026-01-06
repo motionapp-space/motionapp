@@ -41,16 +41,16 @@ export function PackageDialog({
   isLoading,
 }: PackageDialogProps) {
   const { data: settings } = usePackageSettings();
-  const [selectedSessions, setSelectedSessions] = useState<number>(10);
+  const [selectedSessions, setSelectedSessions] = useState<number>(5);
   const [customPrice, setCustomPrice] = useState<boolean>(false);
   const [customDuration, setCustomDuration] = useState<boolean>(false);
   
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<CreatePackageInput>({
     defaultValues: {
       coach_client_id: coachClientId,
-      total_sessions: 10,
-      name: suggestPackageName(10),
-      duration_months: 6,
+      total_sessions: 5,
+      name: suggestPackageName(5),
+      duration_months: 3,
     },
   });
 
@@ -144,9 +144,10 @@ export function PackageDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">1 sessione</SelectItem>
+                <SelectItem value="3">3 sessioni</SelectItem>
                 <SelectItem value="5">5 sessioni</SelectItem>
                 <SelectItem value="10">10 sessioni</SelectItem>
+                <SelectItem value="15">15 sessioni</SelectItem>
                 <SelectItem value="20">20 sessioni</SelectItem>
               </SelectContent>
             </Select>
