@@ -85,18 +85,6 @@ export async function createPackage(input: CreatePackageInput): Promise<Package>
 
   if (!cc) throw new Error("Coach-client relationship not found");
 
-  // Check if an active package already exists for this client
-  const { data: existingActive } = await supabase
-    .from("package")
-    .select("package_id")
-    .eq("coach_client_id", input.coach_client_id)
-    .eq("usage_status", "active")
-    .maybeSingle();
-
-  if (existingActive) {
-    throw new Error("Esiste già un pacchetto attivo per questo cliente");
-  }
-
   // Get price and duration from settings if not provided
   const settings = await getPackageSettings();
   
