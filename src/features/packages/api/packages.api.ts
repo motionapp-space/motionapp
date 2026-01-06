@@ -88,13 +88,16 @@ export async function createPackage(input: CreatePackageInput): Promise<Package>
   // Get price and duration from settings if not provided
   const settings = await getPackageSettings();
   
+  const priceKey = `sessions_${input.total_sessions}_price` as keyof PackageSettings;
+  const defaultPrice = settings[priceKey] as number;
+
   let price = input.price_total_cents;
   let price_source: 'settings' | 'custom' = 'settings';
 
   if (price === undefined || price === null) {
-    const priceKey = `sessions_${input.total_sessions}_price` as keyof PackageSettings;
-    price = settings[priceKey] as number;
-  } else {
+    price = defaultPrice;
+  } else if (price !== defaultPrice) {
+    // Solo "custom" se il prezzo è diverso dal default
     price_source = 'custom';
   }
 
