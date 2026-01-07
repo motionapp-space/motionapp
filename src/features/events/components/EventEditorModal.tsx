@@ -364,6 +364,20 @@ export function EventEditorModal({
     });
   }, [recurrence, eventStartDateTime]);
 
+  // Ultima data della serie (per validazione scadenza pacchetto)
+  const lastOccurrenceDate = useMemo(() => {
+    if (!recurrence.enabled || occurrences.length === 0) return null;
+    return occurrences[occurrences.length - 1];
+  }, [recurrence.enabled, occurrences]);
+
+  // Check se il pacchetto selezionato scade prima dell'ultima occorrenza
+  const selectedPackageExpiresBeforeSeries = useMemo(() => {
+    if (!selectedPackageId || !recurrence.enabled || !lastOccurrenceDate) return false;
+    const pkg = availablePackages.find(p => p.package_id === selectedPackageId);
+    if (!pkg?.expires_at) return false;
+    return new Date(pkg.expires_at) < lastOccurrenceDate;
+  }, [selectedPackageId, recurrence.enabled, lastOccurrenceDate, availablePackages]);
+
   // Reset lesson type selection when client changes
   useEffect(() => {
     setLessonType(null);
@@ -371,23 +385,27 @@ export function EventEditorModal({
     setSingleLessonPrice(null);
   }, [formData.clientId]);
 
-  // Reset package selection when recurrence changes (coverage may change)
+  // Reset package selection when recurrence changes (coverage or expiration may change)
   useEffect(() => {
     if (lessonType === "package" && selectedPackageId) {
       // Check if coverage is still valid
-      if (recurrence.enabled && occurrences.length > selectedPackageCredits) {
-        // Package no longer covers all occurrences
+      const creditsInsufficient = recurrence.enabled && occurrences.length > selectedPackageCredits;
+      
+      // Check if package expires before end of series
+      const expiresBeforeSeries = selectedPackageExpiresBeforeSeries;
+      
+      if (creditsInsufficient || expiresBeforeSeries) {
         setSelectedPackageId(null);
       }
     }
-  }, [recurrence.enabled, occurrences.length, selectedPackageCredits, lessonType, selectedPackageId]);
+  }, [recurrence.enabled, occurrences.length, selectedPackageCredits, lessonType, selectedPackageId, selectedPackageExpiresBeforeSeries]);
 
   // Default single lesson price from settings
   const defaultSinglePrice = useMemo(() => {
     return packageSettings?.sessions_1_price ?? 5000; // 50€ default
   }, [packageSettings]);
 
-  // Validation - ora include la scelta del tipo di lezione
+  // Validation - ora include la scelta del tipo di lezione e scadenza pacchetto
   const isValid = useMemo(() => {
     if (!formData.title.trim()) return false;
     if (!formData.clientId) return false;
@@ -406,6 +424,8 @@ export function EventEditorModal({
     if (isNewMode && lessonType === "package" && recurrence.enabled && occurrences.length > 0) {
       if (!selectedPackageId) return false;
       if (selectedPackageCredits < occurrences.length) return false;
+      // Check scadenza pacchetto
+      if (selectedPackageExpiresBeforeSeries) return false;
     }
     
     // Se pacchetto selezionato senza ricorrenza, deve essere valido
@@ -414,7 +434,7 @@ export function EventEditorModal({
     }
     
     return true;
-  }, [formData, recurrence, occurrences, lessonType, selectedPackageId, selectedPackageCredits, isNewMode]);
+  }, [formData, recurrence, occurrences, lessonType, selectedPackageId, selectedPackageCredits, isNewMode, selectedPackageExpiresBeforeSeries]);
 
   // Validation message for tooltip
   const validationMessage = useMemo(() => {
@@ -435,10 +455,17 @@ export function EventEditorModal({
       if (recurrence.enabled && selectedPackageCredits < occurrences.length) {
         return `Il pacchetto non copre tutte le ${occurrences.length} occorrenze`;
       }
+      // Check scadenza pacchetto
+      if (selectedPackageExpiresBeforeSeries && lastOccurrenceDate) {
+        const selectedPkg = availablePackages.find(p => p.package_id === selectedPackageId);
+        if (selectedPkg?.expires_at) {
+          return `Il pacchetto scade il ${format(new Date(selectedPkg.expires_at), "d MMM yyyy", { locale: it })} ma l'ultima occorrenza è il ${format(lastOccurrenceDate, "d MMM yyyy", { locale: it })}`;
+        }
+      }
     }
     
     return null;
-  }, [formData, recurrence, occurrences, lessonType, selectedPackageId, selectedPackageCredits, isNewMode]);
+  }, [formData, recurrence, occurrences, lessonType, selectedPackageId, selectedPackageCredits, isNewMode, selectedPackageExpiresBeforeSeries, lastOccurrenceDate, availablePackages]);
 
   // Handlers
   const handleCreate = async () => {
@@ -1190,7 +1217,22 @@ export function EventEditorModal({
                             <SelectContent>
                               {availablePackages.map((pkg) => {
                                 const kpi = calculatePackageKPI(pkg);
-                                const canCover = !recurrence.enabled || kpi.available >= occurrences.length;
+                                const hasSufficientCredits = !recurrence.enabled || kpi.available >= occurrences.length;
+                                
+                                // Check se il pacchetto scade prima dell'ultima occorrenza
+                                const expiresBeforeSeries = recurrence.enabled && lastOccurrenceDate && 
+                                  pkg.expires_at && new Date(pkg.expires_at) < lastOccurrenceDate;
+                                
+                                const canCover = hasSufficientCredits && !expiresBeforeSeries;
+                                
+                                // Messaggio di disabilitazione
+                                let disabledReason = "";
+                                if (!hasSufficientCredits) {
+                                  disabledReason = ` — Insufficiente (serve ${occurrences.length})`;
+                                } else if (expiresBeforeSeries) {
+                                  disabledReason = ` — Scade prima della fine serie`;
+                                }
+                                
                                 return (
                                   <SelectItem 
                                     key={pkg.package_id} 
@@ -1198,23 +1240,39 @@ export function EventEditorModal({
                                     disabled={!canCover}
                                   >
                                     {pkg.name} ({kpi.available} crediti)
-                                    {!canCover && ` — Insufficiente`}
+                                    {disabledReason}
                                   </SelectItem>
                                 );
                               })}
                             </SelectContent>
                           </Select>
                           
-                          {selectedPackageId && recurrence.enabled && (
-                            <p className={cn(
-                              "text-xs",
-                              selectedPackageCredits >= occurrences.length ? "text-green-600" : "text-amber-600"
-                            )}>
-                              {selectedPackageCredits >= occurrences.length 
-                                ? `✓ Copre tutte le ${occurrences.length} occorrenze`
-                                : `⚠ Crediti insufficienti per ${occurrences.length} occorrenze`}
-                            </p>
-                          )}
+                          {/* Feedback visivo per il pacchetto selezionato */}
+                          {selectedPackageId && recurrence.enabled && (() => {
+                            if (selectedPackageExpiresBeforeSeries && lastOccurrenceDate) {
+                              const selectedPkg = availablePackages.find(p => p.package_id === selectedPackageId);
+                              return (
+                                <p className="text-xs text-destructive">
+                                  ⚠ Il pacchetto scade il {format(new Date(selectedPkg!.expires_at!), "d MMM", { locale: it })} 
+                                  {" "}ma l'ultima occorrenza è il {format(lastOccurrenceDate, "d MMM", { locale: it })}
+                                </p>
+                              );
+                            }
+                            
+                            if (selectedPackageCredits >= occurrences.length) {
+                              return (
+                                <p className="text-xs text-green-600">
+                                  ✓ Copre tutte le {occurrences.length} occorrenze
+                                </p>
+                              );
+                            }
+                            
+                            return (
+                              <p className="text-xs text-amber-600">
+                                ⚠ Crediti insufficienti per {occurrences.length} occorrenze
+                              </p>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>
