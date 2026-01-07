@@ -92,16 +92,16 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
     : null;
 
   return (
-    <div className="space-y-4">
-      {/* Header with toggle aligned right */}
+    <div className="pt-4 space-y-3">
+      {/* Header with toggle aligned right - decision section style */}
       <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <Label htmlFor="recurrence-toggle" className="text-base font-semibold text-foreground leading-tight">
+        <div className="space-y-0.5">
+          <Label htmlFor="recurrence-toggle" className="text-[15px] font-semibold text-foreground leading-none cursor-pointer">
             Ricorrenza
           </Label>
           {!config.enabled && (
-            <p className="text-[13px] text-muted-foreground leading-relaxed max-w-[480px]">
-              Attiva per creare una serie di appuntamenti ricorrenti
+            <p className="text-[13px] text-muted-foreground max-w-[420px]">
+              Attiva per creare una serie di appuntamenti
             </p>
           )}
         </div>
@@ -112,17 +112,17 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
         />
       </div>
 
-      {/* Recurrence options - only shown when enabled */}
+      {/* Recurrence options - compact when enabled */}
       {config.enabled && (
-        <div className="space-y-5 pl-0">
+        <div className="space-y-4">
             {/* Frequency */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label className="text-sm font-medium text-foreground">Frequenza</Label>
               <Select
                 value={config.frequency}
                 onValueChange={(value) => updateConfig({ frequency: value as RecurrenceConfig["frequency"] })}
               >
-                <SelectTrigger className="h-11">
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -136,9 +136,9 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
 
             {/* Weekly: Day selection */}
             {config.frequency === "weekly" && (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-foreground">Giorni della settimana</Label>
-                <div className="flex gap-1.5">
+                <div className="flex gap-1">
                   {weekDayLabels.map((label, idx) => {
                     const isActive = config.weekDays?.includes(idx);
                     return (
@@ -147,7 +147,7 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
                         type="button"
                         variant={isActive ? "default" : "outline"}
                         size="sm"
-                        className="w-9 h-9 p-0 text-sm"
+                        className="w-8 h-8 p-0 text-sm"
                         onClick={() => toggleWeekDay(idx)}
                       >
                         {label}
@@ -159,20 +159,20 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
             )}
 
             {/* End configuration */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label className="text-sm font-medium text-foreground">Termina</Label>
               <RadioGroup 
                 value={config.endType} 
                 onValueChange={(value) => updateConfig({ endType: value as RecurrenceConfig["endType"] })}
-                className="space-y-3"
+                className="space-y-2"
               >
                 {/* Opzione: Dopo N occorrenze */}
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="count" id="count" />
-                  <Label htmlFor="count" className="font-normal cursor-pointer">Dopo</Label>
+                  <Label htmlFor="count" className="font-normal cursor-pointer text-sm">Dopo</Label>
                 </div>
                 {config.endType === "count" && (
-                  <div className="ml-6 mt-2 flex items-center gap-2">
+                  <div className="ml-6 flex items-center gap-2">
                     <Input
                       type="number"
                       min="1"
@@ -182,7 +182,7 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
                         const value = Math.min(52, Math.max(1, parseInt(e.target.value) || 4));
                         updateConfig({ occurrenceCount: value });
                       }}
-                      className="w-20"
+                      className="w-20 h-9"
                     />
                     <span className="text-sm text-muted-foreground">occorrenze</span>
                   </div>
@@ -191,15 +191,15 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
                 {/* Opzione: Fino a data */}
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="until" id="until" />
-                  <Label htmlFor="until" className="font-normal cursor-pointer">Il giorno</Label>
+                  <Label htmlFor="until" className="font-normal cursor-pointer text-sm">Il giorno</Label>
                 </div>
                 {config.endType === "until" && (
-                  <div className="ml-6 mt-2">
+                  <div className="ml-6">
                     <Input
                       type="date"
                       value={config.endDate || ""}
                       onChange={(e) => updateConfig({ endDate: e.target.value })}
-                      className="w-full max-w-[200px]"
+                      className="w-full max-w-[180px] h-9"
                     />
                   </div>
                 )}
@@ -208,28 +208,28 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
 
             {/* Riepilogo live occorrenze */}
             {allOccurrences.length > 0 && lastOccurrenceDate && (
-              <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/10">
-                <p className="text-sm font-medium text-foreground">
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                <p className="text-[13px] font-medium text-foreground">
                   Questa serie creerà {allOccurrences.length} appuntament{allOccurrences.length === 1 ? 'o' : 'i'}
                   <span className="text-muted-foreground font-normal">
-                    {" "}(ultimo il {format(lastOccurrenceDate, "d MMMM yyyy", { locale: it })})
+                    {" "}(ultimo il {format(lastOccurrenceDate, "d MMM yyyy", { locale: it })})
                   </span>
                 </p>
               </div>
             )}
 
-            {/* Preview - mostra solo le prime date */}
+            {/* Preview - compact */}
             {previewDates.length > 0 && (
-              <div className="pt-4 border-t border-border/30">
-                <Label className="text-xs text-muted-foreground mb-2 block">Anteprima prossime date</Label>
-                <div className="flex flex-wrap gap-1.5">
+              <div className="pt-3 border-t border-border/30">
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Anteprima date</Label>
+                <div className="flex flex-wrap gap-1">
                   {previewDates.map((date, i) => (
-                    <Badge key={i} variant="secondary" className="text-xs h-6 px-2.5">
+                    <Badge key={i} variant="secondary" className="text-xs h-5 px-2">
                       {format(date, "d MMM", { locale: it })}
                     </Badge>
                   ))}
                   {allOccurrences.length > 6 && (
-                    <Badge variant="outline" className="text-xs h-6 px-2.5">
+                    <Badge variant="outline" className="text-xs h-5 px-2">
                       +{allOccurrences.length - 6}
                     </Badge>
                   )}
@@ -237,10 +237,10 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
               </div>
             )}
 
-            <Alert variant="default" className="mt-4">
-              <Info className="h-4 w-4" />
+            <Alert variant="default" className="mt-3 py-2">
+              <Info className="h-3.5 w-3.5" />
               <AlertDescription className="text-xs">
-                Gli appuntamenti ricorrenti seguiranno la tua disponibilità. Se uno slot non è disponibile, verrà saltato.
+                Se uno slot non è disponibile, verrà saltato.
               </AlertDescription>
             </Alert>
           </div>
