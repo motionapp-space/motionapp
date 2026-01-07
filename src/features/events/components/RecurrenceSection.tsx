@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,10 +7,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { format, startOfDay } from "date-fns";
+import { format, startOfDay, getDay } from "date-fns";
 import { it } from "date-fns/locale";
-import { AlertCircle, Info } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Info } from "lucide-react";
 import { generateRecurrenceOccurrences } from "../utils/recurrence";
 
 export interface RecurrenceConfig {
@@ -19,7 +18,7 @@ export interface RecurrenceConfig {
   interval: number;
   weekDays?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
   monthDay?: number;
-  endType: "never" | "until" | "count";
+  endType: "until" | "count"; // Rimosso "never"
   endDate?: string;
   occurrenceCount?: number;
 }
@@ -36,28 +35,48 @@ const weekDayLabels = ["D", "L", "M", "M", "G", "V", "S"];
 
 export function RecurrenceSection({ config, onChange, startDate, maxOccurrences, onMaxOccurrencesExceeded }: RecurrenceSectionProps) {
   const [previewDates, setPreviewDates] = useState<Date[]>([]);
+  const [wasEnabledBefore, setWasEnabledBefore] = useState(false);
 
   const updateConfig = (updates: Partial<RecurrenceConfig>) => {
     const newConfig = { ...config, ...updates };
     onChange(newConfig);
-    calculatePreview(newConfig);
   };
 
-  const calculatePreview = (cfg: RecurrenceConfig) => {
-    if (!cfg.enabled) {
+  // Pre-selezione automatica del giorno della settimana quando si attiva la ricorrenza
+  useEffect(() => {
+    if (config.enabled && !wasEnabledBefore) {
+      // Ricorrenza appena attivata - preseleziona il giorno corrente
+      const dayOfWeek = getDay(startDate); // 0=Sun, 1=Mon, ..., 6=Sat
+      
+      // Se non ci sono già giorni selezionati, aggiungi quello corrente
+      if (!config.weekDays || config.weekDays.length === 0) {
+        updateConfig({ weekDays: [dayOfWeek] });
+      }
+      setWasEnabledBefore(true);
+    } else if (!config.enabled && wasEnabledBefore) {
+      setWasEnabledBefore(false);
+    }
+  }, [config.enabled, startDate, wasEnabledBefore]);
+
+  // Calcolo occorrenze totali per il riepilogo live
+  const allOccurrences = useMemo(() => {
+    if (!config.enabled) return [];
+    return generateRecurrenceOccurrences({
+      startDate: startOfDay(startDate),
+      config: config,
+      maxOccurrences: 52, // Max 1 anno di occorrenze settimanali
+    });
+  }, [config, startDate]);
+
+  // Ricalcola anteprima quando cambia la config
+  useEffect(() => {
+    if (!config.enabled) {
       setPreviewDates([]);
       return;
     }
-
-    // Use the same logic as event creation for consistency
-    const occurrences = generateRecurrenceOccurrences({
-      startDate: startOfDay(startDate),
-      config: cfg,
-      maxOccurrences: 6, // Show up to 6 dates in preview
-    });
-
-    setPreviewDates(occurrences);
-  };
+    // Mostra solo le prime 6 per l'anteprima visiva
+    setPreviewDates(allOccurrences.slice(0, 6));
+  }, [config.enabled, allOccurrences]);
 
   const toggleWeekDay = (day: number) => {
     const current = config.weekDays || [];
@@ -66,6 +85,11 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
       : [...current, day].sort();
     updateConfig({ weekDays: updated });
   };
+
+  // Ultima data della serie
+  const lastOccurrenceDate = allOccurrences.length > 0 
+    ? allOccurrences[allOccurrences.length - 1] 
+    : null;
 
   return (
     <div className="space-y-4">
@@ -133,15 +157,36 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
               </div>
             )}
 
-            {/* End configuration */}
+            {/* End configuration - RIMOSSO "Mai" */}
             <div className="space-y-3">
               <Label>Termina</Label>
-              <RadioGroup value={config.endType} onValueChange={(value) => updateConfig({ endType: value as RecurrenceConfig["endType"] })}>
+              <RadioGroup 
+                value={config.endType} 
+                onValueChange={(value) => updateConfig({ endType: value as RecurrenceConfig["endType"] })}
+              >
+                {/* Opzione: Dopo N occorrenze */}
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="never" id="never" />
-                  <Label htmlFor="never" className="font-normal cursor-pointer">Mai</Label>
+                  <RadioGroupItem value="count" id="count" />
+                  <Label htmlFor="count" className="font-normal cursor-pointer">Dopo</Label>
                 </div>
-                
+                {config.endType === "count" && (
+                  <div className="ml-6 mt-2 flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="1"
+                      max="52"
+                      value={config.occurrenceCount || 4}
+                      onChange={(e) => {
+                        const value = Math.min(52, Math.max(1, parseInt(e.target.value) || 4));
+                        updateConfig({ occurrenceCount: value });
+                      }}
+                      className="w-20"
+                    />
+                    <span className="text-sm text-muted-foreground">occorrenze</span>
+                  </div>
+                )}
+
+                {/* Opzione: Fino a data */}
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="until" id="until" />
                   <Label htmlFor="until" className="font-normal cursor-pointer">Il giorno</Label>
@@ -156,31 +201,22 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
                     />
                   </div>
                 )}
-                
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="count" id="count" />
-                  <Label htmlFor="count" className="font-normal cursor-pointer">Dopo</Label>
-                </div>
-                {config.endType === "count" && (
-                  <div className="ml-6 mt-2 flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min="1"
-                      max="52"
-                      value={config.occurrenceCount || 10}
-                      onChange={(e) => {
-                        const value = Math.min(52, Math.max(1, parseInt(e.target.value) || 10));
-                        updateConfig({ occurrenceCount: value });
-                      }}
-                      className="w-20"
-                    />
-                    <span className="text-sm text-muted-foreground">occorrenze</span>
-                  </div>
-                )}
               </RadioGroup>
             </div>
 
-            {/* Preview */}
+            {/* Riepilogo live occorrenze - NUOVO */}
+            {allOccurrences.length > 0 && lastOccurrenceDate && (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                <p className="text-sm font-medium text-foreground">
+                  Questa serie creerà {allOccurrences.length} appuntament{allOccurrences.length === 1 ? 'o' : 'i'}
+                  <span className="text-muted-foreground font-normal">
+                    {" "}(ultimo il {format(lastOccurrenceDate, "d MMMM yyyy", { locale: it })})
+                  </span>
+                </p>
+              </div>
+            )}
+
+            {/* Preview - mostra solo le prime date */}
             {previewDates.length > 0 && (
               <div className="pt-3 border-t border-border/30">
                 <Label className="text-xs text-muted-foreground mb-2 block">Anteprima prossime date</Label>
@@ -190,6 +226,11 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
                       {format(date, "d MMM", { locale: it })}
                     </Badge>
                   ))}
+                  {allOccurrences.length > 6 && (
+                    <Badge variant="outline" className="text-xs h-6 px-2">
+                      +{allOccurrences.length - 6}
+                    </Badge>
+                  )}
                 </div>
               </div>
             )}

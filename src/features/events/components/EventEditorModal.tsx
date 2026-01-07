@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { format, addMinutes, differenceInMinutes, isWithinInterval, startOfDay, setHours, setMinutes } from "date-fns";
 import { it } from "date-fns/locale";
-import { Calendar as CalendarIcon, AlertTriangle, Info, AlertCircle, Trash2, Play, Pencil, MapPin, Clock, User, UserCircle, Bell, FileText, Package } from "lucide-react";
+import { Calendar as CalendarIcon, AlertTriangle, Info, AlertCircle, Trash2, Play, Pencil, MapPin, Clock, User, UserCircle, Bell, FileText, Package, Gift, CreditCard } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getCoachClientId, getClientIdFromCoachClient } from "@/lib/coach-client";
 import { useCreateEvent } from "../hooks/useCreateEvent";
@@ -10,13 +10,13 @@ import { useDeleteEvent } from "../hooks/useDeleteEvent";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useClientPackages } from "@/features/packages/hooks/useClientPackages";
 import { useEventsQuery } from "../hooks/useEventsQuery";
+import { usePackageSettings } from "@/features/packages/hooks/usePackageSettings";
 import { calculatePackageKPI } from "@/features/packages/utils/kpi";
 import { generateRecurrenceOccurrences } from "../utils/recurrence";
 import { RecurrenceSection, type RecurrenceConfig } from "./RecurrenceSection";
 import { handleEventConfirm } from "@/features/packages/api/calendar-integration.api";
-import { useCreateSingleLesson } from "@/features/packages/hooks/useCreateSingleLesson";
-import { SingleLessonDialog } from "@/features/packages/components/SingleLessonDialog";
 import { createLedgerEntry } from "@/features/packages/api/ledger.api";
+import { createPackage } from "@/features/packages/api/packages.api";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useNavigate } from "react-router-dom";
@@ -47,6 +47,9 @@ import type { EventWithClient, Event } from "../types";
 import { Badge } from "@/components/ui/badge";
 import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettingsQuery";
 import { deriveEventBadge } from "../utils/deriveEventBadge";
+
+// Tipo per la scelta economica esplicita
+type LessonType = "free" | "single" | "package";
 
 interface EventEditorModalProps {
   mode: 'new' | 'edit';
@@ -161,22 +164,18 @@ export function EventEditorModal({
     interval: 1,
     weekDays: [],
     monthDay: 1,
-    endType: "never",
+    endType: "count",
     endDate: undefined,
-    occurrenceCount: 10
+    occurrenceCount: 4
   });
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [viewMode, setViewMode] = useState<'new' | 'view' | 'edit'>(isNewMode ? 'new' : 'view');
   
-  // Single lesson dialog state
-  const [showSingleLessonDialog, setShowSingleLessonDialog] = useState(false);
-  const [pendingEvent, setPendingEvent] = useState<Event | null>(null);
-  const [pendingClientId, setPendingClientId] = useState<string>(''); // Track clientId for pending event
-
-  // Recurrence package management state
-  const [recurrencePackageMode, setRecurrencePackageMode] = useState<"none" | "assign">("none");
-  const [recurrencePackageId, setRecurrencePackageId] = useState<string | null>(null);
+  // Nuovo stato per tipo di lezione economico (scelta esplicita, proattiva)
+  const [lessonType, setLessonType] = useState<LessonType | null>(null);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+  const [singleLessonPrice, setSingleLessonPrice] = useState<number | null>(null);
   
   // Session conflict state
   const [showSessionConflictDialog, setShowSessionConflictDialog] = useState(false);
@@ -188,10 +187,10 @@ export function EventEditorModal({
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
   const deleteEvent = useDeleteEvent();
-  const createSingleLesson = useCreateSingleLesson();
   const { data: clientsData } = useClientsQuery({ q: "", page: 1, limit: 100 });
   const clients = clientsData?.items || [];
   const { data: clientPackages } = useClientPackages(formData.clientId);
+  const { data: packageSettings } = usePackageSettings();
   const { data: existingEvents } = useEventsQuery({ 
     start_date: format(formData.date, 'yyyy-MM-dd'),
     end_date: format(addMinutes(formData.date, 1440), 'yyyy-MM-dd')
@@ -243,9 +242,9 @@ export function EventEditorModal({
           interval: 1,
           weekDays: [],
           monthDay: 1,
-          endType: "never",
+          endType: "count",
           endDate: undefined,
-          occurrenceCount: 10
+          occurrenceCount: 4
         });
       } else if (event) {
         // Resolve client_id from coach_client_id
@@ -339,7 +338,7 @@ export function EventEditorModal({
     return TIME_SLOTS.filter(time => time >= formData.startTime);
   }, [formData.startTime]);
 
-  // Available packages with credits for recurrence selection
+  // Available packages with credits for selection
   const availablePackages = useMemo(() => {
     if (!clientPackages) return [];
     return clientPackages.filter(pkg => {
@@ -349,12 +348,12 @@ export function EventEditorModal({
     });
   }, [clientPackages]);
 
-  // Credits from selected package for recurrences
+  // Credits from selected package
   const selectedPackageCredits = useMemo(() => {
-    if (recurrencePackageMode !== 'assign' || !recurrencePackageId) return 0;
-    const pkg = availablePackages.find(p => p.package_id === recurrencePackageId);
+    if (!selectedPackageId) return 0;
+    const pkg = availablePackages.find(p => p.package_id === selectedPackageId);
     return pkg ? calculatePackageKPI(pkg).available : 0;
-  }, [recurrencePackageMode, recurrencePackageId, availablePackages]);
+  }, [selectedPackageId, availablePackages]);
 
   // Calculate occurrences for recurrence
   const occurrences = useMemo(() => {
@@ -365,21 +364,30 @@ export function EventEditorModal({
     });
   }, [recurrence, eventStartDateTime]);
 
-  // Reset package selection when client changes
+  // Reset lesson type selection when client changes
   useEffect(() => {
-    setRecurrencePackageMode("none");
-    setRecurrencePackageId(null);
+    setLessonType(null);
+    setSelectedPackageId(null);
+    setSingleLessonPrice(null);
   }, [formData.clientId]);
 
-  // Reset package selection when recurrence is disabled
+  // Reset package selection when recurrence changes (coverage may change)
   useEffect(() => {
-    if (!recurrence.enabled) {
-      setRecurrencePackageMode("none");
-      setRecurrencePackageId(null);
+    if (lessonType === "package" && selectedPackageId) {
+      // Check if coverage is still valid
+      if (recurrence.enabled && occurrences.length > selectedPackageCredits) {
+        // Package no longer covers all occurrences
+        setSelectedPackageId(null);
+      }
     }
-  }, [recurrence.enabled]);
+  }, [recurrence.enabled, occurrences.length, selectedPackageCredits, lessonType, selectedPackageId]);
 
-  // Validation
+  // Default single lesson price from settings
+  const defaultSinglePrice = useMemo(() => {
+    return packageSettings?.sessions_1_price ?? 5000; // 50€ default
+  }, [packageSettings]);
+
+  // Validation - ora include la scelta del tipo di lezione
   const isValid = useMemo(() => {
     if (!formData.title.trim()) return false;
     if (!formData.clientId) return false;
@@ -391,8 +399,22 @@ export function EventEditorModal({
     
     if (endMins <= startMins) return false;
     
+    // In modalità new, il tipo di lezione deve essere scelto esplicitamente
+    if (isNewMode && lessonType === null) return false;
+    
+    // Se pacchetto selezionato con ricorrenza, deve coprire tutte le occorrenze
+    if (isNewMode && lessonType === "package" && recurrence.enabled && occurrences.length > 0) {
+      if (!selectedPackageId) return false;
+      if (selectedPackageCredits < occurrences.length) return false;
+    }
+    
+    // Se pacchetto selezionato senza ricorrenza, deve essere valido
+    if (isNewMode && lessonType === "package" && !recurrence.enabled) {
+      if (!selectedPackageId) return false;
+    }
+    
     return true;
-  }, [formData, recurrence, occurrences, availableCredits]);
+  }, [formData, recurrence, occurrences, lessonType, selectedPackageId, selectedPackageCredits, isNewMode]);
 
   // Validation message for tooltip
   const validationMessage = useMemo(() => {
@@ -406,32 +428,17 @@ export function EventEditorModal({
     
     if (endMins <= startMins) return "L'ora di fine deve essere successiva all'ora di inizio";
     
+    if (isNewMode && lessonType === null) return "Seleziona il tipo di lezione";
+    
+    if (isNewMode && lessonType === "package") {
+      if (!selectedPackageId) return "Seleziona un pacchetto";
+      if (recurrence.enabled && selectedPackageCredits < occurrences.length) {
+        return `Il pacchetto non copre tutte le ${occurrences.length} occorrenze`;
+      }
+    }
+    
     return null;
-  }, [formData, recurrence, occurrences, availableCredits]);
-
-  // Handlers for SingleLessonDialog
-  const handleConfirmSingleLesson = async () => {
-    if (!pendingEvent || !pendingClientId) return;
-    
-    await createSingleLesson.mutateAsync({
-      eventId: pendingEvent.id,
-      clientId: pendingClientId,
-      eventStartAt: pendingEvent.start_at
-    });
-    
-    setShowSingleLessonDialog(false);
-    setPendingEvent(null);
-    setPendingClientId('');
-    onOpenChange(false);
-  };
-
-  const handleConfirmWithoutPackage = () => {
-    setShowSingleLessonDialog(false);
-    setPendingEvent(null);
-    setPendingClientId('');
-    onOpenChange(false);
-    toast.info("Appuntamento creato senza pacchetto");
-  };
+  }, [formData, recurrence, occurrences, lessonType, selectedPackageId, selectedPackageCredits, isNewMode]);
 
   // Handlers
   const handleCreate = async () => {
@@ -449,147 +456,212 @@ export function EventEditorModal({
         notes: formData.notes || null,
       };
 
+      const [startH, startM] = formData.startTime.split(':').map(Number);
+      const [endH, endM] = formData.endTime.split(':').map(Number);
+
+      // === RICORRENZE ===
       if (recurrence.enabled && occurrences.length > 0) {
-        // 1. Create ALL recurring events without package management
         toast.info(`Creazione di ${occurrences.length} appuntamenti ricorrenti...`);
-        
-        const [startH, startM] = formData.startTime.split(':').map(Number);
-        const [endH, endM] = formData.endTime.split(':').map(Number);
 
-        const createdEvents: Event[] = [];
-
-        for (const occurrenceDate of occurrences) {
+        // Creazione batch con Promise.all per performance
+        const createPromises = occurrences.map(async (occurrenceDate) => {
           const startAt = setMinutes(setHours(startOfDay(occurrenceDate), startH), startM);
           const endAt = setMinutes(setHours(startOfDay(occurrenceDate), endH), endM);
 
-          const event = await createEvent.mutateAsync({
+          return createEvent.mutateAsync({
             ...basePayload,
             start_at: startAt.toISOString(),
             end_at: endAt.toISOString(),
           });
-
-          createdEvents.push(event);
-        }
-
-        // 2. If NOT associating a package → done
-        if (recurrencePackageMode === "none" || !recurrencePackageId) {
-          toast.success(`Creati ${createdEvents.length} appuntamenti ricorrenti`);
-          onOpenChange(false);
-          return;
-        }
-
-        // 3. Allocate HOLD to first N events (chronological order)
-        const pkg = availablePackages.find(p => p.package_id === recurrencePackageId);
-        if (!pkg) {
-          toast.success(`Creati ${createdEvents.length} appuntamenti ricorrenti`);
-          onOpenChange(false);
-          return;
-        }
-
-        let remaining = calculatePackageKPI(pkg).available;
-        let holdCount = 0;
-        let currentOnHold = pkg.on_hold_sessions;
-
-        // Sort by start_at ASC
-        const sortedEvents = [...createdEvents].sort(
-          (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
-        );
-
-        for (const evt of sortedEvents) {
-          if (remaining <= 0) break;
-
-          try {
-            // Create HOLD in ledger
-            await createLedgerEntry(
-              pkg.package_id,
-              'HOLD_CREATE',
-              'CONFIRM',
-              0,  // delta_consumed
-              1,  // delta_hold
-              evt.id,
-              `Ricorrenza: ${evt.title || 'Allenamento'}`
-            );
-
-            // Update on_hold counter directly via supabase
-            currentOnHold += 1;
-            await supabase
-              .from("package")
-              .update({ on_hold_sessions: currentOnHold })
-              .eq("package_id", pkg.package_id);
-
-            remaining--;
-            holdCount++;
-          } catch (err) {
-            console.warn('Could not create HOLD for recurring event:', err);
-          }
-        }
-
-        // 4. Final toast with count
-        const uncovered = createdEvents.length - holdCount;
-        queryClient.invalidateQueries({ queryKey: ["packages"] });
-
-        if (uncovered > 0) {
-          toast.success(
-            `Creati ${createdEvents.length} appuntamenti ricorrenti`,
-            {
-              description: `${holdCount} coperti da pacchetto, ${uncovered} senza copertura`
-            }
-          );
-        } else {
-          toast.success(
-            `Creati ${createdEvents.length} appuntamenti ricorrenti`,
-            {
-              description: `Tutti coperti dal pacchetto`
-            }
-          );
-        }
-
-        onOpenChange(false);
-        return;
-      } else {
-        // Create single event
-        const event = await createEvent.mutateAsync({
-          ...basePayload,
-          start_at: eventStartDateTime.toISOString(),
-          end_at: eventEndDateTime.toISOString(),
         });
 
-        // If there's a client, try to confirm with package hold
-        if (formData.clientId) {
-          try {
-            const result = await handleEventConfirm(
-              event.id,
-              formData.clientId,
-              event.start_at
-            );
+        const createdEvents = await Promise.all(createPromises);
 
-            if (!result) {
-              // No active package - show dialog for explicit coach decision
-              setPendingEvent(event);
-              setPendingClientId(formData.clientId);
-              setShowSingleLessonDialog(true);
-              return; // Don't close main modal yet
-            }
-
-            // Package found, hold created
-            queryClient.invalidateQueries({ queryKey: ["packages"] });
-            toast.success("Appuntamento creato", {
-              description: "1 credito prenotato dal pacchetto",
-            });
-          } catch (error: any) {
-            // Error during package confirmation (expired, suspended, etc.)
-            toast.warning("Appuntamento creato senza gestione crediti", {
-              description: error.message,
-            });
-          }
-        } else {
-          toast.success("Appuntamento creato");
+        // Gestione economica in base al tipo di lezione
+        if (lessonType === "free") {
+          // Lezione gratuita - nessun pagamento
+          toast.success(`Creati ${createdEvents.length} appuntamenti gratuiti`);
+          onOpenChange(false);
+          return;
         }
 
+        if (lessonType === "single") {
+          // Lezione singola - crea order_payment per ogni occorrenza
+          const priceToUse = singleLessonPrice ?? defaultSinglePrice;
+          
+          for (const evt of createdEvents) {
+            try {
+              // Crea pacchetto tecnico per ogni evento
+              const pkg = await createPackage({
+                coach_client_id: coachClientId,
+                name: `Lezione singola - ${format(new Date(evt.start_at), "d MMM yyyy", { locale: it })}`,
+                total_sessions: 1,
+                price_total_cents: priceToUse,
+                duration_months: 1,
+                payment_status: 'unpaid',
+                is_single_technical: true,
+              });
+
+              // Crea HOLD per l'evento
+              await createLedgerEntry(
+                pkg.package_id,
+                'HOLD_CREATE',
+                'CONFIRM',
+                0,
+                1,
+                evt.id,
+                `Lezione singola: ${evt.title}`
+              );
+
+              // Aggiorna on_hold
+              await supabase
+                .from("package")
+                .update({ on_hold_sessions: 1 })
+                .eq("package_id", pkg.package_id);
+            } catch (err) {
+              console.warn('Could not create single lesson for recurring event:', err);
+            }
+          }
+
+          queryClient.invalidateQueries({ queryKey: ["packages"] });
+          toast.success(`Creati ${createdEvents.length} appuntamenti`, {
+            description: recurrence.enabled 
+              ? "Il pagamento sarà dovuto per ciascuna occorrenza" 
+              : "Il pagamento sarà dovuto dopo l'appuntamento"
+          });
+          onOpenChange(false);
+          return;
+        }
+
+        if (lessonType === "package" && selectedPackageId) {
+          // Pacchetto - associa crediti agli eventi
+          const pkg = availablePackages.find(p => p.package_id === selectedPackageId);
+          if (!pkg) {
+            toast.success(`Creati ${createdEvents.length} appuntamenti ricorrenti`);
+            onOpenChange(false);
+            return;
+          }
+
+          let currentOnHold = pkg.on_hold_sessions;
+          const sortedEvents = [...createdEvents].sort(
+            (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+          );
+
+          for (const evt of sortedEvents) {
+            try {
+              await createLedgerEntry(
+                pkg.package_id,
+                'HOLD_CREATE',
+                'CONFIRM',
+                0,
+                1,
+                evt.id,
+                `Ricorrenza: ${evt.title || 'Allenamento'}`
+              );
+
+              currentOnHold += 1;
+              await supabase
+                .from("package")
+                .update({ on_hold_sessions: currentOnHold })
+                .eq("package_id", pkg.package_id);
+            } catch (err) {
+              console.warn('Could not create HOLD for recurring event:', err);
+            }
+          }
+
+          queryClient.invalidateQueries({ queryKey: ["packages"] });
+          toast.success(`Creati ${createdEvents.length} appuntamenti ricorrenti`, {
+            description: `Tutti coperti dal pacchetto`
+          });
+          onOpenChange(false);
+          return;
+        }
+
+        // Fallback (non dovrebbe mai succedere con validazione corretta)
+        toast.success(`Creati ${createdEvents.length} appuntamenti ricorrenti`);
         onOpenChange(false);
+        return;
       }
+      
+      // === EVENTO SINGOLO ===
+      const event = await createEvent.mutateAsync({
+        ...basePayload,
+        start_at: eventStartDateTime.toISOString(),
+        end_at: eventEndDateTime.toISOString(),
+      });
+
+      // Gestione economica in base al tipo di lezione
+      if (lessonType === "free") {
+        toast.success("Appuntamento gratuito creato");
+        onOpenChange(false);
+        return;
+      }
+
+      if (lessonType === "single") {
+        // Lezione singola - crea pacchetto tecnico e order_payment
+        const priceToUse = singleLessonPrice ?? defaultSinglePrice;
+        
+        try {
+          const pkg = await createPackage({
+            coach_client_id: coachClientId,
+            name: `Lezione singola - ${format(eventStartDateTime, "d MMM yyyy", { locale: it })}`,
+            total_sessions: 1,
+            price_total_cents: priceToUse,
+            duration_months: 1,
+            payment_status: 'unpaid',
+            is_single_technical: true,
+          });
+
+          await createLedgerEntry(
+            pkg.package_id,
+            'HOLD_CREATE',
+            'CONFIRM',
+            0,
+            1,
+            event.id,
+            `Lezione singola: ${event.title}`
+          );
+
+          await supabase
+            .from("package")
+            .update({ on_hold_sessions: 1 })
+            .eq("package_id", pkg.package_id);
+
+          queryClient.invalidateQueries({ queryKey: ["packages"] });
+          toast.success("Appuntamento creato", {
+            description: "Il pagamento sarà dovuto dopo l'appuntamento"
+          });
+        } catch (err) {
+          console.warn('Could not create single lesson:', err);
+          toast.success("Appuntamento creato");
+        }
+        
+        onOpenChange(false);
+        return;
+      }
+
+      if (lessonType === "package" && selectedPackageId) {
+        // Associa al pacchetto
+        try {
+          await handleEventConfirm(event.id, formData.clientId, event.start_at);
+          queryClient.invalidateQueries({ queryKey: ["packages"] });
+          toast.success("Appuntamento creato", {
+            description: "1 credito prenotato dal pacchetto"
+          });
+        } catch (error: any) {
+          toast.warning("Appuntamento creato senza gestione crediti", {
+            description: error.message
+          });
+        }
+        
+        onOpenChange(false);
+        return;
+      }
+
+      // Fallback
+      toast.success("Appuntamento creato");
+      onOpenChange(false);
     } catch (error) {
-      // Error is handled by useCreateEvent onError
       console.error('Create event error:', error);
     }
   };
@@ -1021,93 +1093,133 @@ export function EventEditorModal({
               />
             )}
 
-            {/* Gestione Pacchetto per Ricorrenze */}
-            {isNewMode && recurrence.enabled && occurrences.length > 0 && formData.clientId && (
-              <div className="space-y-3 rounded-lg border p-4">
-                <div className="flex items-center gap-2">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <Label className="text-base font-medium">Gestione pacchetto</Label>
-                </div>
+            {/* NUOVA SEZIONE: Tipo di lezione (scelta economica esplicita) */}
+            {isNewMode && formData.clientId && (
+              <div className="space-y-4 rounded-lg border p-4">
+                <Label className="text-base font-medium">Tipo di lezione *</Label>
                 
                 <RadioGroup
-                  value={recurrencePackageMode}
+                  value={lessonType || ""}
                   onValueChange={(value) => {
-                    setRecurrencePackageMode(value as "none" | "assign");
-                    if (value === "none") setRecurrencePackageId(null);
+                    setLessonType(value as LessonType);
+                    if (value !== "package") setSelectedPackageId(null);
+                    if (value !== "single") setSingleLessonPrice(null);
                   }}
-                  className="space-y-2"
+                  className="space-y-3"
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="none" id="pkg-none" />
-                    <Label htmlFor="pkg-none" className="text-sm font-normal cursor-pointer">
-                      Non associare un pacchetto
-                    </Label>
+                  {/* Lezione gratuita */}
+                  <div className="flex items-start space-x-3">
+                    <RadioGroupItem value="free" id="lesson-free" className="mt-0.5" />
+                    <div className="space-y-1">
+                      <Label htmlFor="lesson-free" className="font-normal cursor-pointer flex items-center gap-2">
+                        <Gift className="h-4 w-4 text-muted-foreground" />
+                        Lezione gratuita
+                      </Label>
+                      {lessonType === "free" && (
+                        <p className="text-xs text-muted-foreground">
+                          {recurrence.enabled 
+                            ? "Nessuna occorrenza di questa serie genererà pagamenti o consumi."
+                            : "Questo appuntamento non genera alcun pagamento."}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
+                  {/* Lezione singola */}
+                  <div className="flex items-start space-x-3">
+                    <RadioGroupItem value="single" id="lesson-single" className="mt-0.5" />
+                    <div className="space-y-2 flex-1">
+                      <Label htmlFor="lesson-single" className="font-normal cursor-pointer flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        Lezione singola
+                      </Label>
+                      {lessonType === "single" && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={(singleLessonPrice ?? defaultSinglePrice) / 100}
+                              onChange={(e) => setSingleLessonPrice(Math.round(parseFloat(e.target.value) * 100) || defaultSinglePrice)}
+                              className="w-24"
+                              min="0"
+                              step="0.01"
+                            />
+                            <span className="text-sm text-muted-foreground">€</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {recurrence.enabled 
+                              ? "Il pagamento sarà dovuto per ciascuna occorrenza."
+                              : "Il pagamento sarà dovuto dopo l'appuntamento o in caso di cancellazione tardiva."}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Pacchetto */}
+                  <div className="flex items-start space-x-3">
                     <RadioGroupItem 
-                      value="assign" 
-                      id="pkg-assign" 
+                      value="package" 
+                      id="lesson-package" 
+                      className="mt-0.5"
                       disabled={availablePackages.length === 0}
                     />
-                    <Label 
-                      htmlFor="pkg-assign" 
-                      className={cn(
-                        "text-sm font-normal cursor-pointer",
-                        availablePackages.length === 0 && "text-muted-foreground"
+                    <div className="space-y-2 flex-1">
+                      <Label 
+                        htmlFor="lesson-package" 
+                        className={cn(
+                          "font-normal cursor-pointer flex items-center gap-2",
+                          availablePackages.length === 0 && "text-muted-foreground"
+                        )}
+                      >
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        Pacchetto
+                        {availablePackages.length === 0 && (
+                          <span className="text-xs">(nessun pacchetto disponibile)</span>
+                        )}
+                      </Label>
+                      {lessonType === "package" && availablePackages.length > 0 && (
+                        <div className="space-y-2">
+                          <Select
+                            value={selectedPackageId || ""}
+                            onValueChange={setSelectedPackageId}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Seleziona pacchetto" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availablePackages.map((pkg) => {
+                                const kpi = calculatePackageKPI(pkg);
+                                const canCover = !recurrence.enabled || kpi.available >= occurrences.length;
+                                return (
+                                  <SelectItem 
+                                    key={pkg.package_id} 
+                                    value={pkg.package_id}
+                                    disabled={!canCover}
+                                  >
+                                    {pkg.name} ({kpi.available} crediti)
+                                    {!canCover && ` — Insufficiente`}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                          
+                          {selectedPackageId && recurrence.enabled && (
+                            <p className={cn(
+                              "text-xs",
+                              selectedPackageCredits >= occurrences.length ? "text-green-600" : "text-amber-600"
+                            )}>
+                              {selectedPackageCredits >= occurrences.length 
+                                ? `✓ Copre tutte le ${occurrences.length} occorrenze`
+                                : `⚠ Crediti insufficienti per ${occurrences.length} occorrenze`}
+                            </p>
+                          )}
+                        </div>
                       )}
-                    >
-                      Associa un pacchetto esistente
-                    </Label>
+                    </div>
                   </div>
                 </RadioGroup>
-
-                {/* Package dropdown - only if mode = assign */}
-                {recurrencePackageMode === "assign" && (
-                  <div className="pl-6 space-y-2">
-                    {availablePackages.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Nessun pacchetto con crediti disponibili
-                      </p>
-                    ) : (
-                      <>
-                        <Select
-                          value={recurrencePackageId || ""}
-                          onValueChange={setRecurrencePackageId}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleziona pacchetto" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availablePackages.map((pkg) => {
-                              const kpi = calculatePackageKPI(pkg);
-                              return (
-                                <SelectItem key={pkg.package_id} value={pkg.package_id}>
-                                  {pkg.name} ({kpi.available} crediti disponibili)
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-
-                        {/* Coverage info */}
-                        {recurrencePackageId && (
-                          <div className="text-sm">
-                            {occurrences.length <= selectedPackageCredits ? (
-                              <p className="text-green-600">
-                                ✓ Tutti i {occurrences.length} appuntamenti saranno coperti
-                              </p>
-                            ) : (
-                              <p className="text-amber-600">
-                                ⚠ {selectedPackageCredits} appuntamenti coperti, {occurrences.length - selectedPackageCredits} senza copertura
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
             )}
 
@@ -1336,15 +1448,6 @@ export function EventEditorModal({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Single Lesson Dialog - shown when no active package exists */}
-      <SingleLessonDialog
-        open={showSingleLessonDialog}
-        onOpenChange={setShowSingleLessonDialog}
-        clientName={clients?.find(c => c.id === pendingClientId)?.first_name + ' ' + clients?.find(c => c.id === pendingClientId)?.last_name || ""}
-        onConfirmSingleLesson={handleConfirmSingleLesson}
-        onConfirmWithoutPackage={handleConfirmWithoutPackage}
-        isLoading={createSingleLesson.isPending}
-      />
     </>
   );
 }

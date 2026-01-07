@@ -168,9 +168,6 @@ export function formatRecurrenceRule(config: RecurrenceConfig): string {
 
   // End condition
   switch (config.endType) {
-    case "never":
-      parts.push("senza fine");
-      break;
     case "until":
       if (config.endDate) {
         parts.push(`fino al ${config.endDate}`);
