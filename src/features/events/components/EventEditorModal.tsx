@@ -801,35 +801,31 @@ export function EventEditorModal({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[680px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
-          {/* Header - 72-80px height, clean alignment */}
-          <DialogHeader className="h-[76px] px-6 flex-shrink-0 flex items-center border-b border-border/30">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/8 flex items-center justify-center flex-shrink-0">
-                <CalendarIcon className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="text-xl font-semibold text-foreground leading-tight">
-                  {viewMode === 'view' ? formData.title : (viewMode === 'edit' ? 'Modifica appuntamento' : 'Nuovo appuntamento')}
-                </DialogTitle>
-                <DialogDescription className="sr-only">
-                  {viewMode === 'view' 
-                    ? `Dettagli appuntamento: ${formData.title}` 
-                    : viewMode === 'edit' 
-                      ? 'Modifica i dettagli dell\'appuntamento' 
-                      : 'Crea un nuovo appuntamento con un cliente'}
-                </DialogDescription>
-                {viewMode === 'view' && (
-                  <div className="flex items-center gap-2 mt-1">
-                    {getEventStatusBadge()}
-                    {event?.recurrence_rule && (
-                      <Badge variant="outline" className="text-xs font-normal">
-                        Ricorrente
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </div>
+          {/* Header - compact, Linear/Google style */}
+          <DialogHeader className="h-14 px-6 flex-shrink-0 flex flex-row items-center justify-between border-b border-border/40">
+            <div className="flex items-center gap-2.5">
+              <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+              <DialogTitle className="text-lg font-semibold text-foreground leading-none">
+                {viewMode === 'view' ? formData.title : (viewMode === 'edit' ? 'Modifica appuntamento' : 'Nuovo appuntamento')}
+              </DialogTitle>
+              {viewMode === 'view' && (
+                <>
+                  {getEventStatusBadge()}
+                  {event?.recurrence_rule && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      Ricorrente
+                    </Badge>
+                  )}
+                </>
+              )}
             </div>
+            <DialogDescription className="sr-only">
+              {viewMode === 'view' 
+                ? `Dettagli appuntamento: ${formData.title}` 
+                : viewMode === 'edit' 
+                  ? 'Modifica i dettagli dell\'appuntamento' 
+                  : 'Crea un nuovo appuntamento con un cliente'}
+            </DialogDescription>
           </DialogHeader>
 
           {/* Content - consistent 24px padding */}
@@ -962,50 +958,49 @@ export function EventEditorModal({
 
             {/* EDIT/NEW FORM */}
             {(viewMode === 'new' || viewMode === 'edit') && (
-              <div className="space-y-8">
-            {/* Dettagli Principali - consistent spacing */}
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-medium text-foreground">
-                  Titolo <span className="opacity-60">*</span>
-                </Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Aggiungi un titolo"
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="client" className="text-sm font-medium text-foreground">
-                  Cliente <span className="opacity-60">*</span>
-                </Label>
-                <Select
-                  value={formData.clientId}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, clientId: value }))}
-                  disabled={!!lockedClientId}
-                >
-                  <SelectTrigger id="client" className="h-11">
-                    <SelectValue placeholder="Seleziona un cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.first_name} {client.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <div className="space-y-6">
+            {/* Titolo */}
+            <div className="space-y-1.5">
+              <Label htmlFor="title" className="text-sm font-medium text-foreground">
+                Titolo <span className="text-muted-foreground/60">*</span>
+              </Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Aggiungi un titolo"
+                className="h-10"
+              />
             </div>
 
-            {/* Data, Orari e Durata - aligned grid */}
-            <div className="space-y-2">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            {/* Cliente */}
+            <div className="space-y-1.5">
+              <Label htmlFor="client" className="text-sm font-medium text-foreground">
+                Cliente <span className="text-muted-foreground/60">*</span>
+              </Label>
+              <Select
+                value={formData.clientId}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, clientId: value }))}
+                disabled={!!lockedClientId}
+              >
+                <SelectTrigger id="client" className="h-10">
+                  <SelectValue placeholder="Seleziona un cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.first_name} {client.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Data / Orari - horizontal aligned grid */}
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-3 gap-3">
                 {/* Data */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="date" className="text-sm font-medium text-foreground">Data</Label>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -1013,12 +1008,12 @@ export function EventEditorModal({
                         id="date"
                         variant="outline"
                         className={cn(
-                          "w-full justify-start text-left font-normal h-11",
+                          "w-full justify-start text-left font-normal h-10",
                           !formData.date && "text-muted-foreground"
                         )}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.date ? format(formData.date, "PPP", { locale: it }) : "Seleziona data"}
+                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        {formData.date ? format(formData.date, "d MMM yyyy", { locale: it }) : "Seleziona"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -1036,7 +1031,7 @@ export function EventEditorModal({
                 </div>
 
                 {/* Dalle */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="start-time" className="text-sm font-medium text-foreground">Dalle</Label>
                   <Select
                     value={formData.startTime}
@@ -1044,11 +1039,11 @@ export function EventEditorModal({
                       const [oldStartH, oldStartM] = formData.startTime.split(':').map(Number);
                       const [oldEndH, oldEndM] = formData.endTime.split(':').map(Number);
                       const currentDuration = (oldEndH * 60 + oldEndM) - (oldStartH * 60 + oldStartM);
-                      const duration = currentDuration > 0 ? currentDuration : (bookingSettings?.slot_duration_minutes || 45);
+                      const durationVal = currentDuration > 0 ? currentDuration : (bookingSettings?.slot_duration_minutes || 45);
                       
                       const [h, m] = value.split(':').map(Number);
                       const startDate = setMinutes(setHours(new Date(), h), m);
-                      const endDate = addMinutes(startDate, duration);
+                      const endDate = addMinutes(startDate, durationVal);
                       
                       const endMinutes = Math.ceil((endDate.getHours() * 60 + endDate.getMinutes()) / 15) * 15;
                       const endH = Math.floor(endMinutes / 60) % 24;
@@ -1063,7 +1058,7 @@ export function EventEditorModal({
                       }));
                     }}
                   >
-                    <SelectTrigger id="start-time" className="h-11">
+                    <SelectTrigger id="start-time" className="h-10">
                       <SelectValue placeholder="Inizio" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1077,10 +1072,10 @@ export function EventEditorModal({
                 </div>
 
                 {/* Alle */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="end-time" className="text-sm font-medium text-foreground">Alle</Label>
                   <Select value={formData.endTime} onValueChange={(value) => setFormData(prev => ({ ...prev, endTime: value }))}>
-                    <SelectTrigger id="end-time" className="h-11">
+                    <SelectTrigger id="end-time" className="h-10">
                       <SelectValue placeholder="Fine" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1099,8 +1094,8 @@ export function EventEditorModal({
                 </div>
               </div>
 
-              {/* Durata calcolata - helper text style */}
-              <p className="text-xs text-muted-foreground mt-1.5">
+              {/* Durata calcolata - meta info */}
+              <p className="text-[12px] text-muted-foreground/80 mt-1">
                 Durata: {duration}
               </p>
             </div>
@@ -1114,21 +1109,21 @@ export function EventEditorModal({
               />
             )}
 
-            {/* SEZIONE: Tipo di lezione (scelta economica esplicita) */}
+            {/* SEZIONE: Tipo di lezione - decisione economica strutturale */}
             {isNewMode && (
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <h3 className="text-base font-semibold text-foreground">
-                    Tipo di lezione <span className="opacity-60">*</span>
+              <div className="pt-4 space-y-3">
+                <div className="space-y-0.5">
+                  <h3 className="text-[15px] font-semibold text-foreground">
+                    Tipo di lezione <span className="text-muted-foreground/60">*</span>
                   </h3>
-                  <p className="text-[13px] text-muted-foreground leading-relaxed">
-                    Definisce come verrà gestito il pagamento di questo appuntamento
+                  <p className="text-[13px] text-muted-foreground">
+                    Definisce come verrà gestito il pagamento
                   </p>
                 </div>
                 
                 {!formData.clientId ? (
-                  <p className="text-sm text-muted-foreground/80 italic py-1">
-                    Seleziona un cliente per visualizzare le opzioni disponibili
+                  <p className="text-[13px] text-muted-foreground/70 italic">
+                    Seleziona un cliente per vedere le opzioni
                   </p>
                 ) : (
                   <RadioGroup
@@ -1316,47 +1311,50 @@ export function EventEditorModal({
               </div>
             )}
 
-            {/* Luogo */}
-            <div className="space-y-2">
-              <Label htmlFor="location" className="text-sm font-medium text-foreground">Luogo</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="Es: Studio, Online, Palestra"
-                className="h-11"
-              />
-            </div>
+            {/* Campi secondari: Luogo, Promemoria, Note - spacing più contenuto */}
+            <div className="space-y-4 pt-2">
+              {/* Luogo */}
+              <div className="space-y-1.5">
+                <Label htmlFor="location" className="text-sm font-medium text-foreground">Luogo</Label>
+                <Input
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  placeholder="Es: Studio, Online, Palestra"
+                  className="h-10"
+                />
+              </div>
 
-            {/* Promemoria */}
-            <div className="space-y-2">
-              <Label htmlFor="reminder" className="text-sm font-medium text-foreground">Promemoria</Label>
-              <Select
-                value={formData.reminderOffset?.toString() || "0"}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, reminderOffset: parseInt(value) || undefined }))}
-              >
-                <SelectTrigger id="reminder" className="h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Nessuno</SelectItem>
-                  <SelectItem value="15">15 minuti prima</SelectItem>
-                  <SelectItem value="60">1 ora prima</SelectItem>
-                  <SelectItem value="1440">1 giorno prima</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Promemoria */}
+              <div className="space-y-1.5">
+                <Label htmlFor="reminder" className="text-sm font-medium text-foreground">Promemoria</Label>
+                <Select
+                  value={formData.reminderOffset?.toString() || "0"}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, reminderOffset: parseInt(value) || undefined }))}
+                >
+                  <SelectTrigger id="reminder" className="h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Nessuno</SelectItem>
+                    <SelectItem value="15">15 minuti prima</SelectItem>
+                    <SelectItem value="60">1 ora prima</SelectItem>
+                    <SelectItem value="1440">1 giorno prima</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Note Interne */}
-            <div className="space-y-2">
-              <Label htmlFor="notes" className="text-sm font-medium text-foreground">Note interne</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Aggiungi note per questa sessione..."
-                className="min-h-[100px] max-h-[160px] resize-y"
-              />
+              {/* Note Interne - visivamente più leggero */}
+              <div className="space-y-1.5">
+                <Label htmlFor="notes" className="text-sm font-medium text-foreground">Note interne</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Aggiungi note per questa sessione..."
+                  className="min-h-[88px] max-h-[140px] resize-y text-sm"
+                />
+              </div>
             </div>
 
             {/* Warnings */}
@@ -1383,28 +1381,28 @@ export function EventEditorModal({
             </div>
           </div>
 
-          {/* Footer - anchored CTAs with proper spacing */}
-          <DialogFooter className="px-6 py-4 border-t border-border/30 sticky bottom-0 z-10 flex-shrink-0 flex items-center justify-between bg-background">
+          {/* Footer - clean spacing, no heavy divider */}
+          <DialogFooter className="px-6 py-4 border-t border-border/20 flex-shrink-0 flex items-center justify-between bg-background">
             {viewMode === 'view' && (
               <div className="flex items-center justify-between w-full">
                 <Button
                   variant="ghost"
                   onClick={() => setShowDeleteDialog(true)}
-                  className="h-11 px-4 text-destructive/80 hover:text-destructive hover:bg-destructive/5 font-normal"
+                  className="h-10 px-4 text-destructive/80 hover:text-destructive hover:bg-destructive/5 font-normal"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Elimina
                 </Button>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   {canStartSession && event && new Date(event.end_at) >= new Date() && (
-                    <Button variant="outline" onClick={handleStartSession} className="h-11 px-5">
+                    <Button variant="outline" onClick={handleStartSession} className="h-10 px-4">
                       <Play className="h-4 w-4 mr-2" />
                       Avvia sessione
                     </Button>
                   )}
                   <Button
                     onClick={() => setViewMode('edit')}
-                    className="h-11 px-5"
+                    className="h-10 px-5"
                   >
                     <Pencil className="h-4 w-4 mr-2" />
                     Modifica
@@ -1419,21 +1417,21 @@ export function EventEditorModal({
                   <Button
                     variant="ghost"
                     onClick={() => setShowDeleteDialog(true)}
-                    className="h-11 px-4 text-destructive hover:text-destructive"
+                    className="h-10 px-4 text-destructive hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Elimina
                   </Button>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
                       onClick={() => setViewMode('view')}
-                      className="h-11 px-5"
+                      className="h-10 px-4"
                     >
                       Annulla
                     </Button>
                     {canStartSession && (
-                      <Button onClick={handleStartSession} variant="secondary" className="h-11 px-5">
+                      <Button onClick={handleStartSession} variant="secondary" className="h-10 px-4">
                         <Play className="h-4 w-4 mr-2" />
                         Avvia sessione
                       </Button>
@@ -1445,7 +1443,7 @@ export function EventEditorModal({
                             <Button
                               onClick={handleUpdate}
                               disabled={!isValid || updateEvent.isPending}
-                              className="h-11 px-6 font-semibold"
+                              className="h-10 px-5 font-semibold"
                             >
                               {updateEvent.isPending ? 'Salvataggio...' : 'Salva modifiche'}
                             </Button>
@@ -1464,11 +1462,11 @@ export function EventEditorModal({
               
               {/* New Mode Footer */}
               {viewMode === 'new' && (
-                <div className="flex items-center justify-end w-full gap-3">
+                <div className="flex items-center justify-end w-full gap-2">
                   <Button
                     variant="ghost"
                     onClick={() => onOpenChange(false)}
-                    className="h-11 px-5"
+                    className="h-10 px-4"
                   >
                     Annulla
                   </Button>
@@ -1479,7 +1477,7 @@ export function EventEditorModal({
                           <Button
                             onClick={handleCreate}
                             disabled={!isValid || createEvent.isPending}
-                            className="h-11 px-6 font-semibold"
+                            className="h-10 px-5 font-semibold"
                           >
                             {createEvent.isPending ? 'Salvataggio...' : 'Crea appuntamento'}
                           </Button>
