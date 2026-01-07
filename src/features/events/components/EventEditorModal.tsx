@@ -1120,164 +1120,203 @@ export function EventEditorModal({
               />
             )}
 
-            {/* NUOVA SEZIONE: Tipo di lezione (scelta economica esplicita) */}
-            {isNewMode && formData.clientId && (
-              <div className="space-y-4 rounded-lg border p-4">
-                <Label className="text-base font-medium">Tipo di lezione *</Label>
+            {/* SEZIONE: Tipo di lezione (scelta economica esplicita) */}
+            {isNewMode && (
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <Label className="text-base font-medium">Tipo di lezione *</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Definisce come verrà gestito il pagamento di questo appuntamento
+                  </p>
+                </div>
                 
-                <RadioGroup
-                  value={lessonType || ""}
-                  onValueChange={(value) => {
-                    setLessonType(value as LessonType);
-                    if (value !== "package") setSelectedPackageId(null);
-                    if (value !== "single") setSingleLessonPrice(null);
-                  }}
-                  className="space-y-3"
-                >
-                  {/* Lezione gratuita */}
-                  <div className="flex items-start space-x-3">
-                    <RadioGroupItem value="free" id="lesson-free" className="mt-0.5" />
-                    <div className="space-y-1">
-                      <Label htmlFor="lesson-free" className="font-normal cursor-pointer flex items-center gap-2">
-                        <Gift className="h-4 w-4 text-muted-foreground" />
-                        Lezione gratuita
-                      </Label>
-                      {lessonType === "free" && (
+                {!formData.clientId ? (
+                  <p className="text-sm text-muted-foreground py-2 pl-1">
+                    Seleziona un cliente per visualizzare le opzioni disponibili
+                  </p>
+                ) : (
+                  <RadioGroup
+                    value={lessonType || ""}
+                    onValueChange={(value) => {
+                      setLessonType(value as LessonType);
+                      if (value !== "package") setSelectedPackageId(null);
+                      if (value !== "single") setSingleLessonPrice(null);
+                    }}
+                    className="space-y-4"
+                  >
+                    {/* Lezione gratuita */}
+                    <div className="flex items-start space-x-3">
+                      <RadioGroupItem value="free" id="lesson-free" className="mt-0.5" />
+                      <div className="space-y-1">
+                        <Label htmlFor="lesson-free" className="font-normal cursor-pointer flex items-center gap-2">
+                          <Gift className="h-4 w-4 text-muted-foreground" />
+                          Lezione gratuita
+                        </Label>
                         <p className="text-xs text-muted-foreground">
-                          {recurrence.enabled 
-                            ? "Nessuna occorrenza di questa serie genererà pagamenti o consumi."
-                            : "Questo appuntamento non genera alcun pagamento."}
+                          {lessonType === "free" 
+                            ? (recurrence.enabled 
+                                ? "Nessuna occorrenza di questa serie genererà pagamenti o consumi."
+                                : "Questo appuntamento non genera alcun pagamento.")
+                            : "Nessun pagamento richiesto"}
                         </p>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                  
-                  {/* Lezione singola */}
-                  <div className="flex items-start space-x-3">
-                    <RadioGroupItem value="single" id="lesson-single" className="mt-0.5" />
-                    <div className="space-y-2 flex-1">
-                      <Label htmlFor="lesson-single" className="font-normal cursor-pointer flex items-center gap-2">
-                        <CreditCard className="h-4 w-4 text-muted-foreground" />
-                        Lezione singola
-                      </Label>
-                      {lessonType === "single" && (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              value={(singleLessonPrice ?? defaultSinglePrice) / 100}
-                              onChange={(e) => setSingleLessonPrice(Math.round(parseFloat(e.target.value) * 100) || defaultSinglePrice)}
-                              className="w-24"
-                              min="0"
-                              step="0.01"
-                            />
-                            <span className="text-sm text-muted-foreground">€</span>
+                    
+                    {/* Lezione singola */}
+                    <div className="flex items-start space-x-3">
+                      <RadioGroupItem value="single" id="lesson-single" className="mt-0.5" />
+                      <div className="space-y-2 flex-1">
+                        <Label htmlFor="lesson-single" className="font-normal cursor-pointer flex items-center gap-2">
+                          <CreditCard className="h-4 w-4 text-muted-foreground" />
+                          Lezione singola
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Pagamento singolo per questa lezione
+                        </p>
+                        {lessonType === "single" && (
+                          <div className="space-y-2 pt-1">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                value={(singleLessonPrice ?? defaultSinglePrice) / 100}
+                                onChange={(e) => setSingleLessonPrice(Math.round(parseFloat(e.target.value) * 100) || defaultSinglePrice)}
+                                className="w-24"
+                                min="0"
+                                step="0.01"
+                              />
+                              <span className="text-sm text-muted-foreground">€</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {recurrence.enabled 
+                                ? "Il pagamento sarà dovuto per ciascuna occorrenza."
+                                : "Il pagamento sarà dovuto dopo l'appuntamento o in caso di cancellazione tardiva."}
+                            </p>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            {recurrence.enabled 
-                              ? "Il pagamento sarà dovuto per ciascuna occorrenza."
-                              : "Il pagamento sarà dovuto dopo l'appuntamento o in caso di cancellazione tardiva."}
-                          </p>
-                        </>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Pacchetto */}
-                  <div className="flex items-start space-x-3">
-                    <RadioGroupItem 
-                      value="package" 
-                      id="lesson-package" 
-                      className="mt-0.5"
-                      disabled={availablePackages.length === 0}
-                    />
-                    <div className="space-y-2 flex-1">
-                      <Label 
-                        htmlFor="lesson-package" 
-                        className={cn(
-                          "font-normal cursor-pointer flex items-center gap-2",
-                          availablePackages.length === 0 && "text-muted-foreground"
-                        )}
-                      >
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                        Pacchetto
-                        {availablePackages.length === 0 && (
-                          <span className="text-xs">(nessun pacchetto disponibile)</span>
-                        )}
-                      </Label>
-                      {lessonType === "package" && availablePackages.length > 0 && (
-                        <div className="space-y-2">
-                          <Select
-                            value={selectedPackageId || ""}
-                            onValueChange={setSelectedPackageId}
+                    {/* Pacchetto */}
+                    <div className="flex items-start space-x-3">
+                      <RadioGroupItem 
+                        value="package" 
+                        id="lesson-package" 
+                        className="mt-0.5"
+                        disabled={availablePackages.length === 0}
+                      />
+                      <div className="space-y-2 flex-1">
+                        <Label 
+                          htmlFor="lesson-package" 
+                          className={cn(
+                            "font-normal cursor-pointer flex items-center gap-2",
+                            availablePackages.length === 0 && "text-muted-foreground"
+                          )}
+                        >
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                          Pacchetto
+                          {availablePackages.length === 0 && (
+                            <span className="text-xs">(nessun pacchetto attivo)</span>
+                          )}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {availablePackages.length > 0 
+                            ? "Scala le lezioni da un pacchetto esistente"
+                            : "Nessun pacchetto attivo per questo cliente"}
+                        </p>
+                      </div>
+                    </div>
+                  </RadioGroup>
+                )}
+
+                {/* Lista pacchetti esplosa (fuori dal RadioGroup per struttura pulita) */}
+                {formData.clientId && lessonType === "package" && availablePackages.length > 0 && (
+                  <div className="space-y-3 pl-7">
+                    {/* Contesto occorrenze per serie ricorrenti */}
+                    {recurrence.enabled && occurrences.length > 0 && (
+                      <p className="text-sm font-medium">
+                        Questa serie crea {occurrences.length} appuntamenti
+                      </p>
+                    )}
+                    
+                    {/* Lista pacchetti */}
+                    <div className="space-y-2">
+                      {availablePackages.map((pkg) => {
+                        const kpi = calculatePackageKPI(pkg);
+                        const hasSufficientCredits = !recurrence.enabled || kpi.available >= occurrences.length;
+                        const expiresBeforeSeries = recurrence.enabled && lastOccurrenceDate && 
+                          pkg.expires_at && new Date(pkg.expires_at) < lastOccurrenceDate;
+                        const canCover = hasSufficientCredits && !expiresBeforeSeries;
+                        const isSelected = selectedPackageId === pkg.package_id;
+                        
+                        return (
+                          <div 
+                            key={pkg.package_id}
+                            className={cn(
+                              "flex items-start gap-3 p-3 rounded-lg border transition-colors",
+                              canCover && "hover:bg-muted/50 cursor-pointer",
+                              !canCover && "opacity-60 cursor-not-allowed bg-muted/20",
+                              isSelected && canCover && "border-primary bg-primary/5"
+                            )}
+                            onClick={() => canCover && setSelectedPackageId(pkg.package_id)}
                           >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Seleziona pacchetto" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availablePackages.map((pkg) => {
-                                const kpi = calculatePackageKPI(pkg);
-                                const hasSufficientCredits = !recurrence.enabled || kpi.available >= occurrences.length;
-                                
-                                // Check se il pacchetto scade prima dell'ultima occorrenza
-                                const expiresBeforeSeries = recurrence.enabled && lastOccurrenceDate && 
-                                  pkg.expires_at && new Date(pkg.expires_at) < lastOccurrenceDate;
-                                
-                                const canCover = hasSufficientCredits && !expiresBeforeSeries;
-                                
-                                // Messaggio di disabilitazione
-                                let disabledReason = "";
-                                if (!hasSufficientCredits) {
-                                  disabledReason = ` — Insufficiente (serve ${occurrences.length})`;
-                                } else if (expiresBeforeSeries) {
-                                  disabledReason = ` — Scade prima della fine serie`;
-                                }
-                                
-                                return (
-                                  <SelectItem 
-                                    key={pkg.package_id} 
-                                    value={pkg.package_id}
-                                    disabled={!canCover}
-                                  >
-                                    {pkg.name} ({kpi.available} crediti)
-                                    {disabledReason}
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
-                          
-                          {/* Feedback visivo per il pacchetto selezionato */}
-                          {selectedPackageId && recurrence.enabled && (() => {
-                            if (selectedPackageExpiresBeforeSeries && lastOccurrenceDate) {
-                              const selectedPkg = availablePackages.find(p => p.package_id === selectedPackageId);
-                              return (
-                                <p className="text-xs text-destructive">
-                                  ⚠ Il pacchetto scade il {format(new Date(selectedPkg!.expires_at!), "d MMM", { locale: it })} 
-                                  {" "}ma l'ultima occorrenza è il {format(lastOccurrenceDate, "d MMM", { locale: it })}
-                                </p>
-                              );
-                            }
+                            <div className={cn(
+                              "w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0",
+                              isSelected && canCover ? "border-primary" : "border-muted-foreground/40",
+                              !canCover && "border-muted-foreground/20"
+                            )}>
+                              {isSelected && canCover && (
+                                <div className="w-2 h-2 rounded-full bg-primary" />
+                              )}
+                            </div>
                             
-                            if (selectedPackageCredits >= occurrences.length) {
-                              return (
-                                <p className="text-xs text-green-600">
-                                  ✓ Copre tutte le {occurrences.length} occorrenze
-                                </p>
-                              );
-                            }
-                            
-                            return (
-                              <p className="text-xs text-amber-600">
-                                ⚠ Crediti insufficienti per {occurrences.length} occorrenze
+                            <div className="flex-1 min-w-0 space-y-1">
+                              {/* Riga 1: Nome pacchetto */}
+                              <p className={cn(
+                                "font-medium text-sm",
+                                !canCover && "text-muted-foreground"
+                              )}>
+                                {pkg.name}
                               </p>
-                            );
-                          })()}
-                        </div>
-                      )}
+                              
+                              {/* Riga 2: Lezioni disponibili */}
+                              <p className="text-sm text-muted-foreground">
+                                {kpi.available} / {kpi.total} lezioni disponibili
+                              </p>
+                              
+                              {/* Riga 3: Scadenza */}
+                              {pkg.expires_at && (
+                                <p className="text-sm text-muted-foreground">
+                                  Scade il {format(new Date(pkg.expires_at), "d MMM yyyy", { locale: it })}
+                                </p>
+                              )}
+                              
+                              {/* Riga 4: Stato rispetto all'evento (solo per ricorrenze) */}
+                              {recurrence.enabled && occurrences.length > 0 && (
+                                <>
+                                  {!hasSufficientCredits && (
+                                    <p className="text-xs text-amber-600 font-medium">
+                                      ⚠ Insufficiente — servono {occurrences.length} lezioni
+                                    </p>
+                                  )}
+                                  {hasSufficientCredits && expiresBeforeSeries && (
+                                    <p className="text-xs text-destructive font-medium">
+                                      ⚠ Scade prima della fine serie
+                                    </p>
+                                  )}
+                                  {canCover && (
+                                    <p className="text-xs text-green-600 font-medium">
+                                      ✓ Copre tutte le {occurrences.length} occorrenze
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                </RadioGroup>
+                )}
               </div>
             )}
 
