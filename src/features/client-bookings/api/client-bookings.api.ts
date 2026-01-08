@@ -226,7 +226,7 @@ export async function getClientAppointments(): Promise<ClientAppointmentView[]> 
 }
 
 /**
- * Create a new booking request
+ * Create a new booking request with economic choice
  */
 export async function createBookingRequest(input: CreateBookingRequestInput): Promise<void> {
   const { coachClientId } = await getClientCoachClientId();
@@ -238,7 +238,9 @@ export async function createBookingRequest(input: CreateBookingRequestInput): Pr
       requested_start_at: input.requestedStartAt,
       requested_end_at: input.requestedEndAt,
       notes: input.notes || null,
-      status: 'PENDING'
+      status: 'PENDING',
+      economic_type: input.economicType,
+      selected_package_id: input.economicType === 'package' ? input.packageId : null,
     });
 
   if (error) throw error;

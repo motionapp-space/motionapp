@@ -199,6 +199,7 @@ export type Database = {
           counter_proposal_end_at: string | null
           counter_proposal_start_at: string | null
           created_at: string
+          economic_type: string
           event_id: string | null
           finalized_end_at: string | null
           finalized_start_at: string | null
@@ -206,6 +207,7 @@ export type Database = {
           notes: string | null
           requested_end_at: string
           requested_start_at: string
+          selected_package_id: string | null
           status: Database["public"]["Enums"]["booking_request_status"]
           updated_at: string
         }
@@ -215,6 +217,7 @@ export type Database = {
           counter_proposal_end_at?: string | null
           counter_proposal_start_at?: string | null
           created_at?: string
+          economic_type?: string
           event_id?: string | null
           finalized_end_at?: string | null
           finalized_start_at?: string | null
@@ -222,6 +225,7 @@ export type Database = {
           notes?: string | null
           requested_end_at: string
           requested_start_at: string
+          selected_package_id?: string | null
           status?: Database["public"]["Enums"]["booking_request_status"]
           updated_at?: string
         }
@@ -231,6 +235,7 @@ export type Database = {
           counter_proposal_end_at?: string | null
           counter_proposal_start_at?: string | null
           created_at?: string
+          economic_type?: string
           event_id?: string | null
           finalized_end_at?: string | null
           finalized_start_at?: string | null
@@ -238,6 +243,7 @@ export type Database = {
           notes?: string | null
           requested_end_at?: string
           requested_start_at?: string
+          selected_package_id?: string | null
           status?: Database["public"]["Enums"]["booking_request_status"]
           updated_at?: string
         }
@@ -262,6 +268,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_booking_requests_selected_package"
+            columns: ["selected_package_id"]
+            isOneToOne: false
+            referencedRelation: "package"
+            referencedColumns: ["package_id"]
           },
         ]
       }

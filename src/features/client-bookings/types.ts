@@ -44,9 +44,19 @@ export interface CreateBookingRequestInput {
   requestedStartAt: string;
   requestedEndAt: string;
   notes?: string;
+  economicType: 'package' | 'single_paid';
+  packageId?: string; // Required if economicType = 'package'
 }
 
 export interface AvailableSlot {
   start: string;
   end: string;
+}
+
+export interface ClientPackageOption {
+  packageId: string;
+  name: string;
+  available: number;
+  expiresAt: string | null;
+  isFefoDefault: boolean;
 }
