@@ -2,7 +2,8 @@ export type NotificationType =
   | "autonomous_session_completed"
   | "client_message"
   | "plan_completed"
-  | "appointment_canceled_by_client";
+  | "appointment_canceled_by_client"
+  | "booking_approved";
 
 export interface CoachNotification {
   id: string;
