@@ -1985,6 +1985,7 @@ export type Database = {
         | "RECONCILE"
         | "REQUEST_CREATE"
         | "REQUEST_CANCEL"
+        | "BOOKING_CONFIRMED"
       ledger_type:
         | "HOLD_CREATE"
         | "HOLD_RELEASE"
@@ -2157,6 +2158,7 @@ export const Constants = {
         "RECONCILE",
         "REQUEST_CREATE",
         "REQUEST_CANCEL",
+        "BOOKING_CONFIRMED",
       ],
       ledger_type: [
         "HOLD_CREATE",
