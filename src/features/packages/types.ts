@@ -3,7 +3,7 @@
 export type PackageUsageStatus = 'active' | 'completed' | 'suspended' | 'archived';
 export type PackagePaymentStatus = 'unpaid' | 'partial' | 'paid' | 'refunded';
 export type LedgerType = 'HOLD_CREATE' | 'HOLD_RELEASE' | 'CONSUME' | 'CORRECTION' | 'PRICE_UPDATE';
-export type LedgerReason = 'CONFIRM' | 'CANCEL_GT_24H' | 'CANCEL_LT_24H' | 'COMPLETE' | 'ADMIN_CORRECTION' | 'RECONCILE';
+export type LedgerReason = 'CONFIRM' | 'CANCEL_GT_24H' | 'CANCEL_LT_24H' | 'COMPLETE' | 'ADMIN_CORRECTION' | 'RECONCILE' | 'REQUEST_CREATE' | 'REQUEST_CANCEL' | 'BOOKING_CONFIRMED';
 
 export interface Package {
   package_id: string;
@@ -45,6 +45,7 @@ export interface LedgerEntry {
   ledger_id: string;
   package_id: string;
   calendar_event_id: string | null;
+  booking_request_id: string | null;
   type: LedgerType;
   reason: LedgerReason;
   delta_consumed: number;
