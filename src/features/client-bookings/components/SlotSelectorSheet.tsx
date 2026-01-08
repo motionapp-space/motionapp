@@ -2,11 +2,13 @@ import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Clock, CalendarDays, Loader2, AlertCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useClientBookingSettings } from "../hooks/useClientBookingSettings";
+import { useClientValidPackages } from "../hooks/useClientValidPackages";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PaymentCoverageSection } from "./PaymentCoverageSection";
 import { format, addDays, startOfDay, isSameDay, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import { useClientAvailableSlots, clientAvailableSlotsQueryKey } from "../hooks/useClientAvailableSlots";
@@ -32,20 +34,56 @@ function formatDuration(minutes: number): string {
 export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps) {
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   
   const queryClient = useQueryClient();
   const { data: slots, isLoading } = useClientAvailableSlots(28);
   const { data: settings } = useClientBookingSettings();
   const createBooking = useCreateBookingRequest();
+  
+  // Fetch valid packages for selected slot
+  const { data: validPackages = [], isLoading: packagesLoading } = useClientValidPackages(
+    selectedSlot?.end ?? null
+  );
 
-  // Reset state when sheet closes (stable via useEffect)
+  // Reset state when sheet closes
   useEffect(() => {
     if (!open) {
       setSelectedSlot(null);
+      setSelectedPackageId(null);
       setSubmitError(null);
     }
   }, [open]);
+
+  // Reset package selection when slot changes (correction #6)
+  useEffect(() => {
+    setSelectedPackageId(null);
+  }, [selectedSlot?.start, selectedSlot?.end]);
+
+  // Guard rail: if selected package is no longer valid, reset (correction #7)
+  useEffect(() => {
+    if (!selectedPackageId) return;
+    if (!validPackages.some(p => p.packageId === selectedPackageId)) {
+      setSelectedPackageId(null);
+    }
+  }, [validPackages, selectedPackageId]);
+
+  // Calculate economic choice based on packages
+  const economicChoice = useMemo(() => {
+    if (validPackages.length === 0) {
+      return { economicType: 'single_paid' as const, packageId: null };
+    }
+    if (validPackages.length === 1) {
+      return { economicType: 'package' as const, packageId: validPackages[0].packageId };
+    }
+    // 2+: use user selection or default FEFO (first in list)
+    const effectivePackageId = selectedPackageId ?? validPackages[0].packageId;
+    return {
+      economicType: 'package' as const,
+      packageId: effectivePackageId,
+    };
+  }, [validPackages, selectedPackageId]);
 
   // Generate 7 days starting from today + week offset
   const weekDates = useMemo(() => {
@@ -69,15 +107,14 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
   // Toggle slot selection
   const handleSelectSlot = (slot: AvailableSlot) => {
     if (selectedSlot?.start === slot.start) {
-      // Deselect if same slot clicked
       setSelectedSlot(null);
     } else {
       setSelectedSlot(slot);
-      setSubmitError(null); // Clear error on new selection
+      setSubmitError(null);
     }
   };
 
-  // Submit booking request with granular error handling
+  // Submit booking request with economic choice
   const handleSubmit = async () => {
     if (!selectedSlot) return;
     setSubmitError(null);
@@ -85,14 +122,14 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
     try {
       await createBooking.mutateAsync({
         requestedStartAt: selectedSlot.start,
-        requestedEndAt: selectedSlot.end
+        requestedEndAt: selectedSlot.end,
+        economicType: economicChoice.economicType,
+        packageId: economicChoice.packageId ?? undefined,
       });
-      // Success: close sheet (toast + invalidations handled by hook)
       onOpenChange(false);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "";
       
-      // Slot not available: clear selection and refetch
       if (
         errorMessage.toLowerCase().includes("not available") || 
         errorMessage.toLowerCase().includes("non disponibile") ||
@@ -102,7 +139,6 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
         setSelectedSlot(null);
         queryClient.invalidateQueries({ queryKey: clientAvailableSlotsQueryKey(28) });
       } else {
-        // Network/server error: keep selection for retry
         setSubmitError("Errore di connessione. Riprova.");
       }
     }
@@ -230,6 +266,18 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
                   </Button>
                 );
               })}
+            </div>
+          )}
+
+          {/* Payment/Coverage Section */}
+          {selectedSlot && (
+            <div className="mt-6 border-t pt-4">
+              <PaymentCoverageSection
+                packages={validPackages}
+                isLoading={packagesLoading}
+                selectedPackageId={economicChoice.packageId}
+                onSelectPackage={(id) => setSelectedPackageId(id)}
+              />
             </div>
           )}
         </div>
