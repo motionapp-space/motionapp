@@ -1294,6 +1294,7 @@ export type Database = {
       }
       package_ledger: {
         Row: {
+          booking_request_id: string | null
           calendar_event_id: string | null
           created_at: string
           created_by: string | null
@@ -1306,6 +1307,7 @@ export type Database = {
           type: Database["public"]["Enums"]["ledger_type"]
         }
         Insert: {
+          booking_request_id?: string | null
           calendar_event_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1318,6 +1320,7 @@ export type Database = {
           type: Database["public"]["Enums"]["ledger_type"]
         }
         Update: {
+          booking_request_id?: string | null
           calendar_event_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1330,6 +1333,13 @@ export type Database = {
           type?: Database["public"]["Enums"]["ledger_type"]
         }
         Relationships: [
+          {
+            foreignKeyName: "package_ledger_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "booking_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "package_ledger_calendar_event_id_fkey"
             columns: ["calendar_event_id"]
@@ -1973,6 +1983,8 @@ export type Database = {
         | "COMPLETE"
         | "ADMIN_CORRECTION"
         | "RECONCILE"
+        | "REQUEST_CREATE"
+        | "REQUEST_CANCEL"
       ledger_type:
         | "HOLD_CREATE"
         | "HOLD_RELEASE"
@@ -2143,6 +2155,8 @@ export const Constants = {
         "COMPLETE",
         "ADMIN_CORRECTION",
         "RECONCILE",
+        "REQUEST_CREATE",
+        "REQUEST_CANCEL",
       ],
       ledger_type: [
         "HOLD_CREATE",

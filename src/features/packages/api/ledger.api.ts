@@ -106,18 +106,19 @@ export async function createLedgerEntry(
   if (!session.session) throw new Error("Non autenticato");
 
   // Try to insert (will fail silently if duplicate due to unique constraint)
+  // Use type assertion due to enum sync delay with Supabase types
   const { data, error } = await supabase
     .from("package_ledger")
     .insert({
       package_id: packageId,
       calendar_event_id: eventId || null,
-      type,
-      reason,
+      type: type as string,
+      reason: reason as string,
       delta_consumed: deltaConsumed,
       delta_hold: deltaHold,
       note: note || null,
       created_by: session.session.user.id,
-    })
+    } as any)
     .select()
     .maybeSingle();
 
