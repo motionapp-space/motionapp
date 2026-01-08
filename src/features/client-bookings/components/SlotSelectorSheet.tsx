@@ -16,6 +16,8 @@ import { useCreateBookingRequest } from "../hooks/useCreateBookingRequest";
 import { cn } from "@/lib/utils";
 import type { AvailableSlot } from "../types";
 
+type BookingStep = "SELECT_SLOT" | "CONFIRM";
+
 interface SlotSelectorSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -32,6 +34,7 @@ function formatDuration(minutes: number): string {
 }
 
 export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps) {
+  const [step, setStep] = useState<BookingStep>("SELECT_SLOT");
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
@@ -42,26 +45,27 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
   const { data: settings } = useClientBookingSettings();
   const createBooking = useCreateBookingRequest();
   
-  // Fetch valid packages for selected slot
+  // Fetch valid packages for selected slot (preload for step 2)
   const { data: validPackages = [], isLoading: packagesLoading } = useClientValidPackages(
     selectedSlot?.end ?? null
   );
 
-  // Reset state when sheet closes
+  // Reset all state when sheet closes
   useEffect(() => {
     if (!open) {
+      setStep("SELECT_SLOT");
       setSelectedSlot(null);
       setSelectedPackageId(null);
       setSubmitError(null);
     }
   }, [open]);
 
-  // Reset package selection when slot changes (correction #6)
+  // Reset package selection when slot changes
   useEffect(() => {
     setSelectedPackageId(null);
   }, [selectedSlot?.start, selectedSlot?.end]);
 
-  // Guard rail: if selected package is no longer valid, reset (correction #7)
+  // Guard rail: if selected package is no longer valid, reset
   useEffect(() => {
     if (!selectedPackageId) return;
     if (!validPackages.some(p => p.packageId === selectedPackageId)) {
@@ -137,6 +141,7 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
       ) {
         setSubmitError("Questo orario non è più disponibile. Seleziona un altro.");
         setSelectedSlot(null);
+        setStep("SELECT_SLOT");
         queryClient.invalidateQueries({ queryKey: clientAvailableSlotsQueryKey(28) });
       } else {
         setSubmitError("Errore di connessione. Riprova.");
@@ -158,120 +163,179 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[90vh] rounded-t-2xl flex flex-col p-0">
-        {/* Sticky Header */}
-        <SheetHeader className="px-4 pt-4 pb-3 border-b flex-shrink-0">
-          <SheetTitle className="text-center">Prenota appuntamento</SheetTitle>
-          {settings?.slotDurationMinutes && (
-            <div className="flex items-center justify-center gap-2 pt-1">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10">
-                <Clock className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-primary">
-                  Durata: {formatDuration(settings.slotDurationMinutes)}
-                </span>
-              </div>
-            </div>
-          )}
-        </SheetHeader>
+        
+        {/* ============ STEP 1: SELECT SLOT ============ */}
+        {step === "SELECT_SLOT" && (
+          <>
+            {/* Header */}
+            <SheetHeader className="px-4 pt-4 pb-3 border-b flex-shrink-0">
+              <SheetTitle className="text-center">Prenota appuntamento</SheetTitle>
+              {settings?.slotDurationMinutes && (
+                <div className="flex items-center justify-center gap-2 pt-1">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">
+                      Durata: {formatDuration(settings.slotDurationMinutes)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </SheetHeader>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
-          {/* Week navigator */}
-          <div className="flex items-center justify-between mb-4">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigateWeek('prev')}
-              disabled={!canGoPrev}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <span className="text-sm font-medium">
-              {format(weekDates[0], "d MMM", { locale: it })} - {format(weekDates[6], "d MMM", { locale: it })}
-            </span>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigateWeek('next')}
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
-
-          {/* Date strip */}
-          <div className="grid grid-cols-7 gap-1 pb-4">
-            {weekDates.map((date) => {
-              const isSelected = isSameDay(date, selectedDate);
-              const hasSlots = slots?.some(s => isSameDay(parseISO(s.start), date));
-              
-              return (
-                <button
-                  key={date.toISOString()}
-                  onClick={() => setSelectedDate(date)}
-                  className={cn(
-                    "flex flex-col items-center py-2 px-1 rounded-lg transition-colors",
-                    isSelected 
-                      ? "bg-primary text-primary-foreground" 
-                      : hasSlots 
-                        ? "bg-accent hover:bg-accent/80" 
-                        : "opacity-50"
-                  )}
+            {/* Scrollable Content */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
+              {/* Week navigator */}
+              <div className="flex items-center justify-between mb-4">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => navigateWeek('prev')}
+                  disabled={!canGoPrev}
                 >
-                  <span className="text-[10px] uppercase">
-                    {format(date, "EEE", { locale: it })}
-                  </span>
-                  <span className="text-base font-semibold">
-                    {format(date, "d")}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <span className="text-sm font-medium">
+                  {format(weekDates[0], "d MMM", { locale: it })} - {format(weekDates[6], "d MMM", { locale: it })}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => navigateWeek('next')}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
 
-          {/* Slots section */}
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">
-            Orari disponibili per {format(selectedDate, "EEEE d MMMM", { locale: it })}
-          </h3>
+              {/* Date strip */}
+              <div className="grid grid-cols-7 gap-1 pb-4">
+                {weekDates.map((date) => {
+                  const isSelected = isSameDay(date, selectedDate);
+                  const hasSlots = slots?.some(s => isSameDay(parseISO(s.start), date));
+                  
+                  return (
+                    <button
+                      key={date.toISOString()}
+                      onClick={() => setSelectedDate(date)}
+                      className={cn(
+                        "flex flex-col items-center py-2 px-1 rounded-lg transition-colors",
+                        isSelected 
+                          ? "bg-primary text-primary-foreground" 
+                          : hasSlots 
+                            ? "bg-accent hover:bg-accent/80" 
+                            : "opacity-50"
+                      )}
+                    >
+                      <span className="text-[10px] uppercase">
+                        {format(date, "EEE", { locale: it })}
+                      </span>
+                      <span className="text-base font-semibold">
+                        {format(date, "d")}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-3 gap-2">
-              {[...Array(6)].map((_, i) => (
-                <Skeleton key={i} className="h-12" />
-              ))}
+              {/* Slots section */}
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                Orari disponibili per {format(selectedDate, "EEEE d MMMM", { locale: it })}
+              </h3>
+
+              {isLoading ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} className="h-12" />
+                  ))}
+                </div>
+              ) : daySlots.length === 0 ? (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <Calendar className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Nessun orario disponibile per questa data
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {daySlots.map((slot) => {
+                    const isSelected = selectedSlot?.start === slot.start;
+                    return (
+                      <Button
+                        key={slot.start}
+                        variant={isSelected ? "default" : "outline"}
+                        className={cn(
+                          "h-12 transition-all",
+                          isSelected && "ring-2 ring-primary ring-offset-2"
+                        )}
+                        onClick={() => handleSelectSlot(slot)}
+                      >
+                        {format(parseISO(slot.start), "HH:mm")}
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          ) : daySlots.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <Calendar className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Nessun orario disponibile per questa data
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {daySlots.map((slot) => {
-                const isSelected = selectedSlot?.start === slot.start;
-                return (
-                  <Button
-                    key={slot.start}
-                    variant={isSelected ? "default" : "outline"}
-                    className={cn(
-                      "h-12 transition-all",
-                      isSelected && "ring-2 ring-primary ring-offset-2"
-                    )}
-                    onClick={() => handleSelectSlot(slot)}
-                    disabled={createBooking.isPending}
-                  >
-                    {format(parseISO(slot.start), "HH:mm")}
-                  </Button>
-                );
-              })}
-            </div>
-          )}
 
-          {/* Payment/Coverage Section */}
-          {selectedSlot && (
-            <div className="mt-6 border-t pt-4">
+            {/* Footer Step 1 */}
+            <div className="sticky bottom-0 px-4 pt-3 bg-background border-t flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <Button
+                className="w-full h-12"
+                disabled={!selectedSlot}
+                onClick={() => setStep("CONFIRM")}
+              >
+                {selectedSlot ? "Continua" : "Seleziona un orario"}
+              </Button>
+            </div>
+          </>
+        )}
+
+        {/* ============ STEP 2: CONFIRM ============ */}
+        {step === "CONFIRM" && selectedSlot && (
+          <>
+            {/* Header with back button */}
+            <div className="px-4 pt-4 pb-3 border-b flex-shrink-0">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setStep("SELECT_SLOT")}
+                className="gap-1 -ml-2 mb-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Cambia orario
+              </Button>
+              <h2 className="text-lg font-semibold text-center">
+                Conferma appuntamento
+              </h2>
+            </div>
+
+            {/* Content - NOT scrollable, all visible */}
+            <div className="flex-1 px-4 py-4 space-y-6">
+              {/* Slot summary card (read-only) */}
+              <Card className="bg-muted/50">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <CalendarDays className="h-5 w-5 text-primary flex-shrink-0" />
+                    <span className="font-medium capitalize">
+                      {format(parseISO(selectedSlot.start), "EEEE d MMMM yyyy", { locale: it })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-primary flex-shrink-0" />
+                    <span>
+                      {format(parseISO(selectedSlot.start), "HH:mm")} – {format(parseISO(selectedSlot.end), "HH:mm")}
+                      {settings?.slotDurationMinutes && (
+                        <span className="text-muted-foreground ml-2">
+                          ({formatDuration(settings.slotDurationMinutes)})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Payment/Coverage Section - ALWAYS VISIBLE */}
               <PaymentCoverageSection
                 packages={validPackages}
                 isLoading={packagesLoading}
@@ -279,67 +343,41 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
                 onSelectPackage={(id) => setSelectedPackageId(id)}
               />
             </div>
-          )}
-        </div>
 
-        {/* Sticky Footer with safe-area */}
-        <div className="sticky bottom-0 px-4 pt-3 bg-background border-t space-y-3 flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          {/* Inline Summary */}
-          {selectedSlot && (
-            <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-primary flex-shrink-0" />
-                <span className="font-medium capitalize text-sm">
-                  {format(parseISO(selectedSlot.start), "EEEE d MMMM yyyy", { locale: it })}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary flex-shrink-0" />
-                <span className="text-sm">
-                  {format(parseISO(selectedSlot.start), "HH:mm")} – {format(parseISO(selectedSlot.end), "HH:mm")}
-                  {settings?.slotDurationMinutes && (
-                    <span className="text-muted-foreground ml-1">
-                      ({formatDuration(settings.slotDurationMinutes)})
-                    </span>
-                  )}
-                </span>
-              </div>
+            {/* Footer Step 2 */}
+            <div className="sticky bottom-0 px-4 pt-3 bg-background border-t space-y-3 flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              {/* Microcopy */}
+              <p className="text-xs text-muted-foreground text-center">
+                Invieremo la richiesta al coach. Riceverai una notifica alla conferma.
+              </p>
+              
+              {/* Error inline */}
+              {submitError && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">{submitError}</AlertDescription>
+                </Alert>
+              )}
+              
+              {/* CTA Button */}
+              <Button
+                className="w-full h-12"
+                disabled={createBooking.isPending}
+                onClick={handleSubmit}
+              >
+                {createBooking.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Invio richiesta...
+                  </>
+                ) : (
+                  "Richiedi appuntamento"
+                )}
+              </Button>
             </div>
-          )}
-          
-          {/* Microcopy */}
-          {selectedSlot && (
-            <p className="text-xs text-muted-foreground text-center">
-              Invieremo la richiesta al coach. Ti avviseremo quando conferma.
-            </p>
-          )}
-          
-          {/* Error inline */}
-          {submitError && (
-            <Alert variant="destructive" className="py-2">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">{submitError}</AlertDescription>
-            </Alert>
-          )}
-          
-          {/* CTA Button */}
-          <Button
-            className="w-full h-12"
-            disabled={!selectedSlot || createBooking.isPending}
-            onClick={handleSubmit}
-          >
-            {createBooking.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Invio richiesta...
-              </>
-            ) : selectedSlot ? (
-              "Richiedi appuntamento"
-            ) : (
-              "Seleziona un orario"
-            )}
-          </Button>
-        </div>
+          </>
+        )}
+
       </SheetContent>
     </Sheet>
   );
