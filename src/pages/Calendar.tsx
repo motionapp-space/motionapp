@@ -46,6 +46,7 @@ const Calendar = () => {
   const [selectedEvent, setSelectedEvent] = useState<EventWithClient | undefined>();
   const [dayPickerOpen, setDayPickerOpen] = useState(false);
   const [sessionEventData, setSessionEventData] = useState<{ clientId: string; eventId: string; linkedPlanId?: string; linkedDayId?: string } | null>(null);
+  const [prefillEventData, setPrefillEventData] = useState<{ start: Date; end: Date } | undefined>();
   
   const createSession = useCreateSession();
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
@@ -238,6 +239,9 @@ const Calendar = () => {
                     toast.info(PREVIEW_MESSAGES.BLOCKED_ACTION);
                     return;
                   }
+                  const slotDuration = bookingSettings?.slot_duration_minutes || 45;
+                  const endTime = new Date(startTime.getTime() + slotDuration * 60 * 1000);
+                  setPrefillEventData({ start: startTime, end: endTime });
                   setCreateModalOpen(true);
                 }}
               />
@@ -258,6 +262,9 @@ const Calendar = () => {
                     toast.info(PREVIEW_MESSAGES.BLOCKED_ACTION);
                     return;
                   }
+                  const slotDuration = bookingSettings?.slot_duration_minutes || 45;
+                  const endTime = new Date(startTime.getTime() + slotDuration * 60 * 1000);
+                  setPrefillEventData({ start: startTime, end: endTime });
                   setCreateModalOpen(true);
                 }}
               />
@@ -283,8 +290,12 @@ const Calendar = () => {
       {/* Modals */}
       <EventModal
         open={createModalOpen}
-        onOpenChange={setCreateModalOpen}
+        onOpenChange={(open) => {
+          setCreateModalOpen(open);
+          if (!open) setPrefillEventData(undefined);
+        }}
         mode="coach-create"
+        prefillData={prefillEventData}
       />
 
       {selectedEvent && (
