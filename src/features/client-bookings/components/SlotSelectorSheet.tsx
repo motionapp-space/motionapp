@@ -310,8 +310,8 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
               </h2>
             </div>
 
-            {/* Content - NOT scrollable, all visible */}
-            <div className="flex-1 px-4 py-4 space-y-6">
+              {/* Content - scrollable */}
+              <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-6">
               {/* Slot summary card (read-only) */}
               <Card className="bg-muted/50">
                 <CardContent className="p-4 space-y-3">

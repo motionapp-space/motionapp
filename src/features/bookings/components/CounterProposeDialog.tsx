@@ -166,7 +166,7 @@ export function CounterProposeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-md max-h-[90vh] p-0 gap-0 flex flex-col">
         {/* Sticky Header - Original Request Context */}
         <div className="sticky top-0 z-10 bg-muted/50 border-b px-4 py-3">
           <DialogHeader className="space-y-1">
@@ -184,7 +184,7 @@ export function CounterProposeDialog({
           </DialogHeader>
         </div>
 
-        <div className="flex flex-col max-h-[70vh]">
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
           {/* Suggested Slots Section */}
           {suggestedSlots.length > 0 && (
             <div className="px-4 py-3 border-b bg-primary/5">
