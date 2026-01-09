@@ -11,7 +11,8 @@ interface CoachLayoutProps {
 
 const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
   const location = useLocation();
-  const isCalendarPage = location.pathname === "/calendar" || location.pathname.startsWith("/calendar/");
+  // Only the main calendar/agenda view should have overflow-hidden (internal scroll)
+  const isAgendaView = location.pathname === "/calendar";
 
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
@@ -26,7 +27,7 @@ const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
           {/* Agenda keeps overflow-hidden for internal scroll, other pages get overflow-y-auto */}
           <main className={cn(
             "h-full",
-            isCalendarPage ? "overflow-hidden" : "overflow-y-auto"
+            isAgendaView ? "overflow-hidden" : "overflow-y-auto"
           )}>
             <Outlet />
           </main>

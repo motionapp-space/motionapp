@@ -166,9 +166,9 @@ export function CounterProposeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] p-0 gap-0 flex flex-col">
-        {/* Sticky Header - Original Request Context */}
-        <div className="sticky top-0 z-10 bg-muted/50 border-b px-4 py-3">
+      <DialogContent className="max-w-md max-h-[90vh] p-0 gap-0 grid grid-rows-[auto_1fr_auto] overflow-hidden">
+        {/* Header - Original Request Context */}
+        <div className="bg-muted/50 border-b px-4 py-3">
           <DialogHeader className="space-y-1">
             <DialogTitle className="text-base font-medium">
               Proponi nuovo orario
@@ -184,7 +184,7 @@ export function CounterProposeDialog({
           </DialogHeader>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
+        <div className="min-h-0 overflow-y-auto">
           {/* Suggested Slots Section */}
           {suggestedSlots.length > 0 && (
             <div className="px-4 py-3 border-b bg-primary/5">
@@ -255,16 +255,15 @@ export function CounterProposeDialog({
 
           {/* Time Slots Section */}
           {selectedDate && (
-            <div className="flex-1 overflow-hidden">
-              <div className="px-4 py-2 flex items-center gap-2 text-sm font-medium border-b bg-muted/30">
+            <div className="px-4 py-3">
+              <div className="flex items-center gap-2 text-sm font-medium mb-3">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span className="capitalize">
                   {format(selectedDate, "EEEE d MMMM", { locale: it })}
                 </span>
               </div>
               
-              <ScrollArea className="h-[180px]">
-                <div className="p-4 space-y-3">
+              <div className="space-y-3">
                   {displaySlots.length > 0 ? (
                     <>
                       <div className="grid grid-cols-3 gap-2">
@@ -343,14 +342,13 @@ export function CounterProposeDialog({
                       Nessuno slot disponibile per questa data
                     </p>
                   )}
-                </div>
-              </ScrollArea>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Sticky Footer - Dynamic CTA */}
-        <div className="sticky bottom-0 border-t bg-background p-4">
+        {/* Footer - Dynamic CTA */}
+        <div className="border-t bg-background p-4">
           {selectedSlot ? (
             <div className="space-y-2">
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
