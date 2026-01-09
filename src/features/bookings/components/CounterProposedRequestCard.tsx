@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { Calendar, Clock, ArrowRight, Trash2 } from "lucide-react";
+import { Clock, ArrowDown, Trash2, CircleDot, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,65 +29,81 @@ export function CounterProposedRequestCard({
     : null;
 
   const formatDateTime = (date: Date) => {
-    return format(date, "EEE d MMM, HH:mm", { locale: it });
+    return format(date, "EEE d MMM · HH:mm", { locale: it });
+  };
+
+  const formatTime = (date: Date) => {
+    return format(date, "HH:mm");
   };
 
   return (
-    <Card className="overflow-hidden border-l-4 border-l-amber-500 bg-amber-50/50 dark:bg-amber-900/10">
-      <CardContent className="p-4 space-y-3">
-        {/* Header con cliente e badge */}
-        <div className="flex items-center justify-between">
+    <Card className="overflow-hidden">
+      <CardContent className="p-0">
+        {/* Header with status badge */}
+        <div className="bg-amber-50 dark:bg-amber-950/30 px-4 py-2 border-b border-amber-100 dark:border-amber-900/50">
+          <div className="flex items-center justify-between">
+            <Badge className="bg-amber-500 hover:bg-amber-500 text-white font-medium">
+              IN ATTESA DEL CLIENTE
+            </Badge>
+            <span className="text-xs text-amber-600 dark:text-amber-400">
+              ⏳ Nessuna azione richiesta
+            </span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-3">
+          {/* Client info */}
           <div className="flex items-center gap-2">
-            <ClientColorDot
-              clientId={request.coach_client_id}
-            />
+            <ClientColorDot clientId={request.coach_client_id} />
             <span className="font-semibold text-foreground">
               {request.client_name}
             </span>
           </div>
-          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
-            In attesa risposta
-          </Badge>
-        </div>
 
-        {/* Confronto date */}
-        <div className="space-y-2">
-          {/* Data originale (barrata) */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground line-through opacity-60">
-            <Calendar className="h-4 w-4" />
-            <span>
-              {formatDateTime(originalStart)} – {format(originalEnd, "HH:mm")}
-            </span>
-          </div>
-
-          {/* Freccia */}
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <ArrowRight className="h-4 w-4 ml-0.5" />
-          </div>
-
-          {/* Nuova proposta */}
-          {proposedStart && proposedEnd && (
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <span className="font-medium text-foreground">
-                {formatDateTime(proposedStart)} – {format(proposedEnd, "HH:mm")}
-              </span>
+          {/* Timeline */}
+          <div className="relative pl-6 space-y-3">
+            {/* Vertical line */}
+            <div className="absolute left-[9px] top-2 bottom-2 w-0.5 bg-border" />
+            
+            {/* Original request */}
+            <div className="relative">
+              <CircleDot className="absolute -left-6 top-0.5 h-4 w-4 text-muted-foreground" />
+              <div className="text-sm">
+                <span className="text-muted-foreground">Richiesta iniziale</span>
+                <div className="text-muted-foreground/60 line-through">
+                  {formatDateTime(originalStart)} – {formatTime(originalEnd)}
+                </div>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Azione */}
-        <div className="pt-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onDelete(request.id)}
-            disabled={isDeleting}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Annulla richiesta
-          </Button>
+            {/* Proposed time */}
+            {proposedStart && proposedEnd && (
+              <div className="relative">
+                <CheckCircle2 className="absolute -left-6 top-0.5 h-4 w-4 text-amber-500" />
+                <div className="text-sm">
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">Tua proposta</span>
+                  <div className="font-medium text-foreground">
+                    {formatDateTime(proposedStart)} – {formatTime(proposedEnd)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action */}
+          <div className="pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(request.id)}
+              disabled={isDeleting}
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              Annulla richiesta
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
