@@ -1,14 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { Clock, CheckCircle2, CalendarX, MessageCircle } from "lucide-react";
+import { Clock, CalendarX, MessageCircle } from "lucide-react";
 import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { BookingRequestCard } from "@/features/bookings/components/BookingRequestCard";
+import { PendingRequestCard } from "@/features/bookings/components/PendingRequestCard";
+import { CounterProposedRequestCard } from "@/features/bookings/components/CounterProposedRequestCard";
+import { CounterProposeDialog } from "@/features/bookings/components/CounterProposeDialog";
 import { BookingRequestDrawer } from "@/features/bookings/components/BookingRequestDrawer";
 import { useBookingRequestsQuery } from "@/features/bookings/hooks/useBookingRequests";
 import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettingsQuery";
+import { useApproveBookingRequest } from "@/features/bookings/hooks/useApproveBookingRequest";
+import { useDeclineBookingRequest } from "@/features/bookings/hooks/useDeclineBookingRequest";
+import { useCounterProposeBookingRequest } from "@/features/bookings/hooks/useCounterProposeBookingRequest";
 import type { BookingRequestWithClient } from "@/features/bookings/types";
 
 const BookingManagement = () => {
@@ -22,6 +27,13 @@ const BookingManagement = () => {
 
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
+  const [counterProposeDialogOpen, setCounterProposeDialogOpen] = useState(false);
+  const [requestToCounterPropose, setRequestToCounterPropose] = useState<BookingRequestWithClient | null>(null);
+
+  // Mutations
+  const approveMutation = useApproveBookingRequest();
+  const declineMutation = useDeclineBookingRequest();
+  const counterProposeMutation = useCounterProposeBookingRequest();
 
   // Set topbar
   useTopbar({
@@ -40,6 +52,35 @@ const BookingManagement = () => {
   const handleRequestClick = (request: BookingRequestWithClient) => {
     setSelectedRequest(request);
     setRequestDrawerOpen(true);
+  };
+
+  const handleApprove = (id: string) => {
+    approveMutation.mutate(id);
+  };
+
+  const handleDecline = (id: string) => {
+    declineMutation.mutate(id);
+  };
+
+  const handleOpenCounterPropose = (request: BookingRequestWithClient) => {
+    setRequestToCounterPropose(request);
+    setCounterProposeDialogOpen(true);
+  };
+
+  const handleCounterProposeSubmit = (id: string, startAt: string, endAt: string) => {
+    counterProposeMutation.mutate(
+      { id, startAt, endAt },
+      {
+        onSuccess: () => {
+          setCounterProposeDialogOpen(false);
+          setRequestToCounterPropose(null);
+        },
+      }
+    );
+  };
+
+  const handleDeleteCounterProposed = (id: string) => {
+    declineMutation.mutate(id);
   };
 
   return (
@@ -113,12 +154,16 @@ const BookingManagement = () => {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="grid gap-4 md:grid-cols-2">
                   {pendingRequests.map((request) => (
-                    <BookingRequestCard
+                    <PendingRequestCard
                       key={request.id}
                       request={request}
-                      onClick={() => handleRequestClick(request)}
+                      onApprove={handleApprove}
+                      onDecline={handleDecline}
+                      onCounterPropose={handleOpenCounterPropose}
+                      isApproving={approveMutation.isPending}
+                      isDeclining={declineMutation.isPending}
                     />
                   ))}
                 </div>
@@ -136,12 +181,13 @@ const BookingManagement = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="grid gap-4 md:grid-cols-2">
                   {counterProposedRequests.map((request) => (
-                    <BookingRequestCard
+                    <CounterProposedRequestCard
                       key={request.id}
                       request={request}
-                      onClick={() => handleRequestClick(request)}
+                      onDelete={handleDeleteCounterProposed}
+                      isDeleting={declineMutation.isPending}
                     />
                   ))}
                 </div>
@@ -151,11 +197,20 @@ const BookingManagement = () => {
         </div>
       </div>
 
-      {/* Request Detail Drawer */}
+      {/* Request Detail Drawer (fallback for edge cases) */}
       <BookingRequestDrawer
         open={requestDrawerOpen}
         onOpenChange={setRequestDrawerOpen}
         request={selectedRequest}
+      />
+
+      {/* Counter Propose Dialog */}
+      <CounterProposeDialog
+        request={requestToCounterPropose}
+        open={counterProposeDialogOpen}
+        onOpenChange={setCounterProposeDialogOpen}
+        onSubmit={handleCounterProposeSubmit}
+        isSubmitting={counterProposeMutation.isPending}
       />
     </div>
   );
