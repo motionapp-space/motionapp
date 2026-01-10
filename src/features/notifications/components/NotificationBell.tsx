@@ -71,7 +71,7 @@ export function NotificationBell() {
               Nessuna notifica
             </div>
           ) : (
-            <div className="divide-y divide-border pb-1">
+            <div className="divide-y divide-border pb-1 px-4">
               {displayedNotifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
