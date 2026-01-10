@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Toggle } from "@/components/ui/toggle";
-import { Plus, Search, UserPlus, ChevronDown, X, Loader2 } from "lucide-react";
+import { Plus, Search, UserPlus, ChevronDown, X, Loader2, Mail } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -29,16 +29,18 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toSentenceCase } from "@/lib/text";
+import { toast } from "sonner";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useCreateClient } from "@/features/clients/hooks/useCreateClient";
 import { useArchiveClient } from "@/features/clients/hooks/useArchiveClient";
 import { useUnarchiveClient } from "@/features/clients/hooks/useUnarchiveClient";
 import { useOnboardingState } from "@/features/clients/hooks/useOnboardingState";
 import { ClientsEmptyOnboarding } from "@/features/clients/components/ClientsEmptyOnboarding";
+import { InviteLinkDialog } from "@/features/clients/components/InviteLinkDialog";
 import { getDefaultFilters, filtersToSearchParams } from "@/features/clients/utils/filters";
 import { ClientsTable } from "@/features/clients/components/ClientsTable";
 import { getClientById } from "@/features/clients/api/clients.api";
-import type { ClientStatus, ClientsFilters } from "@/features/clients/types";
+import type { ClientStatus, ClientsFilters, CreateClientResult } from "@/features/clients/types";
 import { cn } from "@/lib/utils";
 
 // Schema di validazione Zod
@@ -74,6 +76,14 @@ const Clients = () => {
   const unarchiveMutation = useUnarchiveClient();
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [withInvite, setWithInvite] = useState(false);
+  const [inviteDialogData, setInviteDialogData] = useState<{
+    inviteLink: string;
+    clientName: string;
+    email: string;
+    expiresAt: string;
+    clientId: string;
+  } | null>(null);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -178,15 +188,39 @@ const Clients = () => {
     const normalizedData = {
       ...formData,
       email: formData.email.trim().toLowerCase(),
+      withInvite,
     };
 
     createMutation.mutate(normalizedData, {
-      onSuccess: () => {
+      onSuccess: (result) => {
         setCreateDialogOpen(false);
         setFormData({ first_name: "", last_name: "", email: "", phone: "", fiscal_code: "", notes: "" });
         setValidationErrors({});
+        setWithInvite(false);
+        
+        // If invite was created, show invite dialog
+        if (result.invite) {
+          setInviteDialogData({
+            inviteLink: result.invite.inviteLink,
+            clientName: result.invite.clientName,
+            email: result.invite.email,
+            expiresAt: result.invite.expiresAt,
+            clientId: result.client.id,
+          });
+        } else {
+          // Otherwise, navigate directly
+          toast.success("Cliente creato con successo");
+          navigate(`/clients/${result.client.id}`);
+        }
       },
     });
+  };
+
+  const handleCloseInviteDialog = () => {
+    if (inviteDialogData) {
+      navigate(`/clients/${inviteDialogData.clientId}`);
+    }
+    setInviteDialogData(null);
   };
 
   const handleArchive = (id: string, name: string) => {
@@ -411,13 +445,40 @@ const Clients = () => {
                   rows={3}
                 />
               </div>
+              
+              {/* Checkbox Invito */}
+              {formData.email.trim() && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
+                  <Checkbox
+                    id="withInvite-zero"
+                    checked={withInvite}
+                    onCheckedChange={(checked) => setWithInvite(checked === true)}
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="withInvite-zero" className="cursor-pointer flex items-center gap-2 font-medium">
+                      <Mail className="h-4 w-4" />
+                      Genera link per creare account
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Il cliente riceverà un link per completare la registrazione e accedere all'app.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 {toSentenceCase("Annulla")}
               </Button>
               <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
-                {toSentenceCase("Crea cliente")}
+                {createMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creazione...
+                  </>
+                ) : (
+                  toSentenceCase("Crea cliente")
+                )}
               </Button>
             </div>
           </DialogContent>
@@ -951,13 +1012,40 @@ const Clients = () => {
                   rows={3}
                 />
               </div>
+              
+              {/* Checkbox Invito */}
+              {formData.email.trim() && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
+                  <Checkbox
+                    id="withInvite-first"
+                    checked={withInvite}
+                    onCheckedChange={(checked) => setWithInvite(checked === true)}
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="withInvite-first" className="cursor-pointer flex items-center gap-2 font-medium">
+                      <Mail className="h-4 w-4" />
+                      Genera link per creare account
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Il cliente riceverà un link per completare la registrazione e accedere all'app.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 {toSentenceCase("Annulla")}
               </Button>
               <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
-                {toSentenceCase("Crea cliente")}
+                {createMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creazione...
+                  </>
+                ) : (
+                  toSentenceCase("Crea cliente")
+                )}
               </Button>
             </div>
           </DialogContent>
@@ -1519,13 +1607,40 @@ const Clients = () => {
                 rows={3}
               />
             </div>
+            
+            {/* Checkbox Invito */}
+            {formData.email.trim() && (
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
+                <Checkbox
+                  id="withInvite-active"
+                  checked={withInvite}
+                  onCheckedChange={(checked) => setWithInvite(checked === true)}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="withInvite-active" className="cursor-pointer flex items-center gap-2 font-medium">
+                    <Mail className="h-4 w-4" />
+                    Genera link per creare account
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Il cliente riceverà un link per completare la registrazione e accedere all'app.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
               {toSentenceCase("Annulla")}
             </Button>
             <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
-              {toSentenceCase("Crea cliente")}
+              {createMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creazione...
+                </>
+              ) : (
+                toSentenceCase("Crea cliente")
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -1564,6 +1679,19 @@ const Clients = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Invite Link Dialog */}
+      {inviteDialogData && (
+        <InviteLinkDialog
+          open={!!inviteDialogData}
+          onOpenChange={(open) => !open && handleCloseInviteDialog()}
+          inviteLink={inviteDialogData.inviteLink}
+          clientName={inviteDialogData.clientName}
+          email={inviteDialogData.email}
+          expiresAt={inviteDialogData.expiresAt}
+          onClose={handleCloseInviteDialog}
+        />
+      )}
     </div>
   );
 };

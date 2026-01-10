@@ -302,6 +302,7 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
     p_phone: input.phone || null,
     p_fiscal_code: input.fiscal_code || null,
     p_notes: input.notes || null,
+    p_with_invite: input.withInvite ?? false,
   });
 
   if (rpcError) throw rpcError;

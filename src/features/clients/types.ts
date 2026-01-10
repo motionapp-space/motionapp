@@ -53,6 +53,17 @@ export interface CreateClientInput {
   phone?: string;
   fiscal_code?: string;
   notes?: string;
+  withInvite?: boolean;
+}
+
+export interface CreateClientResult {
+  client: Client;
+  invite?: {
+    inviteLink: string;
+    expiresAt: string;
+    email: string;
+    clientName: string;
+  };
 }
 
 export interface UpdateClientInput {
