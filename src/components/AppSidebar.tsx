@@ -23,14 +23,14 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
   return (
     <aside
       className={cn(
-        "sticky top-0 h-screen shrink-0 border-r bg-background flex flex-col transition-[width] duration-200 ease-in-out",
+        "sticky top-0 h-screen shrink-0 bg-muted/30 flex flex-col transition-[width] duration-200 ease-in-out",
         collapsed ? "w-16" : "w-[232px]"
       )}
       data-testid="sidebar"
     >
       {/* Logo */}
       <div className={cn(
-        "h-16 flex items-center border-b",
+        "h-16 flex items-center",
         collapsed ? "justify-center px-2" : "px-5"
       )}>
         {collapsed ? (
@@ -42,7 +42,7 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-2 pt-3">
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-0.5">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active =
@@ -62,14 +62,14 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
                 to={item.to}
                 onClick={onNavClick}
                 className={cn(
-                  "group relative flex items-center rounded-xl transition-colors duration-200",
+                  "group relative flex items-center rounded-md transition-colors duration-200",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   collapsed
-                    ? "justify-center px-2 py-2.5"
-                    : "gap-3 px-3 py-2.5",
+                    ? "justify-center px-2 py-2"
+                    : "gap-3 px-3 py-2",
                   active
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "text-foreground hover:bg-muted/80 font-medium"
+                    ? "bg-muted/50 text-foreground font-medium"
+                    : "text-foreground hover:bg-muted/40 font-medium"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
@@ -77,19 +77,12 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
               >
                 {/* Active indicator bar */}
                 {active && !collapsed && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-primary" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-primary/70" />
                 )}
                 {active && collapsed && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-1 rounded-r-full bg-primary" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-1 rounded-r-full bg-primary/70" />
                 )}
-                <Icon
-                  className={cn(
-                    "h-5 w-5 flex-none transition-colors",
-                    active
-                      ? "text-primary"
-                      : "text-muted-foreground group-hover:text-foreground"
-                  )}
-                />
+                <Icon className="h-5 w-5 flex-none text-muted-foreground/60" />
                 {!collapsed && (
                   <span className="text-base leading-6">{item.label}</span>
                 )}
