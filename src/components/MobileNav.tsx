@@ -62,8 +62,8 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   "min-h-[44px]", // Touch target min 44px
                   active
-                    ? "bg-muted/50 text-foreground font-medium"
-                    : "text-foreground hover:bg-muted/40 font-medium"
+                    ? "bg-muted/60 text-foreground font-medium"
+                    : "text-muted-foreground hover:bg-muted/30 font-medium"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
@@ -71,7 +71,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                 {active && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-primary/70" />
                 )}
-                <Icon className="h-5 w-5 flex-none text-muted-foreground/60" />
+                <Icon className="h-5 w-5 flex-none" />
                 <span>{item.label}</span>
               </NavLink>
             );
