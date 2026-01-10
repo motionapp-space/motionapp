@@ -3,7 +3,11 @@ export type NotificationType =
   | "client_message"
   | "plan_completed"
   | "appointment_canceled_by_client"
-  | "booking_approved";
+  | "booking_approved"
+  | "booking_requested"
+  | "booking_rejected"
+  | "counter_proposal_accepted"
+  | "counter_proposal_rejected";
 
 export interface CoachNotification {
   id: string;

@@ -1,4 +1,4 @@
-import { CheckCircle, XCircle, Clock, MessageSquare, FileCheck } from "lucide-react";
+import { CheckCircle, XCircle, Activity, MessageSquare, FileCheck, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CoachNotification, NotificationType } from "../types";
 import { formatRelativeTime } from "../utils/formatRelativeTime";
@@ -12,17 +12,22 @@ interface NotificationItemProps {
 function getNotificationIcon(type: NotificationType) {
   switch (type) {
     case "booking_approved":
+    case "counter_proposal_accepted":
       return CheckCircle;
     case "appointment_canceled_by_client":
+    case "booking_rejected":
+    case "counter_proposal_rejected":
       return XCircle;
     case "autonomous_session_completed":
-      return Clock;
+      return Activity;
     case "client_message":
       return MessageSquare;
     case "plan_completed":
       return FileCheck;
+    case "booking_requested":
+      return Calendar;
     default:
-      return Clock;
+      return Activity;
   }
 }
 
