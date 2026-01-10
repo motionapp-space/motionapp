@@ -1,8 +1,6 @@
-import { useNavigate } from "react-router-dom";
 import type { CoachNotification } from "../types";
 import { NotificationItem } from "./NotificationItem";
 import { groupByDate, getGroupLabel, type GroupedNotifications } from "../utils/groupByDate";
-import { getNotificationLink } from "../utils/getNotificationLink";
 import { useMarkAsRead } from "../hooks/useMarkAsRead";
 
 interface NotificationListProps {
@@ -16,7 +14,6 @@ export function NotificationList({
   variant = "compact",
   showGroupHeaders = false 
 }: NotificationListProps) {
-  const navigate = useNavigate();
   const { markOne } = useMarkAsRead();
 
   const handleClick = (notification: CoachNotification) => {
@@ -24,12 +21,7 @@ export function NotificationList({
     if (!notification.is_read) {
       markOne.mutate(notification.id);
     }
-
-    // Navigate to related resource
-    const link = getNotificationLink(notification);
-    if (link) {
-      navigate(link);
-    }
+    // No navigation - just mark as read
   };
 
   if (!showGroupHeaders) {

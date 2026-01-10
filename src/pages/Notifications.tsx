@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ArrowLeft } from "lucide-react";
+import { Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
@@ -7,6 +7,7 @@ import { NotificationList } from "@/features/notifications/components/Notificati
 import { useNotificationsQuery } from "@/features/notifications/hooks/useNotificationsQuery";
 import { useMarkAsRead } from "@/features/notifications/hooks/useMarkAsRead";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTopbar } from "@/contexts/TopbarContext";
 
 type FilterType = "all" | "unread";
 
@@ -16,25 +17,18 @@ export default function Notifications() {
   const { data: notifications = [], isLoading } = useNotificationsQuery();
   const { markAll } = useMarkAsRead();
 
+  useTopbar({
+    title: "Notifiche",
+    showBack: true,
+    onBack: () => navigate(-1),
+  });
+
   const unreadCount = notifications.filter((n) => !n.is_read).length;
   const filteredNotifications =
     filter === "unread" ? notifications.filter((n) => !n.is_read) : notifications;
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b bg-background">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="h-9 w-9"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-lg font-semibold">Notifiche</h1>
-      </div>
-
       {/* Filter bar */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-background sticky top-0 z-10">
         <div className="flex gap-1">
