@@ -1,5 +1,5 @@
 export type Sex = "M" | "F" | "ALTRO";
-export type ClientStatus = "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO";
+export type ClientStatus = "INVITATO" | "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO";
 export type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
 export type ActorType = "SYSTEM" | "PT";
 
