@@ -2,6 +2,12 @@ import { Users, FileText, Calendar, Settings } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import React from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 
 type NavItem = { label: string; to: string; icon: React.ElementType };
 
@@ -21,13 +27,14 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
   const { pathname } = useLocation();
 
   return (
-    <aside
-      className={cn(
-        "sticky top-0 h-screen shrink-0 bg-muted/30 flex flex-col transition-[width] duration-200 ease-in-out",
-        collapsed ? "w-16" : "w-[232px]"
-      )}
-      data-testid="sidebar"
-    >
+    <TooltipProvider delayDuration={0}>
+      <aside
+        className={cn(
+          "sticky top-0 h-screen shrink-0 bg-muted/30 flex flex-col transition-[width] duration-200 ease-in-out",
+          collapsed ? "w-16" : "w-[232px]"
+        )}
+        data-testid="sidebar"
+      >
       {/* Logo */}
       <div className={cn(
         "h-16 flex items-center",
@@ -56,7 +63,7 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
                   pathname.startsWith("/templates")
                 : pathname.startsWith(item.to);
 
-            return (
+            const navLinkContent = (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -68,12 +75,11 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
                     ? "justify-center px-2 py-2"
                     : "gap-3 px-3 py-2",
                   active
-                    ? "bg-muted/50 text-foreground font-medium"
-                    : "text-foreground hover:bg-muted/40 font-medium"
+                    ? "bg-muted/60 text-foreground font-medium"
+                    : "text-muted-foreground hover:bg-muted/30 font-medium"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
-                title={collapsed ? item.label : undefined}
               >
                 {/* Active indicator bar */}
                 {active && !collapsed && (
@@ -82,15 +88,32 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
                 {active && collapsed && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-1 rounded-r-full bg-primary/70" />
                 )}
-                <Icon className="h-5 w-5 flex-none text-muted-foreground/60" />
+                <Icon className="h-5 w-5 flex-none" />
                 {!collapsed && (
                   <span className="text-base leading-6">{item.label}</span>
                 )}
               </NavLink>
             );
+
+            // Show tooltip only when collapsed
+            if (collapsed) {
+              return (
+                <Tooltip key={item.to}>
+                  <TooltipTrigger asChild>
+                    {navLinkContent}
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="font-medium">
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+
+            return navLinkContent;
           })}
         </nav>
       </div>
-    </aside>
+      </aside>
+    </TooltipProvider>
   );
 }
