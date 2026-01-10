@@ -30,7 +30,7 @@ export default function Notifications() {
   return (
     <div className="flex flex-col h-full">
       {/* Filter bar - no border, whitespace separation */}
-      <div className="flex items-center justify-between px-4 pt-6 pb-5">
+      <div className="flex items-center justify-between mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6 pb-5">
         <div className="flex gap-1">
           <Toggle
             pressed={filter === "all"}
@@ -70,7 +70,7 @@ export default function Notifications() {
       </div>
 
       {/* Content */}
-      <div className="flex-1">
+      <div className="flex-1 mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
         {isLoading ? (
           <div className="p-4 space-y-4">
             {[1, 2, 3, 4, 5].map((i) => (

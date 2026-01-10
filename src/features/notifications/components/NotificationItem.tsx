@@ -46,7 +46,7 @@ export function NotificationItem({
       className={cn(
         "w-full text-left",
         "hover:bg-muted/30 transition-colors",
-        isCompact ? "px-4 py-3.5" : "px-4 py-4"
+        isCompact ? "py-3.5" : "py-4"
       )}
     >
       {/* Main row: icon + content + timestamp */}

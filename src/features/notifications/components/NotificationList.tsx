@@ -53,7 +53,7 @@ export function NotificationList({
             className={groupIndex > 0 ? "mt-6" : ""}
           >
             {/* Group header - 12px gap to first item */}
-            <div className="px-4 pb-3">
+            <div className="pb-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 {getGroupLabel(key)}
               </span>
