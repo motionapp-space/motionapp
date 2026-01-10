@@ -39,18 +39,14 @@ export function NotificationItem({
       <div className="min-w-0 space-y-0.5">
         <p
           className={cn(
-            "text-sm leading-snug",
-            isUnread ? "font-medium text-foreground" : "text-foreground",
-            isCompact ? "line-clamp-1" : "line-clamp-2"
+            "text-sm leading-snug truncate",
+            isUnread ? "font-medium text-foreground" : "text-muted-foreground"
           )}
         >
           {notification.title}
         </p>
         {notification.message && (
-          <p className={cn(
-            "text-xs text-muted-foreground leading-relaxed",
-            isCompact ? "line-clamp-1" : "line-clamp-2"
-          )}>
+          <p className="text-xs text-muted-foreground line-clamp-1">
             {notification.message}
           </p>
         )}

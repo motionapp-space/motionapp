@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Bell, Check, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,13 +11,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotificationsQuery } from "../hooks/useNotificationsQuery";
 import { useMarkAsRead } from "../hooks/useMarkAsRead";
 import { NotificationItem } from "./NotificationItem";
+import { getNotificationLink } from "../utils/getNotificationLink";
 import type { CoachNotification } from "../types";
 
-const MAX_DROPDOWN_ITEMS = 10;
+const MAX_DROPDOWN_ITEMS = 7;
 
 export function NotificationBell() {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
   const { data: notifications = [] } = useNotificationsQuery();
   const { markOne, markAll } = useMarkAsRead();
 
@@ -26,24 +25,29 @@ export function NotificationBell() {
   const displayedNotifications = notifications.slice(0, MAX_DROPDOWN_ITEMS);
 
   const handleNotificationClick = (notification: CoachNotification) => {
-    // Mark as read only - no navigation for now
     if (!notification.is_read) {
       markOne.mutate(notification.id);
+    }
+
+    const link = getNotificationLink(notification);
+    if (link) {
+      navigate(link);
     }
   };
 
   const handleViewAll = () => {
-    setOpen(false);
     navigate("/notifications");
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+        <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-primary" />
+            <span className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center rounded-full bg-foreground text-background text-[10px] font-medium">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
           )}
         </Button>
       </DropdownMenuTrigger>
@@ -66,13 +70,13 @@ export function NotificationBell() {
         <DropdownMenuSeparator className="m-0" />
 
         {/* Notification list */}
-        <ScrollArea className="max-h-[420px]">
+        <ScrollArea className="max-h-[340px]">
           {displayedNotifications.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">
               Nessuna notifica
             </div>
           ) : (
-            <div className="divide-y divide-border pb-2">
+            <div className="divide-y divide-border">
               {displayedNotifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
