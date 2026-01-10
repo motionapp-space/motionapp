@@ -31,14 +31,14 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[280px] p-0">
+      <SheetContent side="left" className="w-[280px] p-0 bg-muted border-r-0">
         <SheetHeader className="h-16 flex items-center px-5 mb-2">
           <SheetTitle className="text-xl font-bold tracking-tight">
             Studio AI
           </SheetTitle>
         </SheetHeader>
         
-        <nav className="flex flex-col gap-0.5 px-3 pt-2">
+        <nav className="flex flex-col gap-0.5 px-2 pt-2">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active =
