@@ -1891,34 +1891,20 @@ export type Database = {
           plan_weeks_since_assignment: number
         }[]
       }
-      create_client_with_coach_link:
-        | {
-            Args: {
-              p_birth_date?: string
-              p_email?: string
-              p_first_name: string
-              p_fiscal_code?: string
-              p_last_name: string
-              p_notes?: string
-              p_phone?: string
-              p_sex?: Database["public"]["Enums"]["sex"]
-              p_with_invite?: boolean
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_birth_date?: string
-              p_email?: string
-              p_first_name: string
-              p_fiscal_code?: string
-              p_last_name: string
-              p_notes?: string
-              p_phone?: string
-              p_sex?: Database["public"]["Enums"]["sex"]
-            }
-            Returns: string
-          }
+      create_client_with_coach_link: {
+        Args: {
+          p_birth_date?: string
+          p_email?: string
+          p_first_name: string
+          p_fiscal_code?: string
+          p_last_name: string
+          p_notes?: string
+          p_phone?: string
+          p_sex?: Database["public"]["Enums"]["sex"]
+          p_with_invite?: boolean
+        }
+        Returns: string
+      }
       create_event_with_economics: {
         Args: {
           p_amount_cents?: number
