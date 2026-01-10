@@ -39,7 +39,7 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
     .from("coach_clients")
     .select("client_id")
     .eq("coach_id", user.id)
-    .eq("status", "active");
+    .in("status", ["active", "invited"]);
 
   if (ccError) throw ccError;
   
