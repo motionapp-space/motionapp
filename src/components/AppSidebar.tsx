@@ -75,8 +75,8 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
                     ? "justify-center px-2 py-2.5"
                     : "gap-3 px-3 py-2.5",
                   active
-                    ? "bg-foreground/10 text-foreground font-semibold"
-                    : "text-muted-foreground hover:bg-foreground/6"
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
