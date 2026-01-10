@@ -369,6 +369,57 @@ export type Database = {
           },
         ]
       }
+      client_invites: {
+        Row: {
+          accepted_at: string | null
+          client_id: string
+          coach_id: string
+          created_at: string
+          email: string
+          expires_at: string | null
+          id: string
+          status: Database["public"]["Enums"]["invite_status"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          client_id: string
+          coach_id: string
+          created_at?: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["invite_status"]
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          client_id?: string
+          coach_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["invite_status"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_invites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_invites_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_plan_assignments: {
         Row: {
           assigned_at: string
@@ -1840,19 +1891,34 @@ export type Database = {
           plan_weeks_since_assignment: number
         }[]
       }
-      create_client_with_coach_link: {
-        Args: {
-          p_birth_date?: string
-          p_email?: string
-          p_first_name: string
-          p_fiscal_code?: string
-          p_last_name: string
-          p_notes?: string
-          p_phone?: string
-          p_sex?: Database["public"]["Enums"]["sex"]
-        }
-        Returns: string
-      }
+      create_client_with_coach_link:
+        | {
+            Args: {
+              p_birth_date?: string
+              p_email?: string
+              p_first_name: string
+              p_fiscal_code?: string
+              p_last_name: string
+              p_notes?: string
+              p_phone?: string
+              p_sex?: Database["public"]["Enums"]["sex"]
+              p_with_invite?: boolean
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_birth_date?: string
+              p_email?: string
+              p_first_name: string
+              p_fiscal_code?: string
+              p_last_name: string
+              p_notes?: string
+              p_phone?: string
+              p_sex?: Database["public"]["Enums"]["sex"]
+            }
+            Returns: string
+          }
       create_event_with_economics: {
         Args: {
           p_amount_cents?: number
@@ -1975,7 +2041,13 @@ export type Database = {
         | "DECLINED"
         | "COUNTER_PROPOSED"
         | "CANCELED_BY_CLIENT"
-      client_status: "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO"
+      client_status:
+        | "INVITATO"
+        | "POTENZIALE"
+        | "ATTIVO"
+        | "INATTIVO"
+        | "ARCHIVIATO"
+      invite_status: "pending" | "accepted" | "expired" | "revoked"
       ledger_reason:
         | "CONFIRM"
         | "CANCEL_GT_24H"
@@ -2148,7 +2220,14 @@ export const Constants = {
         "COUNTER_PROPOSED",
         "CANCELED_BY_CLIENT",
       ],
-      client_status: ["POTENZIALE", "ATTIVO", "INATTIVO", "ARCHIVIATO"],
+      client_status: [
+        "INVITATO",
+        "POTENZIALE",
+        "ATTIVO",
+        "INATTIVO",
+        "ARCHIVIATO",
+      ],
+      invite_status: ["pending", "accepted", "expired", "revoked"],
       ledger_reason: [
         "CONFIRM",
         "CANCEL_GT_24H",

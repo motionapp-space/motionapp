@@ -30,6 +30,7 @@ import SharedPlan from "./pages/SharedPlan";
 import NotFound from "./pages/NotFound";
 import Notifications from "./pages/Notifications";
 import ClientAuth from "./pages/client/ClientAuth";
+import ClientAcceptInvite from "./pages/client/ClientAcceptInvite";
 import ClientHome from "./pages/client/ClientHome";
 import ClientWorkouts from "./pages/client/ClientWorkouts";
 import ClientAppointments from "./pages/client/ClientAppointments";
@@ -121,6 +122,7 @@ const App = () => {
           <Routes>
             {/* Client area routes - always accessible, no coach auth required */}
             <Route path="/client/auth" element={<ClientAuth />} />
+            <Route path="/client/accept-invite" element={<ClientAcceptInvite />} />
             <Route path="/client/app" element={<ClientAppLayout />}>
               <Route index element={<ClientHome />} />
               <Route path="workouts" element={<ClientWorkouts />} />
