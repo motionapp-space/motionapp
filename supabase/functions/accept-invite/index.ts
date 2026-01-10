@@ -112,23 +112,51 @@ serve(async (req) => {
 
     console.log(`Creating account for: ${client.first_name} ${client.last_name} (${invite.email})`);
 
-    // Create auth user
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: invite.email,
-      password,
-      email_confirm: true,
-    });
+    // Check if auth user already exists (from a previous failed attempt)
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existingAuthUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === invite.email.toLowerCase());
+    
+    let authUserId: string;
+    
+    if (existingAuthUser) {
+      console.log(`Auth user already exists: ${existingAuthUser.id}, reusing...`);
+      authUserId = existingAuthUser.id;
+      
+      // Update the password for the existing user
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+        password,
+        email_confirm: true,
+      });
+      
+      if (updateError) {
+        console.error('Error updating existing auth user:', updateError);
+        return new Response(
+          JSON.stringify({ error: updateError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      // Create new auth user
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: invite.email,
+        password,
+        email_confirm: true,
+      });
 
-    if (authError) {
-      console.error('Error creating auth user:', authError);
-      return new Response(
-        JSON.stringify({ error: authError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      if (authError) {
+        console.error('Error creating auth user:', authError);
+        return new Response(
+          JSON.stringify({ error: authError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      authUserId = authData.user.id;
     }
+    
+    console.log(`Auth user ID: ${authUserId}`);
 
-    const authUserId = authData.user.id;
-    console.log(`Auth user created: ${authUserId}`);
+    console.log(`Using auth user: ${authUserId}`);
 
     // Helper for cleanup
     const cleanup = async () => {
@@ -137,18 +165,18 @@ serve(async (req) => {
       await supabaseAdmin.auth.admin.deleteUser(authUserId);
     };
 
-    // Create users record (Unified Identity)
+    // Create or update users record (Unified Identity)
     const { error: usersError } = await supabaseAdmin
       .from('users')
-      .insert({
+      .upsert({
         id: authUserId,
         email: invite.email,
         first_name: client.first_name,
         last_name: client.last_name,
-      });
+      }, { onConflict: 'id' });
 
     if (usersError) {
-      console.error('Error creating users record:', usersError);
+      console.error('Error creating/updating users record:', usersError);
       await cleanup();
       return new Response(
         JSON.stringify({ error: usersError.message }),
@@ -156,17 +184,17 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Users record created for: ${authUserId}`);
+    console.log(`Users record ensured for: ${authUserId}`);
 
-    // Assign client role
+    // Assign client role (upsert to handle retry scenarios)
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .insert({
+      .upsert({
         user_id: authUserId,
         role: 'client',
-      });
+      }, { onConflict: 'user_id,role', ignoreDuplicates: true });
 
-    if (roleError) {
+    if (roleError && !roleError.message.includes('duplicate')) {
       console.error('Error assigning role:', roleError);
       await cleanup();
       return new Response(
@@ -175,7 +203,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Role 'client' assigned to: ${authUserId}`);
+    console.log(`Role 'client' ensured for: ${authUserId}`);
 
     // Update client record
     const { error: clientUpdateError } = await supabaseAdmin
