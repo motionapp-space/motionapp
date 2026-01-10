@@ -32,13 +32,13 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-[280px] p-0">
-        <SheetHeader className="h-16 flex items-center px-5 border-b">
+        <SheetHeader className="h-16 flex items-center px-5 mb-2">
           <SheetTitle className="text-xl font-bold tracking-tight">
             Studio AI
           </SheetTitle>
         </SheetHeader>
         
-        <nav className="flex flex-col gap-1 px-3 pt-4">
+        <nav className="flex flex-col gap-0.5 px-3 pt-2">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active =
@@ -58,27 +58,20 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                 to={item.to}
                 onClick={handleNavClick}
                 className={cn(
-                  "group relative flex items-center gap-3 rounded-xl px-3 py-3 text-base leading-6 transition-colors duration-200",
+                  "group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-base leading-6 transition-colors duration-200",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   "min-h-[44px]", // Touch target min 44px
                   active
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "text-foreground hover:bg-muted/80 font-medium"
+                    ? "bg-muted/50 text-foreground font-medium"
+                    : "text-foreground hover:bg-muted/40 font-medium"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-primary" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-primary/70" />
                 )}
-                <Icon
-                  className={cn(
-                    "h-5 w-5 flex-none transition-colors",
-                    active
-                      ? "text-primary"
-                      : "text-muted-foreground group-hover:text-foreground"
-                  )}
-                />
+                <Icon className="h-5 w-5 flex-none text-muted-foreground/60" />
                 <span>{item.label}</span>
               </NavLink>
             );
