@@ -17,15 +17,12 @@ export function NotificationList({
   const { markOne } = useMarkAsRead();
 
   const handleClick = (notification: CoachNotification) => {
-    // Mark as read if unread
     if (!notification.is_read) {
       markOne.mutate(notification.id);
     }
-    // No navigation - just mark as read
   };
 
   if (!showGroupHeaders) {
-    // Simple flat list
     return (
       <div className="divide-y divide-border">
         {notifications.map((notification) => (
@@ -45,18 +42,23 @@ export function NotificationList({
   const groupOrder: (keyof GroupedNotifications)[] = ["today", "yesterday", "lastWeek", "older"];
 
   return (
-    <div className="space-y-1">
-      {groupOrder.map((key) => {
+    <div>
+      {groupOrder.map((key, groupIndex) => {
         const items = grouped[key];
         if (items.length === 0) return null;
 
         return (
-          <div key={key}>
-            <div className="px-4 py-2">
+          <div 
+            key={key} 
+            className={groupIndex > 0 ? "mt-6" : ""}
+          >
+            {/* Group header - 12px gap to first item */}
+            <div className="px-4 pb-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 {getGroupLabel(key)}
               </span>
             </div>
+            {/* Items */}
             <div className="divide-y divide-border">
               {items.map((notification) => (
                 <NotificationItem

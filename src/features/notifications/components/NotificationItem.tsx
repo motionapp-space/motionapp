@@ -41,50 +41,49 @@ export function NotificationItem({
       onClick={onClick}
       className={cn(
         "w-full text-left transition-colors",
-        isCompact ? "px-4 py-3" : "px-4 py-4",
         "hover:bg-muted/50",
-        "focus:outline-none focus-visible:bg-muted/50"
+        "focus:outline-none focus-visible:bg-muted/50",
+        isCompact ? "px-4 py-3.5" : "px-4 py-4"
       )}
     >
-      <div className="flex gap-3">
-        {/* Icon + Unread indicator */}
-        <div className="flex items-start gap-2 pt-0.5">
-          {/* Unread dot */}
-          <div className="w-2 flex-shrink-0">
-            {isUnread && (
-              <div className="h-2 w-2 rounded-full bg-primary mt-1.5" />
-            )}
-          </div>
-          {/* Type icon - monochromatic, subtle */}
-          <Icon className="h-4 w-4 text-muted-foreground/60 flex-shrink-0" />
+      {/* Main row: icon + content + timestamp */}
+      <div className="flex items-start gap-2">
+        {/* Unread dot - fixed width for alignment */}
+        <div className="w-2 flex-shrink-0 pt-1.5">
+          {isUnread && (
+            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+          )}
         </div>
 
-        {/* Content - 3 row structure */}
-        <div className="flex-1 min-w-0 space-y-0.5">
-          {/* Row 1: Title */}
-          <p
-            className={cn(
-              "text-sm leading-snug",
-              isUnread ? "font-medium text-foreground" : "text-foreground"
-            )}
-          >
-            {notification.title}
-          </p>
+        {/* Icon - aligned top */}
+        <Icon className="h-4 w-4 text-muted-foreground/60 flex-shrink-0 mt-0.5" />
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* First row: Title + Timestamp */}
+          <div className="flex items-start justify-between gap-3">
+            <p
+              className={cn(
+                "text-sm leading-snug",
+                isUnread ? "font-medium text-foreground" : "text-foreground"
+              )}
+            >
+              {notification.title}
+            </p>
+            <span className="text-[11px] text-muted-foreground/70 whitespace-nowrap flex-shrink-0">
+              {formatRelativeTime(notification.created_at)}
+            </span>
+          </div>
           
-          {/* Row 2: Detail (message with client + date/time info) */}
+          {/* Second row: Detail (message) */}
           {notification.message && (
             <p className={cn(
-              "text-xs text-muted-foreground leading-relaxed",
+              "text-xs text-muted-foreground leading-relaxed mt-1",
               isCompact ? "line-clamp-1" : "line-clamp-2"
             )}>
               {notification.message}
             </p>
           )}
-          
-          {/* Row 3: Timestamp */}
-          <p className="text-[11px] text-muted-foreground/70">
-            {formatRelativeTime(notification.created_at)}
-          </p>
         </div>
       </div>
     </button>
