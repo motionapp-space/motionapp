@@ -61,9 +61,9 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                   "group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-base leading-6 transition-colors duration-200",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   "min-h-[44px]", // Touch target min 44px
-                  active
-                    ? "bg-muted/60 text-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted/30 font-medium"
+                active
+                    ? "bg-foreground/8 text-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-foreground/5 font-medium"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}

@@ -30,7 +30,7 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "sticky top-0 h-screen shrink-0 bg-muted/30 flex flex-col transition-[width] duration-200 ease-in-out",
+          "sticky top-0 h-screen shrink-0 bg-muted flex flex-col transition-[width] duration-200 ease-in-out",
           collapsed ? "w-16" : "w-[232px]"
         )}
         data-testid="sidebar"
@@ -75,8 +75,8 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
                     ? "justify-center px-2 py-2"
                     : "gap-3 px-3 py-2",
                   active
-                    ? "bg-muted/60 text-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted/30 font-medium"
+                    ? "bg-foreground/8 text-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-foreground/5 font-medium"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
