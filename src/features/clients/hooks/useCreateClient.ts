@@ -65,11 +65,16 @@ export function useCreateClient() {
         toast.error("Email già utilizzata", {
           description: "Questa email è già associata a un altro cliente. Inserisci un indirizzo diverso."
         });
-      } 
-      // Invalid email format / check constraint
+      }
+      // Coach-client status constraint (es. 'invited' non era nel check)
+      else if (error.message.includes('coach_clients_status_check')) {
+        toast.error("Errore di stato relazione", {
+          description: "Stato non valido per la relazione coach-cliente. Contatta il supporto."
+        });
+      }
+      // Invalid email format / check constraint (specifico per email)
       else if (error.message.includes('check_valid_email') || 
-               error.message.includes('invalid') || 
-               error.message.includes('violates check constraint')) {
+               error.message.includes('check_valid_invite_email')) {
         toast.error("Email non valida", {
           description: "Inserisci un indirizzo email valido (es. nome@dominio.com)"
         });
