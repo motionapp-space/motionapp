@@ -58,20 +58,20 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                 to={item.to}
                 onClick={handleNavClick}
                 className={cn(
-                  "group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-base leading-6 transition-colors duration-200",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                  "min-h-[44px]", // Touch target min 44px
-                active
-                    ? "bg-foreground/8 text-foreground font-semibold"
-                    : "text-muted-foreground hover:bg-foreground/5 font-medium"
+                  "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-base leading-6 transition-colors duration-150",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-0 focus-visible:bg-foreground/6",
+                  "min-h-[44px]",
+                  active
+                    ? "bg-foreground/10 text-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-foreground/6"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-primary/70" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[28px] rounded-full bg-primary/80" />
                 )}
-                <Icon className="h-5 w-5 flex-none" />
+                <Icon className="h-5 w-5 shrink-0" />
                 <span>{item.label}</span>
               </NavLink>
             );
