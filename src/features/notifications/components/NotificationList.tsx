@@ -24,7 +24,7 @@ export function NotificationList({
 
   if (!showGroupHeaders) {
     return (
-      <div className="divide-y divide-border border-y border-border">
+      <div className="divide-y divide-border">
         {notifications.map((notification) => (
           <NotificationItem
             key={notification.id}
@@ -59,7 +59,7 @@ export function NotificationList({
               </span>
             </div>
             {/* Items */}
-            <div className="divide-y divide-border border-y border-border">
+            <div className="divide-y divide-border">
               {items.map((notification) => (
                 <NotificationItem
                   key={notification.id}
