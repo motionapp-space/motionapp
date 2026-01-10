@@ -28,6 +28,7 @@ import LiveSession from "./pages/LiveSession";
 import Settings from "./pages/Settings";
 import SharedPlan from "./pages/SharedPlan";
 import NotFound from "./pages/NotFound";
+import Notifications from "./pages/Notifications";
 import ClientAuth from "./pages/client/ClientAuth";
 import ClientHome from "./pages/client/ClientHome";
 import ClientWorkouts from "./pages/client/ClientWorkouts";
@@ -148,6 +149,7 @@ const App = () => {
               <Route path="/clients/:id" element={<ClientDetail />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/calendar/manage" element={<BookingManagement />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/session/live" element={<LiveSession />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
