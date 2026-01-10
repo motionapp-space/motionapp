@@ -36,17 +36,17 @@ export function NotificationItem({
       </div>
 
       {/* Content */}
-      <div className="min-w-0 space-y-0.5">
+      <div className="min-w-0 space-y-1">
         <p
           className={cn(
-            "text-sm leading-snug truncate",
-            isUnread ? "font-medium text-foreground" : "text-muted-foreground"
+            "text-sm leading-snug line-clamp-2",
+            isUnread ? "font-medium text-foreground" : "text-foreground"
           )}
         >
           {notification.title}
         </p>
         {notification.message && (
-          <p className="text-xs text-muted-foreground line-clamp-1">
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
             {notification.message}
           </p>
         )}
