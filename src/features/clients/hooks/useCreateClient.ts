@@ -1,31 +1,53 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 import { createClient } from "../api/clients.api";
+import { createInvite } from "../api/invites.api";
 import { logClientActivity } from "../api/activities.api";
-import type { CreateClientInput, Client } from "../types";
+import type { CreateClientInput, CreateClientResult, Client } from "../types";
 import { toast } from "sonner";
 
 export function useCreateClient() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
 
-  return useMutation<Client, Error, CreateClientInput>({
-    mutationFn: createClient,
-    onSuccess: async (created) => {
+  return useMutation<CreateClientResult, Error, CreateClientInput>({
+    mutationFn: async (input) => {
+      // 1. Create the client
+      const client = await createClient(input);
+      
+      // 2. If withInvite is true and email exists, create invite
+      let invite: CreateClientResult["invite"] = undefined;
+      if (input.withInvite && input.email) {
+        const inviteResult = await createInvite(client.id);
+        if (inviteResult.success && inviteResult.inviteLink) {
+          invite = {
+            inviteLink: inviteResult.inviteLink,
+            expiresAt: inviteResult.expiresAt!,
+            email: inviteResult.email!,
+            clientName: inviteResult.clientName!,
+          };
+        } else if (!inviteResult.success) {
+          // Log error but don't fail the whole operation
+          console.error("Failed to create invite:", inviteResult.error);
+          toast.warning("Cliente creato, ma errore nella creazione del link di invito");
+        }
+      }
+      
+      return { client, invite };
+    },
+    onSuccess: async (result) => {
+      const { client } = result;
+      
       // Log activity
       await logClientActivity(
-        created.id,
+        client.id,
         "CREATED",
-        `Cliente creato: ${created.first_name} ${created.last_name}`
+        `Cliente creato: ${client.first_name} ${client.last_name}`
       );
 
       // Invalidate all client list queries
       qc.invalidateQueries({ queryKey: ["clients"] });
       
-      // Redirect to client detail page
-      navigate(`/clients/${created.id}`);
-      
-      toast.success("Cliente creato con successo");
+      // Note: Navigation and success message are handled by the calling component
+      // to allow showing InviteLinkDialog before navigation
     },
     onError: (error) => {
       console.error("Create client error:", error);

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, X, Pencil, Activity } from "lucide-react";
+import { Plus, X, Pencil, Activity, Smartphone } from "lucide-react";
 import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
 import { useClientPlansQuery } from "@/features/client-plans/hooks/useClientPlansQuery";
@@ -23,6 +23,7 @@ import { ClientAppointmentsTab } from "@/features/clients/components/ClientAppoi
 import { SessionHistoryTab } from "@/features/sessions/components/SessionHistoryTab";
 import { PackageTab } from "@/features/packages/components/PackageTab";
 import { ClientActivityDialog } from "@/features/clients/components/ClientActivityDialog";
+import { ClientInviteSection } from "@/features/clients/components/ClientInviteSection";
 import { useClientOnboardingState } from "@/features/clients/hooks/useClientOnboardingState";
 import { NextStepsPanel } from "@/features/clients/components/NextStepsPanel";
 
@@ -333,6 +334,23 @@ const ClientDetail = () => {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Accesso App Cliente */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Smartphone className="h-5 w-5" />
+                  {toSentenceCase("Accesso app cliente")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ClientInviteSection
+                  clientId={currentClient.id}
+                  email={currentClient.email || ""}
+                  hasUserAccount={!!currentClient.user_id}
+                />
               </CardContent>
             </Card>
 
