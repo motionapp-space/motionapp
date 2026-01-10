@@ -30,7 +30,7 @@ export default function Notifications() {
   return (
     <div className="flex flex-col h-full">
       {/* Filter bar - no border, whitespace separation */}
-      <div className="flex items-center justify-between px-4 pt-2 pb-5">
+      <div className="flex items-center justify-between px-4 pt-6 pb-5">
         <div className="flex gap-1">
           <Toggle
             pressed={filter === "all"}
