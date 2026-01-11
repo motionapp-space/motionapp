@@ -3,6 +3,7 @@ import { User, Dumbbell } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClientPageShell } from "@/components/client/ClientPageShell";
+import { ClientPageHeader } from "@/components/client/ClientPageHeader";
 import { ClientEmptyState } from "@/components/client/ClientEmptyState";
 import { useCurrentClient } from "@/features/client/hooks/useCurrentClient";
 import { useClientActivePlan } from "@/features/client-workouts/hooks/useClientActivePlan";
@@ -111,6 +112,12 @@ function ClientWorkoutsContent() {
   return (
     <ClientPageShell>
       <div className="space-y-6">
+        {/* Page Header - Consistent with Home/Prenotazioni */}
+        <ClientPageHeader 
+          title="Allenamenti" 
+          description="Il tuo piano e le sessioni registrate"
+        />
+
         {/* 1. HERO - Weekly Progress */}
         <WeeklyProgressHero
           completedCount={weekly.completedCount}
