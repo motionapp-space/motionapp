@@ -124,7 +124,7 @@ const App = () => {
             <Route path="/client/auth" element={<ClientAuth />} />
             <Route path="/client/accept-invite" element={<ClientAcceptInvite />} />
             <Route path="/client/app" element={<ClientAppLayout />}>
-              <Route index element={<ClientHome />} />
+              <Route index element={<Navigate to="workouts" replace />} />
               <Route path="workouts" element={<ClientWorkouts />} />
               <Route path="appointments" element={<ClientAppointments />} />
               <Route path="appointments/all" element={<ClientAllAppointments />} />

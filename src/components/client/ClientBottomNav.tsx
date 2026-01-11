@@ -1,8 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Dumbbell, CalendarDays } from "lucide-react";
+import { Dumbbell, CalendarDays } from "lucide-react";
 
 const navItems = [
-  { path: "/client/app", icon: Home, label: "Home" },
   { path: "/client/app/workouts", icon: Dumbbell, label: "Allenamenti" },
   { path: "/client/app/appointments", icon: CalendarDays, label: "Prenotazioni" },
 ];
