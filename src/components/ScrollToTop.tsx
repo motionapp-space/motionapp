@@ -5,7 +5,16 @@ export function ScrollToTop() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // Forza scroll immediato al top
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    
+    // Backup: esegui anche dopo un piccolo delay per gestire
+    // il ripristino scroll del browser
+    const timeoutId = setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
   }, [pathname]);
 
   return null;
