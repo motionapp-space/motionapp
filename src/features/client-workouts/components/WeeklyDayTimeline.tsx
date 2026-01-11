@@ -50,29 +50,42 @@ export function WeeklyDayTimeline({ weekDays, isLoading }: WeeklyDayTimelineProp
       <div className="flex justify-between">
         {weekDays.map((day, index) => {
           const isToday = index === todayIndex;
+          const isPast = index < todayIndex;
+          const isFuture = index > todayIndex;
           const displayLabel = DAY_LABELS[day.label.toLowerCase()] || day.label;
+          
+          // Determine dot state
+          const isCompleted = day.isCompleted;
+          const isMissed = isPast && !isCompleted && day.isPlanned;
+          const isUpcoming = (isFuture || isToday) && day.isPlanned && !isCompleted;
           
           return (
             <div key={day.key} className="flex flex-col items-center gap-1">
-              {/* Day label - highlight today */}
+              {/* Day label - show "Oggi" for today */}
               <span className={cn(
                 "text-[10px] font-medium",
                 isToday ? "text-primary font-semibold" : "text-muted-foreground"
               )}>
-                {displayLabel}
+                {isToday ? "Oggi" : displayLabel}
               </span>
               
-              {/* Compact indicator - ring highlight for today */}
+              {/* Status dot */}
               <div
                 className={cn(
                   "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
-                  day.isCompleted && "bg-primary text-primary-foreground",
-                  day.isPlanned && !day.isCompleted && "border-2 border-primary bg-background",
-                  !day.isPlanned && !day.isCompleted && "bg-muted",
-                  isToday && !day.isCompleted && "ring-2 ring-primary ring-offset-1"
+                  // Completed: solid primary with check
+                  isCompleted && "bg-primary text-primary-foreground",
+                  // Missed (past + planned but not done): muted with subtle indicator
+                  isMissed && "bg-muted/60 border border-muted-foreground/20",
+                  // Upcoming (planned, not done yet): outlined primary
+                  isUpcoming && "border-2 border-primary bg-background",
+                  // Rest day or unplanned: just muted
+                  !isCompleted && !isMissed && !isUpcoming && "bg-muted",
+                  // Today highlight ring if not completed
+                  isToday && !isCompleted && "ring-2 ring-primary ring-offset-1"
                 )}
               >
-                {day.isCompleted && <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
+                {isCompleted && <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
               </div>
             </div>
           );

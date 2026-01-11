@@ -76,10 +76,10 @@ export function ActivePlanCollapsible({
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-foreground truncate">
+                  <h4 className="text-sm font-medium text-foreground truncate">
                     {planName}
                   </h4>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {daysCount} allenamenti/settimana
                   </p>
                 </div>
