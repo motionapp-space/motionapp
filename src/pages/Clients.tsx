@@ -83,6 +83,8 @@ const Clients = () => {
     email: string;
     expiresAt: string;
     clientId: string;
+    emailSent: boolean;
+    emailError?: string;
   } | null>(null);
   const [formData, setFormData] = useState({
     first_name: "",
@@ -206,6 +208,8 @@ const Clients = () => {
             email: result.invite.email,
             expiresAt: result.invite.expiresAt,
             clientId: result.client.id,
+            emailSent: result.invite.emailSent,
+            emailError: result.invite.emailError,
           });
         } else {
           // Otherwise, navigate directly
@@ -457,10 +461,10 @@ const Clients = () => {
                   <div className="space-y-1">
                     <Label htmlFor="withInvite-zero" className="cursor-pointer flex items-center gap-2 font-medium">
                       <Mail className="h-4 w-4" />
-                      Genera link per creare account
+                      Invia email di invito
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Il cliente riceverà un link per completare la registrazione e accedere all'app.
+                      Verrà inviata un'email al cliente con il link per creare il suo account.
                     </p>
                   </div>
                 </div>
@@ -1024,10 +1028,10 @@ const Clients = () => {
                   <div className="space-y-1">
                     <Label htmlFor="withInvite-first" className="cursor-pointer flex items-center gap-2 font-medium">
                       <Mail className="h-4 w-4" />
-                      Genera link per creare account
+                      Invia email di invito
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Il cliente riceverà un link per completare la registrazione e accedere all'app.
+                      Verrà inviata un'email al cliente con il link per creare il suo account.
                     </p>
                   </div>
                 </div>
@@ -1619,10 +1623,10 @@ const Clients = () => {
                 <div className="space-y-1">
                   <Label htmlFor="withInvite-active" className="cursor-pointer flex items-center gap-2 font-medium">
                     <Mail className="h-4 w-4" />
-                    Genera link per creare account
+                    Invia email di invito
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Il cliente riceverà un link per completare la registrazione e accedere all'app.
+                    Verrà inviata un'email al cliente con il link per creare il suo account.
                   </p>
                 </div>
               </div>
@@ -1689,6 +1693,8 @@ const Clients = () => {
           clientName={inviteDialogData.clientName}
           email={inviteDialogData.email}
           expiresAt={inviteDialogData.expiresAt}
+          emailSent={inviteDialogData.emailSent}
+          emailError={inviteDialogData.emailError}
           onClose={handleCloseInviteDialog}
         />
       )}
