@@ -17,7 +17,7 @@ const ClientAuth = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/client/app", { replace: true });
+        navigate("/client/app/workouts", { replace: true });
       }
     });
   }, [navigate]);
@@ -34,7 +34,7 @@ const ClientAuth = () => {
 
       if (error) throw error;
 
-      navigate("/client/app", { replace: true });
+      navigate("/client/app/workouts", { replace: true });
     } catch (error: any) {
       toast.error(error.message || "Errore durante l'accesso");
     } finally {
