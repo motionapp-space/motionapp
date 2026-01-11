@@ -206,9 +206,35 @@ const ClientDetail = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
+            {/* 1. Accesso App Cliente */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                <CardTitle>{toSentenceCase("Informazioni personali")}</CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2">
+                  <Smartphone className="h-5 w-5" />
+                  {toSentenceCase("Accesso app cliente")}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Stato di accesso del cliente all'app e azioni disponibili
+                </p>
+              </CardHeader>
+              <CardContent>
+                <ClientInviteSection
+                  clientId={currentClient.id}
+                  email={currentClient.email || ""}
+                  hasUserAccount={!!currentClient.user_id}
+                />
+              </CardContent>
+            </Card>
+
+            {/* 2. Informazioni Personali */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle>{toSentenceCase("Informazioni personali")}</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Dati anagrafici e di contatto del cliente
+                  </p>
+                </div>
                 {!editMode && (
                   <Button
                     variant="ghost"
@@ -223,6 +249,7 @@ const ClientDetail = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Riga 1: Nome / Cognome */}
                   <div className="space-y-2">
                     <Label>{toSentenceCase("Nome")}</Label>
                     {editMode ? (
@@ -245,6 +272,8 @@ const ClientDetail = () => {
                       <p className="text-sm">{currentClient.last_name}</p>
                     )}
                   </div>
+
+                  {/* Riga 2: Email / Telefono */}
                   <div className="space-y-2">
                     <Label>{toSentenceCase("Email")}</Label>
                     {editMode ? (
@@ -268,6 +297,8 @@ const ClientDetail = () => {
                       <p className="text-sm">{currentClient.phone || "-"}</p>
                     )}
                   </div>
+
+                  {/* Riga 3: Codice Fiscale / Note */}
                   <div className="space-y-2">
                     <Label>{toSentenceCase("Codice Fiscale")}</Label>
                     {editMode ? (
@@ -279,18 +310,18 @@ const ClientDetail = () => {
                       <p className="text-sm">{currentClient.fiscal_code || "-"}</p>
                     )}
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>{toSentenceCase("Note")}</Label>
-                  {editMode ? (
-                    <Textarea
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      rows={4}
-                    />
-                  ) : (
-                    <p className="text-sm whitespace-pre-wrap">{currentClient.notes || "-"}</p>
-                  )}
+                  <div className="space-y-2">
+                    <Label>{toSentenceCase("Note")}</Label>
+                    {editMode ? (
+                      <Textarea
+                        value={formData.notes}
+                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        rows={2}
+                      />
+                    ) : (
+                      <p className="text-sm line-clamp-2">{currentClient.notes || "-"}</p>
+                    )}
+                  </div>
                 </div>
                 {editMode && (
                   <div className="flex justify-end gap-3">
@@ -305,9 +336,13 @@ const ClientDetail = () => {
               </CardContent>
             </Card>
 
+            {/* 3. Tags */}
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <CardTitle>{toSentenceCase("Tags")}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Etichette per organizzare e filtrare i clienti
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2 flex-wrap">
@@ -337,27 +372,13 @@ const ClientDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Accesso App Cliente */}
+            {/* 4. Misurazioni */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Smartphone className="h-5 w-5" />
-                  {toSentenceCase("Accesso app cliente")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ClientInviteSection
-                  clientId={currentClient.id}
-                  email={currentClient.email || ""}
-                  hasUserAccount={!!currentClient.user_id}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Box Misurazioni */}
-            <Card>
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <CardTitle>{toSentenceCase("Misurazioni")}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Dati fisici e metriche di monitoraggio
+                </p>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
@@ -366,10 +387,13 @@ const ClientDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Bottone Dettaglio Attività */}
+            {/* 5. Cronologia Modifiche */}
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <CardTitle>{toSentenceCase("Cronologia modifiche")}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Storico delle azioni e delle modifiche sul profilo
+                </p>
               </CardHeader>
               <CardContent>
                 <Button 
