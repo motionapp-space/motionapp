@@ -142,6 +142,10 @@ function ClientWorkoutsContent() {
           </Card>
         ) : weekly.isWeekCompleted ? (
           <WeekCompletedCard
+            onStartSession={() => {
+              // TODO: Implement start new session flow
+              console.log("Start new session");
+            }}
             onViewPlan={() => setPlanOverviewOpen(true)}
             onGoHistory={handleGoHistory}
           />

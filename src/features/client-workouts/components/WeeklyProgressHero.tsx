@@ -42,25 +42,27 @@ export function WeeklyProgressHero({
     );
   }
 
-  // Use DS tokens - primary for in-progress, success green for completed
-  const progressColor = isWeekCompleted 
-    ? "hsl(142, 71%, 45%)" // success green
-    : "hsl(var(--primary))";
+  // Always use primary blue - completion is not an "end state"
+  const progressColor = "hsl(var(--primary))";
 
   const data = [{ value: percentage, fill: progressColor }];
 
-  // Dynamic copy - concise
+  // Dynamic copy - coach-driven
   const title = isWeekCompleted 
-    ? "Settimana completata 🎉" 
+    ? "Obiettivo settimanale completato" 
     : "Obiettivo settimanale";
 
   const subtitle = totalDays === 0
     ? "Nessun piano assegnato."
     : isWeekCompleted
-    ? "Hai raggiunto l'obiettivo settimanale."
+    ? `Hai completato ${completedCount} allenament${completedCount === 1 ? 'o' : 'i'} questa settimana.`
     : remainingCount === 1
     ? "Ti manca 1 allenamento."
     : `Ti mancano ${remainingCount} allenamenti.`;
+
+  const hint = isWeekCompleted
+    ? "Puoi continuare ad allenarti o rivedere il piano."
+    : "Il tuo coach segue i tuoi progressi";
 
   return (
     <Card className="shadow-sm rounded-2xl">
@@ -116,7 +118,7 @@ export function WeeklyProgressHero({
             {subtitle}
           </p>
           <p className="text-xs text-muted-foreground/70 mt-3">
-            Il tuo coach segue i tuoi progressi
+            {hint}
           </p>
         </div>
 
