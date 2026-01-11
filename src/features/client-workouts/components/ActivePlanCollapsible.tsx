@@ -60,11 +60,11 @@ export function ActivePlanCollapsible({
 
   return (
     <section>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
+      <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase mb-3">
         Piano attivo
       </p>
 
-      <Card className="shadow-sm">
+      <Card className="shadow-sm rounded-2xl">
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           <CollapsibleTrigger asChild>
             <CardContent className="p-4 cursor-pointer">

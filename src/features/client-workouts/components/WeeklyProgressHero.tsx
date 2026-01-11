@@ -14,8 +14,6 @@ interface WeeklyProgressHeroProps {
   isLoading: boolean;
 }
 
-const CHART_SIZE = 120;
-
 export function WeeklyProgressHero({
   completedCount,
   totalDays,
@@ -25,19 +23,22 @@ export function WeeklyProgressHero({
   weekDays,
   isLoading,
 }: WeeklyProgressHeroProps) {
+  // Responsive chart size
+  const chartSize = 120;
+
   if (isLoading) {
     return (
-      <Card className="shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-6">
+      <Card className="shadow-sm rounded-2xl">
+        <CardContent className="p-5 sm:p-6">
+          <div className="flex items-center gap-4">
             <Skeleton className="w-[120px] h-[120px] rounded-full flex-shrink-0" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-4 w-56" />
-              <Skeleton className="h-3 w-40" />
+            <div className="flex-1 min-w-0 space-y-2">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-52" />
+              <Skeleton className="h-3 w-36 mt-2" />
             </div>
           </div>
-          <div className="w-full pt-4 mt-4 border-t">
+          <div className="mt-4 pt-4 border-t">
             <WeeklyDayTimeline weekDays={weekDays} isLoading />
           </div>
         </CardContent>
@@ -45,9 +46,9 @@ export function WeeklyProgressHero({
     );
   }
 
-  // Color based on completion state
+  // Use DS tokens for colors
   const progressColor = isWeekCompleted 
-    ? "hsl(142, 71%, 45%)" // green-500
+    ? "hsl(var(--chart-2))" // success/green from DS
     : "hsl(var(--primary))";
 
   const data = [{ value: percentage, fill: progressColor }];
@@ -59,28 +60,31 @@ export function WeeklyProgressHero({
 
   // Dynamic subtitle
   const subtitle = totalDays === 0
-    ? "Il tuo coach non ha ancora assegnato un piano"
+    ? "Il tuo coach non ha ancora assegnato un piano."
     : isWeekCompleted
     ? "Hai raggiunto l'obiettivo. Continua così."
     : remainingCount === 1
-    ? "Ti manca 1 allenamento per completarla."
-    : `Ti mancano ${remainingCount} allenamenti per completarla.`;
+    ? "Ti manca 1 allenamento per completarlo."
+    : `Ti mancano ${remainingCount} allenamenti per completarlo.`;
 
   return (
-    <Card className="shadow-sm">
-      <CardContent className="p-6">
+    <Card className="shadow-sm rounded-2xl">
+      <CardContent className="p-5 sm:p-6">
         {/* Horizontal layout: Donut left, Text right */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           {/* Donut Chart */}
-          <div className="relative animate-scale-in flex-shrink-0" style={{ width: CHART_SIZE, height: CHART_SIZE }}>
+          <div 
+            className="relative flex-shrink-0 animate-scale-in" 
+            style={{ width: chartSize, height: chartSize }}
+          >
             <RadialBarChart
-              width={CHART_SIZE}
-              height={CHART_SIZE}
-              cx={CHART_SIZE / 2}
-              cy={CHART_SIZE / 2}
-              innerRadius={CHART_SIZE * 0.35}
-              outerRadius={CHART_SIZE * 0.48}
-              barSize={10}
+              width={chartSize}
+              height={chartSize}
+              cx={chartSize / 2}
+              cy={chartSize / 2}
+              innerRadius={chartSize * 0.36}
+              outerRadius={chartSize * 0.50}
+              barSize={12}
               data={data}
               startAngle={90}
               endAngle={-270}
@@ -94,16 +98,16 @@ export function WeeklyProgressHero({
               <RadialBar
                 background={{ fill: "hsl(var(--muted))" }}
                 dataKey="value"
-                cornerRadius={5}
+                cornerRadius={6}
               />
             </RadialBarChart>
 
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-foreground">
+              <span className="text-2xl font-semibold text-foreground">
                 {completedCount}/{totalDays}
               </span>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 allenamenti
               </span>
             </div>
@@ -114,17 +118,17 @@ export function WeeklyProgressHero({
             <h2 className="text-lg font-semibold text-foreground leading-tight">
               {title}
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 text-sm text-muted-foreground leading-snug">
               {subtitle}
             </p>
-            <p className="text-xs text-muted-foreground/70 mt-2">
+            <p className="mt-2 text-xs text-muted-foreground">
               Il tuo coach vede i tuoi progressi
             </p>
           </div>
         </div>
 
         {/* Timeline - Footer of hero card */}
-        <div className="w-full pt-4 mt-4 border-t">
+        <div className="mt-4 pt-4 border-t">
           <WeeklyDayTimeline weekDays={weekDays} />
         </div>
       </CardContent>

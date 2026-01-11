@@ -27,12 +27,12 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
     return (
       <section>
         <div className="flex items-center gap-2 mb-3">
-          <CheckCircle2 className="w-4 h-4 text-green-500" />
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          <CheckCircle2 className="w-4 h-4 text-primary" />
+          <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
             Allenamenti completati
           </p>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Skeleton className="h-16 w-full rounded-xl" />
           <Skeleton className="h-16 w-full rounded-xl" />
           <Skeleton className="h-16 w-full rounded-xl" />
@@ -49,8 +49,8 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
     <section>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-green-500" />
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          <CheckCircle2 className="w-4 h-4 text-primary" />
+          <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
             Allenamenti completati
           </p>
         </div>
@@ -58,7 +58,7 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
           <Button 
             variant="link" 
             size="sm" 
-            className="h-auto p-0 text-xs"
+            className="h-auto p-0 text-sm text-primary font-medium"
             onClick={() => setShowAll(true)}
           >
             Mostra tutti
@@ -67,17 +67,17 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
       </div>
 
       {!sessions || sessions.length === 0 ? (
-        <Card className="border-dashed shadow-sm">
+        <Card className="border-dashed shadow-sm rounded-2xl">
           <CardContent className="p-5">
             <ClientEmptyState
               icon={History}
               title="Nessuna sessione registrata"
-              description="Le tue sessioni di allenamento appariranno qui"
+              description="Le tue sessioni di allenamento appariranno qui."
             />
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
         {displayedSessions?.map((session) => {
             // Snapshot-first: use snapshot as primary source, fallback to active plan
             const snapshot = session.plan_day_snapshot;
