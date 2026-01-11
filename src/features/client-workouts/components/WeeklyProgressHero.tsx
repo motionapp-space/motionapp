@@ -15,6 +15,8 @@ interface WeeklyProgressHeroProps {
 }
 
 const CHART_SIZE = 160;
+const INNER_RADIUS = CHART_SIZE * 0.38;
+const OUTER_RADIUS = CHART_SIZE * 0.52;
 
 export function WeeklyProgressHero({
   completedCount,
@@ -45,27 +47,25 @@ export function WeeklyProgressHero({
   const progressColor = "hsl(var(--primary))";
   const data = [{ value: percentage, fill: progressColor }];
 
-  // Dynamic copy
-  const title = isWeekCompleted 
-    ? "Obiettivo settimanale completato" 
-    : "Obiettivo settimanale";
+  // Shorter, coach-driven copy
+  const title = "Obiettivo settimanale";
 
-  // Single line subtitle only
+  // Concise subtitle
   const subtitle = totalDays === 0
     ? "Nessun piano assegnato."
-    : `Hai completato ${completedCount} allenament${completedCount === 1 ? 'o' : 'i'} questa settimana.`;
+    : `${completedCount} allenament${completedCount === 1 ? 'o completato' : 'i completati'} questa settimana.`;
 
   // Dynamic label inside donut (singular/plural)
   const donutLabel = completedCount === 1 ? "allenamento" : "allenamenti";
 
   return (
     <Card className="shadow-md rounded-2xl">
-      <CardContent className="py-8 px-6">
-        {/* Centered vertical layout */}
+      <CardContent className="py-6 px-6">
+        {/* Centered vertical layout - tighter spacing */}
         <div className="flex flex-col items-center text-center">
-          {/* Large Donut with depth */}
+          {/* Donut with depth and visible background ring */}
           <div 
-            className="relative animate-scale-in drop-shadow-sm" 
+            className="relative animate-scale-in" 
             style={{ width: CHART_SIZE, height: CHART_SIZE }}
           >
             <RadialBarChart
@@ -73,8 +73,8 @@ export function WeeklyProgressHero({
               height={CHART_SIZE}
               cx={CHART_SIZE / 2}
               cy={CHART_SIZE / 2}
-              innerRadius={CHART_SIZE * 0.36}
-              outerRadius={CHART_SIZE * 0.50}
+              innerRadius={INNER_RADIUS}
+              outerRadius={OUTER_RADIUS}
               barSize={22}
               data={data}
               startAngle={90}
@@ -87,25 +87,25 @@ export function WeeklyProgressHero({
                 tick={false}
               />
               <RadialBar
-                background={{ fill: "hsl(var(--primary) / 0.12)" }}
+                background={{ fill: "hsl(var(--primary) / 0.15)" }}
                 dataKey="value"
                 cornerRadius={11}
               />
             </RadialBarChart>
 
-            {/* Center text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold text-foreground leading-none">
+            {/* Center text - better separation */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+              <span className="text-3xl font-semibold text-foreground leading-none">
                 {completedCount}/{totalDays}
               </span>
-              <span className="text-xs text-muted-foreground mt-1">
+              <span className="text-xs text-muted-foreground mt-1.5">
                 {donutLabel}
               </span>
             </div>
           </div>
 
-          {/* Hero text - compact */}
-          <h2 className="text-lg font-semibold text-foreground mt-4">
+          {/* Hero text - tighter to donut */}
+          <h2 className="text-lg font-semibold text-foreground mt-3">
             {title}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -113,8 +113,8 @@ export function WeeklyProgressHero({
           </p>
         </div>
 
-        {/* Compact timeline */}
-        <div className="mt-5 pt-4 border-t">
+        {/* Timeline with breathing room from hero */}
+        <div className="mt-6 pt-4 border-t">
           <WeeklyDayTimeline weekDays={weekDays} />
         </div>
       </CardContent>
