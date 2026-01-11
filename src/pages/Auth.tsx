@@ -57,20 +57,23 @@ const Auth = () => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || null;
 
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { 
-            first_name: firstName,
-            last_name: lastName,
-            name: name.trim(), // Keep for backward compatibility
-          },
-          emailRedirectTo: `${window.location.origin}/`,
+      // Use dedicated edge function for coach signup
+      // This ensures atomic creation of auth user + coaches record + coach role
+      const { data, error } = await supabase.functions.invoke('signup-coach', {
+        body: {
+          email,
+          password,
+          first_name: firstName,
+          last_name: lastName,
         },
       });
 
       if (error) throw error;
+      
+      // Check for error in response body
+      if (data?.error) {
+        throw new Error(data.error);
+      }
       
       // Salva l'email per pre-popolarla nella tab login
       const registeredEmail = email;
