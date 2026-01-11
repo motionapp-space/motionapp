@@ -96,36 +96,36 @@ export function ActivePlanCollapsible({
           </CollapsibleTrigger>
 
           <CollapsibleContent>
-            <div className="border-t px-4 pb-4 pt-3">
-              <ul className="space-y-2">
+            <div className="border-t px-4 pb-3 pt-2">
+              <ul className="space-y-1">
                 {days.map((day, index) => (
                   <li key={day.id}>
                     <button
                       onClick={() => onDayClick?.(day.id)}
-                      className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors text-left"
+                      className="w-full flex items-center gap-2.5 py-1.5 px-2 rounded-md hover:bg-muted transition-colors text-left"
                     >
-                      {/* Status indicator */}
+                      {/* Status indicator - blue only */}
                       <div
                         className={cn(
-                          "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0",
+                          "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium flex-shrink-0",
                           day.isCompletedThisWeek
-                            ? "bg-green-500 text-white"
+                            ? "bg-primary text-primary-foreground"
                             : "bg-muted text-muted-foreground"
                         )}
                       >
                         {day.isCompletedThisWeek ? (
-                          <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                          <Check className="w-3 h-3" strokeWidth={3} />
                         ) : (
                           index + 1
                         )}
                       </div>
 
-                      {/* Day info */}
+                      {/* Day info - compact */}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">
+                        <p className="font-medium text-xs truncate">
                           {day.title}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-[10px] text-muted-foreground">
                           {day.exercisesCount} esercizi
                         </p>
                       </div>

@@ -28,13 +28,12 @@ export function WeeklyProgressHero({
   if (isLoading) {
     return (
       <Card className="shadow-md rounded-2xl">
-        <CardContent className="py-10 px-6">
+        <CardContent className="py-8 px-6">
           <div className="flex flex-col items-center">
             <Skeleton className="w-[160px] h-[160px] rounded-full" />
-            <Skeleton className="h-5 w-56 mt-5" />
-            <Skeleton className="h-4 w-44 mt-2" />
+            <Skeleton className="h-5 w-56 mt-4" />
           </div>
-          <div className="mt-6 pt-4 border-t">
+          <div className="mt-5 pt-4 border-t">
             <WeeklyDayTimeline weekDays={weekDays} isLoading />
           </div>
         </CardContent>
@@ -42,36 +41,31 @@ export function WeeklyProgressHero({
     );
   }
 
-  // Always use primary blue - completion is not an "end state"
+  // Always use primary blue
   const progressColor = "hsl(var(--primary))";
-
   const data = [{ value: percentage, fill: progressColor }];
 
-  // Dynamic copy - coach-driven
+  // Dynamic copy
   const title = isWeekCompleted 
     ? "Obiettivo settimanale completato" 
     : "Obiettivo settimanale";
 
+  // Single line subtitle only
   const subtitle = totalDays === 0
     ? "Nessun piano assegnato."
-    : isWeekCompleted
-    ? `Hai completato ${completedCount} allenament${completedCount === 1 ? 'o' : 'i'} questa settimana.`
-    : remainingCount === 1
-    ? "Ti manca 1 allenamento."
-    : `Ti mancano ${remainingCount} allenamenti.`;
+    : `Hai completato ${completedCount} allenament${completedCount === 1 ? 'o' : 'i'} questa settimana.`;
 
-  const hint = isWeekCompleted
-    ? "Puoi continuare ad allenarti o rivedere il piano."
-    : "Il tuo coach segue i tuoi progressi";
+  // Dynamic label inside donut (singular/plural)
+  const donutLabel = completedCount === 1 ? "allenamento" : "allenamenti";
 
   return (
-    <Card className="shadow-md rounded-2xl bg-gradient-to-b from-background to-muted/20">
-      <CardContent className="py-10 px-6">
+    <Card className="shadow-md rounded-2xl">
+      <CardContent className="py-8 px-6">
         {/* Centered vertical layout */}
         <div className="flex flex-col items-center text-center">
-          {/* Large Donut - focal point with depth */}
+          {/* Large Donut with depth */}
           <div 
-            className="relative animate-scale-in" 
+            className="relative animate-scale-in drop-shadow-sm" 
             style={{ width: CHART_SIZE, height: CHART_SIZE }}
           >
             <RadialBarChart
@@ -79,9 +73,9 @@ export function WeeklyProgressHero({
               height={CHART_SIZE}
               cx={CHART_SIZE / 2}
               cy={CHART_SIZE / 2}
-              innerRadius={CHART_SIZE * 0.34}
+              innerRadius={CHART_SIZE * 0.36}
               outerRadius={CHART_SIZE * 0.50}
-              barSize={24}
+              barSize={22}
               data={data}
               startAngle={90}
               endAngle={-270}
@@ -93,32 +87,29 @@ export function WeeklyProgressHero({
                 tick={false}
               />
               <RadialBar
-                background={{ fill: "hsl(var(--primary) / 0.15)" }}
+                background={{ fill: "hsl(var(--primary) / 0.12)" }}
                 dataKey="value"
-                cornerRadius={12}
+                cornerRadius={11}
               />
             </RadialBarChart>
 
-            {/* Center text - large and bold */}
+            {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-bold text-foreground leading-none">
+              <span className="text-3xl font-bold text-foreground leading-none">
                 {completedCount}/{totalDays}
               </span>
               <span className="text-xs text-muted-foreground mt-1">
-                completati
+                {donutLabel}
               </span>
             </div>
           </div>
 
-          {/* Hero text - below donut */}
-          <h2 className="text-lg font-semibold text-foreground mt-5">
+          {/* Hero text - compact */}
+          <h2 className="text-lg font-semibold text-foreground mt-4">
             {title}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             {subtitle}
-          </p>
-          <p className="text-xs text-muted-foreground/70 mt-2">
-            {hint}
           </p>
         </div>
 
