@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -143,6 +144,113 @@ serve(async (req) => {
     const appUrl = Deno.env.get('APP_URL') || 'https://qadgzwsmiadxwwvsrauz.lovable.app';
     const inviteLink = `${appUrl}/client/accept-invite?token=${invite.token}`;
 
+    // Send invitation email via Resend
+    let emailSent = false;
+    let emailError: string | null = null;
+    
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (resendApiKey) {
+      try {
+        const resend = new Resend(resendApiKey);
+        
+        const expiresFormatted = new Date(invite.expires_at).toLocaleDateString('it-IT', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+
+        const { error: sendError } = await resend.emails.send({
+          from: 'FitCoach <onboarding@resend.dev>',
+          to: [client.email],
+          subject: '🎉 Sei stato invitato a FitCoach!',
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+                <tr>
+                  <td align="center">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                      <!-- Header -->
+                      <tr>
+                        <td style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 32px; text-align: center;">
+                          <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">FitCoach</h1>
+                        </td>
+                      </tr>
+                      <!-- Content -->
+                      <tr>
+                        <td style="padding: 40px 32px;">
+                          <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 24px; font-weight: 600;">
+                            Ciao ${client.first_name}! 👋
+                          </h2>
+                          <p style="margin: 0 0 24px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                            Il tuo coach ti ha invitato a unirti alla piattaforma <strong>FitCoach</strong>. 
+                            Crea il tuo account per accedere ai tuoi programmi di allenamento e gestire le tue prenotazioni.
+                          </p>
+                          
+                          <!-- CTA Button -->
+                          <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
+                            <tr>
+                              <td align="center">
+                                <a href="${inviteLink}" style="display: inline-block; padding: 16px 32px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);">
+                                  Crea il tuo account
+                                </a>
+                              </td>
+                            </tr>
+                          </table>
+                          
+                          <p style="margin: 0 0 8px 0; color: #71717a; font-size: 14px;">
+                            Oppure copia e incolla questo link nel tuo browser:
+                          </p>
+                          <p style="margin: 0 0 24px 0; color: #6366f1; font-size: 14px; word-break: break-all;">
+                            ${inviteLink}
+                          </p>
+                          
+                          <!-- Expiry Notice -->
+                          <div style="padding: 16px; background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                            <p style="margin: 0; color: #92400e; font-size: 14px;">
+                              ⏰ <strong>Nota:</strong> Questo link scadrà il ${expiresFormatted}
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                      <!-- Footer -->
+                      <tr>
+                        <td style="padding: 24px 32px; background-color: #f4f4f5; text-align: center;">
+                          <p style="margin: 0; color: #71717a; font-size: 12px;">
+                            Se non hai richiesto questo invito, puoi ignorare questa email.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
+          `,
+        });
+
+        if (sendError) {
+          console.error('Email send failed:', sendError);
+          emailError = sendError.message;
+        } else {
+          emailSent = true;
+          console.log(`Invitation email sent to ${client.email}`);
+        }
+      } catch (err) {
+        console.error('Email send error:', err);
+        emailError = err instanceof Error ? err.message : 'Unknown email error';
+      }
+    } else {
+      console.warn('RESEND_API_KEY not configured, skipping email');
+      emailError = 'Email service not configured';
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -150,6 +258,8 @@ serve(async (req) => {
         expiresAt: invite.expires_at,
         clientName: `${client.first_name} ${client.last_name}`,
         email: client.email,
+        emailSent,
+        emailError,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

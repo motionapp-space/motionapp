@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -253,6 +254,98 @@ serve(async (req) => {
     }
 
     console.log(`Invite ${invite.id} marked as accepted`);
+
+    // Send confirmation email via Resend
+    const appUrl = Deno.env.get('APP_URL') || 'https://qadgzwsmiadxwwvsrauz.lovable.app';
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    
+    if (resendApiKey) {
+      try {
+        const resend = new Resend(resendApiKey);
+        
+        await resend.emails.send({
+          from: 'FitCoach <onboarding@resend.dev>',
+          to: [invite.email],
+          subject: '✅ Account attivato con successo!',
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+                <tr>
+                  <td align="center">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                      <!-- Header -->
+                      <tr>
+                        <td style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 32px; text-align: center;">
+                          <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">🎉 Benvenuto!</h1>
+                        </td>
+                      </tr>
+                      <!-- Content -->
+                      <tr>
+                        <td style="padding: 40px 32px;">
+                          <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 24px; font-weight: 600;">
+                            Ciao ${client.first_name}! 
+                          </h2>
+                          <p style="margin: 0 0 24px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
+                            Il tuo account su <strong>FitCoach</strong> è stato attivato con successo! 
+                            Ora puoi accedere alla piattaforma per visualizzare i tuoi programmi di allenamento e gestire le tue prenotazioni.
+                          </p>
+                          
+                          <!-- Success Badge -->
+                          <div style="margin: 24px 0; padding: 20px; background-color: #f0fdf4; border-radius: 8px; text-align: center;">
+                            <p style="margin: 0; color: #166534; font-size: 18px; font-weight: 600;">
+                              ✅ Account attivo
+                            </p>
+                            <p style="margin: 8px 0 0 0; color: #15803d; font-size: 14px;">
+                              Email: ${invite.email}
+                            </p>
+                          </div>
+                          
+                          <!-- CTA Button -->
+                          <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
+                            <tr>
+                              <td align="center">
+                                <a href="${appUrl}/client/auth" style="display: inline-block; padding: 16px 32px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);">
+                                  Accedi alla piattaforma
+                                </a>
+                              </td>
+                            </tr>
+                          </table>
+                          
+                          <p style="margin: 0; color: #71717a; font-size: 14px; text-align: center;">
+                            Usa la tua email e la password che hai appena creato per accedere.
+                          </p>
+                        </td>
+                      </tr>
+                      <!-- Footer -->
+                      <tr>
+                        <td style="padding: 24px 32px; background-color: #f4f4f5; text-align: center;">
+                          <p style="margin: 0; color: #71717a; font-size: 12px;">
+                            Hai bisogno di aiuto? Contatta il tuo coach.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
+          `,
+        });
+        
+        console.log(`Confirmation email sent to ${invite.email}`);
+      } catch (emailErr) {
+        console.error('Confirmation email failed (non-fatal):', emailErr);
+      }
+    } else {
+      console.warn('RESEND_API_KEY not configured, skipping confirmation email');
+    }
 
     return new Response(
       JSON.stringify({
