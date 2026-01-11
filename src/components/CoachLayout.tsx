@@ -61,6 +61,7 @@ const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
             onMenuClick={handleMenuClick} 
           />
           <main
+            id="coach-scroll-container"
             className={cn(
               "h-full",
               isAgendaView ? "overflow-hidden" : "overflow-y-auto"
