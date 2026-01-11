@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { History } from "lucide-react";
+import { History, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { ClientEmptyState } from "@/components/client/ClientEmptyState";
@@ -26,9 +26,12 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
   if (isLoading) {
     return (
       <section>
-        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
-          Storico sessioni
-        </p>
+        <div className="flex items-center gap-2 mb-3">
+          <CheckCircle2 className="w-4 h-4 text-green-500" />
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Allenamenti completati
+          </p>
+        </div>
         <div className="space-y-2">
           <Skeleton className="h-16 w-full rounded-xl" />
           <Skeleton className="h-16 w-full rounded-xl" />
@@ -45,9 +48,12 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">
-          Storico sessioni
-        </p>
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-green-500" />
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Allenamenti completati
+          </p>
+        </div>
         {hasMore && !showAll && (
           <Button 
             variant="link" 
