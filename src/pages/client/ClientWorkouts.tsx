@@ -111,14 +111,14 @@ function ClientWorkoutsContent() {
 
   return (
     <ClientPageShell>
-      <div className="space-y-6">
-        {/* Page Header - Consistent with Home/Prenotazioni */}
+      <div className="space-y-4">
+        {/* Page Header */}
         <ClientPageHeader 
           title="Allenamenti" 
           description="Il tuo piano e le sessioni registrate"
         />
 
-        {/* 1. HERO - Weekly Progress */}
+        {/* HERO - Weekly Progress (dominant) */}
         <WeeklyProgressHero
           completedCount={weekly.completedCount}
           totalDays={weekly.totalDays}
@@ -129,22 +129,17 @@ function ClientWorkoutsContent() {
           isLoading={weekly.isLoading}
         />
 
-        {/* 2. NEXT WORKOUT CTA or WEEK COMPLETED */}
+        {/* CTA - Week completed or next workout */}
         {hasNoPlan ? (
-          <section>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
-              Prossimo allenamento
-            </p>
-            <Card className="border-dashed shadow-sm">
-              <CardContent className="p-5">
-                <ClientEmptyState
-                  icon={Dumbbell}
-                  title="Nessun piano attivo"
-                  description="Quando il piano sarà pronto, potrai registrare i tuoi allenamenti qui."
-                />
-              </CardContent>
-            </Card>
-          </section>
+          <Card className="border-dashed shadow-sm rounded-2xl">
+            <CardContent className="p-5">
+              <ClientEmptyState
+                icon={Dumbbell}
+                title="Nessun piano attivo"
+                description="Quando il piano sarà pronto, potrai iniziare qui."
+              />
+            </CardContent>
+          </Card>
         ) : weekly.isWeekCompleted ? (
           <WeekCompletedCard
             onViewPlan={() => setPlanOverviewOpen(true)}
@@ -165,7 +160,7 @@ function ClientWorkoutsContent() {
           />
         )}
 
-        {/* 3. ACTIVE PLAN (collapsible) */}
+        {/* PLAN (context, not dominant) */}
         {!hasNoPlan && (
           <ActivePlanCollapsible
             planName={activePlan?.name || ""}
@@ -176,7 +171,7 @@ function ClientWorkoutsContent() {
           />
         )}
 
-        {/* 4. SESSION HISTORY */}
+        {/* HISTORY (reward) */}
         <div ref={historyRef}>
           <SessionHistorySection
             sessions={sessions}
