@@ -14,6 +14,8 @@ interface WeeklyProgressHeroProps {
   isLoading: boolean;
 }
 
+const CHART_SIZE = 160;
+
 export function WeeklyProgressHero({
   completedCount,
   totalDays,
@@ -23,22 +25,16 @@ export function WeeklyProgressHero({
   weekDays,
   isLoading,
 }: WeeklyProgressHeroProps) {
-  // Responsive chart size
-  const chartSize = 120;
-
   if (isLoading) {
     return (
       <Card className="shadow-sm rounded-2xl">
-        <CardContent className="p-5 sm:p-6">
-          <div className="flex items-center gap-4">
-            <Skeleton className="w-[120px] h-[120px] rounded-full flex-shrink-0" />
-            <div className="flex-1 min-w-0 space-y-2">
-              <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-4 w-52" />
-              <Skeleton className="h-3 w-36 mt-2" />
-            </div>
+        <CardContent className="py-8 px-6">
+          <div className="flex flex-col items-center">
+            <Skeleton className="w-[160px] h-[160px] rounded-full" />
+            <Skeleton className="h-7 w-56 mt-5" />
+            <Skeleton className="h-4 w-44 mt-2" />
           </div>
-          <div className="mt-4 pt-4 border-t">
+          <div className="mt-6 pt-4 border-t">
             <WeeklyDayTimeline weekDays={weekDays} isLoading />
           </div>
         </CardContent>
@@ -46,45 +42,44 @@ export function WeeklyProgressHero({
     );
   }
 
-  // Use DS tokens for colors
+  // Use DS tokens - primary for in-progress, success green for completed
   const progressColor = isWeekCompleted 
-    ? "hsl(var(--chart-2))" // success/green from DS
+    ? "hsl(142, 71%, 45%)" // success green
     : "hsl(var(--primary))";
 
   const data = [{ value: percentage, fill: progressColor }];
 
-  // Dynamic title
+  // Dynamic copy - concise
   const title = isWeekCompleted 
-    ? "Settimana completata ✅" 
+    ? "Settimana completata 🎉" 
     : "Obiettivo settimanale";
 
-  // Dynamic subtitle
   const subtitle = totalDays === 0
-    ? "Il tuo coach non ha ancora assegnato un piano."
+    ? "Nessun piano assegnato."
     : isWeekCompleted
-    ? "Hai raggiunto l'obiettivo. Continua così."
+    ? "Hai raggiunto l'obiettivo settimanale."
     : remainingCount === 1
-    ? "Ti manca 1 allenamento per completarlo."
-    : `Ti mancano ${remainingCount} allenamenti per completarlo.`;
+    ? "Ti manca 1 allenamento."
+    : `Ti mancano ${remainingCount} allenamenti.`;
 
   return (
     <Card className="shadow-sm rounded-2xl">
-      <CardContent className="p-5 sm:p-6">
-        {/* Horizontal layout: Donut left, Text right */}
-        <div className="flex items-center gap-4">
-          {/* Donut Chart */}
+      <CardContent className="py-8 px-6">
+        {/* Centered vertical layout */}
+        <div className="flex flex-col items-center text-center">
+          {/* Large Donut - focal point */}
           <div 
-            className="relative flex-shrink-0 animate-scale-in" 
-            style={{ width: chartSize, height: chartSize }}
+            className="relative animate-scale-in" 
+            style={{ width: CHART_SIZE, height: CHART_SIZE }}
           >
             <RadialBarChart
-              width={chartSize}
-              height={chartSize}
-              cx={chartSize / 2}
-              cy={chartSize / 2}
-              innerRadius={chartSize * 0.36}
-              outerRadius={chartSize * 0.50}
-              barSize={12}
+              width={CHART_SIZE}
+              height={CHART_SIZE}
+              cx={CHART_SIZE / 2}
+              cy={CHART_SIZE / 2}
+              innerRadius={CHART_SIZE * 0.38}
+              outerRadius={CHART_SIZE * 0.50}
+              barSize={18}
               data={data}
               startAngle={90}
               endAngle={-270}
@@ -98,37 +93,35 @@ export function WeeklyProgressHero({
               <RadialBar
                 background={{ fill: "hsl(var(--muted))" }}
                 dataKey="value"
-                cornerRadius={6}
+                cornerRadius={9}
               />
             </RadialBarChart>
 
-            {/* Center text */}
+            {/* Center text - large and bold */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-semibold text-foreground">
+              <span className="text-4xl font-bold text-foreground leading-none">
                 {completedCount}/{totalDays}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm text-muted-foreground mt-1">
                 allenamenti
               </span>
             </div>
           </div>
 
-          {/* Text content */}
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold text-foreground leading-tight">
-              {title}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground leading-snug">
-              {subtitle}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Il tuo coach vede i tuoi progressi
-            </p>
-          </div>
+          {/* Hero text - below donut */}
+          <h2 className="text-xl font-semibold text-foreground mt-5">
+            {title}
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {subtitle}
+          </p>
+          <p className="text-xs text-muted-foreground/70 mt-3">
+            Il tuo coach segue i tuoi progressi
+          </p>
         </div>
 
-        {/* Timeline - Footer of hero card */}
-        <div className="mt-4 pt-4 border-t">
+        {/* Compact timeline */}
+        <div className="mt-6 pt-4 border-t">
           <WeeklyDayTimeline weekDays={weekDays} />
         </div>
       </CardContent>
