@@ -146,8 +146,6 @@ function ClientWorkoutsContent() {
               // TODO: Implement start new session flow
               console.log("Start new session");
             }}
-            onViewPlan={() => setPlanOverviewOpen(true)}
-            onGoHistory={handleGoHistory}
           />
         ) : (
           <NextWorkoutCTA

@@ -4,11 +4,9 @@ import { Button } from "@/components/ui/button";
 
 interface WeekCompletedCardProps {
   onStartSession: () => void;
-  onViewPlan: () => void;
-  onGoHistory: () => void;
 }
 
-export function WeekCompletedCard({ onStartSession, onViewPlan, onGoHistory }: WeekCompletedCardProps) {
+export function WeekCompletedCard({ onStartSession }: WeekCompletedCardProps) {
   return (
     <div className="space-y-3">
       {/* Section header */}
@@ -18,7 +16,7 @@ export function WeekCompletedCard({ onStartSession, onViewPlan, onGoHistory }: W
       
       <Card className="shadow-sm rounded-2xl">
         <CardContent className="p-5">
-          {/* Primary CTA - always visible */}
+          {/* Primary CTA only */}
           <Button 
             onClick={onStartSession}
             className="w-full"
@@ -27,26 +25,6 @@ export function WeekCompletedCard({ onStartSession, onViewPlan, onGoHistory }: W
             <Play className="w-4 h-4 mr-2" />
             Inizia una nuova sessione
           </Button>
-          
-          {/* Secondary actions */}
-          <div className="mt-3 flex gap-3">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={onViewPlan}
-              className="flex-1"
-            >
-              Rivedi il piano
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={onGoHistory}
-              className="flex-1"
-            >
-              Vedi storico
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>

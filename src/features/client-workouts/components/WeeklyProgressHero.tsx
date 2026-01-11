@@ -27,11 +27,11 @@ export function WeeklyProgressHero({
 }: WeeklyProgressHeroProps) {
   if (isLoading) {
     return (
-      <Card className="shadow-sm rounded-2xl">
-        <CardContent className="py-8 px-6">
+      <Card className="shadow-md rounded-2xl">
+        <CardContent className="py-10 px-6">
           <div className="flex flex-col items-center">
             <Skeleton className="w-[160px] h-[160px] rounded-full" />
-            <Skeleton className="h-7 w-56 mt-5" />
+            <Skeleton className="h-5 w-56 mt-5" />
             <Skeleton className="h-4 w-44 mt-2" />
           </div>
           <div className="mt-6 pt-4 border-t">
@@ -65,11 +65,11 @@ export function WeeklyProgressHero({
     : "Il tuo coach segue i tuoi progressi";
 
   return (
-    <Card className="shadow-sm rounded-2xl">
-      <CardContent className="py-8 px-6">
+    <Card className="shadow-md rounded-2xl bg-gradient-to-b from-background to-muted/20">
+      <CardContent className="py-10 px-6">
         {/* Centered vertical layout */}
         <div className="flex flex-col items-center text-center">
-          {/* Large Donut - focal point */}
+          {/* Large Donut - focal point with depth */}
           <div 
             className="relative animate-scale-in" 
             style={{ width: CHART_SIZE, height: CHART_SIZE }}
@@ -79,9 +79,9 @@ export function WeeklyProgressHero({
               height={CHART_SIZE}
               cx={CHART_SIZE / 2}
               cy={CHART_SIZE / 2}
-              innerRadius={CHART_SIZE * 0.38}
+              innerRadius={CHART_SIZE * 0.34}
               outerRadius={CHART_SIZE * 0.50}
-              barSize={18}
+              barSize={24}
               data={data}
               startAngle={90}
               endAngle={-270}
@@ -93,9 +93,9 @@ export function WeeklyProgressHero({
                 tick={false}
               />
               <RadialBar
-                background={{ fill: "hsl(var(--muted))" }}
+                background={{ fill: "hsl(var(--primary) / 0.15)" }}
                 dataKey="value"
-                cornerRadius={9}
+                cornerRadius={12}
               />
             </RadialBarChart>
 
@@ -104,26 +104,26 @@ export function WeeklyProgressHero({
               <span className="text-4xl font-bold text-foreground leading-none">
                 {completedCount}/{totalDays}
               </span>
-              <span className="text-sm text-muted-foreground mt-1">
-                allenamenti
+              <span className="text-xs text-muted-foreground mt-1">
+                completati
               </span>
             </div>
           </div>
 
           {/* Hero text - below donut */}
-          <h2 className="text-xl font-semibold text-foreground mt-5">
+          <h2 className="text-lg font-semibold text-foreground mt-5">
             {title}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             {subtitle}
           </p>
-          <p className="text-xs text-muted-foreground/70 mt-3">
+          <p className="text-xs text-muted-foreground/70 mt-2">
             {hint}
           </p>
         </div>
 
         {/* Compact timeline */}
-        <div className="mt-6 pt-4 border-t">
+        <div className="mt-5 pt-4 border-t">
           <WeeklyDayTimeline weekDays={weekDays} />
         </div>
       </CardContent>
