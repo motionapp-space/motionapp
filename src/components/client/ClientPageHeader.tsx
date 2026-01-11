@@ -8,10 +8,10 @@ interface ClientPageHeaderProps {
 
 export function ClientPageHeader({ title, description, className }: ClientPageHeaderProps) {
   return (
-    <header className={cn("space-y-1", className)}>
-      <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+    <header className={cn("mb-6", className)}>
+      <h1 className="text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
       {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="mt-1 text-base text-muted-foreground">{description}</p>
       )}
     </header>
   );

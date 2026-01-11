@@ -32,11 +32,11 @@ export function NextWorkoutCTA({
   if (isLoading) {
     return (
       <section>
-        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
+        <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase mb-3">
           Prossimo allenamento
         </p>
-        <Card className="shadow-sm">
-          <CardContent className="p-4">
+        <Card className="shadow-sm rounded-2xl">
+          <CardContent className="p-5">
             <div className="flex items-start gap-3">
               <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
               <div className="flex-1 space-y-2">
@@ -54,19 +54,19 @@ export function NextWorkoutCTA({
 
   return (
     <section>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">
+      <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase mb-3">
         Prossimo allenamento
       </p>
       
-      <Card className="shadow-sm">
-        <CardContent className="p-4">
+      <Card className="shadow-sm rounded-2xl">
+        <CardContent className="p-5">
           {/* Card header with info */}
           <button 
             onClick={onViewDetail}
             className="flex items-start gap-3 w-full text-left"
           >
             {/* Icon */}
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
               <Dumbbell className="w-5 h-5 text-primary" />
             </div>
             
@@ -106,13 +106,15 @@ export function NextWorkoutCTA({
             </p>
           )}
 
-          {/* Secondary CTA */}
-          <button
+          {/* Secondary CTA - now a ghost button for visual weight */}
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onChangeDay}
-            className="w-full mt-3 text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+            className="w-full mt-3"
           >
             Cambia giorno
-          </button>
+          </Button>
         </CardContent>
       </Card>
     </section>
