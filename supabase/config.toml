@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.accept-invite]
 verify_jwt = false
+
+[functions.signup-coach]
+verify_jwt = false
