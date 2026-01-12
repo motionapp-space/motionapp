@@ -79,7 +79,6 @@ export function NextWorkoutCTA({
           {/* Primary CTA */}
           <Button 
             className="w-full h-11"
-            variant={startDisabled ? "outline" : "default"}
             onClick={handleStartClick}
           >
             <Play className="w-4 h-4 mr-2 opacity-80" strokeWidth={1.5} />
