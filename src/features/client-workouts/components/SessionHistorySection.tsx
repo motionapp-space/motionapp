@@ -28,7 +28,7 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
       <section>
         <div className="flex items-center gap-2 mb-3">
           <CheckCircle2 className="w-4 h-4 text-primary" />
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
             Allenamenti completati
           </p>
         </div>
@@ -50,7 +50,7 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-primary" />
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
             Allenamenti completati
           </p>
         </div>

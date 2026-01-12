@@ -9,7 +9,7 @@ export function WeekCompletedCard({ onStartSession }: WeekCompletedCardProps) {
   return (
     <div className="space-y-2">
       {/* Section header */}
-      <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <h3 className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
         Prossima azione
       </h3>
       

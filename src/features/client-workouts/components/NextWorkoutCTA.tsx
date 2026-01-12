@@ -30,7 +30,7 @@ export function NextWorkoutCTA({
   if (isLoading) {
     return (
       <section>
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase mb-3">
+        <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase mb-3">
           Prossimo allenamento
         </p>
         <Card className="shadow-sm">
@@ -60,7 +60,7 @@ export function NextWorkoutCTA({
 
   return (
     <section>
-      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase mb-3">
+      <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase mb-3">
         Prossimo allenamento
       </p>
       
