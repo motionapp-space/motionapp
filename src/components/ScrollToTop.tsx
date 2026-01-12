@@ -31,7 +31,7 @@ export function ScrollToTop() {
     });
     
     return () => cancelAnimationFrame(rafId);
-  }, [location.key]);
+  }, [location.pathname]);
 
   return null;
 }
