@@ -35,7 +35,7 @@ export function WeeklyProgressHero({
             <Skeleton className="w-[160px] h-[160px] rounded-full" />
             <Skeleton className="h-5 w-56 mt-4" />
           </div>
-          <div className="mt-5 pt-4 border-t">
+          <div className="mt-5">
             <WeeklyDayTimeline weekDays={weekDays} isLoading />
           </div>
         </CardContent>
@@ -113,8 +113,8 @@ export function WeeklyProgressHero({
           </p>
         </div>
 
-        {/* Timeline with breathing room from hero */}
-        <div className="mt-6 pt-4 border-t">
+        {/* Timeline */}
+        <div className="mt-6">
           <WeeklyDayTimeline weekDays={weekDays} />
         </div>
       </CardContent>
