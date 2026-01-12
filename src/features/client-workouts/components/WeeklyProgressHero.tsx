@@ -105,10 +105,10 @@ export function WeeklyProgressHero({
           </div>
 
           {/* Hero text - tighter to donut */}
-          <h2 className="text-lg font-semibold text-foreground mt-3">
+          <h2 className="text-base font-semibold text-foreground mt-3">
             {title}
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground leading-snug mt-1">
             {subtitle}
           </p>
         </div>
