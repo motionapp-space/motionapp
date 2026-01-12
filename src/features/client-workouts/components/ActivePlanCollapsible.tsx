@@ -60,7 +60,7 @@ export function ActivePlanCollapsible({
 
   return (
     <section>
-      <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase mb-3">
+      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase mb-3">
         Piano attivo
       </p>
 
