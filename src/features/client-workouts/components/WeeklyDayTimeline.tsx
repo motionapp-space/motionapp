@@ -19,9 +19,6 @@ export function WeeklyDayTimeline({ weekDays, isLoading }: WeeklyDayTimelineProp
   if (isLoading) {
     return (
       <div>
-        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
-          Questa settimana
-        </p>
         <div className="flex justify-between">
           {Array.from({ length: 7 }).map((_, i) => (
             <div key={i} className="flex flex-col items-center gap-1">
@@ -36,9 +33,6 @@ export function WeeklyDayTimeline({ weekDays, isLoading }: WeeklyDayTimelineProp
 
   return (
     <div>
-      <p className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-1.5">
-        Questa settimana
-      </p>
       <div className="flex justify-between">
         {weekDays.map((day, index) => {
           const isToday = index === todayIndex;
