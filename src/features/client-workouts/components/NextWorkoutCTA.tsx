@@ -1,4 +1,4 @@
-import { Play } from "lucide-react";
+import { Play, Dumbbell } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,10 @@ export function NextWorkoutCTA({
         <Card className="shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-4">
-              <Skeleton className="h-5 w-24" />
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-5 w-24" />
+              </div>
               <Skeleton className="h-5 w-14" />
             </div>
             <Skeleton className="h-11 w-full" />
@@ -63,11 +66,16 @@ export function NextWorkoutCTA({
       
       <Card className="shadow-sm">
         <CardContent className="p-5">
-          {/* Header: Title + Badge */}
+          {/* Header: Icon + Title + Badge */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-medium text-foreground truncate">
-              {title}
-            </h3>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 flex-shrink-0">
+                <Dumbbell className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="text-base font-medium text-foreground truncate">
+                {title}
+              </h3>
+            </div>
             <Badge 
               variant="secondary" 
               className="bg-muted text-muted-foreground text-xs font-medium px-2 py-0.5 flex-shrink-0"
