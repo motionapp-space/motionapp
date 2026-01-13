@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   HoverCard,
@@ -33,7 +32,6 @@ export const InlineEditableField = ({
 }: InlineEditableFieldProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
-  const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
 
@@ -46,24 +44,16 @@ export const InlineEditableField = ({
     }
   }, [value, isEditing]);
 
-  // Focus input when entering edit mode
+  // Focus textarea when entering edit mode
   useEffect(() => {
-    if (isEditing) {
-      if (multiline && textareaRef.current) {
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(
-          textareaRef.current.value.length,
-          textareaRef.current.value.length
-        );
-      } else if (inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.setSelectionRange(
-          inputRef.current.value.length,
-          inputRef.current.value.length
-        );
-      }
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(
+        textareaRef.current.value.length,
+        textareaRef.current.value.length
+      );
     }
-  }, [isEditing, multiline]);
+  }, [isEditing]);
 
   const handleSave = () => {
     onChange(editValue);
@@ -73,7 +63,7 @@ export const InlineEditableField = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       if (multiline && e.shiftKey) {
-        // Allow Shift+Enter for newline in multiline
+        // Allow Shift+Enter for newline in multiline only
         return;
       }
       e.preventDefault();
@@ -81,6 +71,13 @@ export const InlineEditableField = ({
     } else if (e.key === "Escape") {
       setEditValue(value); // Reset to original
       setIsEditing(false);
+    }
+  };
+
+  // Block newline insertion for non-multiline fields
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (!multiline && e.key === "Enter") {
+      e.preventDefault();
     }
   };
 
@@ -99,7 +96,7 @@ export const InlineEditableField = ({
       onClick={handleClick}
       className={`
         group h-8 flex items-center px-1.5 min-w-0 overflow-hidden
-        ${disabled ? "cursor-default" : "cursor-text hover:bg-muted/40"}
+        ${disabled ? "cursor-default" : "cursor-text hover:bg-muted/65"}
         transition-colors rounded
       `}
     >
@@ -113,37 +110,23 @@ export const InlineEditableField = ({
     </div>
   );
 
-  // EDIT mode - Notion-like: inline expansion, row grows naturally
+  // EDIT mode - ALWAYS use Textarea for row expansion (Notion-like)
   if (isEditing) {
     return (
       <div className="min-w-0" data-testid={testId}>
-        {multiline ? (
-          <Textarea
-            ref={textareaRef}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder || emptyHint}
-            maxLength={maxLength}
-            disabled={disabled}
-            className="min-h-[72px] max-h-[160px] text-sm resize-none bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0 px-1.5 py-1"
-            data-testid={`${testId}-textarea`}
-          />
-        ) : (
-          <Input
-            ref={inputRef}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder || emptyHint}
-            maxLength={maxLength}
-            disabled={disabled}
-            className="h-8 text-sm bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0 px-1.5"
-            data-testid={`${testId}-input`}
-          />
-        )}
+        <Textarea
+          ref={textareaRef}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          onKeyPress={handleKeyPress}
+          placeholder={placeholder || emptyHint}
+          maxLength={maxLength}
+          disabled={disabled}
+          className="min-h-[72px] max-h-[160px] text-sm resize-none bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0 px-1.5 py-1"
+          data-testid={`${testId}-textarea`}
+        />
       </div>
     );
   }
