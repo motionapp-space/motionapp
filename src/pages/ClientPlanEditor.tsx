@@ -118,7 +118,9 @@ const ClientPlanEditor = () => {
   const hasChanges = initialStateSnapshot !== null && currentSnapshot !== initialStateSnapshot;
 
   const isSaving = updateMutation.isPending || assignMutation.isPending || createPlanMutation.isPending;
-  const canSave = hasChanges && !readonly && !isSaving;
+  // canSave: must have changes, not readonly, not saving, and name must be valid for new plans
+  const isNameValid = id ? true : name.trim().length > 0;
+  const canSave = hasChanges && !readonly && !isSaving && isNameValid;
 
   // Resolve client_id from coach_client_id when plan is loaded
   useEffect(() => {
@@ -722,9 +724,9 @@ const ClientPlanEditor = () => {
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2 md:col-span-2">
-              <Label>
+              <Label className="text-sm font-medium">
                 {toSentenceCase("Nome piano")}
-                {!id && <span className="ml-1">*</span>}
+                {!id && <span className="ml-1 text-destructive">*</span>}
               </Label>
               <div className="space-y-1">
                 <Input
@@ -743,7 +745,7 @@ const ClientPlanEditor = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="flex items-center gap-1.5 text-muted-foreground">
+              <Label className="flex items-center gap-1.5 text-sm font-medium">
                 {toSentenceCase("Categoria")}
                 <TooltipProvider>
                   <Tooltip>
@@ -764,7 +766,7 @@ const ClientPlanEditor = () => {
               />
             </div>
             <div className="space-y-2 md:col-span-3">
-              <Label>{toSentenceCase("Descrizione")}</Label>
+              <Label className="text-sm font-medium">{toSentenceCase("Descrizione")}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
