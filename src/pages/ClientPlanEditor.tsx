@@ -258,7 +258,7 @@ const ClientPlanEditor = () => {
     } else if (isNewFromTemplate && clientId && templateId) {
       // Save new personalized plan for client
       try {
-        await assignMutation.mutateAsync({
+        const result = await assignMutation.mutateAsync({
           clientId,
           input: {
             template_id: templateId,
@@ -268,10 +268,15 @@ const ClientPlanEditor = () => {
             data_override: { days },
           },
         });
-        toast.success("Piano assegnato");
-        const sp = new URLSearchParams();
-        sp.set("tab", "plans");
-        navigate(`/clients/${clientId}?${sp.toString()}`, { replace: true });
+        
+        // Reset dirty tracking
+        setInitialStateSnapshot(currentSnapshot);
+        toast.success("Piano salvato");
+        
+        // Update URL with new plan ID (stay on page)
+        if (result?.id) {
+          navigate(`/client-plans/${result.id}`, { replace: true });
+        }
         return true;
       } catch (error) {
         toast.error("Errore nell'assegnazione");
@@ -286,17 +291,22 @@ const ClientPlanEditor = () => {
       }
 
       try {
-        await createPlanMutation.mutateAsync({
+        const result = await createPlanMutation.mutateAsync({
           clientId,
           name: name.trim(),
           description: description?.trim(),
           objective: objective?.trim() || null,
           days,
         });
-        toast.success("Piano creato");
-        const sp = new URLSearchParams();
-        sp.set("tab", "plans");
-        navigate(`/clients/${clientId}?${sp.toString()}`, { replace: true });
+        
+        // Reset dirty tracking
+        setInitialStateSnapshot(currentSnapshot);
+        toast.success("Piano salvato");
+        
+        // Update URL with new plan ID (stay on page)
+        if (result?.id) {
+          navigate(`/client-plans/${result.id}`, { replace: true });
+        }
         return true;
       } catch (error) {
         console.error("Error creating plan:", error);
