@@ -17,7 +17,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { getDragId, parseDragId, moveWithin, canDrop, DnDItemType } from "./dnd-utils";
 import { toast } from "sonner";
 
@@ -54,13 +54,9 @@ export const PhaseSectionCompact = ({
   onUpdatePhaseObjective,
   readonly = false,
 }: PhaseSectionCompactProps) => {
-  // Migrate legacy exercises to groups
-  const migratedPhase = migratePhaseToGroups(phase);
-  const [groups, setGroups] = useState(migratedPhase.groups);
-
-  useEffect(() => {
-    setGroups(migratePhaseToGroups(phase).groups);
-  }, [phase]);
+  // Migrate legacy exercises to groups - use useMemo to avoid unnecessary recomputation
+  // No local state to prevent re-renders that cause input focus loss
+  const groups = useMemo(() => migratePhaseToGroups(phase).groups, [phase]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -100,15 +96,13 @@ export const PhaseSectionCompact = ({
 
     try {
       const newGroups = moveWithin(groups, oldIndex, newIndex);
-      setGroups(newGroups);
-
+      // Update order directly via parent handler (no local state)
       newGroups.forEach((group, index) => {
         onUpdateGroup(group.id, { order: index + 1 });
       });
     } catch (error) {
       console.error("Drag & drop error:", error);
       toast.error("Errore durante il riordino");
-      setGroups([...groups]);
     }
   };
 
