@@ -80,7 +80,7 @@ export const ExerciseRowCompact = ({
             onKeyDown={handleNameKeyDown}
             placeholder="Nome esercizio"
             disabled={readonly}
-            className="h-8 text-sm font-medium border border-transparent bg-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 max-w-[260px] md:max-w-[320px]"
+            className="h-8 text-sm font-medium border border-transparent bg-transparent transition-colors hover:bg-muted/40 focus:border-primary/40 focus:ring-0 max-w-[260px] md:max-w-[320px]"
             aria-label="Nome esercizio"
           />
         ) : (
@@ -101,7 +101,7 @@ export const ExerciseRowCompact = ({
             onUpdate({ sets: Math.max(1, parseInt(e.target.value) || 1) })
           }
           disabled={readonly}
-          className="h-8 text-sm text-left pl-2 border border-transparent bg-transparent transition-colors hover:bg-muted/65 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
+          className="h-8 text-sm text-left pl-2 border border-transparent bg-transparent transition-colors hover:bg-muted/65 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
           min={1}
           max={99}
           aria-label="Serie"
@@ -111,7 +111,7 @@ export const ExerciseRowCompact = ({
           value={exercise.reps}
           onChange={(e) => onUpdate({ reps: e.target.value })}
           disabled={readonly}
-          className="h-8 text-sm text-left pl-2 border border-transparent bg-transparent transition-colors hover:bg-muted/65 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
+          className="h-8 text-sm text-left pl-2 border border-transparent bg-transparent transition-colors hover:bg-muted/65 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
           aria-label="Ripetizioni"
           placeholder=""
         />
@@ -122,7 +122,7 @@ export const ExerciseRowCompact = ({
             value={exercise.load || ""}
             onChange={(e) => onUpdate({ load: e.target.value })}
             disabled={readonly}
-            className="h-8 text-sm text-left pl-2 border border-transparent bg-transparent transition-colors hover:bg-muted/65 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
+            className="h-8 text-sm text-left pl-2 border border-transparent bg-transparent transition-colors hover:bg-muted/65 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
             aria-label="Carico"
             placeholder=""
           />
@@ -138,7 +138,7 @@ export const ExerciseRowCompact = ({
           value={exercise.rest || ""}
           onChange={(e) => onUpdate({ rest: e.target.value })}
           disabled={readonly}
-          className="h-8 text-sm text-left pl-2 border border-transparent bg-transparent transition-colors hover:bg-muted/65 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
+          className="h-8 text-sm text-left pl-2 border border-transparent bg-transparent transition-colors hover:bg-muted/65 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
           aria-label="Recupero"
           placeholder=""
         />

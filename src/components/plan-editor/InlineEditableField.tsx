@@ -22,7 +22,7 @@ interface InlineEditableFieldProps {
 // Classi unificate - match "Nome esercizio" field
 const CELL_TEXT_CLASS = "text-sm text-muted-foreground truncate";
 const CELL_HINT_CLASS = "text-sm text-transparent group-hover:text-muted-foreground/60 transition-colors";
-const EDITOR_CLASS = "min-h-[72px] max-h-[160px] text-sm text-foreground resize-none bg-transparent border border-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 focus:outline-none px-3 py-1.5 rounded-md placeholder:text-muted-foreground/60";
+const EDITOR_CLASS = "min-h-[72px] max-h-[160px] text-sm text-foreground resize-none bg-transparent border border-transparent transition-colors hover:bg-muted/40 focus:border-primary/40 focus:ring-0 focus:outline-none px-3 py-1.5 rounded-md placeholder:text-muted-foreground/60";
 
 export const InlineEditableField = ({
   label,
