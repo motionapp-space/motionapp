@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Topbar } from "@/components/Topbar";
 import { StickySessionBar } from "@/components/StickySessionBar";
 import { MobileNav } from "@/components/MobileNav";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +78,9 @@ const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
         {(isTablet || isMobile) && (
           <MobileNav open={mobileNavOpen} onOpenChange={setMobileNavOpen} />
         )}
+
+        {/* Feedback floating button */}
+        <FeedbackWidget />
       </div>
     </TopbarProvider>
   );
