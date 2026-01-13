@@ -269,30 +269,42 @@ const PlanEditor = () => {
 
   const handleDuplicateExercise = (dayId: string, phaseType: string, groupId: string, exerciseId: string) => {
     setDays(days.map(day => {
-      if (day.id === dayId) {
-        return {
-          ...day,
-          phases: day.phases.map(phase => {
-            if (phase.type === phaseType) {
-              const migratedPhase = migratePhaseToGroups(phase);
-              return {
-                ...phase,
-                groups: migratedPhase.groups.map(group => {
-                  if (group.id === groupId) {
-                    const exToDup = group.exercises.find(ex => ex.id === exerciseId);
-                    if (!exToDup) return group;
-                    const newEx = { ...exToDup, id: crypto.randomUUID(), order: group.exercises.length + 1 };
-                    return { ...group, exercises: [...group.exercises, newEx] };
-                  }
-                  return group;
-                }),
-              };
-            }
-            return phase;
-          }),
-        };
-      }
-      return day;
+      if (day.id !== dayId) return day;
+      
+      return {
+        ...day,
+        phases: day.phases.map(phase => {
+          if (phase.type !== phaseType) return phase;
+          
+          const migratedPhase = migratePhaseToGroups(phase);
+          const groupIndex = migratedPhase.groups.findIndex(g => g.id === groupId);
+          if (groupIndex === -1) return phase;
+          
+          const group = migratedPhase.groups[groupIndex];
+          const exToDup = group.exercises.find(ex => ex.id === exerciseId);
+          if (!exToDup) return phase;
+          
+          // Create a NEW single group with the duplicated exercise
+          const newGroup: ExerciseGroup = {
+            id: crypto.randomUUID(),
+            type: "single",
+            exercises: [{ ...exToDup, id: crypto.randomUUID(), order: 1 }],
+            order: group.order + 1,
+          };
+          
+          // Insert new group after original and reorder subsequent groups
+          const newGroups = [
+            ...migratedPhase.groups.slice(0, groupIndex + 1),
+            newGroup,
+            ...migratedPhase.groups.slice(groupIndex + 1).map(g => ({
+              ...g,
+              order: g.order + 1
+            })),
+          ];
+          
+          return { ...phase, groups: newGroups };
+        }),
+      };
     }));
   };
 
