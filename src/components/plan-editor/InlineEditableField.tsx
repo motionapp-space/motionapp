@@ -97,7 +97,7 @@ export const InlineEditableField = ({
       className={`
         group h-8 flex items-center px-1.5 min-w-0 overflow-hidden
         ${disabled ? "cursor-default" : "cursor-text hover:bg-muted/65"}
-        transition-colors rounded
+        transition-colors rounded-md
       `}
     >
       {hasContent ? (
@@ -113,7 +113,7 @@ export const InlineEditableField = ({
   // EDIT mode - ALWAYS use Textarea for row expansion (Notion-like)
   if (isEditing) {
     return (
-      <div className="min-w-0" data-testid={testId}>
+      <div className="min-w-0 rounded-md" data-testid={testId}>
         <Textarea
           ref={textareaRef}
           value={editValue}
@@ -124,7 +124,7 @@ export const InlineEditableField = ({
           placeholder={placeholder || emptyHint}
           maxLength={maxLength}
           disabled={disabled}
-          className="min-h-[72px] max-h-[160px] text-sm resize-none bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0 px-1.5 py-1"
+          className="min-h-[72px] max-h-[160px] text-sm resize-none bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0 px-1.5 py-1 rounded-md"
           data-testid={`${testId}-textarea`}
         />
       </div>
