@@ -1,9 +1,9 @@
 import { Exercise } from "@/types/plan";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Copy, Trash2, StickyNote, MoreVertical } from "lucide-react";
+import { Copy, Trash2, MoreVertical } from "lucide-react";
 import { DraggableHandle } from "./DraggableHandle";
+import { InlineEditableField } from "./InlineEditableField";
 import { useState, useRef, useEffect } from "react";
 
 import {
@@ -30,17 +30,11 @@ export const ExerciseRowCompact = ({
   readonly = false,
   dragHandleProps,
 }: ExerciseRowCompactProps) => {
-  const [notesExpanded, setNotesExpanded] = useState(false);
   // Start in edit mode if exercise name is empty (new exercise)
   const [isEditingName, setIsEditingName] = useState(!exercise.name);
   const nameInputRef = useRef<HTMLInputElement>(null);
   // Track focus state independently from re-renders to prevent focus loss
   const isFocusedRef = useRef(false);
-
-  const hasNotesOrGoals = Boolean(
-    (exercise.notes && exercise.notes.trim()) ||
-      (exercise.goal && exercise.goal.trim())
-  );
 
   // Auto-focus input when entering edit mode
   useEffect(() => {
@@ -66,9 +60,9 @@ export const ExerciseRowCompact = ({
   };
 
   return (
-    <div className="flex flex-col">
-      {/* Desktop row */}
-      <div className="hidden sm:grid sm:grid-cols-[32px_1fr_60px_60px_70px_60px_40px_40px] items-center gap-1 py-1.5 px-2 border-b border-border/50 hover:bg-muted/30 transition-colors">
+    <div className="flex flex-col" data-testid="exercise-row">
+      {/* Desktop row - 9 columns with Obiettivo and Note */}
+      <div className="hidden sm:grid sm:grid-cols-[32px_1fr_minmax(48px,64px)_minmax(48px,96px)_minmax(56px,120px)_minmax(48px,80px)_minmax(90px,140px)_minmax(90px,140px)_40px] items-center gap-1 py-1.5 px-2 border-b border-border/50 hover:bg-muted/30 transition-colors">
         <DraggableHandle
           level="group-exercise"
           disabled={readonly}
@@ -128,7 +122,7 @@ export const ExerciseRowCompact = ({
           disabled={readonly}
           className="h-8 text-sm text-center border border-transparent bg-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 disabled:text-foreground disabled:opacity-100"
           aria-label="Carico"
-          placeholder="Carico"
+          placeholder="es. 12 kg · BW · RPE 7"
         />
 
         <Input
@@ -140,15 +134,29 @@ export const ExerciseRowCompact = ({
           placeholder="Rec"
         />
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setNotesExpanded(!notesExpanded)}
-          className={`h-8 w-8 ${hasNotesOrGoals ? "text-primary" : "text-muted-foreground"}`}
-          aria-label="Note e obiettivi"
-        >
-          <StickyNote className="h-4 w-4" />
-        </Button>
+        {/* Obiettivo column */}
+        <InlineEditableField
+          label="OBIETTIVO"
+          value={exercise.goal ?? ""}
+          onChange={(val) => onUpdate({ goal: val })}
+          maxLength={120}
+          disabled={readonly}
+          multiline={false}
+          emptyDisplay="—"
+          testId="goal-field"
+        />
+
+        {/* Note column */}
+        <InlineEditableField
+          label="NOTE"
+          value={exercise.notes ?? ""}
+          onChange={(val) => onUpdate({ notes: val })}
+          maxLength={240}
+          disabled={readonly}
+          multiline={true}
+          emptyDisplay="—"
+          testId="notes-field"
+        />
 
         {!readonly ? (
           <DropdownMenu>
@@ -181,7 +189,7 @@ export const ExerciseRowCompact = ({
         )}
       </div>
 
-      {/* Mobile: 2 rows layout */}
+      {/* Mobile: 2 rows layout with inline Obiettivo/Note */}
       <div className="sm:hidden py-2 px-2 border-b border-border/50 space-y-2">
         <div className="flex items-center gap-2">
           <DraggableHandle
@@ -210,15 +218,6 @@ export const ExerciseRowCompact = ({
               {exercise.name}
             </div>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setNotesExpanded(!notesExpanded)}
-            className={`h-9 w-9 ${hasNotesOrGoals ? "text-primary" : "text-muted-foreground"}`}
-            aria-label="Note"
-          >
-            <StickyNote className="h-4 w-4" />
-          </Button>
           {!readonly && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -247,6 +246,8 @@ export const ExerciseRowCompact = ({
             </DropdownMenu>
           )}
         </div>
+        
+        {/* Mobile: Parameters row */}
         <div className="grid grid-cols-4 gap-2 pl-8">
           <Input
             type="number"
@@ -285,36 +286,31 @@ export const ExerciseRowCompact = ({
             aria-label="Recupero"
           />
         </div>
-      </div>
 
-      {/* Notes inline expand */}
-      {notesExpanded && (
-        <div className="px-2 py-3 bg-muted/20 border-b border-border/50 space-y-3">
-          <div className="sm:pl-8">
-            <Input
-              value={exercise.goal || ""}
-              onChange={(e) => onUpdate({ goal: e.target.value })}
-              placeholder="Obiettivo (es. Controllo eccentrico)"
-              disabled={readonly}
-              className="h-9 text-sm border-0 bg-background/50 focus:bg-background disabled:text-foreground disabled:opacity-100"
-              maxLength={120}
-            />
-          </div>
-          <div className="sm:pl-8">
-            <Textarea
-              value={exercise.notes || ""}
-              onChange={(e) => onUpdate({ notes: e.target.value })}
-              placeholder="Note aggiuntive..."
-              disabled={readonly}
-              className="min-h-[60px] text-sm resize-none border-0 bg-background/50 focus:bg-background disabled:text-foreground disabled:opacity-100"
-              maxLength={240}
-            />
-            <div className="text-xs text-muted-foreground text-right mt-1">
-              {(exercise.notes || "").length}/240
-            </div>
-          </div>
+        {/* Mobile: Obiettivo and Note as compact cells */}
+        <div className="grid grid-cols-2 gap-2 pl-8">
+          <InlineEditableField
+            label="OBIETTIVO"
+            value={exercise.goal ?? ""}
+            onChange={(val) => onUpdate({ goal: val })}
+            maxLength={120}
+            disabled={readonly}
+            multiline={false}
+            emptyDisplay="—"
+            testId="goal-field-mobile"
+          />
+          <InlineEditableField
+            label="NOTE"
+            value={exercise.notes ?? ""}
+            onChange={(val) => onUpdate({ notes: val })}
+            maxLength={240}
+            disabled={readonly}
+            multiline={true}
+            emptyDisplay="—"
+            testId="notes-field-mobile"
+          />
         </div>
-      )}
+      </div>
     </div>
   );
 };
