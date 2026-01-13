@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Download,
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import {
   Loader2,
-  Save,
   Plus,
+  Info,
 } from "lucide-react";
 import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
@@ -30,8 +44,10 @@ import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClie
 import { useSaveAsTemplate } from "@/features/client-plans/hooks/useSaveAsTemplate";
 import { useAssignTemplate } from "@/features/client-plans/hooks/useAssignTemplate";
 import { useCreateClientPlan } from "@/features/client-plans/hooks/useCreateClientPlan";
+import { useDeletePlanPermanent } from "@/features/client-plans/hooks/useDeletePlanPermanent";
 import { useTemplate } from "@/features/templates/hooks/useTemplate";
 import { getClientIdFromCoachClient, getCoachClientId } from "@/lib/coach-client";
+import { PlanEditorSaveBar } from "@/features/plans/components/PlanEditorSaveBar";
 import type { ClientPlan } from "@/types/template";
 import {
   makeDay,
@@ -43,8 +59,6 @@ import {
   type ExerciseGroup,
   migratePhaseToGroups,
 } from "@/types/plan";
-import { format } from "date-fns";
-import { it } from "date-fns/locale";
 
 const ClientPlanEditor = () => {
   const { id } = useParams();
@@ -68,11 +82,21 @@ const ClientPlanEditor = () => {
   const [alsoAssign, setAlsoAssign] = useState(false);
   const [dayPickerOpen, setDayPickerOpen] = useState(false);
 
+  // New state for dirty tracking and dialogs
+  const [initialStateSnapshot, setInitialStateSnapshot] = useState<string | null>(null);
+  const [exitDialogOpen, setExitDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [saveBeforeExportOpen, setSaveBeforeExportOpen] = useState(false);
+  const [descriptionFocused, setDescriptionFocused] = useState(false);
+  const pendingNavigation = useRef<(() => void) | null>(null);
+
   const updateMutation = useUpdateClientPlan();
   const saveAsTemplateMutation = useSaveAsTemplate();
   const assignMutation = useAssignTemplate();
   const createPlanMutation = useCreateClientPlan();
   const createSession = useCreateSession();
+  const deleteMutation = useDeletePlanPermanent();
 
   const clientId = searchParams.get("clientId");
   const templateId = searchParams.get("templateId");
@@ -80,6 +104,21 @@ const ClientPlanEditor = () => {
   const isNewFromTemplate = !id && templateId && template;
 
   const { data: derivedTemplate } = useTemplate(plan?.derived_from_template_id || undefined);
+
+  // Helper to create stable snapshot
+  const createSnapshot = (n: string, d: string, o: string, daysData: Day[]) => {
+    return JSON.stringify({ name: n, description: d, objective: o, days: daysData });
+  };
+
+  // Calculate hasChanges using snapshot string comparison
+  const currentSnapshot = useMemo(
+    () => createSnapshot(name, description, objective, days),
+    [name, description, objective, days]
+  );
+  const hasChanges = initialStateSnapshot !== null && currentSnapshot !== initialStateSnapshot;
+
+  const isSaving = updateMutation.isPending || assignMutation.isPending || createPlanMutation.isPending;
+  const canSave = hasChanges && !readonly && !isSaving;
 
   // Resolve client_id from coach_client_id when plan is loaded
   useEffect(() => {
@@ -90,19 +129,47 @@ const ClientPlanEditor = () => {
     }
   }, [plan?.coach_client_id]);
 
+  // Default navigation function
+  const defaultNavigate = useCallback(() => {
+    const targetClientId = resolvedClientId || clientId;
+    if (targetClientId) {
+      navigate(`/clients/${targetClientId}?tab=plans`);
+    } else {
+      navigate("/");
+    }
+  }, [resolvedClientId, clientId, navigate]);
+
+  // Exit request handler with dirty check
+  const handleExitRequest = useCallback(
+    (navigationFn?: () => void) => {
+      if (hasChanges) {
+        pendingNavigation.current = navigationFn || defaultNavigate;
+        setExitDialogOpen(true);
+      } else {
+        (navigationFn || defaultNavigate)();
+      }
+    },
+    [hasChanges, defaultNavigate]
+  );
+
   // Set topbar (must be before any early returns)
   useTopbar({
     title: name || "Nuovo piano",
     showBack: true,
-    onBack: () => {
-      const targetClientId = resolvedClientId || clientId;
-      if (targetClientId) {
-        navigate(`/clients/${targetClientId}?tab=plans`);
-      } else {
-        navigate("/");
-      }
-    },
+    onBack: () => handleExitRequest(),
   });
+
+  // beforeunload browser guard
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
 
   // Migrate days to use groups on load
   useEffect(() => {
@@ -119,12 +186,22 @@ const ClientPlanEditor = () => {
       }));
       setDays(migratedDays);
       setLoading(false);
+      // Set initial snapshot after state updates
+      setTimeout(() => {
+        setInitialStateSnapshot(
+          createSnapshot(template.name, template.description || "", "", migratedDays)
+        );
+      }, 0);
     } else {
       // New plan from scratch
       setName("");
       setDescription("");
       setDays([]);
       setLoading(false);
+      // Set initial snapshot for empty plan
+      setTimeout(() => {
+        setInitialStateSnapshot(createSnapshot("", "", "", []));
+      }, 0);
     }
   }, [id, isNewFromTemplate]);
 
@@ -141,6 +218,12 @@ const ClientPlanEditor = () => {
         phases: day.phases.map(migratePhaseToGroups),
       }));
       setDays(migratedDays);
+      // Set initial snapshot after load
+      setTimeout(() => {
+        setInitialStateSnapshot(
+          createSnapshot(data.name, data.description || "", data.objective || "", migratedDays)
+        );
+      }, 0);
     } catch (error) {
       toast.error("Errore nel caricamento del piano");
       navigate("/");
@@ -149,7 +232,7 @@ const ClientPlanEditor = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<boolean> => {
     if (id) {
       // Update existing client plan
       try {
@@ -162,9 +245,13 @@ const ClientPlanEditor = () => {
             data: { days },
           },
         });
+        // Reset dirty tracking on success
+        setInitialStateSnapshot(currentSnapshot);
         toast.success("Piano salvato");
+        return true;
       } catch (error) {
         toast.error("Errore nel salvataggio");
+        return false;
       }
     } else if (isNewFromTemplate && clientId && templateId) {
       // Save new personalized plan for client
@@ -183,16 +270,17 @@ const ClientPlanEditor = () => {
         const sp = new URLSearchParams();
         sp.set("tab", "plans");
         navigate(`/clients/${clientId}?${sp.toString()}`, { replace: true });
+        return true;
       } catch (error) {
         toast.error("Errore nell'assegnazione");
+        return false;
       }
     } else if (clientId) {
       // Create new plan from scratch
-      // Validazione nome
       if (!name || name.trim().length === 0) {
         setNameError(true);
         toast.error("Inserisci un nome per il piano");
-        return;
+        return false;
       }
 
       try {
@@ -207,10 +295,31 @@ const ClientPlanEditor = () => {
         const sp = new URLSearchParams();
         sp.set("tab", "plans");
         navigate(`/clients/${clientId}?${sp.toString()}`, { replace: true });
+        return true;
       } catch (error) {
         console.error("Error creating plan:", error);
+        return false;
       }
     }
+    return false;
+  };
+
+  // Exit without save
+  const handleExitWithoutSave = () => {
+    setExitDialogOpen(false);
+    pendingNavigation.current?.();
+    pendingNavigation.current = null;
+  };
+
+  // Save and exit
+  const handleSaveAndExit = async () => {
+    const success = await handleSave();
+    if (success) {
+      setExitDialogOpen(false);
+      pendingNavigation.current?.();
+      pendingNavigation.current = null;
+    }
+    // If save fails, dialog stays open, user sees error toast
   };
 
   const handleSaveAsTemplate = async () => {
@@ -232,14 +341,52 @@ const ClientPlanEditor = () => {
     }
   };
 
-  const handleExportPDF = () => {
-    if (plan || isNewFromTemplate) {
+  // PDF export with gating for unsaved plans
+  const handleExportPDF = async () => {
+    // If plan has no id, show save first dialog
+    if (!id) {
+      setSaveBeforeExportOpen(true);
+      return;
+    }
+
+    setIsExporting(true);
+    try {
       exportPlanToPDF({
         name,
         days,
         created_at: plan?.created_at,
         updated_at: plan?.updated_at,
       });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Save and export
+  const handleSaveAndExport = async () => {
+    const success = await handleSave();
+    if (success) {
+      setSaveBeforeExportOpen(false);
+      // After save, we can export
+      setIsExporting(true);
+      try {
+        exportPlanToPDF({ name, days });
+      } finally {
+        setIsExporting(false);
+      }
+    }
+  };
+
+  // Delete plan
+  const handleDeletePlan = async () => {
+    if (!id || !resolvedClientId) return;
+
+    try {
+      await deleteMutation.mutateAsync({ clientId: resolvedClientId, planId: id });
+      setDeleteDialogOpen(false);
+      navigate(`/clients/${resolvedClientId}?tab=plans`);
+    } catch (error) {
+      // Error handled by mutation
     }
   };
 
@@ -280,11 +427,16 @@ const ClientPlanEditor = () => {
           };
         }
         return day;
-      }),
+      })
     );
   };
 
-  const handleUpdateGroup = (dayId: string, phaseType: PhaseType, groupId: string, updates: Partial<ExerciseGroup>) => {
+  const handleUpdateGroup = (
+    dayId: string,
+    phaseType: PhaseType,
+    groupId: string,
+    updates: Partial<ExerciseGroup>
+  ) => {
     setDays(
       days.map((day) => {
         if (day.id === dayId) {
@@ -295,7 +447,9 @@ const ClientPlanEditor = () => {
                 const migratedPhase = migratePhaseToGroups(phase);
                 return {
                   ...phase,
-                  groups: migratedPhase.groups.map((g) => (g.id === groupId ? { ...g, ...updates } : g)),
+                  groups: migratedPhase.groups.map((g) =>
+                    g.id === groupId ? { ...g, ...updates } : g
+                  ),
                 };
               }
               return phase;
@@ -303,7 +457,7 @@ const ClientPlanEditor = () => {
           };
         }
         return day;
-      }),
+      })
     );
   };
 
@@ -321,7 +475,10 @@ const ClientPlanEditor = () => {
                 const newGroup = {
                   ...groupToDup,
                   id: crypto.randomUUID(),
-                  exercises: groupToDup.exercises.map((ex) => ({ ...ex, id: crypto.randomUUID() })),
+                  exercises: groupToDup.exercises.map((ex) => ({
+                    ...ex,
+                    id: crypto.randomUUID(),
+                  })),
                   order: migratedPhase.groups.length + 1,
                 };
                 return { ...phase, groups: [...migratedPhase.groups, newGroup] };
@@ -331,7 +488,7 @@ const ClientPlanEditor = () => {
           };
         }
         return day;
-      }),
+      })
     );
   };
 
@@ -344,14 +501,17 @@ const ClientPlanEditor = () => {
             phases: day.phases.map((phase) => {
               if (phase.type === phaseType) {
                 const migratedPhase = migratePhaseToGroups(phase);
-                return { ...phase, groups: migratedPhase.groups.filter((g) => g.id !== groupId) };
+                return {
+                  ...phase,
+                  groups: migratedPhase.groups.filter((g) => g.id !== groupId),
+                };
               }
               return phase;
             }),
           };
         }
         return day;
-      }),
+      })
     );
   };
 
@@ -389,7 +549,7 @@ const ClientPlanEditor = () => {
           };
         }
         return day;
-      }),
+      })
     );
   };
 
@@ -398,7 +558,7 @@ const ClientPlanEditor = () => {
     phaseType: PhaseType,
     groupId: string,
     exerciseId: string,
-    updates: Partial<Exercise>,
+    updates: Partial<Exercise>
   ) => {
     setDays(
       days.map((day) => {
@@ -414,7 +574,9 @@ const ClientPlanEditor = () => {
                     if (group.id === groupId) {
                       return {
                         ...group,
-                        exercises: group.exercises.map((ex) => (ex.id === exerciseId ? { ...ex, ...updates } : ex)),
+                        exercises: group.exercises.map((ex) =>
+                          ex.id === exerciseId ? { ...ex, ...updates } : ex
+                        ),
                       };
                     }
                     return group;
@@ -426,28 +588,33 @@ const ClientPlanEditor = () => {
           };
         }
         return day;
-      }),
+      })
     );
   };
 
-  const handleDuplicateExercise = (dayId: string, phaseType: PhaseType, groupId: string, exerciseId: string) => {
+  const handleDuplicateExercise = (
+    dayId: string,
+    phaseType: PhaseType,
+    groupId: string,
+    exerciseId: string
+  ) => {
     setDays(
       days.map((day) => {
         if (day.id !== dayId) return day;
-        
+
         return {
           ...day,
           phases: day.phases.map((phase) => {
             if (phase.type !== phaseType) return phase;
-            
+
             const migratedPhase = migratePhaseToGroups(phase);
-            const groupIndex = migratedPhase.groups.findIndex(g => g.id === groupId);
+            const groupIndex = migratedPhase.groups.findIndex((g) => g.id === groupId);
             if (groupIndex === -1) return phase;
-            
+
             const group = migratedPhase.groups[groupIndex];
             const exToDup = group.exercises.find((ex) => ex.id === exerciseId);
             if (!exToDup) return phase;
-            
+
             // Create a NEW single group with the duplicated exercise
             const newGroup: ExerciseGroup = {
               id: crypto.randomUUID(),
@@ -455,25 +622,30 @@ const ClientPlanEditor = () => {
               exercises: [{ ...exToDup, id: crypto.randomUUID(), order: 1 }],
               order: group.order + 1,
             };
-            
+
             // Insert new group after original and reorder subsequent groups
             const newGroups = [
               ...migratedPhase.groups.slice(0, groupIndex + 1),
               newGroup,
-              ...migratedPhase.groups.slice(groupIndex + 1).map(g => ({
+              ...migratedPhase.groups.slice(groupIndex + 1).map((g) => ({
                 ...g,
-                order: g.order + 1
+                order: g.order + 1,
               })),
             ];
-            
+
             return { ...phase, groups: newGroups };
           }),
         };
-      }),
+      })
     );
   };
 
-  const handleDeleteExercise = (dayId: string, phaseType: PhaseType, groupId: string, exerciseId: string) => {
+  const handleDeleteExercise = (
+    dayId: string,
+    phaseType: PhaseType,
+    groupId: string,
+    exerciseId: string
+  ) => {
     setDays(
       days.map((day) => {
         if (day.id === dayId) {
@@ -486,7 +658,10 @@ const ClientPlanEditor = () => {
                   ...phase,
                   groups: migratedPhase.groups.map((group) => {
                     if (group.id === groupId) {
-                      return { ...group, exercises: group.exercises.filter((ex) => ex.id !== exerciseId) };
+                      return {
+                        ...group,
+                        exercises: group.exercises.filter((ex) => ex.id !== exerciseId),
+                      };
                     }
                     return group;
                   }),
@@ -497,9 +672,22 @@ const ClientPlanEditor = () => {
           };
         }
         return day;
-      }),
+      })
     );
   };
+
+  // Calculate description rows for Notion-like auto-expand
+  const descriptionRows = useMemo(() => {
+    if (descriptionFocused) {
+      // On focus: minimum 2, max 5, based on content
+      const lines = description.split("\n").length;
+      const charRows = Math.ceil(description.length / 80);
+      return Math.min(Math.max(lines, charRows, 2), 5);
+    }
+    // Blur: 1 row if empty/short, otherwise min needed to see content (max 2)
+    if (!description.trim()) return 1;
+    return Math.min(Math.ceil(description.length / 80), 2);
+  }, [description, descriptionFocused]);
 
   if (loading) {
     return (
@@ -509,27 +697,14 @@ const ClientPlanEditor = () => {
     );
   }
 
-  const clientName = resolvedClientId ? "Cliente" : "Cliente";
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-16">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
-        {/* Action toolbar */}
-        <div className="flex items-center justify-end gap-2 mb-6">
-          <Button onClick={handleSave} size="sm" disabled={!id && !name.trim()}>
-            <Save className="h-4 w-4" />
-            Salva
-          </Button>
-          <Button onClick={handleExportPDF} variant="outline" size="sm">
-            <Download className="h-4 w-4" />
-            PDF
-          </Button>
-        </div>
-
         {isNewFromTemplate && (
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mb-6">
             <p className="text-blue-900 dark:text-blue-100">
-              {toSentenceCase("Stai personalizzando un piano basato sul template")} "{template.name}".{" "}
+              {toSentenceCase("Stai personalizzando un piano basato sul template")} "
+              {template.name}".{" "}
               {toSentenceCase("Le modifiche non influiscono sul template originale")}.
             </p>
           </div>
@@ -537,7 +712,8 @@ const ClientPlanEditor = () => {
         {id && !isNewFromTemplate && plan?.derived_from_template_id && derivedTemplate && (
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mb-6">
             <p className="text-blue-900 dark:text-blue-100">
-              {toSentenceCase("Questo piano è stato creato a partire dal template")} "{derivedTemplate.name}".{" "}
+              {toSentenceCase("Questo piano è stato creato a partire dal template")} "
+              {derivedTemplate.name}".{" "}
               {toSentenceCase("Le modifiche non influiscono sul template originale")}.
             </p>
           </div>
@@ -561,11 +737,25 @@ const ClientPlanEditor = () => {
                   className={nameError ? "border-destructive" : ""}
                   disabled={readonly}
                 />
-                {nameError && <p className="text-sm text-destructive">Il nome del piano è obbligatorio</p>}
+                {nameError && (
+                  <p className="text-sm text-destructive">Il nome del piano è obbligatorio</p>
+                )}
               </div>
             </div>
             <div className="space-y-2">
-              <Label>{toSentenceCase("Categoria")}</Label>
+              <Label className="flex items-center gap-1.5 text-muted-foreground">
+                {toSentenceCase("Categoria")}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[220px]">
+                      Usata per organizzare e riutilizzare i piani (template, filtri, libreria)
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>
               <Input
                 value={objective}
                 onChange={(e) => setObjective(e.target.value)}
@@ -578,8 +768,11 @@ const ClientPlanEditor = () => {
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Note specifiche per questo cliente..."
-                rows={1}
+                onFocus={() => setDescriptionFocused(true)}
+                onBlur={() => setDescriptionFocused(false)}
+                placeholder="Note generali per il cliente (opzionale)"
+                rows={descriptionRows}
+                className="resize-none transition-all duration-150"
                 disabled={readonly}
               />
             </div>
@@ -598,7 +791,9 @@ const ClientPlanEditor = () => {
 
             {days.length === 0 ? (
               <div className="text-center py-12 border rounded-lg bg-muted/20">
-                <p className="text-muted-foreground mb-4">{toSentenceCase("Nessun giorno ancora")}</p>
+                <p className="text-muted-foreground mb-4">
+                  {toSentenceCase("Nessun giorno ancora")}
+                </p>
                 <Button onClick={handleAddDay} variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
                   {toSentenceCase("Aggiungi primo giorno")}
@@ -613,13 +808,21 @@ const ClientPlanEditor = () => {
                     onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
                     onDuplicate={() => handleDuplicateDay(day.id)}
                     onDelete={() => handleDeleteDay(day.id)}
-                    onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
+                    onAddGroup={(phaseType, groupType) =>
+                      handleAddGroup(day.id, phaseType, groupType)
+                    }
                     onUpdateGroup={(phaseType, groupId, updates) =>
                       handleUpdateGroup(day.id, phaseType, groupId, updates)
                     }
-                    onDuplicateGroup={(phaseType, groupId) => handleDuplicateGroup(day.id, phaseType, groupId)}
-                    onDeleteGroup={(phaseType, groupId) => handleDeleteGroup(day.id, phaseType, groupId)}
-                    onAddExerciseToGroup={(phaseType, groupId) => handleAddExerciseToGroup(day.id, phaseType, groupId)}
+                    onDuplicateGroup={(phaseType, groupId) =>
+                      handleDuplicateGroup(day.id, phaseType, groupId)
+                    }
+                    onDeleteGroup={(phaseType, groupId) =>
+                      handleDeleteGroup(day.id, phaseType, groupId)
+                    }
+                    onAddExerciseToGroup={(phaseType, groupId) =>
+                      handleAddExerciseToGroup(day.id, phaseType, groupId)
+                    }
                     onUpdateExercise={(phaseType, groupId, exerciseId, patch) =>
                       handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)
                     }
@@ -677,6 +880,67 @@ const ClientPlanEditor = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Exit Confirmation Dialog */}
+      <AlertDialog open={exitDialogOpen} onOpenChange={setExitDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Uscire senza salvare?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hai modifiche non salvate. Se esci ora, andranno perse.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <Button variant="outline" onClick={handleExitWithoutSave}>
+              Esci senza salvare
+            </Button>
+            <Button onClick={handleSaveAndExit} disabled={isSaving}>
+              {isSaving ? "Salvataggio..." : "Salva ed esci"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Plan Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminare il piano?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Questa azione eliminerà definitivamente il piano e non potrà essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleDeletePlan}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Eliminazione..." : "Elimina"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Save Before Export Dialog */}
+      <AlertDialog open={saveBeforeExportOpen} onOpenChange={setSaveBeforeExportOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Salvare prima di esportare?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Per esportare in PDF, salva prima il piano.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <Button onClick={handleSaveAndExport} disabled={isSaving}>
+              {isSaving ? "Salvataggio..." : "Salva e esporta"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Day Picker for Session */}
       {id && clientId && (
         <DayPicker
@@ -694,6 +958,23 @@ const ClientPlanEditor = () => {
           }}
         />
       )}
+
+      {/* Sticky Save Bar */}
+      <PlanEditorSaveBar
+        hasChanges={hasChanges}
+        isSaving={isSaving}
+        isExporting={isExporting}
+        canSave={canSave}
+        canExport={!isExporting}
+        showDelete={!!id}
+        showSaveAsTemplate={!!id}
+        readonly={readonly}
+        onSave={handleSave}
+        onExit={() => handleExitRequest()}
+        onExportPDF={handleExportPDF}
+        onSaveAsTemplate={() => setSaveAsTemplateOpen(true)}
+        onDelete={() => setDeleteDialogOpen(true)}
+      />
     </div>
   );
 };
