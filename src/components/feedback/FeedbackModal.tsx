@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -27,8 +28,23 @@ interface FeedbackModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const getSectionFromPath = (pathname: string): string => {
+  if (pathname === "/" || pathname.startsWith("/clients")) return "clienti";
+  if (pathname.startsWith("/calendar")) return "agenda";
+  if (pathname.startsWith("/library") || pathname.startsWith("/templates")) return "libreria";
+  if (pathname.startsWith("/settings")) return "impostazioni";
+  if (pathname.startsWith("/notifications")) return "notifiche";
+  if (pathname.startsWith("/client-plans")) return "editor-piano";
+  if (pathname.startsWith("/session/live")) return "sessione-live";
+  return "altro";
+};
+
 export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
+  const location = useLocation();
+  const initialSection = useMemo(() => getSectionFromPath(location.pathname), [location.pathname]);
+  
   const [type, setType] = useState<FeedbackType>("suggestion");
+  const [section, setSection] = useState(initialSection);
   const [message, setMessage] = useState("");
   const { sendFeedback, isLoading, reset } = useFeedback();
 
@@ -41,7 +57,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     }
 
     try {
-      await sendFeedback({ type, message: message.trim() });
+      await sendFeedback({ type, section, message: message.trim() });
       toast.success("Grazie per il feedback!");
       handleClose();
     } catch (error) {
@@ -51,6 +67,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
 
   const handleClose = () => {
     setType("suggestion");
+    setSection(initialSection);
     setMessage("");
     reset();
     onOpenChange(false);
@@ -60,7 +77,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Invia Feedback</DialogTitle>
+          <DialogTitle>Invia feedback</DialogTitle>
           <DialogDescription>
             Aiutaci a migliorare! Segnala un bug o suggerisci una nuova
             funzionalità.
@@ -78,9 +95,28 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                 <SelectValue placeholder="Seleziona tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="bug">🐛 Bug</SelectItem>
-                <SelectItem value="suggestion">💡 Suggerimento</SelectItem>
-                <SelectItem value="other">📝 Altro</SelectItem>
+                <SelectItem value="bug">Bug</SelectItem>
+                <SelectItem value="suggestion">Suggerimento</SelectItem>
+                <SelectItem value="other">Altro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="feedback-section">Sezione</Label>
+            <Select value={section} onValueChange={setSection}>
+              <SelectTrigger id="feedback-section">
+                <SelectValue placeholder="Seleziona sezione" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="clienti">Clienti</SelectItem>
+                <SelectItem value="agenda">Agenda</SelectItem>
+                <SelectItem value="libreria">Libreria</SelectItem>
+                <SelectItem value="impostazioni">Impostazioni</SelectItem>
+                <SelectItem value="notifiche">Notifiche</SelectItem>
+                <SelectItem value="editor-piano">Editor piano</SelectItem>
+                <SelectItem value="sessione-live">Sessione live</SelectItem>
+                <SelectItem value="altro">Altro</SelectItem>
               </SelectContent>
             </Select>
           </div>

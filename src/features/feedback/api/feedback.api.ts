@@ -4,6 +4,7 @@ export type FeedbackType = 'bug' | 'suggestion' | 'other';
 
 interface CreateFeedbackInput {
   type: FeedbackType;
+  section: string;
   message: string;
   page: string;
 }
