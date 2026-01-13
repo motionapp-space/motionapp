@@ -12,16 +12,16 @@ interface FeedbackButtonProps {
 
 export function FeedbackButton({ onClick }: FeedbackButtonProps) {
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-8 right-8 z-50">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
             onClick={onClick}
             size="icon"
-            className="h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+            className="h-16 w-16 rounded-full shadow-xl hover:shadow-2xl transition-shadow"
             aria-label="Invia feedback"
           >
-            <MessageSquarePlus className="h-5 w-5" />
+            <MessageSquarePlus className="h-7 w-7" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="left">
