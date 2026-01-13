@@ -722,30 +722,28 @@ const ClientPlanEditor = () => {
         )}
 
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2 md:col-span-2">
-              <Label className="text-sm font-medium">
+          <div className="grid gap-x-4 gap-y-4 md:grid-cols-3 items-start">
+            <div className="md:col-span-2">
+              <Label className="text-sm font-medium mb-2 block">
                 {toSentenceCase("Nome piano")}
                 {!id && <span className="ml-1 text-destructive">*</span>}
               </Label>
-              <div className="space-y-1">
-                <Input
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (nameError) setNameError(false);
-                  }}
-                  placeholder="Es: Piano Forza Personalizzato"
-                  className={nameError ? "border-destructive" : ""}
-                  disabled={readonly}
-                />
-                {nameError && (
-                  <p className="text-sm text-destructive">Il nome del piano è obbligatorio</p>
-                )}
-              </div>
+              <Input
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (nameError) setNameError(false);
+                }}
+                placeholder="Es: Piano Forza Personalizzato"
+                className={nameError ? "border-destructive" : ""}
+                disabled={readonly}
+              />
+              {nameError && (
+                <p className="text-sm text-destructive mt-1">Il nome del piano è obbligatorio</p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5 text-sm font-medium">
+            <div>
+              <Label className="flex items-center gap-1.5 text-sm font-medium mb-2">
                 {toSentenceCase("Categoria")}
                 <TooltipProvider>
                   <Tooltip>
@@ -765,8 +763,8 @@ const ClientPlanEditor = () => {
                 disabled={readonly}
               />
             </div>
-            <div className="space-y-2 md:col-span-3">
-              <Label className="text-sm font-medium">{toSentenceCase("Descrizione")}</Label>
+            <div className="md:col-span-3">
+              <Label className="text-sm font-medium mb-2 block">{toSentenceCase("Descrizione")}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
