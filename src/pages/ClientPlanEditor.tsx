@@ -98,10 +98,16 @@ const ClientPlanEditor = () => {
   const createSession = useCreateSession();
   const deleteMutation = useDeletePlanPermanent();
 
+  // Track ID of newly created plan (to avoid remount on URL update)
+  const [createdPlanId, setCreatedPlanId] = useState<string | null>(null);
+
   const clientId = searchParams.get("clientId");
   const templateId = searchParams.get("templateId");
   const template = location.state?.template;
   const isNewFromTemplate = !id && templateId && template;
+  
+  // Effective plan ID (from URL params or newly created)
+  const effectiveId = id || createdPlanId;
 
   const { data: derivedTemplate } = useTemplate(plan?.derived_from_template_id || undefined);
 
@@ -175,6 +181,11 @@ const ClientPlanEditor = () => {
 
   // Migrate days to use groups on load
   useEffect(() => {
+    // Skip reload if we just created this plan in this session
+    if (createdPlanId) {
+      return;
+    }
+    
     if (id) {
       loadClientPlan(id);
     } else if (isNewFromTemplate) {
@@ -205,7 +216,7 @@ const ClientPlanEditor = () => {
         setInitialStateSnapshot(createSnapshot("", "", "", []));
       }, 0);
     }
-  }, [id, isNewFromTemplate]);
+  }, [id, isNewFromTemplate, createdPlanId]);
 
   const loadClientPlan = async (planId: string) => {
     try {
@@ -269,14 +280,18 @@ const ClientPlanEditor = () => {
           },
         });
         
+        // Update internal state (don't navigate - avoid remount)
+        if (result?.id) {
+          setCreatedPlanId(result.id);
+          setPlan(result);
+          // Update URL without triggering React Router
+          window.history.replaceState(null, '', `/client-plans/${result.id}`);
+        }
+        
         // Reset dirty tracking
         setInitialStateSnapshot(currentSnapshot);
         toast.success("Piano salvato");
         
-        // Update URL with new plan ID (stay on page)
-        if (result?.id) {
-          navigate(`/client-plans/${result.id}`, { replace: true });
-        }
         return true;
       } catch (error) {
         toast.error("Errore nell'assegnazione");
@@ -299,14 +314,18 @@ const ClientPlanEditor = () => {
           days,
         });
         
+        // Update internal state (don't navigate - avoid remount)
+        if (result?.id) {
+          setCreatedPlanId(result.id);
+          setPlan(result);
+          // Update URL without triggering React Router
+          window.history.replaceState(null, '', `/client-plans/${result.id}`);
+        }
+        
         // Reset dirty tracking
         setInitialStateSnapshot(currentSnapshot);
         toast.success("Piano salvato");
         
-        // Update URL with new plan ID (stay on page)
-        if (result?.id) {
-          navigate(`/client-plans/${result.id}`, { replace: true });
-        }
         return true;
       } catch (error) {
         console.error("Error creating plan:", error);
