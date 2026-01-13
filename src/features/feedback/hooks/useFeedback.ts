@@ -4,6 +4,7 @@ import { createFeedback, FeedbackType } from "../api/feedback.api";
 
 interface SendFeedbackParams {
   type: FeedbackType;
+  section: string;
   message: string;
 }
 
@@ -14,6 +15,7 @@ export function useFeedback() {
     mutationFn: async (params: SendFeedbackParams) => {
       return createFeedback({
         type: params.type,
+        section: params.section,
         message: params.message,
         page: location.pathname,
       });
