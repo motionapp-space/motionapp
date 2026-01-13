@@ -22,6 +22,7 @@ export async function createFeedback(input: CreateFeedbackInput): Promise<void> 
       user_id: user.id,
       user_email: user.email!,
       type: input.type,
+      section: input.section,
       message: input.message,
       page: input.page,
       status: 'new'
