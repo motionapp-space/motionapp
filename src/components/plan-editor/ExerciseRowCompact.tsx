@@ -128,7 +128,7 @@ export const ExerciseRowCompact = ({
           />
           {/* Hint appare solo se vuoto + hover/focus */}
           {!exercise.load && (
-            <span className="absolute inset-0 flex items-center pl-2 text-xs text-transparent group-hover:text-muted-foreground/50 group-focus-within:text-muted-foreground/50 transition-colors pointer-events-none">
+            <span className="absolute inset-0 flex items-center pl-2 text-sm text-transparent group-hover:text-muted-foreground/60 group-focus-within:text-muted-foreground/60 transition-colors pointer-events-none">
               es. 12 kg
             </span>
           )}
