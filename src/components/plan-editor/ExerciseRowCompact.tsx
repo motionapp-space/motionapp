@@ -31,8 +31,11 @@ export const ExerciseRowCompact = ({
   dragHandleProps,
 }: ExerciseRowCompactProps) => {
   const [notesExpanded, setNotesExpanded] = useState(false);
-  const [isEditingName, setIsEditingName] = useState(false);
+  // Start in edit mode if exercise name is empty (new exercise)
+  const [isEditingName, setIsEditingName] = useState(!exercise.name);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  // Track focus state independently from re-renders to prevent focus loss
+  const isFocusedRef = useRef(false);
 
   const hasNotesOrGoals = Boolean(
     (exercise.notes && exercise.notes.trim()) ||
@@ -46,7 +49,13 @@ export const ExerciseRowCompact = ({
     }
   }, [isEditingName]);
 
+  const handleNameFocus = () => {
+    isFocusedRef.current = true;
+    setIsEditingName(true);
+  };
+
   const handleNameBlur = () => {
+    isFocusedRef.current = false;
     setIsEditingName(false);
   };
 
@@ -67,11 +76,12 @@ export const ExerciseRowCompact = ({
         />
 
         {/* Display-first name: text until clicked, then input */}
-        {isEditingName || !exercise.name ? (
+        {(isEditingName || !exercise.name || isFocusedRef.current) ? (
           <Input
             ref={nameInputRef}
             value={exercise.name}
             onChange={(e) => onUpdate({ name: e.target.value })}
+            onFocus={handleNameFocus}
             onBlur={handleNameBlur}
             onKeyDown={handleNameKeyDown}
             placeholder="Nome esercizio"
@@ -180,10 +190,11 @@ export const ExerciseRowCompact = ({
             dragHandleProps={dragHandleProps}
           />
           {/* Mobile: Display-first name */}
-          {isEditingName || !exercise.name ? (
+          {(isEditingName || !exercise.name || isFocusedRef.current) ? (
             <Input
               value={exercise.name}
               onChange={(e) => onUpdate({ name: e.target.value })}
+              onFocus={handleNameFocus}
               onBlur={handleNameBlur}
               onKeyDown={handleNameKeyDown}
               placeholder="Nome esercizio"
