@@ -246,11 +246,11 @@ const ClientPlanEditor = () => {
   };
 
   const handleSave = async (): Promise<boolean> => {
-    if (id) {
-      // Update existing client plan
+    if (effectiveId) {
+      // Update existing client plan (includes newly created plans)
       try {
         await updateMutation.mutateAsync({
-          id,
+          id: effectiveId,
           updates: {
             name,
             description,
