@@ -1034,6 +1034,7 @@ export type Database = {
           id: string
           message: string
           page: string
+          section: string | null
           status: string
           type: string
           user_email: string
@@ -1044,6 +1045,7 @@ export type Database = {
           id?: string
           message: string
           page: string
+          section?: string | null
           status?: string
           type: string
           user_email: string
@@ -1054,6 +1056,7 @@ export type Database = {
           id?: string
           message?: string
           page?: string
+          section?: string | null
           status?: string
           type?: string
           user_email?: string
