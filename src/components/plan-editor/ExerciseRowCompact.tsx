@@ -61,8 +61,8 @@ export const ExerciseRowCompact = ({
 
   return (
     <div className="flex flex-col" data-testid="exercise-row">
-      {/* Desktop row - 9 columns with Obiettivo and Note */}
-      <div className="hidden sm:grid sm:grid-cols-[32px_1fr_minmax(48px,64px)_minmax(48px,96px)_minmax(56px,120px)_minmax(48px,80px)_minmax(90px,140px)_minmax(90px,140px)_40px] items-center gap-1 py-1.5 px-2 border-b border-border/50 hover:bg-muted/30 transition-colors">
+      {/* Desktop row - 9 columns aligned with header */}
+      <div className="hidden sm:grid sm:grid-cols-[32px_minmax(240px,1fr)_64px_88px_140px_72px_minmax(140px,1fr)_minmax(140px,1fr)_40px] items-start gap-1 py-1.5 px-2 border-b border-border/50 hover:bg-muted/30 transition-colors">
         <DraggableHandle
           level="group-exercise"
           disabled={readonly}
@@ -142,7 +142,6 @@ export const ExerciseRowCompact = ({
           maxLength={120}
           disabled={readonly}
           multiline={false}
-          emptyDisplay="—"
           testId="goal-field"
         />
 
@@ -154,7 +153,6 @@ export const ExerciseRowCompact = ({
           maxLength={240}
           disabled={readonly}
           multiline={true}
-          emptyDisplay="—"
           testId="notes-field"
         />
 
@@ -296,7 +294,6 @@ export const ExerciseRowCompact = ({
             maxLength={120}
             disabled={readonly}
             multiline={false}
-            emptyDisplay="—"
             testId="goal-field-mobile"
           />
           <InlineEditableField
@@ -306,7 +303,6 @@ export const ExerciseRowCompact = ({
             maxLength={240}
             disabled={readonly}
             multiline={true}
-            emptyDisplay="—"
             testId="notes-field-mobile"
           />
         </div>
