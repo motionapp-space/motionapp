@@ -1,0 +1,118 @@
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useFeedback } from "@/features/feedback/hooks/useFeedback";
+import { FeedbackType } from "@/features/feedback/api/feedback.api";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+
+interface FeedbackModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
+  const [type, setType] = useState<FeedbackType>("suggestion");
+  const [message, setMessage] = useState("");
+  const { sendFeedback, isLoading, reset } = useFeedback();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!message.trim()) {
+      toast.error("Inserisci una descrizione");
+      return;
+    }
+
+    try {
+      await sendFeedback({ type, message: message.trim() });
+      toast.success("Grazie per il feedback!");
+      handleClose();
+    } catch (error) {
+      toast.error("Errore nell'invio del feedback");
+    }
+  };
+
+  const handleClose = () => {
+    setType("suggestion");
+    setMessage("");
+    reset();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Invia Feedback</DialogTitle>
+          <DialogDescription>
+            Aiutaci a migliorare! Segnala un bug o suggerisci una nuova
+            funzionalità.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="feedback-type">Tipo di feedback</Label>
+            <Select
+              value={type}
+              onValueChange={(value) => setType(value as FeedbackType)}
+            >
+              <SelectTrigger id="feedback-type">
+                <SelectValue placeholder="Seleziona tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="bug">🐛 Bug</SelectItem>
+                <SelectItem value="suggestion">💡 Suggerimento</SelectItem>
+                <SelectItem value="other">📝 Altro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="feedback-message">Descrizione</Label>
+            <Textarea
+              id="feedback-message"
+              placeholder="Descrivi il problema o il suggerimento..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={4}
+              className="resize-none"
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isLoading}
+            >
+              Annulla
+            </Button>
+            <Button type="submit" disabled={isLoading || !message.trim()}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Invia
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
