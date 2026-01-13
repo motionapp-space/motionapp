@@ -19,6 +19,11 @@ interface InlineEditableFieldProps {
   testId?: string;
 }
 
+// Classi unificate - match "Nome esercizio" field
+const CELL_TEXT_CLASS = "text-sm text-muted-foreground truncate";
+const CELL_HINT_CLASS = "text-sm text-transparent group-hover:text-muted-foreground/60 transition-colors";
+const EDITOR_CLASS = "min-h-[72px] max-h-[160px] text-sm text-foreground resize-none bg-transparent border border-transparent transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0 focus:outline-none px-3 py-1.5 rounded-md placeholder:text-muted-foreground/60";
+
 export const InlineEditableField = ({
   label,
   value,
@@ -95,15 +100,15 @@ export const InlineEditableField = ({
       data-testid={testId}
       onClick={handleClick}
       className={`
-        group h-8 flex items-center px-1.5 min-w-0 overflow-hidden
+        group h-8 flex items-center px-3 min-w-0 overflow-hidden
         ${disabled ? "cursor-default" : "cursor-text hover:bg-muted/65"}
         transition-colors rounded-md
       `}
     >
       {hasContent ? (
-        <span className="text-sm text-muted-foreground truncate">{value}</span>
+        <span className={CELL_TEXT_CLASS}>{value}</span>
       ) : (
-        <span className="text-xs text-transparent group-hover:text-muted-foreground/50 transition-colors">
+        <span className={CELL_HINT_CLASS}>
           {emptyHint}
         </span>
       )}
@@ -124,7 +129,7 @@ export const InlineEditableField = ({
           placeholder={placeholder || emptyHint}
           maxLength={maxLength}
           disabled={disabled}
-          className="min-h-[72px] max-h-[160px] text-sm resize-none bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0 px-1.5 py-1 rounded-md"
+          className={EDITOR_CLASS}
           data-testid={`${testId}-textarea`}
         />
       </div>
