@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Dialog,
@@ -48,6 +48,13 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
   const [message, setMessage] = useState("");
   const { sendFeedback, isLoading, reset } = useFeedback();
 
+  // Sync section with current pathname when modal opens
+  useEffect(() => {
+    if (open) {
+      setSection(getSectionFromPath(location.pathname));
+    }
+  }, [open, location.pathname]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -76,7 +83,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+        <DialogHeader className="space-y-1.5">
           <DialogTitle>Invia feedback</DialogTitle>
           <DialogDescription>
             Aiutaci a migliorare! Segnala un bug o suggerisci una nuova
@@ -84,7 +91,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="feedback-type">Tipo di feedback</Label>
             <Select
@@ -133,7 +140,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
             />
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
