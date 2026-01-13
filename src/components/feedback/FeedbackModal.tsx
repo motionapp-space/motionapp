@@ -93,23 +93,6 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="feedback-type">Tipo di feedback</Label>
-            <Select
-              value={type}
-              onValueChange={(value) => setType(value as FeedbackType)}
-            >
-              <SelectTrigger id="feedback-type">
-                <SelectValue placeholder="Seleziona tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bug">Bug</SelectItem>
-                <SelectItem value="suggestion">Suggerimento</SelectItem>
-                <SelectItem value="other">Altro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="feedback-section">Sezione</Label>
             <Select value={section} onValueChange={setSection}>
               <SelectTrigger id="feedback-section">
@@ -124,6 +107,23 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
                 <SelectItem value="editor-piano">Editor piano</SelectItem>
                 <SelectItem value="sessione-live">Sessione live</SelectItem>
                 <SelectItem value="altro">Altro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="feedback-type">Tipo di feedback</Label>
+            <Select
+              value={type}
+              onValueChange={(value) => setType(value as FeedbackType)}
+            >
+              <SelectTrigger id="feedback-type">
+                <SelectValue placeholder="Seleziona tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="bug">Bug</SelectItem>
+                <SelectItem value="suggestion">Suggerimento</SelectItem>
+                <SelectItem value="other">Altro</SelectItem>
               </SelectContent>
             </Select>
           </div>
