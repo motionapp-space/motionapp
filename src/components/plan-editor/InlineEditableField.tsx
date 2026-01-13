@@ -6,12 +6,6 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface InlineEditableFieldProps {
@@ -23,8 +17,6 @@ interface InlineEditableFieldProps {
   disabled?: boolean;
   multiline?: boolean;
   previewOnHover?: boolean;
-  previewOnTap?: boolean;
-  emptyDisplay?: string;
   testId?: string;
 }
 
@@ -37,19 +29,15 @@ export const InlineEditableField = ({
   disabled = false,
   multiline = false,
   previewOnHover = true,
-  previewOnTap = true,
-  emptyDisplay = "—",
   testId,
 }: InlineEditableFieldProps) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
 
   const hasContent = value.trim().length > 0;
-  const displayValue = hasContent ? value : emptyDisplay;
 
   // Sync editValue when value changes externally
   useEffect(() => {
@@ -98,56 +86,37 @@ export const InlineEditableField = ({
 
   const handleClick = () => {
     if (disabled) return;
-
-    if (isMobile && previewOnTap) {
-      setDrawerOpen(true);
-    } else {
-      setIsEditing(true);
-    }
-  };
-
-  const handleDrawerEditStart = () => {
-    setEditValue(value);
     setIsEditing(true);
   };
 
-  const handleDrawerSave = () => {
-    onChange(editValue);
-    setIsEditing(false);
-  };
+  // Placeholder hint for empty fields
+  const emptyHint = multiline ? "Aggiungi note" : "Aggiungi obiettivo";
 
-  const handleDrawerClose = () => {
-    if (isEditing) {
-      onChange(editValue);
-    }
-    setIsEditing(false);
-    setDrawerOpen(false);
-  };
-
-  // READ mode cell content
+  // READ mode cell content - Notion-like: no label, just value or empty with hover hint
   const readContent = (
     <div
       data-testid={testId}
       onClick={handleClick}
       className={`
-        h-8 flex items-center gap-1 px-1.5 min-w-0 overflow-hidden
+        group h-8 flex items-center px-1.5 min-w-0 overflow-hidden
         ${disabled ? "cursor-default" : "cursor-text hover:bg-muted/40"}
         transition-colors rounded
       `}
     >
-      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground shrink-0">
-        {label}:
-      </span>
-      <span className="text-sm text-muted-foreground truncate">
-        {displayValue}
-      </span>
+      {hasContent ? (
+        <span className="text-sm text-muted-foreground truncate">{value}</span>
+      ) : (
+        <span className="text-xs text-transparent group-hover:text-muted-foreground/50 transition-colors">
+          {emptyHint}
+        </span>
+      )}
     </div>
   );
 
-  // EDIT mode content (desktop inline)
-  if (isEditing && !isMobile) {
+  // EDIT mode - Notion-like: inline expansion, row grows naturally
+  if (isEditing) {
     return (
-      <div className="min-w-0">
+      <div className="min-w-0" data-testid={testId}>
         {multiline ? (
           <Textarea
             ref={textareaRef}
@@ -155,10 +124,10 @@ export const InlineEditableField = ({
             onChange={(e) => setEditValue(e.target.value)}
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={placeholder || emptyHint}
             maxLength={maxLength}
             disabled={disabled}
-            className="min-h-[32px] max-h-[160px] text-sm resize-none border-primary/40 bg-muted/50 focus:bg-background"
+            className="min-h-[72px] max-h-[160px] text-sm resize-none bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0 px-1.5 py-1"
             data-testid={`${testId}-textarea`}
           />
         ) : (
@@ -168,10 +137,10 @@ export const InlineEditableField = ({
             onChange={(e) => setEditValue(e.target.value)}
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={placeholder || emptyHint}
             maxLength={maxLength}
             disabled={disabled}
-            className="h-8 text-sm border-primary/40 bg-muted/50 focus:bg-background"
+            className="h-8 text-sm bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0 px-1.5"
             data-testid={`${testId}-input`}
           />
         )}
@@ -179,7 +148,7 @@ export const InlineEditableField = ({
     );
   }
 
-  // Desktop with HoverCard
+  // Desktop with HoverCard - only for truncated content in READ mode
   if (!isMobile && previewOnHover && hasContent) {
     return (
       <HoverCard openDelay={150} closeDelay={100}>
@@ -190,7 +159,7 @@ export const InlineEditableField = ({
           className="w-[360px] max-w-[90vw] z-[100]"
           data-testid={`${testId}-overlay`}
         >
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {label}
             </p>
@@ -201,91 +170,6 @@ export const InlineEditableField = ({
     );
   }
 
-  // Mobile with Drawer
-  if (isMobile) {
-    return (
-      <>
-        {readContent}
-        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle>{label}</DrawerTitle>
-            </DrawerHeader>
-            <div className="px-4 pb-6">
-              {isEditing ? (
-                <div className="space-y-3">
-                  {multiline ? (
-                    <Textarea
-                      ref={textareaRef}
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder={placeholder}
-                      maxLength={maxLength}
-                      disabled={disabled}
-                      className="min-h-[120px] max-h-[200px] text-sm resize-none"
-                      data-testid={`${testId}-textarea`}
-                      autoFocus
-                    />
-                  ) : (
-                    <Input
-                      ref={inputRef}
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder={placeholder}
-                      maxLength={maxLength}
-                      disabled={disabled}
-                      className="h-10 text-sm"
-                      data-testid={`${testId}-input`}
-                      autoFocus
-                    />
-                  )}
-                  {maxLength && (
-                    <div className="text-xs text-muted-foreground text-right">
-                      {editValue.length}/{maxLength}
-                    </div>
-                  )}
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      onClick={() => {
-                        setEditValue(value);
-                        setIsEditing(false);
-                      }}
-                      className="flex-1 h-10 rounded-md border border-input bg-background text-sm hover:bg-muted"
-                    >
-                      Annulla
-                    </button>
-                    <button
-                      onClick={handleDrawerSave}
-                      className="flex-1 h-10 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90"
-                    >
-                      Salva
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-sm whitespace-pre-wrap min-h-[48px]">
-                    {hasContent ? value : <span className="text-muted-foreground italic">Nessun contenuto</span>}
-                  </p>
-                  {!disabled && (
-                    <button
-                      onClick={handleDrawerEditStart}
-                      className="w-full h-10 rounded-md border border-input bg-background text-sm hover:bg-muted"
-                    >
-                      Modifica
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </DrawerContent>
-        </Drawer>
-      </>
-    );
-  }
-
-  // Default: just the read content (no hover, no content)
+  // Default: just the read content
   return readContent;
 };
