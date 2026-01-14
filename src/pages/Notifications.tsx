@@ -61,9 +61,9 @@ export default function Notifications() {
             size="sm"
             onClick={() => markAll.mutate()}
             disabled={markAll.isPending}
-            className="h-7 text-xs px-2"
+            className="text-xs h-8"
           >
-            <Check className="h-3.5 w-3.5 mr-1" />
+            <Check className="h-3.5 w-3.5 mr-1.5" />
             Segna tutte
           </Button>
         )}
