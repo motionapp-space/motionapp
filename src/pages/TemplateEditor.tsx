@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTopbar } from "@/contexts/TopbarContext";
 import { SortableDay } from "@/components/plan-editor/SortableDay";
 import { exportPlanToPDF } from "@/lib/pdfExport";
@@ -658,156 +659,130 @@ const TemplateEditor = () => {
                 )}
               </div>
             ) : (
-              // Full metadata view (initial state)
-              <>
-                {/* Row 1: Name (7 cols) + Category (5 cols) */}
-                <div className="grid gap-4 md:grid-cols-12">
-                  {/* Name Field */}
-                  <div className="md:col-span-7 space-y-1.5">
-                    <Label 
-                      htmlFor="template-name" 
-                      className="text-sm font-normal text-[#4B5563]"
-                    >
-                      Nome
-                    </Label>
-                    <div className="space-y-2">
-                      <Input
-                        id="template-name"
-                        value={name}
-                        onChange={(e) => handleNameChange(e.target.value)}
-                        onBlur={() => validateName(name)}
-                        placeholder="Es: Piano Forza 8 Settimane"
-                        disabled={readonly}
-                        maxLength={80}
-                        aria-invalid={!!nameError}
-                        aria-describedby={nameError ? "name-error" : undefined}
-                        className="h-9 text-sm"
-                      />
-                      {nameError && (
-                        <p id="name-error" className="text-xs text-destructive">
-                          {nameError}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Category Field - Multi-select Combobox */}
-                  <div className="md:col-span-5 space-y-1.5">
-                    <Label 
-                      htmlFor="template-category" 
-                      className="text-sm font-normal text-[#4B5563]"
-                    >
-                      Categoria
-                    </Label>
-                    <div className="space-y-2">
-                      <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            id="template-category"
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={categoryOpen}
-                            disabled={readonly}
-                            className="w-full h-10 justify-between font-normal"
-                          >
-                            <span className="text-sm text-muted-foreground">
-                              {categories.length === 0 ? "Seleziona categoria..." : `${categories.length} selezionate`}
-                            </span>
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <Command>
-                            <CommandInput 
-                              placeholder="Cerca o aggiungi..." 
-                              value={categoryInput}
-                              onValueChange={setCategoryInput}
-                            />
-                            <CommandList>
-                              <CommandEmpty>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-full"
-                                  onClick={() => categoryInput.trim() && addCategory(categoryInput)}
-                                >
-                                  Crea "{categoryInput}"
-                                </Button>
-                              </CommandEmpty>
-                              <CommandGroup>
-                                {suggestedCategories
-                                  .filter(cat => !categories.includes(cat))
-                                  .map((cat) => (
-                                    <CommandItem
-                                      key={cat}
-                                      onSelect={() => addCategory(cat)}
-                                    >
-                                      {cat}
-                                    </CommandItem>
-                                  ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      
-                      {/* Selected Categories as Chips */}
-                      {categories.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {categories.map((cat) => (
-                            <Badge 
-                              key={cat} 
-                              variant="secondary" 
-                              className="gap-1 pr-1"
-                            >
-                              {cat}
-                              {!readonly && (
-                                <button
-                                  onClick={() => removeCategory(cat)}
-                                  className="ml-1 hover:bg-muted rounded-sm p-0.5"
-                                  aria-label={`Rimuovi ${cat}`}
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              )}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Description - collapsible in editor mode */}
-            {(!isEditorMode || showDescription) && (
-              <div className={`space-y-4 ${isEditorMode ? 'pt-2' : ''}`}>
-                {!isEditorMode && (
-                  <Label 
-                    htmlFor="template-description" 
-                    className="text-sm font-normal text-[#4B5563]"
-                  >
-                    Descrizione
+              // Full metadata view - aligned with ClientPlanEditor
+              <div className="grid gap-x-4 gap-y-4 md:grid-cols-3 items-start">
+                {/* Name Field */}
+                <div className="md:col-span-2">
+                  <Label className="text-sm font-medium mb-2 block">
+                    {toSentenceCase("Nome template")}
+                    {isNew && <span className="ml-1 text-destructive">*</span>}
                   </Label>
-                )}
-                <div className="relative">
+                  <Input
+                    id="template-name"
+                    value={name}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    onBlur={() => validateName(name)}
+                    placeholder="Es: Piano Forza 8 Settimane"
+                    disabled={readonly}
+                    maxLength={80}
+                    className={nameError ? "border-destructive" : ""}
+                  />
+                  {nameError && (
+                    <p className="text-sm text-destructive mt-1">{nameError}</p>
+                  )}
+                </div>
+
+                {/* Category Field */}
+                <div>
+                  <Label className="flex items-center gap-1.5 text-sm font-medium mb-2">
+                    {toSentenceCase("Categoria")}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[220px]">
+                          Usata per organizzare e riutilizzare i template (filtri, libreria)
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </Label>
+                  <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="template-category"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={categoryOpen}
+                        disabled={readonly}
+                        className="w-full justify-between font-normal"
+                      >
+                        <span className={categories.length === 0 ? "text-muted-foreground" : ""}>
+                          {categories.length === 0 ? "Es: Forza, Ipertrofia..." : `${categories.length} selezionate`}
+                        </span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Cerca o aggiungi..." 
+                          value={categoryInput}
+                          onValueChange={setCategoryInput}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => categoryInput.trim() && addCategory(categoryInput)}
+                            >
+                              Crea "{categoryInput}"
+                            </Button>
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {suggestedCategories
+                              .filter(cat => !categories.includes(cat))
+                              .map((cat) => (
+                                <CommandItem
+                                  key={cat}
+                                  onSelect={() => addCategory(cat)}
+                                >
+                                  {cat}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {/* Selected Categories as Chips */}
+                  {categories.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {categories.map((cat) => (
+                        <Badge 
+                          key={cat} 
+                          variant="secondary" 
+                          className="gap-1 pr-1"
+                        >
+                          {cat}
+                          {!readonly && (
+                            <button
+                              onClick={() => removeCategory(cat)}
+                              className="ml-1 hover:bg-muted rounded-sm p-0.5"
+                              aria-label={`Rimuovi ${cat}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Description Field */}
+                <div className="md:col-span-3">
+                  <Label className="text-sm font-medium mb-2 block">{toSentenceCase("Descrizione")}</Label>
                   <Textarea
                     id="template-description"
                     value={description}
-                    onChange={(e) => setDescription(e.target.value.slice(0, 280))}
-                    placeholder="Descrivi il template e gli obiettivi principali..."
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Note generali per il template (opzionale)"
+                    rows={2}
+                    className="resize-none transition-all duration-150"
                     disabled={readonly}
-                    maxLength={280}
-                    rows={isEditorMode ? 1 : 2}
-                    aria-describedby="description-counter"
-                    className={`resize-y text-sm pr-16 ${isEditorMode ? 'min-h-[40px] max-h-[80px] border-0 bg-muted/30' : 'min-h-[64px] max-h-[180px]'}`}
                   />
-                  <div
-                    id="description-counter"
-                    className="absolute bottom-2 right-3 text-xs text-muted-foreground pointer-events-none select-none"
-                  >
-                    {description.length}/280
-                  </div>
                 </div>
               </div>
             )}
