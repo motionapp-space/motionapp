@@ -35,7 +35,7 @@ const Plans = () => {
         data: { days: newPlan.days },
       });
       toast.success("Template creato");
-      navigate(`/templates/${template.id}?mode=edit`);
+      navigate(`/templates/${template.id}/edit`);
     } catch (error: any) {
       toast.error("Errore nella creazione del template");
     }
@@ -133,7 +133,7 @@ const Plans = () => {
                 <div className="flex items-center justify-end gap-1 pt-2 mt-auto">
                   <IconTooltipButton
                     label={toSentenceCase("Apri")}
-                    onClick={() => navigate(`/templates/${template.id}?mode=read`)}
+                    onClick={() => navigate(`/templates/${template.id}/edit`)}
                     data-testid={`template-open-${template.id}`}
                   >
                     <Eye className="h-4 w-4" />
@@ -141,7 +141,7 @@ const Plans = () => {
                   
                   <IconTooltipButton
                     label={toSentenceCase("Modifica")}
-                    onClick={() => navigate(`/templates/${template.id}?mode=edit`)}
+                    onClick={() => navigate(`/templates/${template.id}/edit`)}
                     data-testid={`template-edit-${template.id}`}
                   >
                     <Pencil className="h-4 w-4" />
