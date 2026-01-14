@@ -810,7 +810,7 @@ const ClientPlanEditor = () => {
           <div className="border-t pt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">{toSentenceCase("Giorni di allenamento")}</h2>
-              {!readonly && (
+              {!readonly && days.length > 0 && (
                 <Button onClick={handleAddDay} variant="outline" size="sm" className="gap-2">
                   <Plus className="h-4 w-4" />
                   {toSentenceCase("Aggiungi giorno")}
@@ -820,10 +820,13 @@ const ClientPlanEditor = () => {
 
             {days.length === 0 ? (
               <div className="text-center py-12 border rounded-lg bg-muted/20">
-                <p className="text-muted-foreground mb-4">
+                <p className="text-muted-foreground mb-2 font-medium">
                   {toSentenceCase("Nessun giorno ancora")}
                 </p>
-                <Button onClick={handleAddDay} variant="outline" className="gap-2">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Inizia aggiungendo il primo giorno di allenamento
+                </p>
+                <Button onClick={handleAddDay} className="gap-2">
                   <Plus className="h-4 w-4" />
                   {toSentenceCase("Aggiungi primo giorno")}
                 </Button>
@@ -997,6 +1000,7 @@ const ClientPlanEditor = () => {
         canExport={!isExporting}
         showDelete={!!id}
         showSaveAsTemplate={!!id}
+        showAI={true}
         readonly={readonly}
         onSave={handleSave}
         onExit={() => handleExitRequest()}
