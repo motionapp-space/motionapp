@@ -69,14 +69,14 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
                 to={item.to}
                 onClick={onNavClick}
                 className={cn(
-                  "group relative flex items-center rounded-lg transition-[background-color,color] duration-[120ms] ease-out",
-                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:bg-foreground/12 focus-visible:text-foreground",
+                  "group relative flex items-center rounded-full transition-[background-color,color] duration-[120ms] ease-out",
+                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:bg-foreground/14 focus-visible:text-foreground",
                   collapsed
                     ? "justify-center px-2 py-2.5"
                     : "gap-3 px-3 py-2.5",
                   active
                     ? "bg-primary/15 text-primary font-semibold hover:bg-primary/18"
-                    : "text-muted-foreground hover:bg-foreground/12 hover:text-foreground"
+                    : "text-muted-foreground hover:bg-foreground/14 hover:text-foreground"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
