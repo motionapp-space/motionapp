@@ -10,7 +10,6 @@ import { useTemplatesQuery } from "@/features/templates/hooks/useTemplatesQuery"
 import { useAssignTemplate } from "../hooks/useAssignTemplate";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toSentenceCase } from "@/lib/text";
 
 interface AssignPlanDialogProps {
   clientId: string;
@@ -69,50 +68,72 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className={`max-w-4xl ${templates.length === 0 ? "" : "max-h-[80vh] overflow-y-auto"}`}>
         <DialogHeader>
-          <DialogTitle>{toSentenceCase("Assegna piano")}</DialogTitle>
-          <DialogDescription>
-            {toSentenceCase("Seleziona un template da assegnare al cliente")}
-          </DialogDescription>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <DialogTitle>Seleziona un template</DialogTitle>
+              <DialogDescription>
+                I template ti aiutano a riutilizzare piani già pronti.
+              </DialogDescription>
+            </div>
+            <span className="rounded-full bg-muted/50 px-2 py-0.5 text-xs text-muted-foreground whitespace-nowrap">
+              {templates.length} template
+            </span>
+          </div>
         </DialogHeader>
 
         {templates.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-              <FileText className="h-8 w-8 text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
+            <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
+              <FileText className="h-5 w-5 text-muted-foreground/70" />
             </div>
-            <div className="space-y-2">
-              <h3 className="font-semibold">Nessun template disponibile</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Crea il tuo primo template nella Libreria per poterlo assegnare ai clienti
+            <div className="space-y-1">
+              <h3 className="text-sm font-medium">Nessun template ancora</h3>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                Crea un template nella Libreria per riutilizzare piani già pronti con i tuoi clienti.
               </p>
             </div>
-            <Button
-              onClick={() => {
-                onOpenChange(false);
-                navigate("/library?tab=templates");
-              }}
-            >
-              Vai alla Libreria
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <Button
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate("/library?tab=templates");
+                }}
+              >
+                Crea template
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+              >
+                Torna indietro
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground/60">
+              Puoi assegnare un template anche più tardi.
+            </p>
           </div>
         ) : (
           <>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="search">{toSentenceCase("Cerca template")}</Label>
+                <Label htmlFor="search">Cerca template</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder={toSentenceCase("cerca per nome...")}
+                    placeholder="cerca per nome..."
                     className="pl-10"
                   />
                 </div>
               </div>
+
+              <p className="text-xs text-muted-foreground">
+                Mostrando {filteredTemplates.length} template
+              </p>
 
               <RadioGroup value={selectedTemplateId || ""} onValueChange={setSelectedTemplateId}>
                 <div className="grid gap-3 max-h-96 overflow-y-auto">
@@ -155,20 +176,20 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
 
             <DialogFooter className="gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
-                {toSentenceCase("annulla")}
+                Annulla
               </Button>
               <Button
                 variant="outline"
                 onClick={handlePersonalize}
                 disabled={!selectedTemplateId}
               >
-                {toSentenceCase("personalizza")}
+                Personalizza
               </Button>
               <Button
                 onClick={handleAssignAsIs}
                 disabled={!selectedTemplateId || assignMutation.isPending}
               >
-                {toSentenceCase("assegna")}
+                Assegna
               </Button>
             </DialogFooter>
           </>
