@@ -54,7 +54,7 @@ export function ClientPlanCard({
         state: { planId: plan.id } 
       });
     } else {
-      navigate(`/templates/${templateId}/edit`, { state: { readonly: true } });
+      navigate(`/templates/${templateId}/edit`);
     }
   };
 
