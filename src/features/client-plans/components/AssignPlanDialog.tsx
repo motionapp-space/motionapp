@@ -78,34 +78,23 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
 
         {templates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
-            <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
-              <FileText className="h-5 w-5 text-muted-foreground/70" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium">Nessun template ancora</h3>
+          <div className="w-10 h-10 rounded-lg bg-muted/40 flex items-center justify-center">
+            <FileText className="h-5 w-5 text-muted-foreground/70" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-medium">Nessun template ancora</h3>
               <p className="text-sm text-muted-foreground max-w-xs">
                 Crea un template nella Libreria per riutilizzare piani già pronti con i tuoi clienti.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 pt-2">
-              <Button
-                onClick={() => {
-                  onOpenChange(false);
-                  navigate("/library?tab=templates");
-                }}
-              >
-                Crea template
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-              >
-                Torna indietro
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground/60">
-              Puoi assegnare un template anche più tardi.
-            </p>
+            <Button
+              onClick={() => {
+                onOpenChange(false);
+                navigate("/library?tab=templates");
+              }}
+            >
+              Crea template
+            </Button>
           </div>
         ) : (
           <>
