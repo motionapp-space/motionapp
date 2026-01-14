@@ -3,8 +3,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, Search, Tag } from "lucide-react";
 import { useTemplatesQuery } from "@/features/templates/hooks/useTemplatesQuery";
 import { useAssignTemplate } from "../hooks/useAssignTemplate";
@@ -29,8 +29,6 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
   const filteredTemplates = templates.filter((t) =>
     t.name.toLowerCase().includes(search.toLowerCase())
   );
-
-  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
 
   const handleAssignAsIs = async () => {
     if (!selectedTemplateId) return;
@@ -57,7 +55,10 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
   };
 
   const handlePersonalize = () => {
-    if (!selectedTemplateId || !selectedTemplate) return;
+    if (!selectedTemplateId) return;
+    
+    const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+    if (!selectedTemplate) return;
     
     // Navigate to editor with template context
     navigate(`/client-plans/new?clientId=${clientId}&templateId=${selectedTemplateId}`, {
@@ -68,23 +69,23 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-w-4xl ${templates.length === 0 ? "" : "max-h-[80vh] overflow-y-auto"}`}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Seleziona un template</DialogTitle>
           <DialogDescription>
-            I template ti aiutano a riutilizzare piani già pronti · {templates.length} disponibili
+            Scegli un template da assegnare al cliente
           </DialogDescription>
         </DialogHeader>
 
         {templates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
-          <div className="w-10 h-10 rounded-lg bg-muted/40 flex items-center justify-center">
-            <FileText className="h-5 w-5 text-muted-foreground/70" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-medium">Nessun template ancora</h3>
+            <div className="w-10 h-10 rounded-lg bg-muted/40 flex items-center justify-center">
+              <FileText className="h-5 w-5 text-muted-foreground/70" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-base font-medium">Nessun template ancora</h3>
               <p className="text-sm text-muted-foreground max-w-xs">
-                Crea un template nella Libreria per riutilizzare piani già pronti con i tuoi clienti.
+                Crea un template nella Libreria per riutilizzare piani già pronti.
               </p>
             </div>
             <Button
@@ -97,65 +98,69 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
             </Button>
           </div>
         ) : (
-          <>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="search">Cerca template</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="search"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="cerca per nome..."
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                Mostrando {filteredTemplates.length} template
-              </p>
-
-              <RadioGroup value={selectedTemplateId || ""} onValueChange={setSelectedTemplateId}>
-                <div className="grid gap-3 max-h-96 overflow-y-auto">
-                  {filteredTemplates.map((template) => (
-                    <Label
-                      key={template.id}
-                      htmlFor={template.id}
-                      className="cursor-pointer"
-                    >
-                      <Card className={`hover:border-primary transition-colors ${
-                        selectedTemplateId === template.id ? "border-primary" : ""
-                      }`}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <CardTitle className="text-base">{template.name}</CardTitle>
-                              {template.category && (
-                                <CardDescription className="flex items-center gap-1 mt-1">
-                                  <Tag className="h-3 w-3" />
-                                  {template.category}
-                                </CardDescription>
-                              )}
-                            </div>
-                            <RadioGroupItem value={template.id} id={template.id} />
-                          </div>
-                        </CardHeader>
-                        {template.description && (
-                          <CardContent className="pt-0">
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {template.description}
-                            </p>
-                          </CardContent>
-                        )}
-                      </Card>
-                    </Label>
-                  ))}
-                </div>
-              </RadioGroup>
+          <div className="space-y-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cerca template..."
+                className="pl-10"
+              />
             </div>
 
+            {/* Template count */}
+            <p className="text-xs text-muted-foreground">
+              {filteredTemplates.length} template trovati
+            </p>
+
+            {/* Template list */}
+            <ScrollArea className="h-[280px]">
+              <RadioGroup 
+                value={selectedTemplateId || ""} 
+                onValueChange={setSelectedTemplateId}
+                className="space-y-2 pr-4"
+              >
+                {filteredTemplates.map((template) => (
+                  <Label
+                    key={template.id}
+                    htmlFor={template.id}
+                    className="cursor-pointer block"
+                  >
+                    <div className={`flex items-center gap-3 p-3 rounded-lg border transition-colors hover:border-primary ${
+                      selectedTemplateId === template.id 
+                        ? "border-primary bg-primary/5" 
+                        : "border-border"
+                    }`}>
+                      <RadioGroupItem 
+                        value={template.id} 
+                        id={template.id} 
+                        className="shrink-0" 
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {template.name}
+                        </p>
+                        {template.category && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Tag className="h-3 w-3" />
+                            {template.category}
+                          </p>
+                        )}
+                        {template.description && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                            {template.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </ScrollArea>
+
+            {/* Footer */}
             <DialogFooter className="gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Annulla
@@ -174,7 +179,7 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
                 Assegna
               </Button>
             </DialogFooter>
-          </>
+          </div>
         )}
       </DialogContent>
     </Dialog>
