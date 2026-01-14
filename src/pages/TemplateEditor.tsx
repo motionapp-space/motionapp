@@ -253,10 +253,10 @@ const TemplateEditor = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<boolean> => {
     if (!validateName(name)) {
-      toast.error("Correggi gli errori prima di salvare");
-      return;
+      toast.error("Compila i campi obbligatori prima di salvare");
+      return false;
     }
     
     try {
@@ -288,8 +288,10 @@ const TemplateEditor = () => {
         setInitialSnapshot(currentSnapshot);
         toast.success("Template salvato");
       }
+      return true;
     } catch (error) {
       toast.error("Errore durante il salvataggio. Riprova.");
+      return false;
     }
   };
 
@@ -302,14 +304,13 @@ const TemplateEditor = () => {
 
   // Save and exit
   const handleSaveAndExit = async () => {
-    try {
-      await handleSave();
+    const success = await handleSave();
+    if (success) {
       setExitDialogOpen(false);
       pendingNavigation.current?.();
       pendingNavigation.current = null;
-    } catch (error) {
-      // Error already shown by handleSave
     }
+    // Se save fallisce, la dialog resta aperta e l'utente vede l'errore
   };
 
   // Add category chip
