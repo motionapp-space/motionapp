@@ -203,26 +203,28 @@ export default function TemplatesTab() {
                   {template.name}
                 </h3>
                 
-                {/* Categories */}
-                {template.category && parseCategories(template.category).length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {parseCategories(template.category).slice(0, 2).map((cat) => (
-                      <Badge 
-                        key={cat} 
-                        variant="secondary" 
-                        className="rounded-full text-xs bg-muted/60 px-2 py-0.5 truncate max-w-[100px]"
-                        title={cat}
-                      >
-                        {cat}
-                      </Badge>
-                    ))}
-                    {parseCategories(template.category).length > 2 && (
-                      <Badge variant="outline" className="rounded-full text-xs px-2 py-0.5">
-                        +{parseCategories(template.category).length - 2}
-                      </Badge>
-                    )}
-                  </div>
-                )}
+                {/* Categories - fixed height for alignment */}
+                <div className="flex flex-wrap gap-1 min-h-[24px]">
+                  {template.category && parseCategories(template.category).length > 0 ? (
+                    <>
+                      {parseCategories(template.category).slice(0, 2).map((cat) => (
+                        <Badge 
+                          key={cat} 
+                          variant="secondary" 
+                          className="rounded-full text-xs bg-muted/60 px-2 py-0.5 truncate max-w-[100px]"
+                          title={cat}
+                        >
+                          {cat}
+                        </Badge>
+                      ))}
+                      {parseCategories(template.category).length > 2 && (
+                        <Badge variant="outline" className="rounded-full text-xs px-2 py-0.5">
+                          +{parseCategories(template.category).length - 2}
+                        </Badge>
+                      )}
+                    </>
+                  ) : null}
+                </div>
                 
                 {/* Last Edited Date */}
                 <p className="text-sm text-muted-foreground">
