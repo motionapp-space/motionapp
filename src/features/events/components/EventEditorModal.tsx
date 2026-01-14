@@ -1373,14 +1373,6 @@ export function EventEditorModal({
               </Alert>
             )}
 
-            {formData.clientId && !activePackage && (
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Il cliente non ha un pacchetto attivo
-                </AlertDescription>
-              </Alert>
-            )}
 
             </div>
             )}
