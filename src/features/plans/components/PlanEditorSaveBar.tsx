@@ -115,17 +115,17 @@ export function PlanEditorSaveBar({
                   </DropdownMenuItem>
                 )}
                 {showSaveAsTemplate && !readonly && (
-                  <DropdownMenuItem onClick={onSaveAsTemplate} className="justify-start">
-                    <FileOutput className="mr-2 h-4 w-4" />
+                  <DropdownMenuItem onClick={onSaveAsTemplate} className="gap-2 justify-start">
+                    <FileOutput className="h-4 w-4" />
                     Salva come template
                   </DropdownMenuItem>
                 )}
                 {showDelete && !readonly && (
                   <DropdownMenuItem
                     onClick={onDelete}
-                    className="text-destructive focus:text-destructive justify-start"
+                    className="gap-2 text-destructive focus:text-destructive justify-start"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                     Elimina piano
                   </DropdownMenuItem>
                 )}
