@@ -6,7 +6,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getCoachClientId, getClientIdFromCoachClient } from "@/lib/coach-client";
 import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useUpdateEvent } from "../hooks/useUpdateEvent";
-import { useDeleteEvent } from "../hooks/useDeleteEvent";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useClientPackages } from "@/features/packages/hooks/useClientPackages";
 import { useEventsQuery } from "../hooks/useEventsQuery";
@@ -186,7 +185,7 @@ export function EventEditorModal({
   const { activeSession } = useSessionStore();
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
-  const deleteEvent = useDeleteEvent();
+  const [isCancelling, setIsCancelling] = useState(false);
   const { data: clientsData } = useClientsQuery({ q: "", page: 1, limit: 100 });
   const clients = clientsData?.items || [];
   const { data: clientPackages } = useClientPackages(formData.clientId);
@@ -716,15 +715,58 @@ export function EventEditorModal({
     }
   };
 
-  const handleDelete = async () => {
+  const handleCancel = async () => {
     if (!event) return;
+    setIsCancelling(true);
 
     try {
-      await deleteEvent.mutateAsync(event.id);
+      const { data, error } = await supabase.rpc('cancel_event_with_ledger', {
+        p_event_id: event.id,
+        p_actor: 'coach'
+      });
+      
+      if (error) throw error;
+      
+      const result = data as Record<string, unknown> | null;
+      if (result?.error) throw new Error(String(result.error));
+      
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ["events"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["packages"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["package-ledger"], exact: false });
+      
+      // Toast dinamico basato su risposta reale
+      const alreadyCanceled = result?.already_canceled as boolean | undefined;
+      const economicType = result?.economic_type as string | undefined;
+      const orderStatus = result?.order_status as string | undefined;
+      
+      if (alreadyCanceled) {
+        toast.info("Evento già annullato");
+      } else if (economicType === 'package') {
+        toast.success("Evento cancellato", {
+          description: "Sessione restituita al pacchetto"
+        });
+      } else if (economicType === 'single_paid') {
+        toast.success("Evento cancellato", {
+          description: orderStatus === 'canceled' 
+            ? "Richiesta pagamento annullata" 
+            : orderStatus === 'due'
+              ? "Pagamento in attesa"
+              : "Evento annullato"
+        });
+      } else {
+        toast.success("Evento cancellato");
+      }
+      
       setShowDeleteDialog(false);
       onOpenChange(false);
-    } catch (error) {
-      console.error('Delete event error:', error);
+    } catch (error: any) {
+      console.error('Cancel event error:', error);
+      toast.error("Errore", { 
+        description: error.message || "Impossibile cancellare l'evento" 
+      });
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -1389,7 +1431,7 @@ export function EventEditorModal({
                   className="h-10 px-4 text-destructive/80 hover:text-destructive hover:bg-destructive/5 font-normal"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Elimina
+                  Cancella
                 </Button>
                 <div className="flex items-center gap-2">
                   {canStartSession && event && new Date(event.end_at) >= new Date() && (
@@ -1418,7 +1460,7 @@ export function EventEditorModal({
                     className="h-10 px-4 text-destructive hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Elimina
+                    Cancella
                   </Button>
                   <div className="flex items-center gap-2">
                     <Button
@@ -1494,22 +1536,23 @@ export function EventEditorModal({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Cancel Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminare questo appuntamento?</AlertDialogTitle>
+            <AlertDialogTitle>Cancellare questo appuntamento?</AlertDialogTitle>
             <AlertDialogDescription>
-              Questa azione non può essere annullata. L'appuntamento verrà eliminato definitivamente.
+              L'evento verrà annullato. Se associato a un pacchetto, la sessione verrà restituita automaticamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogCancel disabled={isCancelling}>Annulla</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={handleCancel}
+              disabled={isCancelling}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Elimina
+              {isCancelling ? "Cancellazione..." : "Cancella evento"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

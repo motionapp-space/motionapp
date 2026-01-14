@@ -259,15 +259,20 @@ export async function cancelBookingRequest(requestId: string): Promise<void> {
 }
 
 /**
- * Cancel an appointment (event)
+ * Cancel an appointment (event) via RPC with ledger management
  */
-export async function cancelAppointment(eventId: string): Promise<void> {
-  const { error } = await supabase
-    .from("events")
-    .update({ session_status: 'canceled' })
-    .eq("id", eventId);
-
-  if (error) throw error;
+export async function cancelAppointment(eventId: string) {
+  const { data, error } = await supabase.rpc('cancel_event_with_ledger', {
+    p_event_id: eventId,
+    p_actor: 'client'
+  });
+  
+  if (error) throw new Error(error.message);
+  
+  const result = data as Record<string, unknown> | null;
+  if (result?.error) throw new Error(String(result.error));
+  
+  return result;
 }
 
 /**
@@ -302,20 +307,36 @@ export async function acceptChangeProposal(eventId: string): Promise<void> {
 }
 
 /**
- * Reject a change proposal from coach (cancels the appointment)
+ * Reject a change proposal from coach (cancels the appointment via RPC + resets proposal fields)
  */
-export async function rejectChangeProposal(eventId: string): Promise<void> {
-  const { error } = await supabase
-    .from("events")
-    .update({
-      session_status: 'canceled',
-      proposed_start_at: null,
-      proposed_end_at: null,
-      proposal_status: null
-    })
-    .eq("id", eventId);
-
-  if (error) throw error;
+export async function rejectChangeProposal(eventId: string) {
+  // 1. Call cancel RPC (handles ledger + session_status)
+  const { data, error } = await supabase.rpc('cancel_event_with_ledger', {
+    p_event_id: eventId,
+    p_actor: 'client'
+  });
+  
+  if (error) throw new Error(error.message);
+  
+  const result = data as Record<string, unknown> | null;
+  if (result?.error) throw new Error(String(result.error));
+  
+  // 2. Reset proposal fields (best-effort, non-blocking)
+  // UI gestirà stato "canceled" prioritariamente
+  try {
+    await supabase
+      .from("events")
+      .update({
+        proposed_start_at: null,
+        proposed_end_at: null,
+        proposal_status: null
+      })
+      .eq("id", eventId);
+  } catch (updateError) {
+    console.warn("Could not reset proposal fields:", updateError);
+  }
+  
+  return result;
 }
 
 /**

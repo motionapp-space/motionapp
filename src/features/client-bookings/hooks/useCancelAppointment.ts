@@ -7,10 +7,29 @@ export function useCancelAppointment() {
 
   return useMutation({
     mutationFn: (eventId: string) => cancelAppointment(eventId),
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["client-appointments-view"] });
       queryClient.invalidateQueries({ queryKey: ["client-appointments"] });
-      toast.success("Appuntamento annullato");
+      queryClient.invalidateQueries({ queryKey: ["packages"], exact: false });
+      
+      // Toast dinamico robusto (optional chaining)
+      const alreadyCanceled = result?.already_canceled as boolean | undefined;
+      const isLate = result?.is_late as boolean | undefined;
+      const ledgerAction = result?.ledger_action as string | undefined;
+      
+      if (alreadyCanceled) {
+        toast.info("Appuntamento già annullato");
+      } else if (isLate && ledgerAction === 'consume') {
+        toast.warning("Cancellazione tardiva", {
+          description: "1 credito consumato per cancellazione entro finestra"
+        });
+      } else if (ledgerAction === 'release') {
+        toast.success("Appuntamento annullato", {
+          description: "Credito restituito al pacchetto"
+        });
+      } else {
+        toast.success("Appuntamento annullato");
+      }
     },
     onError: (error: Error) => {
       toast.error("Errore", {
