@@ -23,12 +23,31 @@ export function useRespondToChangeProposal() {
 
   const rejectMutation = useMutation({
     mutationFn: (eventId: string) => rejectChangeProposal(eventId),
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["client-appointments-view"] });
       queryClient.invalidateQueries({ queryKey: ["client-appointments"] });
-      toast.success("Proposta rifiutata", {
-        description: "L'appuntamento è stato annullato"
-      });
+      queryClient.invalidateQueries({ queryKey: ["packages"], exact: false });
+      
+      // Toast dinamico robusto
+      const alreadyCanceled = result?.already_canceled as boolean | undefined;
+      const isLate = result?.is_late as boolean | undefined;
+      const ledgerAction = result?.ledger_action as string | undefined;
+      
+      if (alreadyCanceled) {
+        toast.info("Appuntamento già annullato");
+      } else if (isLate && ledgerAction === 'consume') {
+        toast.warning("Proposta rifiutata", {
+          description: "1 credito consumato per cancellazione tardiva"
+        });
+      } else if (ledgerAction === 'release') {
+        toast.success("Proposta rifiutata", {
+          description: "Credito restituito al pacchetto"
+        });
+      } else {
+        toast.success("Proposta rifiutata", {
+          description: "L'appuntamento è stato annullato"
+        });
+      }
     },
     onError: (error: Error) => {
       toast.error("Errore", {
