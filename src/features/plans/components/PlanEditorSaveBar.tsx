@@ -109,13 +109,13 @@ export function PlanEditorSaveBar({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {showAI && (
-                  <DropdownMenuItem onClick={handleAIClick} className="gap-2">
+                  <DropdownMenuItem onClick={handleAIClick} className="gap-2 justify-start">
                     <Sparkles className="h-4 w-4" />
-                    AI (in sviluppo)
+                    AI agent
                   </DropdownMenuItem>
                 )}
                 {showSaveAsTemplate && !readonly && (
-                  <DropdownMenuItem onClick={onSaveAsTemplate}>
+                  <DropdownMenuItem onClick={onSaveAsTemplate} className="justify-start">
                     <FileOutput className="mr-2 h-4 w-4" />
                     Salva come template
                   </DropdownMenuItem>
@@ -123,7 +123,7 @@ export function PlanEditorSaveBar({
                 {showDelete && !readonly && (
                   <DropdownMenuItem
                     onClick={onDelete}
-                    className="text-destructive focus:text-destructive"
+                    className="text-destructive focus:text-destructive justify-start"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Elimina piano
