@@ -2,6 +2,11 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Loader2, Mail, Check, Clock, AlertCircle, RefreshCw, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { getClientInvite, createInvite, type ClientInvite } from "../api/invites.api";
@@ -249,18 +254,32 @@ export function ClientInviteSection({ clientId, email, hasUserAccount }: ClientI
             <Copy className="h-4 w-4 mr-2" />
             Copia link
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleGenerateInvite}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleGenerateInvite}
+                disabled={isGenerating}
+                className="flex-1"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Reinvio...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Reinvia invito
+                  </>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Verrà generato un nuovo link e inviata una nuova email al cliente</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       )}
 
