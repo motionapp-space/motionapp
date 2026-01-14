@@ -13,10 +13,7 @@ vi.mock("../api/client-bookings.api", () => ({
   acceptChangeProposal: (eventId: string) => acceptChangeProposalMock(eventId),
 }));
 
-// Mock ClientAuthContext
-vi.mock("@/contexts/ClientAuthContext", () => ({
-  useClientAuth: () => ({ userId: "test-user-id" }),
-}));
+// Note: useClientAuth is not used by this hook
 
 describe("useRespondToChangeProposal - reject mutation", () => {
   beforeEach(() => {
@@ -44,7 +41,8 @@ describe("useRespondToChangeProposal - reject mutation", () => {
       description: "Credito restituito al pacchetto",
     });
 
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["client-appointments-view", "test-user-id"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["client-appointments-view"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["client-appointments"] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["packages"], exact: false });
   });
 
