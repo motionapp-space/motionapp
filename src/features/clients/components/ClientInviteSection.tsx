@@ -176,7 +176,7 @@ export function ClientInviteSection({ clientId, email, hasUserAccount }: ClientI
           <div className="flex-1">
             <p className="font-medium">{toSentenceCase("Nessun invito inviato")}</p>
             <p className="text-sm text-muted-foreground">
-              Genera un link di invito per permettere al cliente di creare il proprio account.
+              Invia un'email con il link di accesso per permettere al cliente di creare il proprio account.
             </p>
           </div>
         </div>
@@ -184,12 +184,12 @@ export function ClientInviteSection({ clientId, email, hasUserAccount }: ClientI
           {isGenerating ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Generazione...
+              Invio in corso...
             </>
           ) : (
             <>
               <Mail className="h-4 w-4 mr-2" />
-              Genera link di invito
+              Invia invito al cliente
             </>
           )}
         </Button>
