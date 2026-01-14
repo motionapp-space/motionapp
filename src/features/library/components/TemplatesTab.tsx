@@ -203,7 +203,7 @@ export default function TemplatesTab() {
                 
                 {/* Primary Action Button */}
                 <Button 
-                  onClick={() => navigate(`/templates/${template.id}?mode=edit`)}
+                  onClick={() => navigate(`/templates/${template.id}/edit`)}
                   className="w-full gap-2"
                   data-testid={`template-edit-${template.id}`}
                 >
