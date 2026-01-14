@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Search, Tag } from "lucide-react";
+import { FileText, Search, Tag } from "lucide-react";
 import { useTemplatesQuery } from "@/features/templates/hooks/useTemplatesQuery";
 import { useAssignTemplate } from "../hooks/useAssignTemplate";
 import { toast } from "sonner";
@@ -77,78 +77,102 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="search">{toSentenceCase("Cerca template")}</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={toSentenceCase("cerca per nome...")}
-                className="pl-10"
-              />
+        {templates.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+              <FileText className="h-8 w-8 text-muted-foreground" />
             </div>
+            <div className="space-y-2">
+              <h3 className="font-semibold">Nessun template disponibile</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Crea il tuo primo template nella Libreria per poterlo assegnare ai clienti
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                onOpenChange(false);
+                navigate("/library?tab=templates");
+              }}
+            >
+              Vai alla Libreria
+            </Button>
           </div>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="search">{toSentenceCase("Cerca template")}</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={toSentenceCase("cerca per nome...")}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
 
-          <RadioGroup value={selectedTemplateId || ""} onValueChange={setSelectedTemplateId}>
-            <div className="grid gap-3 max-h-96 overflow-y-auto">
-              {filteredTemplates.map((template) => (
-                <Label
-                  key={template.id}
-                  htmlFor={template.id}
-                  className="cursor-pointer"
-                >
-                  <Card className={`hover:border-primary transition-colors ${
-                    selectedTemplateId === template.id ? "border-primary" : ""
-                  }`}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-base">{template.name}</CardTitle>
-                          {template.category && (
-                            <CardDescription className="flex items-center gap-1 mt-1">
-                              <Tag className="h-3 w-3" />
-                              {template.category}
-                            </CardDescription>
-                          )}
-                        </div>
-                        <RadioGroupItem value={template.id} id={template.id} />
-                      </div>
-                    </CardHeader>
-                    {template.description && (
-                      <CardContent className="pt-0">
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {template.description}
-                        </p>
-                      </CardContent>
-                    )}
-                  </Card>
-                </Label>
-              ))}
+              <RadioGroup value={selectedTemplateId || ""} onValueChange={setSelectedTemplateId}>
+                <div className="grid gap-3 max-h-96 overflow-y-auto">
+                  {filteredTemplates.map((template) => (
+                    <Label
+                      key={template.id}
+                      htmlFor={template.id}
+                      className="cursor-pointer"
+                    >
+                      <Card className={`hover:border-primary transition-colors ${
+                        selectedTemplateId === template.id ? "border-primary" : ""
+                      }`}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-base">{template.name}</CardTitle>
+                              {template.category && (
+                                <CardDescription className="flex items-center gap-1 mt-1">
+                                  <Tag className="h-3 w-3" />
+                                  {template.category}
+                                </CardDescription>
+                              )}
+                            </div>
+                            <RadioGroupItem value={template.id} id={template.id} />
+                          </div>
+                        </CardHeader>
+                        {template.description && (
+                          <CardContent className="pt-0">
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {template.description}
+                            </p>
+                          </CardContent>
+                        )}
+                      </Card>
+                    </Label>
+                  ))}
+                </div>
+              </RadioGroup>
             </div>
-          </RadioGroup>
-        </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {toSentenceCase("annulla")}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handlePersonalize}
-            disabled={!selectedTemplateId}
-          >
-            {toSentenceCase("personalizza")}
-          </Button>
-          <Button
-            onClick={handleAssignAsIs}
-            disabled={!selectedTemplateId || assignMutation.isPending}
-          >
-            {toSentenceCase("assegna")}
-          </Button>
-        </DialogFooter>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                {toSentenceCase("annulla")}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handlePersonalize}
+                disabled={!selectedTemplateId}
+              >
+                {toSentenceCase("personalizza")}
+              </Button>
+              <Button
+                onClick={handleAssignAsIs}
+                disabled={!selectedTemplateId || assignMutation.isPending}
+              >
+                {toSentenceCase("assegna")}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
