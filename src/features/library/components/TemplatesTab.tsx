@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -13,6 +14,7 @@ import { it } from "date-fns/locale";
 import { useTemplatesQuery } from "@/features/templates/hooks/useTemplatesQuery";
 import { useDuplicateTemplate } from "@/features/templates/hooks/useDuplicateTemplate";
 import { useDeleteTemplate } from "@/features/templates/hooks/useDeleteTemplate";
+import { parseCategories } from "@/lib/categories";
 
 type SortOption = "modified" | "name-asc" | "name-desc";
 
@@ -33,11 +35,16 @@ export default function TemplatesTab() {
   const filteredAndSortedTemplates = useMemo(() => {
     let result = [...templates];
     
-    // Search filter
+    // Search filter - includes name and categories
     if (searchQuery) {
-      result = result.filter(t => 
-        t.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const query = searchQuery.toLowerCase();
+      result = result.filter(t => {
+        const nameMatch = t.name.toLowerCase().includes(query);
+        const categoryMatch = t.category 
+          ? t.category.toLowerCase().includes(query) 
+          : false;
+        return nameMatch || categoryMatch;
+      });
     }
     
     // Sort
@@ -109,7 +116,7 @@ export default function TemplatesTab() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Cerca template..."
+            placeholder="Cerca per nome o categoria..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -195,6 +202,27 @@ export default function TemplatesTab() {
                 <h3 className="font-semibold text-lg line-clamp-1" title={template.name}>
                   {template.name}
                 </h3>
+                
+                {/* Categories */}
+                {template.category && parseCategories(template.category).length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {parseCategories(template.category).slice(0, 2).map((cat) => (
+                      <Badge 
+                        key={cat} 
+                        variant="secondary" 
+                        className="rounded-full text-xs bg-muted/60 px-2 py-0.5 truncate max-w-[100px]"
+                        title={cat}
+                      >
+                        {cat}
+                      </Badge>
+                    ))}
+                    {parseCategories(template.category).length > 2 && (
+                      <Badge variant="outline" className="rounded-full text-xs px-2 py-0.5">
+                        +{parseCategories(template.category).length - 2}
+                      </Badge>
+                    )}
+                  </div>
+                )}
                 
                 {/* Last Edited Date */}
                 <p className="text-sm text-muted-foreground">

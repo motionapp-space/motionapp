@@ -21,8 +21,8 @@ import { useCreateTemplate } from "@/features/templates/hooks/useCreateTemplate"
 import { PlanEditorSaveBar } from "@/features/plans/components/PlanEditorSaveBar";
 import type { PlanTemplate } from "@/types/template";
 import { makeDay, makeGroup, type Day, type PhaseType, type GroupType, type Exercise, type ExerciseGroup, migratePhaseToGroups } from "@/types/plan";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CategoryMultiSelect } from "@/components/plan-editor/CategoryMultiSelect";
+import { parseCategories, serializeCategories, DEFAULT_SUGGESTED_CATEGORIES } from "@/lib/categories";
 import {
   DndContext,
   closestCenter,
@@ -53,8 +53,6 @@ const TemplateEditor = () => {
   const [nameError, setNameError] = useState("");
   const [description, setDescription] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
-  const [categoryInput, setCategoryInput] = useState("");
-  const [categoryOpen, setCategoryOpen] = useState(false);
   
   // New state for unified dirty tracking and dialogs
   const [initialSnapshot, setInitialSnapshot] = useState<string | null>(null);
@@ -69,8 +67,6 @@ const TemplateEditor = () => {
   const readonly = location.state?.readonly === true;
   const isNew = id === "new" || !id;
 
-  // Predefined categories for suggestions
-  const suggestedCategories = ["Forza", "Ipertrofia", "Resistenza", "Mobilità", "Cardio", "Funzionale"];
 
   // Helper to create stable snapshot
   const createSnapshot = useCallback((n: string, d: string, cats: string[], daysData: Day[]) => {
@@ -323,20 +319,6 @@ const TemplateEditor = () => {
     }
   };
 
-  // Add category chip
-  const addCategory = (cat: string) => {
-    const trimmed = cat.trim();
-    if (trimmed && !categories.includes(trimmed)) {
-      setCategories([...categories, trimmed]);
-    }
-    setCategoryInput("");
-    setCategoryOpen(false);
-  };
-
-  // Remove category chip
-  const removeCategory = (cat: string) => {
-    setCategories(categories.filter(c => c !== cat));
-  };
 
   // PDF export with gating for unsaved templates
   const handleExportPDF = () => {
@@ -646,83 +628,18 @@ const TemplateEditor = () => {
                           <Info className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-[220px]">
-                          Usata per organizzare e riutilizzare i template (filtri, libreria)
+                          Usata per organizzare e ritrovare i template in Libreria
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </Label>
-                  <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        id="template-category"
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={categoryOpen}
-                        disabled={readonly}
-                        className="w-full justify-between font-normal"
-                      >
-                        <span className={categories.length === 0 ? "text-muted-foreground" : ""}>
-                          {categories.length === 0 ? "Es: Forza, Ipertrofia..." : `${categories.length} selezionate`}
-                        </span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                      <Command>
-                        <CommandInput 
-                          placeholder="Cerca o aggiungi..." 
-                          value={categoryInput}
-                          onValueChange={setCategoryInput}
-                        />
-                        <CommandList>
-                          <CommandEmpty>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full"
-                              onClick={() => categoryInput.trim() && addCategory(categoryInput)}
-                            >
-                              Crea "{categoryInput}"
-                            </Button>
-                          </CommandEmpty>
-                          <CommandGroup>
-                            {suggestedCategories
-                              .filter(cat => !categories.includes(cat))
-                              .map((cat) => (
-                                <CommandItem
-                                  key={cat}
-                                  onSelect={() => addCategory(cat)}
-                                >
-                                  {cat}
-                                </CommandItem>
-                              ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  {/* Selected Categories as Chips */}
-                  {categories.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {categories.map((cat) => (
-                        <Badge 
-                          key={cat} 
-                          variant="secondary" 
-                          className="gap-1 pr-1"
-                        >
-                          {cat}
-                          {!readonly && (
-                            <button
-                              onClick={() => removeCategory(cat)}
-                              className="ml-1 hover:bg-muted rounded-sm p-0.5"
-                              aria-label={`Rimuovi ${cat}`}
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          )}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                  <CategoryMultiSelect
+                    value={categories}
+                    onChange={setCategories}
+                    suggestedCategories={DEFAULT_SUGGESTED_CATEGORIES}
+                    placeholder="Es: Forza, Ipertrofia..."
+                    disabled={readonly}
+                  />
                 </div>
 
                 {/* Description Field */}

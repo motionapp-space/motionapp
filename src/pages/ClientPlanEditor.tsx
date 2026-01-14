@@ -34,6 +34,7 @@ import {
   Info,
 } from "lucide-react";
 import { DayCardCompact } from "@/components/plan-editor/DayCardCompact";
+import { CategoryMultiSelect } from "@/components/plan-editor/CategoryMultiSelect";
 import { DayPicker } from "@/features/sessions/components/DayPicker";
 import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 import { exportPlanToPDF } from "@/lib/pdfExport";
@@ -48,6 +49,7 @@ import { useDeletePlanPermanent } from "@/features/client-plans/hooks/useDeleteP
 import { useTemplate } from "@/features/templates/hooks/useTemplate";
 import { getClientIdFromCoachClient, getCoachClientId } from "@/lib/coach-client";
 import { PlanEditorSaveBar } from "@/features/plans/components/PlanEditorSaveBar";
+import { parseCategories, serializeCategories, DEFAULT_SUGGESTED_CATEGORIES } from "@/lib/categories";
 import type { ClientPlan } from "@/types/template";
 import {
   makeDay,
@@ -74,7 +76,7 @@ const ClientPlanEditor = () => {
   const [days, setDays] = useState<Day[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [objective, setObjective] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [nameError, setNameError] = useState(false);
   const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
@@ -111,15 +113,15 @@ const ClientPlanEditor = () => {
 
   const { data: derivedTemplate } = useTemplate(plan?.derived_from_template_id || undefined);
 
-  // Helper to create stable snapshot
-  const createSnapshot = (n: string, d: string, o: string, daysData: Day[]) => {
-    return JSON.stringify({ name: n, description: d, objective: o, days: daysData });
+  // Helper to create stable snapshot (uses serialized categories for comparison)
+  const createSnapshot = (n: string, d: string, cats: string[], daysData: Day[]) => {
+    return JSON.stringify({ name: n, description: d, categories: cats, days: daysData });
   };
 
   // Calculate hasChanges using snapshot string comparison
   const currentSnapshot = useMemo(
-    () => createSnapshot(name, description, objective, days),
-    [name, description, objective, days]
+    () => createSnapshot(name, description, categories, days),
+    [name, description, categories, days]
   );
   const hasChanges = initialStateSnapshot !== null && currentSnapshot !== initialStateSnapshot;
 
@@ -202,7 +204,7 @@ const ClientPlanEditor = () => {
       // Set initial snapshot after state updates
       setTimeout(() => {
         setInitialStateSnapshot(
-          createSnapshot(template.name, template.description || "", "", migratedDays)
+          createSnapshot(template.name, template.description || "", [], migratedDays)
         );
       }, 0);
     } else {
@@ -213,7 +215,7 @@ const ClientPlanEditor = () => {
       setLoading(false);
       // Set initial snapshot for empty plan
       setTimeout(() => {
-        setInitialStateSnapshot(createSnapshot("", "", "", []));
+        setInitialStateSnapshot(createSnapshot("", "", [], []));
       }, 0);
     }
   }, [id, isNewFromTemplate, createdPlanId]);
@@ -224,7 +226,7 @@ const ClientPlanEditor = () => {
       setPlan(data);
       setName(data.name);
       setDescription(data.description || "");
-      setObjective(data.objective || "");
+      setCategories(parseCategories(data.objective));
       // Migrate loaded data
       const migratedDays = (data.data?.days || []).map((day: Day) => ({
         ...day,
@@ -234,7 +236,7 @@ const ClientPlanEditor = () => {
       // Set initial snapshot after load
       setTimeout(() => {
         setInitialStateSnapshot(
-          createSnapshot(data.name, data.description || "", data.objective || "", migratedDays)
+          createSnapshot(data.name, data.description || "", parseCategories(data.objective), migratedDays)
         );
       }, 0);
     } catch (error) {
@@ -254,7 +256,7 @@ const ClientPlanEditor = () => {
           updates: {
             name,
             description,
-            objective: objective || null,
+            objective: serializeCategories(categories) || null,
             data: { days },
           },
         });
@@ -310,7 +312,7 @@ const ClientPlanEditor = () => {
           clientId,
           name: name.trim(),
           description: description?.trim(),
-          objective: objective?.trim() || null,
+          objective: serializeCategories(categories) || null,
           days,
         });
         
@@ -785,9 +787,10 @@ const ClientPlanEditor = () => {
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <Input
-                value={objective}
-                onChange={(e) => setObjective(e.target.value)}
+              <CategoryMultiSelect
+                value={categories}
+                onChange={setCategories}
+                suggestedCategories={DEFAULT_SUGGESTED_CATEGORIES}
                 placeholder="Es: Forza, Ipertrofia..."
                 disabled={readonly}
               />
