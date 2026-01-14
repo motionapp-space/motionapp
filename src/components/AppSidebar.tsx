@@ -7,6 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   TooltipProvider,
+  TooltipPortal,
 } from "@/components/ui/tooltip";
 
 type NavItem = { label: string; to: string; icon: React.ElementType };
@@ -102,9 +103,11 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
                   <TooltipTrigger asChild>
                     {navLinkContent}
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="font-medium">
-                    {item.label}
-                  </TooltipContent>
+                  <TooltipPortal>
+                    <TooltipContent side="right" className="font-medium">
+                      {item.label}
+                    </TooltipContent>
+                  </TooltipPortal>
                 </Tooltip>
               );
             }
