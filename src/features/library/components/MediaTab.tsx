@@ -85,7 +85,7 @@ export default function MediaTab() {
           className="w-full md:w-auto gap-2"
         >
           <Upload className="h-4 w-4" />
-          Carica File
+          Carica file
         </Button>
       </div>
 
@@ -113,7 +113,7 @@ export default function MediaTab() {
           size="lg"
         >
           <Upload className="h-5 w-5" />
-          Carica File
+          Carica file
         </Button>
       </div>
     </div>

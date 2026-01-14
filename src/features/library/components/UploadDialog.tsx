@@ -92,7 +92,7 @@ export default function UploadDialog({ open, onOpenChange }: UploadDialogProps) 
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Carica File</DialogTitle>
+          <DialogTitle>Carica file</DialogTitle>
           <DialogDescription>
             Carica video, immagini o documenti PDF nella tua libreria
           </DialogDescription>
@@ -204,7 +204,7 @@ export default function UploadDialog({ open, onOpenChange }: UploadDialogProps) 
               ) : (
                 <>
                   <Upload className="h-4 w-4" />
-                  Carica File
+                  Carica file
                 </>
               )}
             </Button>
