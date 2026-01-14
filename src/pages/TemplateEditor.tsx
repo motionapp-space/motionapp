@@ -64,7 +64,7 @@ const TemplateEditor = () => {
   
   const updateMutation = useUpdateTemplate();
   const createMutation = useCreateTemplate();
-  const readonly = location.state?.readonly === true;
+  
   const isNew = id === "new" || !id;
 
 
@@ -81,7 +81,7 @@ const TemplateEditor = () => {
   const hasChanges = initialSnapshot !== null && currentSnapshot !== initialSnapshot;
 
   const isSaving = updateMutation.isPending || createMutation.isPending;
-  const canSave = hasChanges && !readonly && !isSaving && !nameError && name.trim().length > 0;
+  const canSave = hasChanges && !isSaving && !nameError && name.trim().length > 0;
 
   // Default navigation function
   const defaultNavigate = useCallback(() => {
@@ -279,7 +279,7 @@ const TemplateEditor = () => {
         setInitialSnapshot(currentSnapshot);
         toast.success("Template creato");
         // Navigate to the real template ID for future saves
-        navigate(`/templates/${created.id}?mode=edit`, { replace: true });
+        navigate(`/templates/${created.id}/edit`, { replace: true });
       } else {
         // UPDATE: existing template
         await updateMutation.mutateAsync({
@@ -609,7 +609,7 @@ const TemplateEditor = () => {
                     onChange={(e) => handleNameChange(e.target.value)}
                     onBlur={() => validateName(name)}
                     placeholder="Es: Piano Forza 8 Settimane"
-                    disabled={readonly}
+                    disabled={false}
                     maxLength={80}
                     className={nameError ? "border-destructive" : ""}
                   />
@@ -638,7 +638,7 @@ const TemplateEditor = () => {
                     onChange={setCategories}
                     suggestedCategories={DEFAULT_SUGGESTED_CATEGORIES}
                     placeholder="Es: Forza, Ipertrofia..."
-                    disabled={readonly}
+                    disabled={false}
                   />
                 </div>
 
@@ -652,7 +652,7 @@ const TemplateEditor = () => {
                     placeholder="Note generali per il template (opzionale)"
                     rows={2}
                     className="resize-none transition-all duration-150"
-                    disabled={readonly}
+                    disabled={false}
                   />
                 </div>
             </div>
@@ -668,7 +668,7 @@ const TemplateEditor = () => {
                   </span>
                 )}
               </div>
-              {!readonly && days.length > 0 && (
+              {days.length > 0 && (
                 <div className="flex items-center gap-2">
                   <Button onClick={handleAddDay} variant="outline" size="sm" className="gap-2 h-11">
                     <Plus className="h-4 w-4" />
@@ -720,7 +720,7 @@ const TemplateEditor = () => {
                           onUpdateExercise={(phaseType, groupId, exerciseId, patch) => handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)}
                           onDuplicateExercise={(phaseType, groupId, exerciseId) => handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)}
                           onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
-                          readonly={readonly}
+                          readonly={false}
                         />
                       ))}
                   </div>
@@ -745,7 +745,7 @@ const TemplateEditor = () => {
         showDelete={!isNew}
         showSaveAsTemplate={false}
         showAI={true}
-        readonly={readonly}
+        readonly={false}
         onSave={handleSave}
         onExit={() => handleExitRequest()}
         onExportPDF={handleExportPDF}

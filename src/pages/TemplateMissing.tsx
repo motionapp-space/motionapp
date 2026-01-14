@@ -25,7 +25,7 @@ export default function TemplateMissing() {
       });
       
       toast.success(toSentenceCase("Nuovo template creato"));
-      nav(`/templates/${result.id}?mode=read`, { replace: true });
+      nav(`/templates/${result.id}/edit`, { replace: true });
     } catch (error) {
       toast.error(toSentenceCase("Errore nel recupero"));
     }
