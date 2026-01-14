@@ -181,6 +181,17 @@ const ClientPlanEditor = () => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasChanges]);
 
+  // Scroll to top when plan finishes loading
+  useEffect(() => {
+    if (!loading) {
+      const container = document.getElementById("coach-scroll-container");
+      if (container) {
+        container.scrollTop = 0;
+      }
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [loading]);
+
   // Migrate days to use groups on load
   useEffect(() => {
     // Skip reload if we just created this plan in this session
