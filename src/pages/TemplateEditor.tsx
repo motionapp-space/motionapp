@@ -55,8 +55,6 @@ const TemplateEditor = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [categoryInput, setCategoryInput] = useState("");
   const [categoryOpen, setCategoryOpen] = useState(false);
-  const [isEditorMode, setIsEditorMode] = useState(false);
-  const [showDescription, setShowDescription] = useState(true);
   
   // New state for unified dirty tracking and dialogs
   const [initialSnapshot, setInitialSnapshot] = useState<string | null>(null);
@@ -221,7 +219,6 @@ const TemplateEditor = () => {
       setDescription("");
       setCategories([]);
       setDays([]);
-      setIsEditorMode(true);
       setLoading(false);
       // Set initial snapshot for empty template
       setTimeout(() => {
@@ -369,11 +366,6 @@ const TemplateEditor = () => {
   const handleAddDay = () => {
     const newDay = makeDay(days.length + 1);
     setDays([...days, newDay]);
-    // Enter editor mode when adding a day
-    if (!isEditorMode) {
-      setIsEditorMode(true);
-      setShowDescription(false);
-    }
   };
 
   const handleUpdateDayTitle = (dayId: string, title: string) => {
@@ -609,58 +601,9 @@ const TemplateEditor = () => {
     <div className="min-h-screen bg-background pb-16">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 max-w-[1280px]">
         <div className="space-y-6">
-          {/* Metadata Section - Compact when in editor mode */}
-          <div className={`pb-4 border-b border-border transition-all ${isEditorMode ? 'space-y-2' : 'space-y-4'}`}>
-            {isEditorMode ? (
-              // Compact editor mode header
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <Input
-                  value={name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  onBlur={() => validateName(name)}
-                  placeholder="Nome template"
-                  disabled={readonly}
-                  maxLength={80}
-                  className="h-9 text-lg font-semibold border-0 bg-transparent focus:bg-muted/20 max-w-[300px] md:max-w-[400px]"
-                />
-                
-                {/* Category chips inline */}
-                {categories.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    {categories.map((cat) => (
-                      <Badge 
-                        key={cat} 
-                        variant="secondary" 
-                        className="text-xs gap-1 pr-1"
-                      >
-                        {cat}
-                        {!readonly && (
-                          <button
-                            onClick={() => removeCategory(cat)}
-                            className="ml-0.5 hover:bg-muted rounded-sm p-0.5"
-                            aria-label={`Rimuovi ${cat}`}
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
-                        )}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Toggle description visibility */}
-                {description && (
-                  <button
-                    onClick={() => setShowDescription(!showDescription)}
-                    className="text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-2"
-                  >
-                    {showDescription ? 'Nascondi descrizione' : 'Mostra descrizione'}
-                  </button>
-                )}
-              </div>
-            ) : (
-              // Full metadata view - aligned with ClientPlanEditor
-              <div className="grid gap-x-4 gap-y-4 md:grid-cols-3 items-start">
+          {/* Metadata Section */}
+          <div className="pb-4 border-b border-border space-y-4">
+            <div className="grid gap-x-4 gap-y-4 md:grid-cols-3 items-start">
                 {/* Name Field */}
                 <div className="md:col-span-2">
                   <Label className="text-sm font-medium mb-2 block">
@@ -784,8 +727,7 @@ const TemplateEditor = () => {
                     disabled={readonly}
                   />
                 </div>
-              </div>
-            )}
+            </div>
           </div>
 
           <div className="pt-4">
