@@ -1,23 +1,23 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Download, CheckCircle, Loader2, Sparkles, Clock, X } from "lucide-react";
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { X, Plus } from "lucide-react";
 import { useTopbar } from "@/contexts/TopbarContext";
 import { SortableDay } from "@/components/plan-editor/SortableDay";
 import { exportPlanToPDF } from "@/lib/pdfExport";
 import { toSentenceCase } from "@/lib/text";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import CopilotPanel from "@/components/CopilotPanel";
 import { FLAGS } from "@/flags";
 import { getTemplate } from "@/features/templates/api/templates.api";
 import { useUpdateTemplate } from "@/features/templates/hooks/useUpdateTemplate";
 import { useCreateTemplate } from "@/features/templates/hooks/useCreateTemplate";
+import { PlanEditorSaveBar } from "@/features/plans/components/PlanEditorSaveBar";
 import type { PlanTemplate } from "@/types/template";
 import { makeDay, makeGroup, type Day, type PhaseType, type GroupType, type Exercise, type ExerciseGroup, migratePhaseToGroups } from "@/types/plan";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -54,25 +54,62 @@ const TemplateEditor = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [categoryInput, setCategoryInput] = useState("");
   const [categoryOpen, setCategoryOpen] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [isEditorMode, setIsEditorMode] = useState(false);
   const [showDescription, setShowDescription] = useState(true);
+  
+  // New state for unified dirty tracking and dialogs
+  const [initialSnapshot, setInitialSnapshot] = useState<string | null>(null);
+  const [exitDialogOpen, setExitDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [saveBeforeExportOpen, setSaveBeforeExportOpen] = useState(false);
+  const pendingNavigation = useRef<(() => void) | null>(null);
   
   const updateMutation = useUpdateTemplate();
   const createMutation = useCreateTemplate();
   const readonly = location.state?.readonly === true;
   const isNew = id === "new" || !id;
 
-  // Define handleBack before useTopbar (needed for onBack callback)
+  // Predefined categories for suggestions
+  const suggestedCategories = ["Forza", "Ipertrofia", "Resistenza", "Mobilità", "Cardio", "Funzionale"];
+
+  // Helper to create stable snapshot
+  const createSnapshot = useCallback((n: string, d: string, cats: string[], daysData: Day[]) => {
+    return JSON.stringify({ name: n, description: d, categories: cats, days: daysData });
+  }, []);
+
+  // Calculate hasChanges using snapshot string comparison
+  const currentSnapshot = useMemo(
+    () => createSnapshot(name, description, categories, days),
+    [name, description, categories, days, createSnapshot]
+  );
+  const hasChanges = initialSnapshot !== null && currentSnapshot !== initialSnapshot;
+
+  const isSaving = updateMutation.isPending || createMutation.isPending;
+  const canSave = hasChanges && !readonly && !isSaving && !nameError && name.trim().length > 0;
+
+  // Default navigation function
+  const defaultNavigate = useCallback(() => {
+    navigate("/library?tab=templates");
+  }, [navigate]);
+
+  // Exit request handler with dirty check
+  const handleExitRequest = useCallback(
+    (navigationFn?: () => void) => {
+      if (hasChanges) {
+        pendingNavigation.current = navigationFn || defaultNavigate;
+        setExitDialogOpen(true);
+      } else {
+        (navigationFn || defaultNavigate)();
+      }
+    },
+    [hasChanges, defaultNavigate]
+  );
+
+  // Define handleBack using handleExitRequest
   const handleBack = useCallback(() => {
-    if (hasUnsavedChanges) {
-      setShowUnsavedDialog(true);
-    } else {
-      navigate("/library?tab=templates");
-    }
-  }, [hasUnsavedChanges, navigate]);
+    handleExitRequest();
+  }, [handleExitRequest]);
 
   // Configure global Topbar
   useTopbar({
@@ -82,11 +119,10 @@ const TemplateEditor = () => {
   });
 
   // Drag & drop sensors
-  // Sensors for drag & drop with proper activation constraints
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 6, // Require 6px movement before drag starts
+        distance: 6,
       },
     }),
     useSensor(TouchSensor, {
@@ -105,56 +141,23 @@ const TemplateEditor = () => {
 
     if (!over || active.id === over.id) return;
 
-    // Debug assertions (verify stable IDs)
-    console.assert(days.every(d => !!d.id), 'Day without stable id detected');
-    console.log('Order before:', days.map(d => ({ id: d.id, title: d.title, order: d.order })));
-    console.log('Move:', active.id, '→', over.id);
-
-    // Validate level
     const activeLevel = active.data.current?.level;
     const overLevel = over.data.current?.level;
 
     if (activeLevel !== "day" || overLevel !== "day") {
-      console.warn("Cross-level drag attempt blocked", { activeLevel, overLevel });
       return;
     }
 
-    // Find indices using stable IDs
     const oldIndex = days.findIndex((d) => d.id === String(active.id));
     const newIndex = days.findIndex((d) => d.id === String(over.id));
 
     if (oldIndex === -1 || newIndex === -1) {
-      console.error("Invalid indices for day drag - IDs mismatch!", { 
-        oldIndex, 
-        newIndex, 
-        activeId: active.id, 
-        overId: over.id,
-        dayIds: days.map(d => d.id),
-        sortableItems: days.map(d => d.id),
-      });
       return;
     }
 
-    console.log("Reordering days:", { 
-      from: oldIndex, 
-      to: newIndex,
-      dayTitle: days[oldIndex].title,
-    });
-
-    // Immutable reorder using dnd-kit's arrayMove
     const newDays = arrayMove(days, oldIndex, newIndex);
-    
-    // Update state with new order values
     setDays(newDays.map((day, index) => ({ ...day, order: index + 1 })));
-    
-    console.log('Order after:', newDays.map(d => ({ id: d.id, title: d.title, order: d.order })));
-    
-    // TODO: Persist order (debounced) to prevent "snap back"
-    // debouncedSaveDaysOrder(newDays);
   };
-
-  // Predefined categories for suggestions
-  const suggestedCategories = ["Forza", "Ipertrofia", "Resistenza", "Mobilità", "Cardio", "Funzionale"];
 
   // Validate name
   const validateName = (value: string) => {
@@ -187,81 +190,44 @@ const TemplateEditor = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
-        if (!readonly && !updateMutation.isPending && name.trim() && validateName(name)) {
+        if (canSave) {
           handleSave();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [readonly, updateMutation.isPending, name]);
+  }, [canSave]);
 
-  // Track changes
-  useEffect(() => {
-    if (template) {
-      const hasChanges = 
-        name !== template.name ||
-        description !== (template.description || "") ||
-        JSON.stringify(categories) !== JSON.stringify(template.category ? template.category.split(',').map(c => c.trim()).filter(Boolean) : []) ||
-        JSON.stringify(days) !== JSON.stringify(template.data?.days || []);
-      setHasUnsavedChanges(hasChanges);
-    }
-  }, [name, description, categories, days, template]);
-
-  // Autosave every 30 seconds (only for existing templates)
-  const autoSave = useCallback(async () => {
-    if (isNew || readonly || !hasUnsavedChanges || updateMutation.isPending || !validateName(name)) return;
-    
-    try {
-      await updateMutation.mutateAsync({
-        id: id!,
-        input: {
-          name,
-          description,
-          category: categories.join(', '),
-          data: { days },
-        },
-      });
-      setLastSaved(new Date());
-      setHasUnsavedChanges(false);
-    } catch (error) {
-      // Silent fail for autosave
-      console.error('Autosave failed:', error);
-    }
-  }, [id, isNew, readonly, hasUnsavedChanges, updateMutation, name, description, categories, days]);
-
-  useEffect(() => {
-    const interval = setInterval(autoSave, 30000); // 30 seconds
-    return () => clearInterval(interval);
-  }, [autoSave]);
-
-  // Warn before leaving with unsaved changes
+  // beforeunload browser guard
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
+      if (hasChanges) {
         e.preventDefault();
         e.returnValue = '';
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
+  }, [hasChanges]);
 
   useEffect(() => {
     if (id && id !== "new") {
       loadTemplate(id);
     } else {
-      // New template - auto-create Giorno 1 for immediate editing (Notion-style)
+      // New template - empty state (no auto-creation of Giorno 1)
       setName("");
       setDescription("");
       setCategories([]);
-      const initialDay = makeDay(1);
-      setDays([initialDay]);
-      setIsEditorMode(true); // Enter editor mode immediately
+      setDays([]);
+      setIsEditorMode(true);
       setLoading(false);
-      setHasUnsavedChanges(false);
+      // Set initial snapshot for empty template
+      setTimeout(() => {
+        setInitialSnapshot(createSnapshot("", "", [], []));
+      }, 0);
     }
-  }, [id]);
+  }, [id, createSnapshot]);
 
   const loadTemplate = async (templateId: string) => {
     try {
@@ -269,13 +235,18 @@ const TemplateEditor = () => {
       setTemplate(data);
       setName(data.name);
       setDescription(data.description || "");
-      setCategories(data.category ? data.category.split(',').map(c => c.trim()).filter(Boolean) : []);
+      const cats = data.category ? data.category.split(',').map(c => c.trim()).filter(Boolean) : [];
+      setCategories(cats);
       // Migrate loaded data
       const migratedDays = (data.data?.days || []).map((day: Day) => ({
         ...day,
         phases: day.phases.map(migratePhaseToGroups),
       }));
       setDays(migratedDays);
+      // Set initial snapshot after load
+      setTimeout(() => {
+        setInitialSnapshot(createSnapshot(data.name, data.description || "", cats, migratedDays));
+      }, 0);
     } catch (error) {
       toast.error("Errore nel caricamento del template");
       navigate("/templates");
@@ -299,6 +270,8 @@ const TemplateEditor = () => {
           category: categories.join(', '),
           data: { days },
         });
+        // Reset snapshot after successful creation
+        setInitialSnapshot(currentSnapshot);
         toast.success("Template creato");
         // Navigate to the real template ID for future saves
         navigate(`/templates/${created.id}?mode=edit`, { replace: true });
@@ -313,8 +286,8 @@ const TemplateEditor = () => {
             data: { days },
           },
         });
-        setLastSaved(new Date());
-        setHasUnsavedChanges(false);
+        // Reset snapshot after successful save
+        setInitialSnapshot(currentSnapshot);
         toast.success("Template salvato");
       }
     } catch (error) {
@@ -322,7 +295,24 @@ const TemplateEditor = () => {
     }
   };
 
-  // handleBack is defined earlier with useCallback for useTopbar
+  // Exit without save
+  const handleExitWithoutSave = () => {
+    setExitDialogOpen(false);
+    pendingNavigation.current?.();
+    pendingNavigation.current = null;
+  };
+
+  // Save and exit
+  const handleSaveAndExit = async () => {
+    try {
+      await handleSave();
+      setExitDialogOpen(false);
+      pendingNavigation.current?.();
+      pendingNavigation.current = null;
+    } catch (error) {
+      // Error already shown by handleSave
+    }
+  };
 
   // Add category chip
   const addCategory = (cat: string) => {
@@ -339,23 +329,40 @@ const TemplateEditor = () => {
     setCategories(categories.filter(c => c !== cat));
   };
 
-  // Get save status text
-  const getSaveStatus = () => {
-    if (updateMutation.isPending || createMutation.isPending) return "Salvataggio in corso...";
-    if (isNew) return "Nuovo template";
-    if (hasUnsavedChanges) return "Modifiche non salvate";
-    if (lastSaved) {
-      const minAgo = Math.floor((Date.now() - lastSaved.getTime()) / 60000);
-      if (minAgo === 0) return "salvato adesso";
-      return `salvato ${minAgo} min fa`;
+  // PDF export with gating for unsaved templates
+  const handleExportPDF = () => {
+    if (isNew) {
+      setSaveBeforeExportOpen(true);
+      return;
     }
-    return "Bozza";
+    setIsExporting(true);
+    try {
+      exportPlanToPDF({ name, description, data: { days } } as any);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  const handleExportPDF = () => {
-    if (template) {
-      exportPlanToPDF({ ...template, days } as any);
+  // Save and export
+  const handleSaveAndExport = async () => {
+    try {
+      await handleSave();
+      setSaveBeforeExportOpen(false);
+      setIsExporting(true);
+      try {
+        exportPlanToPDF({ name, description, data: { days } } as any);
+      } finally {
+        setIsExporting(false);
+      }
+    } catch (error) {
+      // Error already shown by handleSave
     }
+  };
+
+  // Delete template (stub - need to implement hook)
+  const handleDeleteTemplate = async () => {
+    toast.info("Funzionalita' in arrivo");
+    setDeleteDialogOpen(false);
   };
 
   const handleAddDay = () => {
@@ -371,7 +378,6 @@ const TemplateEditor = () => {
   const handleUpdateDayTitle = (dayId: string, title: string) => {
     setDays(days.map(d => d.id === dayId ? { ...d, title } : d));
   };
-
 
   const handleDuplicateDay = (dayId: string) => {
     const dayToDup = days.find(d => d.id === dayId);
@@ -599,63 +605,7 @@ const TemplateEditor = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Toolbar with actions - in page content, not Topbar */}
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 pt-4 max-w-[1280px]">
-        <div className="flex items-center justify-end gap-2 mb-2">
-          {readonly && <Badge variant="secondary">Sola lettura</Badge>}
-          {!readonly && (
-            <>
-              <Button 
-                onClick={handleSave}
-                disabled={updateMutation.isPending || createMutation.isPending || !!nameError || !name.trim()}
-                size="sm" 
-                className="gap-2"
-              >
-                {(updateMutation.isPending || createMutation.isPending) ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Salvataggio...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    Salva
-                  </>
-                )}
-              </Button>
-              <Button 
-                onClick={handleBack} 
-                variant="ghost" 
-                size="sm"
-              >
-                Annulla
-              </Button>
-            </>
-          )}
-          <Button 
-            onClick={handleExportPDF} 
-            variant="outline" 
-            size="sm" 
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            PDF
-          </Button>
-          {FLAGS.copilotEnabled && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCopilotOpen(!copilotOpen)}
-              className="gap-2"
-            >
-              <Sparkles className="h-4 w-4" />
-              AI
-            </Button>
-          )}
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-background pb-16">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 max-w-[1280px]">
         <div className="space-y-6">
           {/* Metadata Section - Compact when in editor mode */}
@@ -696,12 +646,6 @@ const TemplateEditor = () => {
                     ))}
                   </div>
                 )}
-                
-                {/* Save status inline */}
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {getSaveStatus()}
-                </span>
                 
                 {/* Toggle description visibility */}
                 {description && (
@@ -879,7 +823,7 @@ const TemplateEditor = () => {
                   </span>
                 )}
               </div>
-              {!readonly && (
+              {!readonly && days.length > 0 && (
                 <div className="flex items-center gap-2">
                   <Button onClick={handleAddDay} variant="outline" size="sm" className="gap-2 h-11">
                     <Plus className="h-4 w-4" />
@@ -889,40 +833,55 @@ const TemplateEditor = () => {
               )}
             </div>
 
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              modifiers={[restrictToVerticalAxis]}
-              onDragEnd={handleDayDragEnd}
-            >
-              <SortableContext
-                items={days.map((d) => d.id)}
-                strategy={verticalListSortingStrategy}
+            {days.length === 0 ? (
+              <div className="text-center py-12 border rounded-lg bg-muted/20">
+                <p className="text-muted-foreground mb-2 font-medium">
+                  {toSentenceCase("Nessun giorno ancora")}
+                </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Inizia aggiungendo il primo giorno di allenamento
+                </p>
+                <Button onClick={handleAddDay} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  {toSentenceCase("Aggiungi primo giorno")}
+                </Button>
+              </div>
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                modifiers={[restrictToVerticalAxis]}
+                onDragEnd={handleDayDragEnd}
               >
-                <div className="space-y-6" role="list" aria-label="Giorni di allenamento" data-drop-level="day" style={{ overflow: 'visible' }}>
-                  {days
-                    .sort((a, b) => a.order - b.order)
-                    .map((day) => (
-                      <SortableDay
-                        key={day.id}
-                        day={day}
-                        onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
-                        onDuplicate={() => handleDuplicateDay(day.id)}
-                        onDelete={() => handleDeleteDay(day.id)}
-                        onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
-                        onUpdateGroup={(phaseType, groupId, updates) => handleUpdateGroup(day.id, phaseType, groupId, updates)}
-                        onDuplicateGroup={(phaseType, groupId) => handleDuplicateGroup(day.id, phaseType, groupId)}
-                        onDeleteGroup={(phaseType, groupId) => handleDeleteGroup(day.id, phaseType, groupId)}
-                        onAddExerciseToGroup={(phaseType, groupId) => handleAddExerciseToGroup(day.id, phaseType, groupId)}
-                        onUpdateExercise={(phaseType, groupId, exerciseId, patch) => handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)}
-                        onDuplicateExercise={(phaseType, groupId, exerciseId) => handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)}
-                        onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
-                        readonly={readonly}
-                      />
-                    ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+                <SortableContext
+                  items={days.map((d) => d.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-6" role="list" aria-label="Giorni di allenamento" data-drop-level="day" style={{ overflow: 'visible' }}>
+                    {days
+                      .sort((a, b) => a.order - b.order)
+                      .map((day) => (
+                        <SortableDay
+                          key={day.id}
+                          day={day}
+                          onUpdateTitle={(title) => handleUpdateDayTitle(day.id, title)}
+                          onDuplicate={() => handleDuplicateDay(day.id)}
+                          onDelete={() => handleDeleteDay(day.id)}
+                          onAddGroup={(phaseType, groupType) => handleAddGroup(day.id, phaseType, groupType)}
+                          onUpdateGroup={(phaseType, groupId, updates) => handleUpdateGroup(day.id, phaseType, groupId, updates)}
+                          onDuplicateGroup={(phaseType, groupId) => handleDuplicateGroup(day.id, phaseType, groupId)}
+                          onDeleteGroup={(phaseType, groupId) => handleDeleteGroup(day.id, phaseType, groupId)}
+                          onAddExerciseToGroup={(phaseType, groupId) => handleAddExerciseToGroup(day.id, phaseType, groupId)}
+                          onUpdateExercise={(phaseType, groupId, exerciseId, patch) => handleUpdateExercise(day.id, phaseType, groupId, exerciseId, patch)}
+                          onDuplicateExercise={(phaseType, groupId, exerciseId) => handleDuplicateExercise(day.id, phaseType, groupId, exerciseId)}
+                          onDeleteExercise={(phaseType, groupId, exerciseId) => handleDeleteExercise(day.id, phaseType, groupId, exerciseId)}
+                          readonly={readonly}
+                        />
+                      ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
           </div>
         </div>
       </div>
@@ -931,23 +890,77 @@ const TemplateEditor = () => {
         <CopilotPanel open={copilotOpen} onClose={() => setCopilotOpen(false)} />
       )}
 
-      {/* Unsaved Changes Confirmation Dialog */}
-      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+      {/* Sticky Save Bar */}
+      <PlanEditorSaveBar
+        hasChanges={hasChanges}
+        isSaving={isSaving}
+        isExporting={isExporting}
+        canSave={canSave}
+        canExport={!isExporting}
+        showDelete={!isNew}
+        showSaveAsTemplate={false}
+        showAI={true}
+        readonly={readonly}
+        onSave={handleSave}
+        onExit={() => handleExitRequest()}
+        onExportPDF={handleExportPDF}
+        onSaveAsTemplate={() => {}}
+        onDelete={() => setDeleteDialogOpen(true)}
+      />
+
+      {/* Exit Confirmation Dialog */}
+      <AlertDialog open={exitDialogOpen} onOpenChange={setExitDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Modifiche non salvate</AlertDialogTitle>
+            <AlertDialogTitle>Uscire senza salvare?</AlertDialogTitle>
             <AlertDialogDescription>
-              Hai delle modifiche non salvate. Vuoi davvero uscire senza salvare?
+              Hai modifiche non salvate. Se esci ora, andranno perse.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <Button variant="outline" onClick={handleExitWithoutSave}>
+              Esci senza salvare
+            </Button>
+            <Button onClick={handleSaveAndExit} disabled={isSaving}>
+              {isSaving ? "Salvataggio..." : "Salva ed esci"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Template Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminare il template?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Questa azione eliminera' definitivamente il template e non potra' essere annullata.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Resta</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => navigate("/library?tab=templates")}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              Esci senza salvare
-            </AlertDialogAction>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <Button variant="destructive" onClick={handleDeleteTemplate}>
+              Elimina
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Save Before Export Dialog */}
+      <AlertDialog open={saveBeforeExportOpen} onOpenChange={setSaveBeforeExportOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Salvare prima di esportare?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Per esportare in PDF, salva prima il template.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <Button onClick={handleSaveAndExport} disabled={isSaving}>
+              {isSaving ? "Salvataggio..." : "Salva e esporta"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

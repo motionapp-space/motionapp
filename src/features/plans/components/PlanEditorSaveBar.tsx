@@ -1,4 +1,4 @@
-import { Check, Download, MoreVertical, FileOutput, Trash2 } from "lucide-react";
+import { Check, Download, MoreVertical, FileOutput, Trash2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface PlanEditorSaveBarProps {
   hasChanges: boolean;
@@ -15,12 +16,14 @@ interface PlanEditorSaveBarProps {
   canExport: boolean;
   showDelete: boolean;
   showSaveAsTemplate: boolean;
+  showAI?: boolean;
   readonly: boolean;
   onSave: () => void;
   onExit: () => void;
   onExportPDF: () => void;
   onSaveAsTemplate: () => void;
   onDelete: () => void;
+  onAIClick?: () => void;
 }
 
 export function PlanEditorSaveBar({
@@ -31,14 +34,26 @@ export function PlanEditorSaveBar({
   canExport,
   showDelete,
   showSaveAsTemplate,
+  showAI = false,
   readonly,
   onSave,
   onExit,
   onExportPDF,
   onSaveAsTemplate,
   onDelete,
+  onAIClick,
 }: PlanEditorSaveBarProps) {
-  const showMenu = (showSaveAsTemplate && !readonly) || (showDelete && !readonly);
+  const showMenu = showAI || (showSaveAsTemplate && !readonly) || (showDelete && !readonly);
+
+  const handleAIClick = () => {
+    if (onAIClick) {
+      onAIClick();
+    } else {
+      toast.info("Funzionalita' in sviluppo", {
+        description: "Stiamo raccogliendo feedback: dicci se ti interessa."
+      });
+    }
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 h-14 border-t bg-background">
@@ -93,6 +108,12 @@ export function PlanEditorSaveBar({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {showAI && (
+                  <DropdownMenuItem onClick={handleAIClick} className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    AI (in sviluppo)
+                  </DropdownMenuItem>
+                )}
                 {showSaveAsTemplate && !readonly && (
                   <DropdownMenuItem onClick={onSaveAsTemplate}>
                     <FileOutput className="mr-2 h-4 w-4" />
