@@ -138,7 +138,7 @@ export default function MediaGrid({ media, search, fileType, onClearFilters, onU
         </p>
         <Button onClick={onUploadClick} size="lg" className="gap-2">
           <Upload className="h-5 w-5" />
-          Carica File
+          Carica file
         </Button>
       </Card>
     );
