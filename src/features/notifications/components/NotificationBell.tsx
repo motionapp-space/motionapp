@@ -49,7 +49,7 @@ export function NotificationBell() {
       <DropdownMenuContent align="end" className="w-96 p-0">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
-          <h3 className="text-sm font-semibold">Notifiche</h3>
+          <h3 className="text-base font-semibold">Notifiche</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
