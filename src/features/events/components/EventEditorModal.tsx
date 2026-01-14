@@ -1200,16 +1200,22 @@ export function EventEditorModal({
                           htmlFor="lesson-package" 
                           className={cn(
                             "font-normal cursor-pointer flex items-center gap-2",
-                            availablePackages.length === 0 && "text-muted-foreground"
+                            availablePackages.length === 0 && "text-muted-foreground/50 cursor-not-allowed"
                           )}
                         >
-                          <Package className="h-4 w-4 text-muted-foreground" />
+                          <Package className={cn(
+                            "h-4 w-4",
+                            availablePackages.length === 0 ? "text-muted-foreground/50" : "text-muted-foreground"
+                          )} />
                           Pacchetto
                           {availablePackages.length === 0 && (
                             <span className="text-xs">(nessun pacchetto attivo)</span>
                           )}
                         </Label>
-                        <p className="text-xs text-muted-foreground">
+                        <p className={cn(
+                          "text-xs",
+                          availablePackages.length === 0 ? "text-muted-foreground/50" : "text-muted-foreground"
+                        )}>
                           {availablePackages.length > 0 
                             ? "Scala le lezioni da un pacchetto esistente"
                             : "Nessun pacchetto attivo per questo cliente"}
