@@ -305,12 +305,11 @@ const TemplateEditor = () => {
   // Save and exit
   const handleSaveAndExit = async () => {
     const success = await handleSave();
+    setExitDialogOpen(false);
     if (success) {
-      setExitDialogOpen(false);
       pendingNavigation.current?.();
       pendingNavigation.current = null;
     }
-    // Se save fallisce, la dialog resta aperta e l'utente vede l'errore
   };
 
   // Add category chip
