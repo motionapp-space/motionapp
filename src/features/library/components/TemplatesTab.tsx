@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, FileText, Copy, Trash2, Eye, Pencil, Search, MoreVertical } from "lucide-react";
+import { Plus, FileText, Copy, Trash2, Pencil, Search, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -222,13 +222,6 @@ export default function TemplatesTab() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem 
-                        onClick={() => navigate(`/templates/${template.id}?mode=read`)}
-                        data-testid={`template-open-${template.id}`}
-                      >
-                        <Eye className="h-4 w-4" />
-                        Visualizza
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
                         onClick={(e) => duplicateTemplate(template.id, e as any)}
                         data-testid={`template-duplicate-${template.id}`}
                       >
@@ -236,7 +229,7 @@ export default function TemplatesTab() {
                         Duplica
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={(e) => handleDeleteClick(template.id, e as any)}
                         className="text-destructive focus:text-destructive"
                         data-testid={`template-delete-${template.id}`}
