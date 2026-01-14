@@ -227,6 +227,17 @@ const TemplateEditor = () => {
     }
   }, [id, createSnapshot]);
 
+  // Scroll to top when template finishes loading
+  useEffect(() => {
+    if (!loading) {
+      const container = document.getElementById("coach-scroll-container");
+      if (container) {
+        container.scrollTop = 0;
+      }
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [loading]);
+
   const loadTemplate = async (templateId: string) => {
     try {
       const data = await getTemplate(templateId);
