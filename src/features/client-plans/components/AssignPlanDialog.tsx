@@ -70,17 +70,10 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`max-w-4xl ${templates.length === 0 ? "" : "max-h-[80vh] overflow-y-auto"}`}>
         <DialogHeader>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <DialogTitle>Seleziona un template</DialogTitle>
-              <DialogDescription>
-                I template ti aiutano a riutilizzare piani già pronti.
-              </DialogDescription>
-            </div>
-            <span className="rounded-full bg-muted/50 px-2 py-0.5 text-xs text-muted-foreground whitespace-nowrap">
-              {templates.length} template
-            </span>
-          </div>
+          <DialogTitle>Seleziona un template</DialogTitle>
+          <DialogDescription>
+            I template ti aiutano a riutilizzare piani già pronti · {templates.length} disponibili
+          </DialogDescription>
         </DialogHeader>
 
         {templates.length === 0 ? (
