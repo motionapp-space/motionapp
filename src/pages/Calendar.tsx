@@ -21,10 +21,7 @@ import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSet
 import type { CalendarView as CalendarViewType, EventWithClient, CalendarViewMode } from "@/features/events/types";
 import type { BookingRequestWithClient } from "@/features/bookings/types";
 import { EventModal } from "@/features/events/components/EventModal";
-import { DayPicker } from "@/features/sessions/components/DayPicker";
-import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 import { ClientViewBanner } from "@/features/events/components/ClientViewBanner";
-import { getCoachClientId } from "@/lib/coach-client";
 import { PREVIEW_MESSAGES } from "@/features/events/utils/preview-messages";
 
 type FilterOption = "all" | "approved" | "pending" | "ooo" | "availability";
@@ -42,13 +39,9 @@ const Calendar = () => {
   useTopbar({ title: "Agenda" });
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithClient | undefined>();
-  const [dayPickerOpen, setDayPickerOpen] = useState(false);
-  const [sessionEventData, setSessionEventData] = useState<{ clientId: string; eventId: string; linkedPlanId?: string; linkedDayId?: string } | null>(null);
   const [prefillEventData, setPrefillEventData] = useState<{ start: Date; end: Date } | undefined>();
-  
-  const createSession = useCreateSession();
+  const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
 
@@ -111,25 +104,6 @@ const Calendar = () => {
   const handleEventClick = (event: EventWithClient) => {
     setSelectedEvent(event);
     setEditModalOpen(true);
-  };
-
-  const handleStartSession = (clientId: string, eventId: string, linkedPlanId?: string, linkedDayId?: string) => {
-    setSessionEventData({ clientId, eventId, linkedPlanId, linkedDayId });
-    setDayPickerOpen(true);
-  };
-
-  const handleDayPickerConfirm = async (planId: string, dayId: string) => {
-    if (!sessionEventData) return;
-    
-    const coachClientId = await getCoachClientId(sessionEventData.clientId);
-    const session = await createSession.mutateAsync({
-      coach_client_id: coachClientId,
-      plan_id: planId,
-      day_id: dayId,
-      event_id: sessionEventData.eventId,
-    });
-    
-    navigate(`/session/live?sessionId=${session.id}`);
   };
 
   const handleRequestClick = (request: BookingRequestWithClient) => {
@@ -304,7 +278,6 @@ const Calendar = () => {
           onOpenChange={handleEditModalOpenChange}
           mode="coach-create"
           event={selectedEvent}
-          onStartSession={handleStartSession}
         />
       )}
 
@@ -313,17 +286,6 @@ const Calendar = () => {
         onOpenChange={setRequestDrawerOpen}
         request={selectedRequest}
       />
-
-      {sessionEventData && (
-        <DayPicker
-          open={dayPickerOpen}
-          onOpenChange={setDayPickerOpen}
-          clientId={sessionEventData.clientId}
-          linkedPlanId={sessionEventData.linkedPlanId}
-          linkedDayId={sessionEventData.linkedDayId}
-          onConfirm={handleDayPickerConfirm}
-        />
-      )}
     </div>
   );
 };
