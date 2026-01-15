@@ -859,6 +859,7 @@ export function EventEditorModal({
   const canStartSession = isEditMode && !!event;
 
   // Determina lo stato dell'appuntamento per il badge usando helper centralizzato
+  // Badge specs: font-size 12px, font-weight 500, padding 4px 10px, border-radius 999px
   const getEventStatusBadge = () => {
     if (!event) return null;
     
@@ -867,26 +868,26 @@ export function EventEditorModal({
     switch (badgeType) {
       case "CANCELED":
         return (
-          <Badge className="bg-red-50 text-red-700 border-0 text-xs font-normal">
+          <Badge className="ml-2 bg-red-50 text-red-700 border-0 text-xs font-medium px-2.5 py-1 rounded-full">
             Annullato
           </Badge>
         );
       case "PROPOSAL_PENDING":
         return (
-          <Badge className="bg-amber-50 text-amber-700 border-0 text-xs font-normal">
+          <Badge className="ml-2 bg-amber-50 text-amber-700 border-0 text-xs font-medium px-2.5 py-1 rounded-full">
             In proposta
           </Badge>
         );
       case "COMPLETED":
         return (
-          <Badge className="bg-muted/80 text-muted-foreground/80 border-0 text-xs font-normal">
+          <Badge className="ml-2 bg-muted/80 text-muted-foreground/80 border-0 text-xs font-medium px-2.5 py-1 rounded-full">
             Completato
           </Badge>
         );
       case "CONFIRMED":
       default:
         return (
-          <Badge className="bg-emerald-50 text-emerald-700 border-0 text-xs font-normal">
+          <Badge className="ml-2 bg-emerald-50 text-emerald-700 border-0 text-xs font-medium px-2.5 py-1 rounded-full">
             Confermato
           </Badge>
         );
@@ -906,35 +907,35 @@ export function EventEditorModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[680px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
-          {/* Header - compact, Linear/Google style */}
-          <DialogHeader className="h-14 px-6 flex-shrink-0 flex flex-row items-center justify-between border-b border-border/40">
-            <div className="flex items-center gap-2.5">
+        <DialogContent className="w-[640px] max-w-[90vw] max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl shadow-lg">
+          {/* Header - MODALE 1 & 2 specs */}
+          <DialogHeader className="min-h-[56px] px-6 flex-shrink-0 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
               {dialogView === 'selectDay' ? (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                  {/* Freccia affordance - non stile bottone */}
+                  <button
                     onClick={() => setDialogView('details')}
-                    className="h-8 w-8 -ml-2"
+                    className="h-8 w-8 -ml-2 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Indietro"
                   >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                  <DialogTitle className="text-lg font-semibold text-foreground leading-none">
-                    Seleziona giorno
+                    <ChevronLeft className="h-[18px] w-[18px]" />
+                  </button>
+                  <DialogTitle className="text-lg font-semibold leading-7 text-foreground">
+                    Avvia sessione
                   </DialogTitle>
                 </>
               ) : (
                 <>
                   <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-                  <DialogTitle className="text-lg font-semibold text-foreground leading-none">
+                  <DialogTitle className="text-xl font-semibold leading-7 text-foreground">
                     {viewMode === 'view' ? formData.title : (viewMode === 'edit' ? 'Modifica appuntamento' : 'Nuovo appuntamento')}
                   </DialogTitle>
                   {viewMode === 'view' && (
                     <>
                       {getEventStatusBadge()}
                       {event?.recurrence_rule && (
-                        <Badge variant="outline" className="text-xs font-normal">
+                        <Badge variant="outline" className="text-xs font-medium ml-2">
                           Ricorrente
                         </Badge>
                       )}
@@ -954,53 +955,33 @@ export function EventEditorModal({
             </DialogDescription>
           </DialogHeader>
 
-          {/* PRIMARY CTA AREA - Always same position for both steps */}
-          {viewMode === 'view' && event && (
-            <div className="px-6 py-4 border-b border-border/30 bg-muted/10 flex-shrink-0">
-              {/* STEP 1: Details - CTA Avvia sessione */}
-              {dialogView === 'details' && canStartSession && (
-                <>
-                  <Button 
-                    onClick={handleStartSession} 
-                    size="lg"
-                    className="w-full h-12 text-base font-semibold"
-                  >
-                    <Play className="h-5 w-5 mr-2" />
-                    Avvia sessione
-                  </Button>
-                  
-                  {/* Microcopy per eventi passati */}
-                  {new Date(event.end_at) < new Date() && (
-                    <p className="text-xs text-muted-foreground mt-2 text-center">
-                      Puoi registrare l'allenamento anche se già svolto.
-                    </p>
-                  )}
-                </>
-              )}
+          {/* PRIMARY CTA AREA - MODALE 1: margin-top 20px, height 56px, width 100%, radius 12px */}
+          {viewMode === 'view' && event && dialogView === 'details' && canStartSession && (
+            <div className="px-6 pt-5 flex-shrink-0">
+              <Button 
+                onClick={handleStartSession} 
+                className="w-full h-14 rounded-xl text-base font-semibold gap-2.5"
+              >
+                <Play className="h-[18px] w-[18px]" />
+                Avvia sessione
+              </Button>
               
-              {/* STEP 2: Select Day - CTA Avvia sessione (stessa posizione) */}
-              {dialogView === 'selectDay' && (
-                <>
-                  <Button 
-                    onClick={handleConfirmSession} 
-                    size="lg"
-                    className="w-full h-12 text-base font-semibold"
-                    disabled={!sessionDayId || createSession.isPending || activePlans.length === 0}
-                  >
-                    <Play className="h-5 w-5 mr-2" />
-                    {createSession.isPending ? 'Avvio in corso...' : 'Avvia sessione'}
-                  </Button>
-                </>
+              {/* Microcopy per eventi passati */}
+              {new Date(event.end_at) < new Date() && (
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Puoi registrare l'allenamento anche se già svolto.
+                </p>
               )}
             </div>
           )}
 
-          {/* Content - consistent 24px padding */}
+          {/* Content - 24px padding */}
           <div className="flex-1 overflow-y-auto">
-            {/* STEP 2: Select Day for Session */}
+            {/* STEP 2: Select Day for Session - MODALE 2 specs */}
             {dialogView === 'selectDay' && (
               <div className="px-6 py-6">
-                <p className="text-sm text-muted-foreground mb-6">
+                {/* Intro text: font-size 15px, font-weight 400, line-height 22px */}
+                <p className="text-[15px] font-normal leading-[22px] text-muted-foreground mb-5">
                   Seleziona il giorno da tracciare dal piano del cliente
                 </p>
                 
@@ -1026,58 +1007,78 @@ export function EventEditorModal({
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    {/* Info Piano */}
+                  <div className="space-y-4">
+                    {/* Piano card: padding 14px 16px, radius 12px, bg-muted/40 */}
                     {sessionSelectedPlan && (
-                      <div className="rounded-lg bg-muted/40 p-4 space-y-1">
-                        <p className="font-medium">{sessionSelectedPlan.name}</p>
+                      <div className="rounded-xl bg-muted/40 px-4 py-3.5">
+                        <p className="text-base font-semibold">{sessionSelectedPlan.name}</p>
                         {sessionSelectedPlan.description && (
-                          <p className="text-sm text-muted-foreground">{sessionSelectedPlan.description}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{sessionSelectedPlan.description}</p>
                         )}
                       </div>
                     )}
                     
-                    {/* Lista Giorni con RadioGroup */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Seleziona giorno</Label>
-                      <RadioGroup value={sessionDayId} onValueChange={setSessionDayId}>
-                        {sessionDays.map((day, index) => {
-                          const isSuggested = event?.linked_day_id 
-                            ? day.id === event.linked_day_id 
-                            : index === 0;
-                          return (
-                            <div 
-                              key={day.id} 
-                              className={cn(
-                                "flex items-center space-x-3 rounded-lg border p-4 cursor-pointer transition-colors",
-                                sessionDayId === day.id 
-                                  ? "border-primary bg-primary/5" 
-                                  : "hover:bg-accent"
-                              )}
-                              onClick={() => setSessionDayId(day.id)}
-                            >
-                              <RadioGroupItem value={day.id} id={`session-day-${day.id}`} />
-                              <Label htmlFor={`session-day-${day.id}`} className="flex-1 cursor-pointer">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">
-                                    Giorno {day.order} — {day.title}
-                                  </span>
-                                  {isSuggested && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      Suggerito
-                                    </Badge>
-                                  )}
-                                </div>
-                                {day.focusMuscle && (
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {day.focusMuscle}
-                                  </p>
+                    {/* Lista Giorni: gap 12px */}
+                    <RadioGroup value={sessionDayId} onValueChange={setSessionDayId} className="space-y-3">
+                      {sessionDays.map((day, index) => {
+                        const isSuggested = event?.linked_day_id 
+                          ? day.id === event.linked_day_id 
+                          : index === 0;
+                        const isSelected = sessionDayId === day.id;
+                        return (
+                          <div 
+                            key={day.id} 
+                            className={cn(
+                              "flex items-center gap-3 rounded-xl border p-4 min-h-14 cursor-pointer transition-colors",
+                              isSelected 
+                                ? "border-primary bg-primary/5" 
+                                : "border-muted hover:bg-accent"
+                            )}
+                            onClick={() => setSessionDayId(day.id)}
+                          >
+                            {/* Radio: size 18px, color primary */}
+                            <RadioGroupItem 
+                              value={day.id} 
+                              id={`session-day-${day.id}`} 
+                              className="h-[18px] w-[18px] border-2"
+                            />
+                            <Label htmlFor={`session-day-${day.id}`} className="flex-1 cursor-pointer">
+                              <div className="flex items-center gap-2">
+                                {/* Testo giorno: font-size 15px, font-weight 500 */}
+                                <span className="text-[15px] font-medium">
+                                  Giorno {day.order} — {day.title}
+                                </span>
+                                {/* Badge Suggerito: font-size 11px, font-weight 500, padding 2px 8px, radius full */}
+                                {isSuggested && (
+                                  <Badge className="bg-muted text-muted-foreground border-0 text-[11px] font-medium px-2 py-0.5 rounded-full">
+                                    Suggerito
+                                  </Badge>
                                 )}
-                              </Label>
-                            </div>
-                          );
-                        })}
-                      </RadioGroup>
+                              </div>
+                              {day.focusMuscle && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {day.focusMuscle}
+                                </p>
+                              )}
+                            </Label>
+                          </div>
+                        );
+                      })}
+                    </RadioGroup>
+                    
+                    {/* CTA finale MODALE 2: margin-top 32px, h 56px, w 100%, radius 12px */}
+                    <div className="pt-5">
+                      <Button 
+                        onClick={handleConfirmSession} 
+                        className={cn(
+                          "w-full h-14 rounded-xl text-base font-semibold gap-2.5",
+                          (!sessionDayId || createSession.isPending) && "bg-primary/40 cursor-not-allowed hover:bg-primary/40"
+                        )}
+                        disabled={!sessionDayId || createSession.isPending}
+                      >
+                        <Play className="h-[18px] w-[18px]" />
+                        {createSession.isPending ? 'Avvio in corso...' : 'Avvia sessione'}
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -1088,19 +1089,22 @@ export function EventEditorModal({
             {dialogView === 'details' && (
             <div className="px-6 py-6">
             
-            {/* READ-ONLY VIEW */}
+            {/* READ-ONLY VIEW - MODALE 1 specs: gap 20px tra righe */}
             {viewMode === 'view' && event && (
-              <div className="space-y-6">
+              <div className="space-y-5 mt-2">
                 {/* Data & Orario */}
                 <div className="flex items-start gap-4">
-                  <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+                  {/* Icon container: 32px circle opzionale */}
+                  <div className="h-8 w-8 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                     <Clock className="h-[18px] w-[18px] text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0 pt-0.5">
-                    <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
+                    {/* Label: font-size 11px, font-weight 500, uppercase, letter-spacing +0.04em */}
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.04em] mb-1.5">
                       Data e ora
                     </p>
-                    <p className="text-base font-medium text-foreground">
+                    {/* Value: font-size 16px, font-weight 500, line-height 24px */}
+                    <p className="text-base font-medium leading-6 text-foreground">
                       {format(formData.date, "EEEE d MMMM", { locale: it })} • {formData.startTime} – {formData.endTime}
                       <span className="text-muted-foreground font-normal ml-1.5">({duration})</span>
                     </p>
@@ -1109,11 +1113,11 @@ export function EventEditorModal({
 
                 {/* Cliente */}
                 <div className="flex items-start gap-4">
-                  <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+                  <div className="h-8 w-8 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                     <User className="h-[18px] w-[18px] text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0 pt-0.5">
-                    <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.04em] mb-1.5">
                       Cliente
                     </p>
                     <button
@@ -1121,7 +1125,7 @@ export function EventEditorModal({
                         onOpenChange(false);
                         window.location.href = `/clients/${formData.clientId}`;
                       }}
-                      className="text-base font-medium text-primary hover:underline text-left focus:outline-none focus-visible:ring-0"
+                      className="text-base font-medium leading-6 text-primary hover:underline text-left focus:outline-none focus-visible:ring-0"
                     >
                       {clients.find(c => c.id === formData.clientId)?.first_name} {clients.find(c => c.id === formData.clientId)?.last_name}
                     </button>
@@ -1130,28 +1134,28 @@ export function EventEditorModal({
 
                 {/* Creato da */}
                 <div className="flex items-start gap-4">
-                  <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+                  <div className="h-8 w-8 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                     <UserCircle className="h-[18px] w-[18px] text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0 pt-0.5">
-                    <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.04em] mb-1.5">
                       Creato da
                     </p>
-                    <p className="text-base font-medium text-foreground">{getCreatedByText()}</p>
+                    <p className="text-base font-medium leading-6 text-foreground">{getCreatedByText()}</p>
                   </div>
                 </div>
 
                 {/* Luogo (se presente) */}
                 {formData.location && (
                   <div className="flex items-start gap-4">
-                    <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                       <MapPin className="h-[18px] w-[18px] text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.04em] mb-1.5">
                         Luogo
                       </p>
-                      <p className="text-base font-medium text-foreground">{formData.location}</p>
+                      <p className="text-base font-medium leading-6 text-foreground">{formData.location}</p>
                     </div>
                   </div>
                 )}
@@ -1159,14 +1163,14 @@ export function EventEditorModal({
                 {/* Promemoria (se presente) */}
                 {formData.reminderOffset && formData.reminderOffset > 0 && (
                   <div className="flex items-start gap-4">
-                    <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                       <Bell className="h-[18px] w-[18px] text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.04em] mb-1.5">
                         Promemoria
                       </p>
-                      <p className="text-base font-medium text-foreground">
+                      <p className="text-base font-medium leading-6 text-foreground">
                         {formData.reminderOffset === 15 && "15 minuti prima"}
                         {formData.reminderOffset === 60 && "1 ora prima"}
                         {formData.reminderOffset === 1440 && "1 giorno prima"}
@@ -1179,14 +1183,14 @@ export function EventEditorModal({
                 {/* Pacchetto associato (se presente) */}
                 {activePackage && !activePackage.is_single_technical && (
                   <div className="flex items-start gap-4">
-                    <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                       <Package className="h-[18px] w-[18px] text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-1.5">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.04em] mb-1.5">
                         Pacchetto
                       </p>
-                      <p className="text-base font-medium text-foreground">
+                      <p className="text-base font-medium leading-6 text-foreground">
                         {calculatePackageKPI(activePackage).available}/{activePackage.total_sessions} sessioni rimanenti
                       </p>
                     </div>
@@ -1196,14 +1200,14 @@ export function EventEditorModal({
                 {/* Note interne (se presenti) */}
                 {formData.notes && (
                   <div className="flex items-start gap-4">
-                    <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
                       <FileText className="h-[18px] w-[18px] text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <p className="text-[11px] font-normal text-muted-foreground/70 uppercase tracking-wider mb-2">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.04em] mb-2">
                         Note interne
                       </p>
-                      <div className="rounded-lg bg-muted/30 border border-border/30 p-3.5">
+                      <div className="rounded-xl bg-muted/30 border border-border/30 p-3.5">
                         <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{formData.notes}</p>
                       </div>
                     </div>
@@ -1645,38 +1649,39 @@ export function EventEditorModal({
             )} {/* Fine dialogView === 'details' */}
           </div>
 
-          {/* Footer - clean spacing, no heavy divider */}
-          <DialogFooter className="px-6 py-4 border-t border-border/20 flex-shrink-0 flex items-center justify-between bg-background">
-            {/* Footer per Step 2: Select Day - solo link testuale "Indietro" */}
+          {/* Footer - margin-top 32px, divider 1px border-muted */}
+          <DialogFooter className="px-6 py-4 border-t border-muted flex-shrink-0 flex items-center justify-between bg-background">
+            {/* Footer per Step 2: Select Day - solo link testuale "Indietro" (opzionale) */}
             {dialogView === 'selectDay' && viewMode === 'view' && (
               <div className="flex items-center justify-start w-full">
                 <button 
                   onClick={() => setDialogView('details')}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   ← Indietro
                 </button>
               </div>
             )}
             
-            {/* Footer per View Mode Step 1 - azioni secondarie */}
+            {/* Footer per View Mode Step 1 - azioni secondarie: Modifica + Menu ⋮ */}
             {viewMode === 'view' && dialogView === 'details' && (
               <div className="flex items-center justify-between w-full">
-                {/* Link testuale Modifica + Menu overflow a sinistra */}
+                {/* Azioni secondarie specs: font-size 14px, font-weight 500 */}
                 <div className="flex items-center gap-4">
+                  {/* Modifica: icon 16px opzionale */}
                   <button
                     onClick={() => setViewMode('edit')}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
                   >
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Pencil className="h-4 w-4" />
                     Modifica
                   </button>
                   
-                  {/* Menu Overflow */}
+                  {/* Menu ⋮: icon 18px, hit area 32x32 */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                        <MoreVertical className="h-4 w-4" />
+                      <button className="h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted/50">
+                        <MoreVertical className="h-[18px] w-[18px]" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
