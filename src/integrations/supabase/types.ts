@@ -1994,10 +1994,15 @@ export type Database = {
       }
     }
     Functions: {
-      cancel_event_with_ledger: {
-        Args: { p_actor: string; p_event_id: string; p_now?: string }
-        Returns: Json
-      }
+      cancel_event_with_ledger:
+        | {
+            Args: { p_actor: string; p_event_id: string; p_now?: string }
+            Returns: Json
+          }
+        | {
+            Args: { p_actor: string; p_event_id: string; p_now?: string }
+            Returns: Json
+          }
       cancel_series_with_ledger: {
         Args: { p_actor: string; p_now?: string; p_series_id: string }
         Returns: Json
@@ -2055,24 +2060,43 @@ export type Database = {
         }
         Returns: string
       }
-      create_event_with_economics_internal: {
-        Args: {
-          p_amount_cents?: number
-          p_client_request_id?: string
-          p_coach_client_id: string
-          p_economic_type: string
-          p_end_at: string
-          p_location?: string
-          p_notes?: string
-          p_package_id?: string
-          p_series_id?: string
-          p_series_request_id?: string
-          p_source?: string
-          p_start_at: string
-          p_title: string
-        }
-        Returns: string
-      }
+      create_event_with_economics_internal:
+        | {
+            Args: {
+              p_amount_cents?: number
+              p_client_request_id?: string
+              p_coach_client_id: string
+              p_economic_type: string
+              p_end_at: string
+              p_location?: string
+              p_notes?: string
+              p_package_id?: string
+              p_series_id?: string
+              p_series_request_id?: string
+              p_source?: string
+              p_start_at: string
+              p_title: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_amount_cents?: number
+              p_client_request_id?: string
+              p_coach_client_id: string
+              p_economic_type: string
+              p_end_at: string
+              p_location?: string
+              p_notes?: string
+              p_package_id?: string
+              p_series_id?: string
+              p_series_request_id?: string
+              p_source?: string
+              p_start_at: string
+              p_title: string
+            }
+            Returns: string
+          }
       create_recurring_series_with_economics: {
         Args: {
           p_amount_cents?: number
