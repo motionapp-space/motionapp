@@ -836,6 +836,38 @@ export type Database = {
           },
         ]
       }
+      coach_settings: {
+        Row: {
+          coach_id: string
+          created_at: string
+          currency_code: string
+          lock_window_hours: number
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          currency_code?: string
+          lock_window_hours?: number
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          currency_code?: string
+          lock_window_hours?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_settings_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: true
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coaches: {
         Row: {
           created_at: string
@@ -1167,7 +1199,7 @@ export type Database = {
           },
         ]
       }
-      order_payments: {
+      orders: {
         Row: {
           amount_cents: number
           canceled_at: string | null
@@ -1182,6 +1214,7 @@ export type Database = {
           note: string | null
           package_id: string | null
           paid_at: string | null
+          product_id: string | null
           status: string
         }
         Insert: {
@@ -1198,6 +1231,7 @@ export type Database = {
           note?: string | null
           package_id?: string | null
           paid_at?: string | null
+          product_id?: string | null
           status?: string
         }
         Update: {
@@ -1214,6 +1248,7 @@ export type Database = {
           note?: string | null
           package_id?: string | null
           paid_at?: string | null
+          product_id?: string | null
           status?: string
         }
         Relationships: [
@@ -1236,6 +1271,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_payments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
@@ -1741,6 +1783,62 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          coach_id: string
+          created_at: string
+          credits_amount: number
+          description: string | null
+          duration_months: number
+          id: string
+          is_active: boolean
+          is_visible: boolean
+          name: string
+          price_cents: number
+          sort_order: number
+          type: Database["public"]["Enums"]["product_type"]
+          updated_at: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          credits_amount?: number
+          description?: string | null
+          duration_months?: number
+          id?: string
+          is_active?: boolean
+          is_visible?: boolean
+          name: string
+          price_cents: number
+          sort_order?: number
+          type: Database["public"]["Enums"]["product_type"]
+          updated_at?: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          credits_amount?: number
+          description?: string | null
+          duration_months?: number
+          id?: string
+          is_active?: boolean
+          is_visible?: boolean
+          name?: string
+          price_cents?: number
+          sort_order?: number
+          type?: Database["public"]["Enums"]["product_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_sessions: {
         Row: {
           coach_client_id: string
@@ -2089,6 +2187,7 @@ export type Database = {
       package_payment_status: "unpaid" | "partial" | "paid" | "refunded"
       package_usage_status: "active" | "completed" | "suspended" | "archived"
       plan_status: "IN_CORSO" | "COMPLETATO" | "ELIMINATO"
+      product_type: "session_pack" | "single_session" | "subscription"
       sex: "M" | "F" | "ALTRO"
     }
     CompositeTypes: {
@@ -2271,6 +2370,7 @@ export const Constants = {
       package_payment_status: ["unpaid", "partial", "paid", "refunded"],
       package_usage_status: ["active", "completed", "suspended", "archived"],
       plan_status: ["IN_CORSO", "COMPLETATO", "ELIMINATO"],
+      product_type: ["session_pack", "single_session", "subscription"],
       sex: ["M", "F", "ALTRO"],
     },
   },

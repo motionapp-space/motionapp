@@ -4,7 +4,8 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { getActivePackageByCoachClient, getPackageSettings } from "./packages.api";
+import { getActivePackageByCoachClient } from "./packages.api";
+import { getCoachSettings } from "@/features/products/api/coach-settings.api";
 import { createLedgerEntry } from "./ledger.api";
 import type { Package } from "../types";
 
@@ -139,11 +140,11 @@ export async function handleEventCancel(
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new Error("Non autenticato");
 
-  const settings = await getPackageSettings();
+  const coachSettings = await getCoachSettings();
   const hoursUntilStart = (new Date(startAt).getTime() - Date.now()) / (1000 * 60 * 60);
 
   // Determine if within cancel policy window (skip if forceFree)
-  const isLateCancellation = !options?.forceFree && hoursUntilStart < settings.lock_window_hours;
+  const isLateCancellation = !options?.forceFree && hoursUntilStart < coachSettings.lock_window_hours;
 
   // Get package via view to verify coach access
   const { data: pkg, error: pkgError } = await supabase
@@ -163,7 +164,7 @@ export async function handleEventCancel(
       1,
       -1,
       eventId,
-      `Cancellazione tardiva (meno di ${settings.lock_window_hours}h prima)`
+      `Cancellazione tardiva (meno di ${coachSettings.lock_window_hours}h prima)`
     );
 
     const { data: updatedPkg, error } = await supabase
