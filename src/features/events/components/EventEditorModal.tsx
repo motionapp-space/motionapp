@@ -178,6 +178,7 @@ export function EventEditorModal({
   });
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [pendingDeleteAction, setPendingDeleteAction] = useState(false);
   const [viewMode, setViewMode] = useState<'new' | 'view' | 'edit'>(isNewMode ? 'new' : 'view');
   
   // Nuovo stato per wizard interno (step 1 = details, step 2 = selectDay)
@@ -216,6 +217,17 @@ export function EventEditorModal({
   // Query piani cliente per wizard sessione
   const { data: clientPlans = [] } = useClientPlansQuery(formData.clientId);
   const activePlans = clientPlans.filter((p) => p.status === "IN_CORSO");
+
+  // Effect: quando la modale principale si chiude e c'è un'azione di delete pendente, apri il dialog di conferma
+  useEffect(() => {
+    if (!open && pendingDeleteAction) {
+      // Piccolo delay per assicurarsi che la modale principale sia completamente chiusa
+      const timer = setTimeout(() => {
+        setShowDeleteDialog(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [open, pendingDeleteAction]);
 
   // Reset form when opening in new mode or event changes
   useEffect(() => {
@@ -1687,7 +1699,11 @@ export function EventEditorModal({
                     <DropdownMenuContent align="start">
                       <DropdownMenuItem 
                         className="text-destructive focus:text-destructive cursor-pointer"
-                        onClick={() => setShowDeleteDialog(true)}
+                        onClick={() => {
+                          // Chiudi prima la modale principale, poi apri conferma
+                          setPendingDeleteAction(true);
+                          onOpenChange(false);
+                        }}
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Elimina evento...
@@ -1706,7 +1722,11 @@ export function EventEditorModal({
                 <div className="flex items-center justify-between w-full">
                   <Button
                     variant="ghost"
-                    onClick={() => setShowDeleteDialog(true)}
+                    onClick={() => {
+                      // Chiudi prima la modale principale, poi apri conferma
+                      setPendingDeleteAction(true);
+                      onOpenChange(false);
+                    }}
                     className="h-10 px-4 text-destructive hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -1780,8 +1800,16 @@ export function EventEditorModal({
         </DialogContent>
       </Dialog>
 
-      {/* Cancel Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      {/* Cancel Confirmation Dialog - aperta solo quando modale principale è chiusa */}
+      <AlertDialog 
+        open={showDeleteDialog} 
+        onOpenChange={(isOpen) => {
+          setShowDeleteDialog(isOpen);
+          if (!isOpen) {
+            setPendingDeleteAction(false);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancellare questo appuntamento?</AlertDialogTitle>
