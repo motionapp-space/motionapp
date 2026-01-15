@@ -954,56 +954,43 @@ export function EventEditorModal({
             </DialogDescription>
           </DialogHeader>
 
-          {/* Action Bar - prominente, solo in view mode step 1 */}
-          {viewMode === 'view' && dialogView === 'details' && event && (
-            <div className="px-6 py-4 border-b border-border/30 bg-muted/20 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                {/* CTA Primaria - Avvia Sessione */}
-                {canStartSession && (
+          {/* PRIMARY CTA AREA - Always same position for both steps */}
+          {viewMode === 'view' && event && (
+            <div className="px-6 py-4 border-b border-border/30 bg-muted/10 flex-shrink-0">
+              {/* STEP 1: Details - CTA Avvia sessione */}
+              {dialogView === 'details' && canStartSession && (
+                <>
                   <Button 
                     onClick={handleStartSession} 
                     size="lg"
-                    className="h-11 px-6 font-semibold"
+                    className="w-full h-12 text-base font-semibold"
                   >
                     <Play className="h-5 w-5 mr-2" />
                     Avvia sessione
                   </Button>
-                )}
-                
-                {/* Secondaria - Modifica */}
-                <Button
-                  variant="outline"
-                  onClick={() => setViewMode('edit')}
-                  className="h-11 px-4"
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Modifica
-                </Button>
-                
-                {/* Menu Overflow */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-11 w-11">
-                      <MoreVertical className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem 
-                      className="text-destructive focus:text-destructive cursor-pointer"
-                      onClick={() => setShowDeleteDialog(true)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Elimina evento...
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                  
+                  {/* Microcopy per eventi passati */}
+                  {new Date(event.end_at) < new Date() && (
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                      Puoi registrare l'allenamento anche se già svolto.
+                    </p>
+                  )}
+                </>
+              )}
               
-              {/* Microcopy per eventi passati */}
-              {canStartSession && new Date(event.end_at) < new Date() && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Puoi registrare l'allenamento anche se già svolto.
-                </p>
+              {/* STEP 2: Select Day - CTA Avvia sessione (stessa posizione) */}
+              {dialogView === 'selectDay' && (
+                <>
+                  <Button 
+                    onClick={handleConfirmSession} 
+                    size="lg"
+                    className="w-full h-12 text-base font-semibold"
+                    disabled={!sessionDayId || createSession.isPending || activePlans.length === 0}
+                  >
+                    <Play className="h-5 w-5 mr-2" />
+                    {createSession.isPending ? 'Avvio in corso...' : 'Avvia sessione'}
+                  </Button>
+                </>
               )}
             </div>
           )}
@@ -1014,7 +1001,7 @@ export function EventEditorModal({
             {dialogView === 'selectDay' && (
               <div className="px-6 py-6">
                 <p className="text-sm text-muted-foreground mb-6">
-                  Scegli il giorno da tracciare dal piano attivo del cliente
+                  Seleziona il giorno da tracciare dal piano del cliente
                 </p>
                 
                 {activePlans.length === 0 ? (
@@ -1027,6 +1014,16 @@ export function EventEditorModal({
                         Per avviare una sessione, il cliente deve avere un piano attivo.
                       </p>
                     </div>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        onOpenChange(false);
+                        navigate(`/clients/${formData.clientId}?tab=plans`);
+                      }}
+                      className="mt-4"
+                    >
+                      Vai ai piani
+                    </Button>
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -1051,7 +1048,12 @@ export function EventEditorModal({
                           return (
                             <div 
                               key={day.id} 
-                              className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-accent cursor-pointer"
+                              className={cn(
+                                "flex items-center space-x-3 rounded-lg border p-4 cursor-pointer transition-colors",
+                                sessionDayId === day.id 
+                                  ? "border-primary bg-primary/5" 
+                                  : "hover:bg-accent"
+                              )}
                               onClick={() => setSessionDayId(day.id)}
                             >
                               <RadioGroupItem value={day.id} id={`session-day-${day.id}`} />
@@ -1645,36 +1647,52 @@ export function EventEditorModal({
 
           {/* Footer - clean spacing, no heavy divider */}
           <DialogFooter className="px-6 py-4 border-t border-border/20 flex-shrink-0 flex items-center justify-between bg-background">
-            {/* Footer per Step 2: Select Day */}
-            {dialogView === 'selectDay' && (
-              <div className="flex items-center justify-between w-full">
-                <Button variant="outline" onClick={() => setDialogView('details')}>
-                  Indietro
-                </Button>
-                {activePlans.length === 0 ? (
-                  <Button onClick={() => {
-                    onOpenChange(false);
-                    navigate(`/clients/${formData.clientId}?tab=plans`);
-                  }}>
-                    Vai ai piani
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={handleConfirmSession} 
-                    disabled={!sessionDayId || createSession.isPending}
-                  >
-                    {createSession.isPending ? 'Avvio...' : 'Avvia sessione'}
-                  </Button>
-                )}
+            {/* Footer per Step 2: Select Day - solo link testuale "Indietro" */}
+            {dialogView === 'selectDay' && viewMode === 'view' && (
+              <div className="flex items-center justify-start w-full">
+                <button 
+                  onClick={() => setDialogView('details')}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ← Indietro
+                </button>
               </div>
             )}
             
-            {/* Footer per View Mode Step 1 - solo pulsante Chiudi */}
+            {/* Footer per View Mode Step 1 - azioni secondarie */}
             {viewMode === 'view' && dialogView === 'details' && (
-              <div className="flex justify-end w-full">
-                <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                  Chiudi
-                </Button>
+              <div className="flex items-center justify-between w-full">
+                {/* Link testuale Modifica + Menu overflow a sinistra */}
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setViewMode('edit')}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Modifica
+                  </button>
+                  
+                  {/* Menu Overflow */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem 
+                        className="text-destructive focus:text-destructive cursor-pointer"
+                        onClick={() => setShowDeleteDialog(true)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Elimina evento...
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                
+                {/* Nessun bottone a destra - la CTA è sopra */}
+                <div />
               </div>
             )}
               
