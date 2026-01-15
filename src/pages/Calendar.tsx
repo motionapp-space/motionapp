@@ -5,6 +5,17 @@ import { parseISO, format } from "date-fns";
 import { useTopbar } from "@/contexts/TopbarContext";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useDeleteEvent } from "@/features/events/hooks/useDeleteEvent";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useEventsQuery } from "@/features/events/hooks/useEventsQuery";
 import { CalendarSubHeader } from "@/features/events/components/CalendarSubHeader";
 import { DayView } from "@/features/events/components/DayView";
@@ -44,6 +55,12 @@ const Calendar = () => {
   const [requestDrawerOpen, setRequestDrawerOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<BookingRequestWithClient | undefined>();
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    eventId: string;
+    eventTitle: string;
+  } | null>(null);
+
+  const deleteEvent = useDeleteEvent();
 
   const [isClientView, setIsClientView] = useState<boolean>(() => {
     return localStorage.getItem('calendar-client-view') === 'true';
@@ -124,6 +141,17 @@ const Calendar = () => {
     setEditModalOpen(open);
     if (!open) {
       setSelectedEvent(undefined);
+    }
+  };
+
+  const handleDeleteRequest = (eventId: string, eventTitle: string) => {
+    setDeleteConfirmation({ eventId, eventTitle });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirmation) {
+      await deleteEvent.mutateAsync(deleteConfirmation.eventId);
+      setDeleteConfirmation(null);
     }
   };
 
@@ -278,6 +306,7 @@ const Calendar = () => {
           onOpenChange={handleEditModalOpenChange}
           mode="coach-create"
           event={selectedEvent}
+          onDeleteRequest={handleDeleteRequest}
         />
       )}
 
@@ -286,6 +315,31 @@ const Calendar = () => {
         onOpenChange={setRequestDrawerOpen}
         request={selectedRequest}
       />
+
+      {/* Delete Confirmation Dialog - managed at Calendar level to avoid modal-on-modal */}
+      <AlertDialog 
+        open={!!deleteConfirmation} 
+        onOpenChange={(open) => !open && setDeleteConfirmation(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancellare questo appuntamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Stai per eliminare l'evento "{deleteConfirmation?.eventTitle}". 
+              Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

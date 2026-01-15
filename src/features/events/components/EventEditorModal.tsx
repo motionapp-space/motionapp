@@ -70,6 +70,7 @@ interface EventEditorModalProps {
   lockedClientId?: string;
   event?: EventWithClient;
   onStartSession?: (clientId: string, eventId: string, linkedPlanId?: string, linkedDayId?: string) => void;
+  onDeleteRequest?: (eventId: string, eventTitle: string) => void;
 }
 
 // Helper function to round time to nearest 15 minutes
@@ -123,7 +124,8 @@ export function EventEditorModal({
   initialEndTime,
   lockedClientId,
   event,
-  onStartSession
+  onStartSession,
+  onDeleteRequest
 }: EventEditorModalProps) {
   const isEditMode = mode === 'edit';
   const isNewMode = mode === 'new';
@@ -176,9 +178,6 @@ export function EventEditorModal({
     endDate: undefined,
     occurrenceCount: 4
   });
-
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [pendingDeleteAction, setPendingDeleteAction] = useState(false);
   const [viewMode, setViewMode] = useState<'new' | 'view' | 'edit'>(isNewMode ? 'new' : 'view');
   
   // Nuovo stato per wizard interno (step 1 = details, step 2 = selectDay)
@@ -217,18 +216,6 @@ export function EventEditorModal({
   // Query piani cliente per wizard sessione
   const { data: clientPlans = [] } = useClientPlansQuery(formData.clientId);
   const activePlans = clientPlans.filter((p) => p.status === "IN_CORSO");
-
-  // Effect: quando la modale principale si chiude e c'è un'azione di delete pendente, apri il dialog di conferma
-  useEffect(() => {
-    if (!open && pendingDeleteAction) {
-      // Piccolo delay per assicurarsi che la modale principale sia completamente chiusa
-      const timer = setTimeout(() => {
-        setShowDeleteDialog(true);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [open, pendingDeleteAction]);
-
   // Reset form when opening in new mode or event changes
   useEffect(() => {
     if (open) {
@@ -794,7 +781,6 @@ export function EventEditorModal({
         toast.success("Evento cancellato");
       }
       
-      setShowDeleteDialog(false);
       onOpenChange(false);
     } catch (error: any) {
       console.error('Cancel event error:', error);
@@ -1700,9 +1686,10 @@ export function EventEditorModal({
                       <DropdownMenuItem 
                         className="text-destructive focus:text-destructive cursor-pointer"
                         onClick={() => {
-                          // Chiudi prima la modale principale, poi apri conferma
-                          setPendingDeleteAction(true);
-                          onOpenChange(false);
+                          if (event && onDeleteRequest) {
+                            onDeleteRequest(event.id, event.title);
+                            onOpenChange(false);
+                          }
                         }}
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
@@ -1723,9 +1710,10 @@ export function EventEditorModal({
                   <Button
                     variant="ghost"
                     onClick={() => {
-                      // Chiudi prima la modale principale, poi apri conferma
-                      setPendingDeleteAction(true);
-                      onOpenChange(false);
+                      if (event && onDeleteRequest) {
+                        onDeleteRequest(event.id, event.title);
+                        onOpenChange(false);
+                      }
                     }}
                     className="h-10 px-4 text-destructive hover:text-destructive"
                   >
@@ -1799,36 +1787,6 @@ export function EventEditorModal({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Cancel Confirmation Dialog - aperta solo quando modale principale è chiusa */}
-      <AlertDialog 
-        open={showDeleteDialog} 
-        onOpenChange={(isOpen) => {
-          setShowDeleteDialog(isOpen);
-          if (!isOpen) {
-            setPendingDeleteAction(false);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancellare questo appuntamento?</AlertDialogTitle>
-            <AlertDialogDescription>
-              L'evento verrà annullato. Se associato a un pacchetto, la sessione verrà restituita automaticamente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isCancelling}>Annulla</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleCancel}
-              disabled={isCancelling}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isCancelling ? "Cancellazione..." : "Cancella evento"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Session Conflict Dialog */}
       <AlertDialog open={showSessionConflictDialog} onOpenChange={setShowSessionConflictDialog}>
