@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { format, addMinutes, differenceInMinutes, isWithinInterval, startOfDay, setHours, setMinutes } from "date-fns";
 import { it } from "date-fns/locale";
-import { Calendar as CalendarIcon, AlertTriangle, Info, AlertCircle, Trash2, Play, Pencil, MapPin, Clock, User, UserCircle, Bell, FileText, Package, Gift, CreditCard } from "lucide-react";
+import { Calendar as CalendarIcon, AlertTriangle, Info, AlertCircle, Trash2, Play, Pencil, MapPin, Clock, User, UserCircle, Bell, FileText, Package, Gift, CreditCard, MoreVertical, ChevronLeft } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getCoachClientId, getClientIdFromCoachClient } from "@/lib/coach-client";
 import { useCreateEvent } from "../hooks/useCreateEvent";
@@ -40,6 +40,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useClientPlansQuery } from "@/features/client-plans/hooks/useClientPlansQuery";
+import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
+import type { Day } from "@/types/plan";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { EventWithClient, Event } from "../types";
@@ -171,6 +180,13 @@ export function EventEditorModal({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [viewMode, setViewMode] = useState<'new' | 'view' | 'edit'>(isNewMode ? 'new' : 'view');
   
+  // Nuovo stato per wizard interno (step 1 = details, step 2 = selectDay)
+  const [dialogView, setDialogView] = useState<'details' | 'selectDay'>('details');
+  
+  // Nuovo stato per selezione giorno sessione
+  const [sessionPlanId, setSessionPlanId] = useState<string>("");
+  const [sessionDayId, setSessionDayId] = useState<string>("");
+  
   // Nuovo stato per tipo di lezione economico (scelta esplicita, proattiva)
   const [lessonType, setLessonType] = useState<LessonType | null>(null);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
@@ -185,6 +201,7 @@ export function EventEditorModal({
   const { activeSession } = useSessionStore();
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
+  const createSession = useCreateSession();
   const [isCancelling, setIsCancelling] = useState(false);
   const { data: clientsData } = useClientsQuery({ q: "", page: 1, limit: 100 });
   const clients = clientsData?.items || [];
@@ -195,12 +212,19 @@ export function EventEditorModal({
     end_date: format(addMinutes(formData.date, 1440), 'yyyy-MM-dd')
   });
   const { data: bookingSettings } = useBookingSettingsQuery();
+  
+  // Query piani cliente per wizard sessione
+  const { data: clientPlans = [] } = useClientPlansQuery(formData.clientId);
+  const activePlans = clientPlans.filter((p) => p.status === "IN_CORSO");
 
   // Reset form when opening in new mode or event changes
   useEffect(() => {
     if (open) {
-      // Reset viewMode based on mode prop
+      // Reset viewMode and dialogView based on mode prop
       setViewMode(isNewMode ? 'new' : 'view');
+      setDialogView('details');
+      setSessionPlanId("");
+      setSessionDayId("");
       
       if (isNewMode) {
         const now = new Date();
@@ -770,20 +794,55 @@ export function EventEditorModal({
     }
   };
 
-  const handleStartSession = async () => {
+  const handleStartSession = () => {
     // Check if there's already an active session
     if (activeSession) {
       setShowSessionConflictDialog(true);
       return;
     }
     
-    if (event && onStartSession && formData.clientId) {
-      onStartSession(
-        formData.clientId,
-        event.id,
-        event.linked_plan_id || undefined,
-        event.linked_day_id || undefined
-      );
+    // Passa allo step 2 del wizard (selezione giorno)
+    if (event && formData.clientId) {
+      // Preseleziona piano se linkato all'evento
+      if (activePlans.length > 0) {
+        const planToSelect = event.linked_plan_id && activePlans.find((p) => p.id === event.linked_plan_id)
+          ? event.linked_plan_id
+          : activePlans[0].id;
+        setSessionPlanId(planToSelect);
+        
+        // Preseleziona giorno se linkato o primo disponibile
+        const selectedPlan = activePlans.find((p) => p.id === planToSelect);
+        const days: Day[] = (selectedPlan?.data as { days?: Day[] })?.days || [];
+        if (days.length > 0) {
+          const dayToSelect = event.linked_day_id && days.find((d) => d.id === event.linked_day_id)
+            ? event.linked_day_id
+            : days[0].id;
+          setSessionDayId(dayToSelect);
+        }
+      }
+      
+      setDialogView('selectDay');
+    }
+  };
+
+  const handleConfirmSession = async () => {
+    if (!sessionPlanId || !sessionDayId || !event) return;
+    
+    try {
+      const coachClientId = await getCoachClientId(formData.clientId);
+      const session = await createSession.mutateAsync({
+        coach_client_id: coachClientId,
+        plan_id: sessionPlanId,
+        day_id: sessionDayId,
+        event_id: event.id,
+      });
+      
+      toast.success("Sessione avviata");
+      onOpenChange(false);
+      navigate(`/session/live?sessionId=${session.id}`);
+    } catch (error) {
+      console.error("Error creating session:", error);
+      toast.error("Errore nell'avvio della sessione");
     }
   };
 
@@ -796,7 +855,8 @@ export function EventEditorModal({
     // "proceed" does nothing - user must first complete the active session
   };
 
-  const canStartSession = isEditMode && !!event && !!onStartSession;
+  // canStartSession non dipende più da onStartSession
+  const canStartSession = isEditMode && !!event;
 
   // Determina lo stato dell'appuntamento per il badge usando helper centralizzato
   const getEventStatusBadge = () => {
@@ -839,6 +899,10 @@ export function EventEditorModal({
     return event.source === 'client' ? 'Cliente' : 'Professionista';
   };
 
+  // Get giorni dal piano selezionato per wizard sessione
+  const sessionSelectedPlan = activePlans.find((p) => p.id === sessionPlanId);
+  const sessionDays: Day[] = (sessionSelectedPlan?.data as { days?: Day[] })?.days || [];
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -846,32 +910,180 @@ export function EventEditorModal({
           {/* Header - compact, Linear/Google style */}
           <DialogHeader className="h-14 px-6 flex-shrink-0 flex flex-row items-center justify-between border-b border-border/40">
             <div className="flex items-center gap-2.5">
-              <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-              <DialogTitle className="text-lg font-semibold text-foreground leading-none">
-                {viewMode === 'view' ? formData.title : (viewMode === 'edit' ? 'Modifica appuntamento' : 'Nuovo appuntamento')}
-              </DialogTitle>
-              {viewMode === 'view' && (
+              {dialogView === 'selectDay' ? (
                 <>
-                  {getEventStatusBadge()}
-                  {event?.recurrence_rule && (
-                    <Badge variant="outline" className="text-xs font-normal">
-                      Ricorrente
-                    </Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setDialogView('details')}
+                    className="h-8 w-8 -ml-2"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <DialogTitle className="text-lg font-semibold text-foreground leading-none">
+                    Seleziona giorno
+                  </DialogTitle>
+                </>
+              ) : (
+                <>
+                  <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                  <DialogTitle className="text-lg font-semibold text-foreground leading-none">
+                    {viewMode === 'view' ? formData.title : (viewMode === 'edit' ? 'Modifica appuntamento' : 'Nuovo appuntamento')}
+                  </DialogTitle>
+                  {viewMode === 'view' && (
+                    <>
+                      {getEventStatusBadge()}
+                      {event?.recurrence_rule && (
+                        <Badge variant="outline" className="text-xs font-normal">
+                          Ricorrente
+                        </Badge>
+                      )}
+                    </>
                   )}
                 </>
               )}
             </div>
             <DialogDescription className="sr-only">
-              {viewMode === 'view' 
-                ? `Dettagli appuntamento: ${formData.title}` 
-                : viewMode === 'edit' 
-                  ? 'Modifica i dettagli dell\'appuntamento' 
-                  : 'Crea un nuovo appuntamento con un cliente'}
+              {dialogView === 'selectDay'
+                ? 'Scegli il giorno da tracciare dal piano attivo del cliente'
+                : viewMode === 'view' 
+                  ? `Dettagli appuntamento: ${formData.title}` 
+                  : viewMode === 'edit' 
+                    ? 'Modifica i dettagli dell\'appuntamento' 
+                    : 'Crea un nuovo appuntamento con un cliente'}
             </DialogDescription>
           </DialogHeader>
 
+          {/* Action Bar - prominente, solo in view mode step 1 */}
+          {viewMode === 'view' && dialogView === 'details' && event && (
+            <div className="px-6 py-4 border-b border-border/30 bg-muted/20 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                {/* CTA Primaria - Avvia Sessione */}
+                {canStartSession && (
+                  <Button 
+                    onClick={handleStartSession} 
+                    size="lg"
+                    className="h-11 px-6 font-semibold"
+                  >
+                    <Play className="h-5 w-5 mr-2" />
+                    Avvia sessione
+                  </Button>
+                )}
+                
+                {/* Secondaria - Modifica */}
+                <Button
+                  variant="outline"
+                  onClick={() => setViewMode('edit')}
+                  className="h-11 px-4"
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Modifica
+                </Button>
+                
+                {/* Menu Overflow */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-11 w-11">
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      className="text-destructive focus:text-destructive cursor-pointer"
+                      onClick={() => setShowDeleteDialog(true)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Elimina evento...
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              
+              {/* Microcopy per eventi passati */}
+              {canStartSession && new Date(event.end_at) < new Date() && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Puoi registrare l'allenamento anche se già svolto.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Content - consistent 24px padding */}
           <div className="flex-1 overflow-y-auto">
+            {/* STEP 2: Select Day for Session */}
+            {dialogView === 'selectDay' && (
+              <div className="px-6 py-6">
+                <p className="text-sm text-muted-foreground mb-6">
+                  Scegli il giorno da tracciare dal piano attivo del cliente
+                </p>
+                
+                {activePlans.length === 0 ? (
+                  // Empty State
+                  <div className="text-center py-12 space-y-4">
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
+                    <div className="space-y-2">
+                      <p className="font-medium">Nessun piano attivo trovato</p>
+                      <p className="text-sm text-muted-foreground">
+                        Per avviare una sessione, il cliente deve avere un piano attivo.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Info Piano */}
+                    {sessionSelectedPlan && (
+                      <div className="rounded-lg bg-muted/40 p-4 space-y-1">
+                        <p className="font-medium">{sessionSelectedPlan.name}</p>
+                        {sessionSelectedPlan.description && (
+                          <p className="text-sm text-muted-foreground">{sessionSelectedPlan.description}</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Lista Giorni con RadioGroup */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Seleziona giorno</Label>
+                      <RadioGroup value={sessionDayId} onValueChange={setSessionDayId}>
+                        {sessionDays.map((day, index) => {
+                          const isSuggested = event?.linked_day_id 
+                            ? day.id === event.linked_day_id 
+                            : index === 0;
+                          return (
+                            <div 
+                              key={day.id} 
+                              className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-accent cursor-pointer"
+                              onClick={() => setSessionDayId(day.id)}
+                            >
+                              <RadioGroupItem value={day.id} id={`session-day-${day.id}`} />
+                              <Label htmlFor={`session-day-${day.id}`} className="flex-1 cursor-pointer">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">
+                                    Giorno {day.order} — {day.title}
+                                  </span>
+                                  {isSuggested && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Suggerito
+                                    </Badge>
+                                  )}
+                                </div>
+                                {day.focusMuscle && (
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {day.focusMuscle}
+                                  </p>
+                                )}
+                              </Label>
+                            </div>
+                          );
+                        })}
+                      </RadioGroup>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* STEP 1: Details / Edit / New */}
+            {dialogView === 'details' && (
             <div className="px-6 py-6">
             
             {/* READ-ONLY VIEW */}
@@ -1415,44 +1627,59 @@ export function EventEditorModal({
               </Alert>
             )}
 
+            {/* Hint per modalità creazione */}
+            {viewMode === 'new' && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 mt-4">
+                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Dopo la creazione potrai avviare la sessione dall'evento in Agenda.
+                </p>
+              </div>
+            )}
 
             </div>
             )}
             </div>
+            )} {/* Fine dialogView === 'details' */}
           </div>
 
           {/* Footer - clean spacing, no heavy divider */}
           <DialogFooter className="px-6 py-4 border-t border-border/20 flex-shrink-0 flex items-center justify-between bg-background">
-            {viewMode === 'view' && (
+            {/* Footer per Step 2: Select Day */}
+            {dialogView === 'selectDay' && (
               <div className="flex items-center justify-between w-full">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="h-10 px-4 text-destructive/80 hover:text-destructive hover:bg-destructive/5 font-normal"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Cancella
+                <Button variant="outline" onClick={() => setDialogView('details')}>
+                  Indietro
                 </Button>
-                <div className="flex items-center gap-2">
-                  {canStartSession && event && new Date(event.end_at) >= new Date() && (
-                    <Button variant="outline" onClick={handleStartSession} className="h-10 px-4">
-                      <Play className="h-4 w-4 mr-2" />
-                      Avvia sessione
-                    </Button>
-                  )}
-                  <Button
-                    onClick={() => setViewMode('edit')}
-                    className="h-10 px-5"
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Modifica
+                {activePlans.length === 0 ? (
+                  <Button onClick={() => {
+                    onOpenChange(false);
+                    navigate(`/clients/${formData.clientId}?tab=plans`);
+                  }}>
+                    Vai ai piani
                   </Button>
-                </div>
+                ) : (
+                  <Button 
+                    onClick={handleConfirmSession} 
+                    disabled={!sessionDayId || createSession.isPending}
+                  >
+                    {createSession.isPending ? 'Avvio...' : 'Avvia sessione'}
+                  </Button>
+                )}
+              </div>
+            )}
+            
+            {/* Footer per View Mode Step 1 - solo pulsante Chiudi */}
+            {viewMode === 'view' && dialogView === 'details' && (
+              <div className="flex justify-end w-full">
+                <Button variant="ghost" onClick={() => onOpenChange(false)}>
+                  Chiudi
+                </Button>
               </div>
             )}
               
               {/* Edit Mode Footer */}
-              {viewMode === 'edit' && (
+              {viewMode === 'edit' && dialogView === 'details' && (
                 <div className="flex items-center justify-between w-full">
                   <Button
                     variant="ghost"
@@ -1460,7 +1687,7 @@ export function EventEditorModal({
                     className="h-10 px-4 text-destructive hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Cancella
+                    Elimina
                   </Button>
                   <div className="flex items-center gap-2">
                     <Button
@@ -1470,12 +1697,6 @@ export function EventEditorModal({
                     >
                       Annulla
                     </Button>
-                    {canStartSession && (
-                      <Button onClick={handleStartSession} variant="secondary" className="h-10 px-4">
-                        <Play className="h-4 w-4 mr-2" />
-                        Avvia sessione
-                      </Button>
-                    )}
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -1501,7 +1722,7 @@ export function EventEditorModal({
               )}
               
               {/* New Mode Footer */}
-              {viewMode === 'new' && (
+              {viewMode === 'new' && dialogView === 'details' && (
                 <div className="flex items-center justify-end w-full gap-2">
                   <Button
                     variant="ghost"
