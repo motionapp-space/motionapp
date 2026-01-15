@@ -1209,12 +1209,14 @@ export type Database = {
           currency_code: string
           due_at: string | null
           event_id: string | null
+          external_payment_id: string | null
           id: string
           kind: string
           note: string | null
           package_id: string | null
           paid_at: string | null
           product_id: string | null
+          refunded_at: string | null
           status: string
         }
         Insert: {
@@ -1226,12 +1228,14 @@ export type Database = {
           currency_code?: string
           due_at?: string | null
           event_id?: string | null
+          external_payment_id?: string | null
           id?: string
           kind: string
           note?: string | null
           package_id?: string | null
           paid_at?: string | null
           product_id?: string | null
+          refunded_at?: string | null
           status?: string
         }
         Update: {
@@ -1243,12 +1247,14 @@ export type Database = {
           currency_code?: string
           due_at?: string | null
           event_id?: string | null
+          external_payment_id?: string | null
           id?: string
           kind?: string
           note?: string | null
           package_id?: string | null
           paid_at?: string | null
           product_id?: string | null
+          refunded_at?: string | null
           status?: string
         }
         Relationships: [
@@ -2018,6 +2024,10 @@ export type Database = {
       check_coach_owns_coach_client: {
         Args: { p_coach_client_id: string }
         Returns: boolean
+      }
+      complete_order_refund: {
+        Args: { p_external_refund_id?: string; p_order_id: string }
+        Returns: Json
       }
       compute_client_table_data_batch: {
         Args: { p_client_ids: string[] }
