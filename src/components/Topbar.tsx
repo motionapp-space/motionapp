@@ -1,4 +1,4 @@
-import { ArrowLeft, Menu } from "lucide-react";
+import { ArrowLeft, Menu, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
 import { UserMenu } from "./UserMenu";
@@ -10,7 +10,7 @@ interface TopbarProps {
 }
 
 export function Topbar({ showMenuButton = false, onMenuClick }: TopbarProps) {
-  const { title, subtitle, showBack, onBack } = useTopbarContext();
+  const { title, subtitle, showBack, onBack, showLegendIcon, onLegendClick } = useTopbarContext();
 
   return (
     <header className="sticky top-0 z-50 h-16 bg-background px-5 border-b border-border">
@@ -52,8 +52,19 @@ export function Topbar({ showMenuButton = false, onMenuClick }: TopbarProps) {
           )}
         </div>
 
-        {/* Right: Global elements only */}
+        {/* Right: Legend icon + Global elements */}
         <div className="flex items-center gap-3 shrink-0">
+          {showLegendIcon && onLegendClick && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onLegendClick}
+              className="shrink-0"
+              aria-label="Legenda"
+            >
+              <Info className="h-5 w-5" />
+            </Button>
+          )}
           <NotificationBell />
           <UserMenu />
         </div>
