@@ -139,7 +139,7 @@ export function StickySessionBar() {
   return (
     <>
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 h-[72px] py-3 px-4 bg-background border-t border-muted shadow-[0_-2px_8px_rgba(0,0,0,0.06)] transition-opacity duration-700 ${
+        className={`fixed bottom-0 left-0 right-0 z-50 h-[72px] py-3 px-4 bg-background/95 backdrop-blur border-t border-muted shadow-[0_-8px_24px_rgba(0,0,0,0.06)] transition-opacity duration-700 ${
           isVisible ? "opacity-100" : "opacity-0"
         } ${!isOnLiveSessionPage ? "cursor-pointer" : ""}`}
         onClick={handleBarClick}
@@ -172,7 +172,7 @@ export function StickySessionBar() {
               {!isOnLiveSessionPage && (
                 <p className="text-xs text-muted-foreground">Durata</p>
               )}
-              <p className="font-mono text-[16px] font-semibold tabular-nums">{elapsedTime}</p>
+              <p className="text-[16px] font-semibold tabular-nums">{elapsedTime}</p>
             </div>
           </div>
 
@@ -189,10 +189,10 @@ export function StickySessionBar() {
               }}
               title={isPaused ? "Riprendi" : "Pausa"}
             >
-              {isPaused ? (
-                <Play className="h-[18px] w-[18px]" />
+            {isPaused ? (
+                <Play className="h-[18px] w-[18px]" strokeWidth={2} />
               ) : (
-                <Pause className="h-[18px] w-[18px]" />
+                <Pause className="h-[18px] w-[18px]" strokeWidth={2} />
               )}
             </Button>
 
@@ -201,7 +201,7 @@ export function StickySessionBar() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="h-11 w-11 flex items-center justify-center text-muted-foreground">
-                    <FileText className="h-[18px] w-[18px]" />
+                    <FileText className="h-[18px] w-[18px]" strokeWidth={2} />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -222,7 +222,7 @@ export function StickySessionBar() {
                 }}
                 title="Apri sessione"
               >
-                <ExternalLink className="h-[18px] w-[18px]" />
+                <ExternalLink className="h-[18px] w-[18px]" strokeWidth={2} />
               </Button>
             )}
 
@@ -238,7 +238,7 @@ export function StickySessionBar() {
                 }}
                 title="Completa"
               >
-                <Check className="h-[18px] w-[18px]" />
+                <Check className="h-[18px] w-[18px]" strokeWidth={2} />
               </Button>
             )}
 
@@ -268,7 +268,7 @@ export function StickySessionBar() {
                 }}
                 title="Annulla"
               >
-                <Trash2 className="h-[18px] w-[18px]" />
+                <Trash2 className="h-[18px] w-[18px]" strokeWidth={2} />
               </Button>
             )}
           </div>
