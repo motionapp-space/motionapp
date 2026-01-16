@@ -338,20 +338,24 @@ export default function LiveSession() {
                   return (
                     <div
                       key={group.id}
-                      className="relative p-4 rounded-[16px] bg-muted/20 mb-6 border-l-4 border-primary/60"
+                      className="relative mt-3 mb-4 pl-[14px]"
                     >
-                      {/* Group header */}
-                      <div className="mb-3">
-                        <span className="text-[12px] font-semibold uppercase tracking-[0.06em] text-primary">
+                      {/* Vertical rail */}
+                      <div className="absolute left-0 top-[28px] bottom-[8px] w-[2px] rounded-full bg-primary/35" />
+                      
+                      {/* Group label row */}
+                      <div className="h-6 flex items-center gap-2 mb-[10px]">
+                        <span className="h-6 px-[10px] rounded-full text-[12px] font-semibold text-primary bg-primary/10 inline-flex items-center">
                           {isSuperset ? "Superset" : "Circuito"}{group.name ? ` ${group.name}` : ""}
                         </span>
                         {(group.sharedRestBetweenExercises || group.restBetweenRounds) && (
-                          <p className="text-[12px] text-muted-foreground mt-1">
-                            Recupero dopo completamento del {isSuperset ? "superset" : "circuito"}
-                          </p>
+                          <span className="text-[12px] text-muted-foreground">
+                            Recupero dopo completamento
+                          </span>
                         )}
                       </div>
-                      {/* Exercise cards */}
+                      
+                      {/* Exercise cards with reduced gap */}
                       <div className="space-y-3">
                         {exerciseCards}
                       </div>
