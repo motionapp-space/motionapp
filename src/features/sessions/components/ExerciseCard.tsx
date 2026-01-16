@@ -138,10 +138,14 @@ export function ExerciseCard({
         </div>
       )}
 
-      {/* Rest timer */}
-      {restTimer > 0 && (
+      {/* Rest timer - shows completion state, then last rest */}
+      {restTimer > 0 ? (
         <p className="mt-3 text-[14px] font-semibold text-primary">
           Recupero: {formatRestTimer(restTimer)}
+        </p>
+      ) : actuals.length > 0 && exercise.rest && (
+        <p className="mt-3 text-[13px] text-muted-foreground">
+          Ultimo recupero: {exercise.rest}
         </p>
       )}
 
@@ -184,16 +188,16 @@ export function ExerciseCard({
             ✓ Completa serie
           </Button>
 
-          {/* Secondary row */}
-          <div className="flex items-center justify-between">
-            {/* Annulla - only if there are completed sets */}
+          {/* Secondary row - baseline aligned */}
+          <div className="flex items-baseline justify-between">
+            {/* Annulla ultima serie - only if there are completed sets */}
             {actuals.length > 0 ? (
               <Button
                 variant="outline"
                 className="h-10 text-[14px]"
                 onClick={onUndoLastSet}
               >
-                Annulla
+                Annulla ultima serie
               </Button>
             ) : (
               <div />

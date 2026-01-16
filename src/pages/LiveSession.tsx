@@ -269,8 +269,8 @@ export default function LiveSession() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Internal header (NOT sticky) */}
-      <header className="px-4 md:px-6 py-4 border-b border-muted">
-        <div className="max-w-[960px] mx-auto flex items-center gap-3">
+      <header className="px-4 md:px-6 py-3 border-b border-muted">
+        <div className="max-w-[1040px] mx-auto flex items-center gap-3">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -291,7 +291,7 @@ export default function LiveSession() {
       </header>
 
       {/* Content */}
-      <div className="max-w-[960px] mx-auto px-4 md:px-6 py-6 space-y-6">
+      <div className="max-w-[1040px] mx-auto px-4 md:px-6 py-4 space-y-4">
         {/* Collapsible legend */}
         <ExerciseLegend />
 
@@ -304,45 +304,68 @@ export default function LiveSession() {
             <div key={phase.id} className="space-y-4">
               <h2 className="mt-8 mb-3 text-[18px] font-semibold">{phase.type}</h2>
               
-              {migratedPhase.groups.map((group) => (
-                <div key={group.id}>
-                  {group.type !== "single" && group.name && (
-                    <div className="font-medium text-sm text-muted-foreground mb-2">
-                      {group.name}
-                    </div>
-                  )}
-                  
-                  {group.exercises.map((exercise) => {
-                    const exerciseActuals = getActualsForExercise(exercise.id);
-                    const restTimer = restTimers[exercise.id] || 0;
-                    const isSkipped = skippedExercises.has(exercise.id);
+              {migratedPhase.groups.map((group) => {
+                const isSuperset = group.type === "superset";
+                const isCircuit = group.type === "circuit";
+                const hasGroupWrapper = isSuperset || isCircuit;
 
-                    return (
-                      <ExerciseCard
-                        key={exercise.id}
-                        exercise={exercise}
-                        actuals={exerciseActuals}
-                        restTimer={restTimer}
-                        isSkipped={isSkipped}
-                        editableValues={{
-                          reps: getEditableValue(exercise.id, 'reps', exercise.reps),
-                          load: getEditableValue(exercise.id, 'load', exercise.load || ''),
-                          rest: getEditableValue(exercise.id, 'rest', exercise.rest || ''),
-                        }}
-                        onValueChange={(field, value) => updateEditableValue(exercise.id, field, value)}
-                        onCompleteSet={() => handleCompleteSet(exercise, migratedPhase, group)}
-                        onUndoLastSet={() => handleUndoLastSet(exercise.id)}
-                        onSkip={() => handleSkipExercise(exercise.id)}
-                        onResume={() => handleResumeExercise(exercise.id)}
-                        onOpenHistory={() => {
-                          setHistoryDrawerExercise({ id: exercise.id, name: exercise.name });
-                          setHistoryDrawerOpen(true);
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              ))}
+                const exerciseCards = group.exercises.map((exercise) => {
+                  const exerciseActuals = getActualsForExercise(exercise.id);
+                  const restTimer = restTimers[exercise.id] || 0;
+                  const isSkipped = skippedExercises.has(exercise.id);
+
+                  return (
+                    <ExerciseCard
+                      key={exercise.id}
+                      exercise={exercise}
+                      actuals={exerciseActuals}
+                      restTimer={restTimer}
+                      isSkipped={isSkipped}
+                      editableValues={{
+                        reps: getEditableValue(exercise.id, 'reps', exercise.reps),
+                        load: getEditableValue(exercise.id, 'load', exercise.load || ''),
+                        rest: getEditableValue(exercise.id, 'rest', exercise.rest || ''),
+                      }}
+                      onValueChange={(field, value) => updateEditableValue(exercise.id, field, value)}
+                      onCompleteSet={() => handleCompleteSet(exercise, migratedPhase, group)}
+                      onUndoLastSet={() => handleUndoLastSet(exercise.id)}
+                      onSkip={() => handleSkipExercise(exercise.id)}
+                      onResume={() => handleResumeExercise(exercise.id)}
+                      onOpenHistory={() => {
+                        setHistoryDrawerExercise({ id: exercise.id, name: exercise.name });
+                        setHistoryDrawerOpen(true);
+                      }}
+                    />
+                  );
+                });
+
+                if (hasGroupWrapper) {
+                  return (
+                    <div
+                      key={group.id}
+                      className="border border-muted rounded-[16px] p-4 space-y-0 bg-muted/20"
+                    >
+                      {/* Group header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          {isSuperset ? "Superset" : "Circuit"} {group.name || ""}
+                        </span>
+                        {(group.sharedRestBetweenExercises || group.restBetweenRounds) && (
+                          <span className="text-[12px] text-muted-foreground">
+                            Recupero dopo completamento del {isSuperset ? "superset" : "circuito"}
+                          </span>
+                        )}
+                      </div>
+                      {/* Exercise cards inside the wrapper - remove mb-4 from last */}
+                      <div className="space-y-3">
+                        {exerciseCards}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return <div key={group.id}>{exerciseCards}</div>;
+              })}
             </div>
           );
         })}
