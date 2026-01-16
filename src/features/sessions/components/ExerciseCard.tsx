@@ -76,27 +76,25 @@ export function ExerciseCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={onOpenHistory}
-            className="text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Storico
-          </button>
+        <div className="flex items-center gap-3 shrink-0">
           <span
             className={cn(
-              "h-[22px] px-2 text-[12px] rounded-full inline-flex items-center",
+              "h-[22px] px-2 text-[11px] rounded-full inline-flex items-center font-medium",
               getBadgeStyles()
             )}
           >
-            {actuals.length}/{exercise.sets}
+            Serie {actuals.length}/{exercise.sets}
           </span>
         </div>
       </div>
 
+      {/* Media placeholder */}
+      <div className="mt-3 h-[120px] rounded-[12px] bg-muted/30 border border-dashed border-border flex flex-col items-center justify-center gap-1">
+        <span className="text-muted-foreground text-[13px]">Video esercizio (in arrivo)</span>
+      </div>
+
       {/* Target subheader */}
-      <p className="text-[13px] text-muted-foreground mt-[2px]">
+      <p className="text-[13px] text-muted-foreground mt-2">
         Target: {exercise.sets} × {exercise.reps}
         {exercise.load && ` @ ${exercise.load}`}
         {exercise.rest && ` · Recupero: ${exercise.rest}`}
@@ -107,6 +105,15 @@ export function ExerciseCard({
           Obiettivo: {exercise.goal}
         </p>
       )}
+
+      {/* Storico link */}
+      <button
+        type="button"
+        onClick={onOpenHistory}
+        className="mt-2 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        Storico
+      </button>
 
       {/* Valori prossima serie (only if not skipped) */}
       {!isSkipped && (
@@ -203,11 +210,11 @@ export function ExerciseCard({
               <div />
             )}
 
-            {/* Salta - text link only */}
+            {/* Salta - text button, no underline */}
             <button
               type="button"
               onClick={onSkip}
-              className="text-[14px] text-muted-foreground hover:underline transition-colors"
+              className="text-[14px] font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Salta
             </button>

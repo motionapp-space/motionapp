@@ -13,7 +13,7 @@ import { useCreateActual } from "@/features/sessions/hooks/useCreateActual";
 import { useDeleteActual } from "@/features/sessions/hooks/useDeleteActual";
 import { getClientPlan } from "@/features/client-plans/api/client-plans.api";
 import { ExerciseHistoryDrawer } from "@/features/sessions/components/ExerciseHistoryDrawer";
-import { ExerciseLegend } from "@/features/sessions/components/ExerciseLegend";
+import { LegendBottomSheet } from "@/features/sessions/components/LegendBottomSheet";
 import { ExerciseCard } from "@/features/sessions/components/ExerciseCard";
 import { getClientIdFromCoachClient } from "@/lib/coach-client";
 import type { Day, Phase, ExerciseGroup, Exercise } from "@/types/plan";
@@ -41,6 +41,7 @@ export default function LiveSession() {
   const [restTimers, setRestTimers] = useState<Record<string, number>>({});
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [historyDrawerExercise, setHistoryDrawerExercise] = useState<{ id: string; name: string } | null>(null);
+  const [legendOpen, setLegendOpen] = useState(false);
   const [resolvedClientId, setResolvedClientId] = useState<string | null>(null);
   
   // State for editable values per exercise
@@ -261,6 +262,8 @@ export default function LiveSession() {
     subtitle: day ? `${planName} · Giorno ${day.order}` : "",
     showBack: true,
     onBack: () => navigate(resolvedClientId ? `/clients/${resolvedClientId}?tab=sessions` : "/"),
+    showLegendIcon: true,
+    onLegendClick: () => setLegendOpen(true),
   });
 
   if (sessionLoading || !session || !day) {
@@ -278,17 +281,23 @@ export default function LiveSession() {
     <div className="min-h-screen bg-background">
       {/* Content */}
       <div className="max-w-[960px] mx-auto px-4 pt-5 pb-24">
-        {/* Collapsible legend */}
-        <ExerciseLegend />
 
         {/* Exercise sections */}
         {day.phases.map((phase) => {
           const migratedPhase = migratePhaseToGroups(phase);
           if (migratedPhase.groups.length === 0) return null;
 
+          // Translate phase types to Italian
+          const phaseLabel = (() => {
+            const type = phase.type.toLowerCase();
+            if (type === "warm-up" || type === "warmup") return "Riscaldamento";
+            if (type === "main workout" || type === "main") return "Corpo principale";
+            return phase.type; // Keep as-is for Stretching, etc.
+          })();
+
           return (
             <div key={phase.id}>
-              <h2 className="text-[16px] font-semibold mb-3 mt-6">{phase.type}</h2>
+              <h2 className="text-[16px] font-semibold mb-3 mt-6">{phaseLabel}</h2>
               
               {migratedPhase.groups.map((group) => {
                 const isSuperset = group.type === "superset";
@@ -329,12 +338,12 @@ export default function LiveSession() {
                   return (
                     <div
                       key={group.id}
-                      className="p-4 rounded-[16px] bg-muted/20 mb-6"
+                      className="relative p-4 rounded-[16px] bg-muted/20 mb-6 border-l-4 border-primary/60"
                     >
                       {/* Group header */}
                       <div className="mb-3">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                          {isSuperset ? "Superset" : "Circuit"} {group.name || ""}
+                        <span className="text-[12px] font-semibold uppercase tracking-[0.06em] text-primary">
+                          {isSuperset ? "Superset" : "Circuito"}{group.name ? ` ${group.name}` : ""}
                         </span>
                         {(group.sharedRestBetweenExercises || group.restBetweenRounds) && (
                           <p className="text-[12px] text-muted-foreground mt-1">
@@ -407,6 +416,9 @@ export default function LiveSession() {
           currentSessionId={sessionId || undefined}
         />
       )}
+
+      {/* Legend Bottom Sheet */}
+      <LegendBottomSheet open={legendOpen} onOpenChange={setLegendOpen} />
 
       {/* Cancel Session Confirmation Dialog */}
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
