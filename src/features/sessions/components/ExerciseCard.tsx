@@ -52,7 +52,7 @@ export function ExerciseCard({
   return (
     <div
       className={cn(
-        "p-4 rounded-[16px] border border-muted bg-background mb-4",
+        "p-4 rounded-[16px] border border-border bg-background",
         isSkipped && "opacity-60"
       )}
     >
@@ -86,7 +86,7 @@ export function ExerciseCard({
           </button>
           <span
             className={cn(
-              "text-[11px] px-2 py-[2px] rounded-full",
+              "h-[22px] px-2 text-[12px] rounded-full inline-flex items-center",
               getBadgeStyles()
             )}
           >
@@ -96,7 +96,7 @@ export function ExerciseCard({
       </div>
 
       {/* Target subheader */}
-      <p className="text-[13px] text-muted-foreground mt-1">
+      <p className="text-[13px] text-muted-foreground mt-[2px]">
         Target: {exercise.sets} × {exercise.reps}
         {exercise.load && ` @ ${exercise.load}`}
         {exercise.rest && ` · Recupero: ${exercise.rest}`}
@@ -111,7 +111,7 @@ export function ExerciseCard({
       {/* Valori prossima serie (only if not skipped) */}
       {!isSkipped && (
         <div className="mt-3 p-3 rounded-[12px] bg-muted/30">
-          <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground mb-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground mb-2">
             Prossima serie
           </p>
           <div className="flex flex-wrap items-center gap-3">
@@ -138,13 +138,13 @@ export function ExerciseCard({
         </div>
       )}
 
-      {/* Rest timer - shows completion state, then last rest */}
+      {/* Rest timer - shows active countdown or last rest */}
       {restTimer > 0 ? (
-        <p className="mt-3 text-[14px] font-semibold text-primary">
+        <p className="mt-2 text-[14px] font-semibold text-primary">
           Recupero: {formatRestTimer(restTimer)}
         </p>
       ) : actuals.length > 0 && exercise.rest && (
-        <p className="mt-3 text-[13px] text-muted-foreground">
+        <p className="mt-2 text-[13px] text-muted-foreground">
           Ultimo recupero: {exercise.rest}
         </p>
       )}
@@ -188,13 +188,13 @@ export function ExerciseCard({
             ✓ Completa serie
           </Button>
 
-          {/* Secondary row - baseline aligned */}
-          <div className="flex items-baseline justify-between">
+          {/* Secondary row */}
+          <div className="flex items-baseline justify-between mt-2">
             {/* Annulla ultima serie - only if there are completed sets */}
             {actuals.length > 0 ? (
               <Button
                 variant="outline"
-                className="h-10 text-[14px]"
+                className="h-10 rounded-[10px] text-[14px]"
                 onClick={onUndoLastSet}
               >
                 Annulla ultima serie
@@ -203,11 +203,11 @@ export function ExerciseCard({
               <div />
             )}
 
-            {/* Salta - text only, not a button */}
+            {/* Salta - text link only */}
             <button
               type="button"
               onClick={onSkip}
-              className="text-[14px] text-muted-foreground hover:text-foreground transition-colors"
+              className="text-[14px] text-muted-foreground hover:underline transition-colors"
             >
               Salta
             </button>
@@ -218,7 +218,7 @@ export function ExerciseCard({
         <div className="mt-4">
           <Button
             variant="outline"
-            className="w-full h-11"
+            className="w-full h-11 rounded-[10px]"
             onClick={onResume}
           >
             Riprendi esercizio

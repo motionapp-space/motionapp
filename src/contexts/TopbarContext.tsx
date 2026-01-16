@@ -3,6 +3,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 type TopbarContextType = {
   title: string;
   setTitle: (title: string) => void;
+  subtitle: string;
+  setSubtitle: (subtitle: string) => void;
   showBack: boolean;
   setShowBack: (show: boolean) => void;
   onBack: (() => void) | undefined;
@@ -13,6 +15,7 @@ const TopbarContext = createContext<TopbarContextType | undefined>(undefined);
 
 export function TopbarProvider({ children }: { children: ReactNode }) {
   const [title, setTitle] = useState("");
+  const [subtitle, setSubtitle] = useState("");
   const [showBack, setShowBack] = useState(false);
   const [onBack, setOnBack] = useState<(() => void) | undefined>(undefined);
 
@@ -21,6 +24,8 @@ export function TopbarProvider({ children }: { children: ReactNode }) {
       value={{
         title,
         setTitle,
+        subtitle,
+        setSubtitle,
         showBack,
         setShowBack,
         onBack,
@@ -34,6 +39,7 @@ export function TopbarProvider({ children }: { children: ReactNode }) {
 
 export function useTopbar(config: {
   title: string;
+  subtitle?: string;
   showBack?: boolean;
   onBack?: () => void;
 }) {
@@ -42,20 +48,22 @@ export function useTopbar(config: {
     throw new Error("useTopbar must be used within TopbarProvider");
   }
 
-  const { setTitle, setShowBack, setOnBack } = context;
+  const { setTitle, setSubtitle, setShowBack, setOnBack } = context;
 
   useEffect(() => {
     setTitle(config.title);
+    setSubtitle(config.subtitle ?? "");
     setShowBack(config.showBack ?? false);
     setOnBack(() => config.onBack);
 
     // Cleanup on unmount
     return () => {
       setTitle("");
+      setSubtitle("");
       setShowBack(false);
       setOnBack(undefined);
     };
-  }, [config.title, config.showBack, config.onBack, setTitle, setShowBack, setOnBack]);
+  }, [config.title, config.subtitle, config.showBack, config.onBack, setTitle, setSubtitle, setShowBack, setOnBack]);
 }
 
 export function useTopbarContext() {
