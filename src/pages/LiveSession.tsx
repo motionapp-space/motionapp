@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft } from "lucide-react";
+import { useTopbar } from "@/contexts/TopbarContext";
 import { toast } from "sonner";
 import { useSessionQuery } from "@/features/sessions/hooks/useSessionQuery";
 import { useUpdateSession } from "@/features/sessions/hooks/useUpdateSession";
@@ -255,6 +255,14 @@ export default function LiveSession() {
     }
   };
 
+  // Configure global topbar
+  useTopbar({
+    title: session?.client_name || "",
+    subtitle: day ? `${planName} · Giorno ${day.order}` : "",
+    showBack: true,
+    onBack: () => navigate(resolvedClientId ? `/clients/${resolvedClientId}?tab=sessions` : "/"),
+  });
+
   if (sessionLoading || !session || !day) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -267,31 +275,9 @@ export default function LiveSession() {
     actuals.filter((a) => a.exercise_id === exerciseId);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Internal header (NOT sticky) */}
-      <header className="px-4 md:px-6 py-3 border-b border-muted">
-        <div className="max-w-[1040px] mx-auto flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate(resolvedClientId ? `/clients/${resolvedClientId}?tab=sessions` : "/")}
-            className="h-10 w-10"
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
-          <div>
-            <h1 className="text-[18px] font-semibold leading-[26px]">
-              {session.client_name}
-            </h1>
-            <p className="text-[13px] text-muted-foreground">
-              {planName} · Giorno {day.order}
-            </p>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-background">
       {/* Content */}
-      <div className="max-w-[1040px] mx-auto px-4 md:px-6 py-4 space-y-4">
+      <div className="max-w-[960px] mx-auto px-4 pt-5 pb-24">
         {/* Collapsible legend */}
         <ExerciseLegend />
 
@@ -301,8 +287,8 @@ export default function LiveSession() {
           if (migratedPhase.groups.length === 0) return null;
 
           return (
-            <div key={phase.id} className="space-y-4">
-              <h2 className="mt-8 mb-3 text-[18px] font-semibold">{phase.type}</h2>
+            <div key={phase.id}>
+              <h2 className="text-[16px] font-semibold mb-3 mt-6">{phase.type}</h2>
               
               {migratedPhase.groups.map((group) => {
                 const isSuperset = group.type === "superset";
@@ -343,20 +329,20 @@ export default function LiveSession() {
                   return (
                     <div
                       key={group.id}
-                      className="border border-muted rounded-[16px] p-4 space-y-0 bg-muted/20"
+                      className="p-4 rounded-[16px] bg-muted/20 mb-6"
                     >
                       {/* Group header */}
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <div className="mb-3">
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                           {isSuperset ? "Superset" : "Circuit"} {group.name || ""}
                         </span>
                         {(group.sharedRestBetweenExercises || group.restBetweenRounds) && (
-                          <span className="text-[12px] text-muted-foreground">
+                          <p className="text-[12px] text-muted-foreground mt-1">
                             Recupero dopo completamento del {isSuperset ? "superset" : "circuito"}
-                          </span>
+                          </p>
                         )}
                       </div>
-                      {/* Exercise cards inside the wrapper - remove mb-4 from last */}
+                      {/* Exercise cards */}
                       <div className="space-y-3">
                         {exerciseCards}
                       </div>
@@ -364,7 +350,7 @@ export default function LiveSession() {
                   );
                 }
 
-                return <div key={group.id}>{exerciseCards}</div>;
+                return <div key={group.id} className="space-y-4 mb-4">{exerciseCards}</div>;
               })}
             </div>
           );
