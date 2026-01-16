@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useTopbar } from "@/contexts/TopbarContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Play, Pause, Save, MoreVertical, XCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useSessionQuery } from "@/features/sessions/hooks/useSessionQuery";
 import { useUpdateSession } from "@/features/sessions/hooks/useUpdateSession";
@@ -15,15 +13,11 @@ import { useCreateActual } from "@/features/sessions/hooks/useCreateActual";
 import { useDeleteActual } from "@/features/sessions/hooks/useDeleteActual";
 import { getClientPlan } from "@/features/client-plans/api/client-plans.api";
 import { ExerciseHistoryDrawer } from "@/features/sessions/components/ExerciseHistoryDrawer";
+import { ExerciseLegend } from "@/features/sessions/components/ExerciseLegend";
+import { ExerciseCard } from "@/features/sessions/components/ExerciseCard";
 import { getClientIdFromCoachClient } from "@/lib/coach-client";
 import type { Day, Phase, ExerciseGroup, Exercise } from "@/types/plan";
-import type { ExerciseActual } from "@/features/sessions/types";
 import { migratePhaseToGroups } from "@/types/plan";
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/useSessionStore";
 
 export default function LiveSession() {
@@ -36,12 +30,7 @@ export default function LiveSession() {
   const updateSession = useUpdateSession();
   const createActual = useCreateActual(sessionId || "");
   const deleteActual = useDeleteActual(sessionId || "");
-  const { 
-    isPaused, 
-    pauseSession, 
-    resumeSession, 
-    getElapsedSeconds 
-  } = useSessionStore();
+  const { getElapsedSeconds } = useSessionStore();
 
   const [day, setDay] = useState<Day | null>(null);
   const [planName, setPlanName] = useState("");
@@ -54,15 +43,24 @@ export default function LiveSession() {
   const [historyDrawerExercise, setHistoryDrawerExercise] = useState<{ id: string; name: string } | null>(null);
   const [resolvedClientId, setResolvedClientId] = useState<string | null>(null);
   
-  // State per tracciare i valori modificabili per ogni esercizio
+  // State for editable values per exercise
   const [editableValues, setEditableValues] = useState<Record<string, {
     reps: string;
     load: string;
     rest: string;
   }>>({});
   
-  // State per tracciare esercizi saltati
+  // State for skipped exercises
   const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
+
+  // Listen for finish-session event from StickySessionBar
+  useEffect(() => {
+    const handleFinishSession = () => {
+      handleFinishSessionClick();
+    };
+    window.addEventListener('finish-session', handleFinishSession);
+    return () => window.removeEventListener('finish-session', handleFinishSession);
+  }, [session]);
 
   // Load day data from plan
   useEffect(() => {
@@ -72,7 +70,6 @@ export default function LiveSession() {
           setPlanName(plan.name);
           const foundDay = plan.data?.days?.find((d: Day) => d.id === session.day_id);
           if (foundDay) {
-            // Migrate phases to use groups
             const migratedDay = {
               ...foundDay,
               phases: foundDay.phases.map(migratePhaseToGroups),
@@ -96,21 +93,14 @@ export default function LiveSession() {
     }
   }, [session?.coach_client_id]);
 
-  // Session timer
+  // Session timer - sync with store
   useEffect(() => {
     if (!session?.started_at) return;
-
-    const updateElapsed = () => {
-      setElapsed(getElapsedSeconds());
-    };
-
+    const updateElapsed = () => setElapsed(getElapsedSeconds());
     updateElapsed();
-    
-    if (isPaused) return;
-    
     const interval = setInterval(updateElapsed, 1000);
     return () => clearInterval(interval);
-  }, [session?.started_at, isPaused, getElapsedSeconds]);
+  }, [session?.started_at, getElapsedSeconds]);
 
   // Rest timers
   useEffect(() => {
@@ -227,26 +217,10 @@ export default function LiveSession() {
     }
   };
 
-  const togglePause = () => {
-    if (isPaused) {
-      resumeSession();
-    } else {
-      pauseSession();
-    }
-  };
-
-  const handleFinishSession = () => {
+  const handleFinishSessionClick = () => {
     setSessionNotes(session?.notes || "");
     setReviewOpen(true);
   };
-
-  // Set topbar - must be after function declarations
-  const clientId = searchParams.get("clientId");
-  useTopbar({
-    title: session?.client_name || "Sessione Live",
-    showBack: true,
-    onBack: () => navigate(clientId ? `/clients/${clientId}?tab=sessions` : "/"),
-  });
 
   const handleSaveSession = async () => {
     if (!session) return;
@@ -260,10 +234,6 @@ export default function LiveSession() {
           notes: sessionNotes,
         },
       });
-
-      // NOTE: We no longer update events here
-      // Sessions = performance tracking (training_sessions table)
-      // Events = calendar/payment tracking (handled by auto-complete-events edge function)
 
       toast.success("Sessione salvata");
       if (resolvedClientId) navigate(`/clients/${resolvedClientId}?tab=sessions`);
@@ -297,285 +267,78 @@ export default function LiveSession() {
     actuals.filter((a) => a.exercise_id === exerciseId);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Session toolbar */}
-      <div className="sticky top-16 z-40 bg-background border-b">
-        <div className="container mx-auto px-6 py-3 max-w-4xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={togglePause}
-                className="h-9 w-9"
-              >
-                {isPaused ? (
-                  <Play className="h-4 w-4" />
-                ) : (
-                  <Pause className="h-4 w-4" />
-                )}
-              </Button>
-              <span className="font-mono text-lg font-semibold tabular-nums">
-                {formatTime(elapsed)}
-              </span>
-            </div>
-            <Button onClick={handleFinishSession} size="sm">
-              Fine sessione
-            </Button>
+    <div className="min-h-screen bg-background pb-24">
+      {/* Internal header (NOT sticky) */}
+      <header className="px-4 md:px-6 py-4 border-b border-muted">
+        <div className="max-w-[960px] mx-auto flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate(resolvedClientId ? `/clients/${resolvedClientId}?tab=sessions` : "/")}
+            className="h-10 w-10"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
+          <div>
+            <h1 className="text-[18px] font-semibold leading-[26px]">
+              {session.client_name}
+            </h1>
+            <p className="text-[13px] text-muted-foreground">
+              {planName} · Giorno {day.order}
+            </p>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto px-4 md:px-6 py-6 max-w-6xl space-y-6">
-        {/* Subtitle info */}
-        <div className="text-sm text-muted-foreground">
-          {planName} · Giorno {day.order} — {day.title}
-        </div>
-        {/* Legenda */}
-        <Card className="bg-muted/50">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-sm font-medium mb-2">Legenda</p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-amber-100 dark:bg-amber-950"></div>
-                <span>Meno serie del previsto</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-green-100 dark:bg-green-950"></div>
-                <span>Serie come da piano</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-orange-100 dark:bg-orange-950"></div>
-                <span>Serie extra / valori diversi</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-muted border border-border"></div>
-                <span>Esercizio saltato</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Content */}
+      <div className="max-w-[960px] mx-auto px-4 md:px-6 py-6 space-y-6">
+        {/* Collapsible legend */}
+        <ExerciseLegend />
 
+        {/* Exercise sections */}
         {day.phases.map((phase) => {
           const migratedPhase = migratePhaseToGroups(phase);
           if (migratedPhase.groups.length === 0) return null;
 
           return (
             <div key={phase.id} className="space-y-4">
-              <h2 className="text-lg font-semibold">{phase.type}</h2>
+              <h2 className="mt-8 mb-3 text-[18px] font-semibold">{phase.type}</h2>
+              
               {migratedPhase.groups.map((group) => (
-                <div key={group.id} className="border rounded-lg p-4 space-y-3">
+                <div key={group.id}>
                   {group.type !== "single" && group.name && (
-                    <div className="font-medium text-sm text-muted-foreground">
+                    <div className="font-medium text-sm text-muted-foreground mb-2">
                       {group.name}
                     </div>
                   )}
+                  
                   {group.exercises.map((exercise) => {
                     const exerciseActuals = getActualsForExercise(exercise.id);
                     const restTimer = restTimers[exercise.id] || 0;
                     const isSkipped = skippedExercises.has(exercise.id);
 
                     return (
-                      <div key={exercise.id} className={cn(
-                        "border-l-4 pl-3 space-y-3",
-                        isSkipped 
-                          ? "border-muted opacity-60" 
-                          : "border-primary/20"
-                      )}>
-                        {/* Header esercizio */}
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className={cn(
-                                "font-medium",
-                                isSkipped && "line-through text-muted-foreground"
-                              )}>
-                                {exercise.name || "Esercizio senza nome"}
-                              </p>
-                              {isSkipped && (
-                                <Badge variant="outline" className="text-xs">Saltato</Badge>
-                              )}
-                            </div>
-                            
-                            <p className="text-sm text-muted-foreground">
-                              Target: {exercise.sets} x {exercise.reps}
-                              {exercise.load && ` @ ${exercise.load}`}
-                              {exercise.rest && ` · Recupero: ${exercise.rest}`}
-                            </p>
-                            
-                            {exercise.goal && (
-                              <p className="text-sm text-muted-foreground italic mt-1">
-                                Obiettivo: {exercise.goal}
-                              </p>
-                            )}
-                          </div>
-                          
-                          {/* Azioni header */}
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setHistoryDrawerExercise({ id: exercise.id, name: exercise.name });
-                                setHistoryDrawerOpen(true);
-                              }}
-                            >
-                              Storico
-                            </Button>
-                            
-                            {/* Counter con styling condizionale */}
-                            <div className={cn(
-                              "text-sm font-medium px-2 py-1 rounded-md",
-                              exerciseActuals.length < exercise.sets && "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
-                              exerciseActuals.length === exercise.sets && "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
-                              exerciseActuals.length > exercise.sets && "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400"
-                            )}>
-                              {exerciseActuals.length}/{exercise.sets}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Input valori modificabili - Solo se NON saltato */}
-                        {!isSkipped && (
-                          <Card className="bg-muted/30">
-                            <CardContent className="pt-3 pb-3">
-                              <div className="space-y-2">
-                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                  Valori prossima serie
-                                </p>
-                                <div className="flex flex-wrap items-center gap-3">
-                                  {/* Ripetizioni */}
-                                  <div className="flex items-center gap-2">
-                                    <Label htmlFor={`reps-${exercise.id}`} className="text-sm whitespace-nowrap">
-                                      Reps
-                                    </Label>
-                                    <Input
-                                      id={`reps-${exercise.id}`}
-                                      type="text"
-                                      value={getEditableValue(exercise.id, 'reps', exercise.reps)}
-                                      onChange={(e) => updateEditableValue(exercise.id, 'reps', e.target.value)}
-                                      className="w-20 h-9 text-center font-medium"
-                                      placeholder={exercise.reps}
-                                    />
-                                  </div>
-                                  
-                                  {/* Carico */}
-                                  <div className="flex items-center gap-2">
-                                    <Label htmlFor={`load-${exercise.id}`} className="text-sm whitespace-nowrap">
-                                      Carico
-                                    </Label>
-                                    <Input
-                                      id={`load-${exercise.id}`}
-                                      type="text"
-                                      value={getEditableValue(exercise.id, 'load', exercise.load || '')}
-                                      onChange={(e) => updateEditableValue(exercise.id, 'load', e.target.value)}
-                                      className="w-24 h-9 font-medium"
-                                      placeholder={exercise.load || 'N/A'}
-                                    />
-                                  </div>
-                                  
-                                  {/* Recupero */}
-                                  <div className="flex items-center gap-2">
-                                    <Label htmlFor={`rest-${exercise.id}`} className="text-sm whitespace-nowrap">
-                                      Rest
-                                    </Label>
-                                    <Input
-                                      id={`rest-${exercise.id}`}
-                                      type="text"
-                                      value={getEditableValue(exercise.id, 'rest', exercise.rest || '')}
-                                      onChange={(e) => updateEditableValue(exercise.id, 'rest', e.target.value)}
-                                      className="w-20 h-9 text-center font-medium"
-                                      placeholder={exercise.rest || 'N/A'}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )}
-
-                        {/* Timer recupero */}
-                        {restTimer > 0 && (
-                          <div className="text-sm font-medium text-primary animate-pulse">
-                            Recupero: {formatTime(restTimer)}
-                          </div>
-                        )}
-
-                        {/* Serie completate con dettagli */}
-                        {exerciseActuals.length > 0 && (
-                          <div className="space-y-1">
-                            <p className="text-xs font-medium text-muted-foreground">Serie completate</p>
-                            <div className="flex flex-wrap gap-2">
-                              {exerciseActuals.map((actual, idx) => {
-                                // Calcola se diverso dal pianificato
-                                const repsDiff = actual.reps !== exercise.reps;
-                                const loadDiff = actual.load && exercise.load && actual.load !== exercise.load;
-                                
-                                return (
-                                  <Badge 
-                                    key={actual.id} 
-                                    variant="outline" 
-                                    className={cn(
-                                      "gap-1",
-                                      (repsDiff || loadDiff) && "border-orange-500 text-orange-700 dark:text-orange-400"
-                                    )}
-                                  >
-                                    #{idx + 1}: {actual.reps}r
-                                    {actual.load && ` × ${actual.load}`}
-                                  </Badge>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Bottoni azione */}
-                        <div className="flex gap-2">
-                          {!isSkipped ? (
-                            <>
-                              {/* Completa Serie - sempre abilitato */}
-                              <Button
-                                size="sm"
-                                onClick={() => handleCompleteSet(exercise, phase, group)}
-                                className="flex-1"
-                              >
-                                ✓ Completa serie
-                              </Button>
-                              
-                              {/* Annulla ultima serie */}
-                              {exerciseActuals.length > 0 && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleUndoLastSet(exercise.id)}
-                                >
-                                  Annulla
-                                </Button>
-                              )}
-                              
-                              {/* Salta esercizio */}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleSkipExercise(exercise.id)}
-                                className="text-muted-foreground"
-                              >
-                                Salta
-                              </Button>
-                            </>
-                          ) : (
-                            // Esercizio saltato - permetti di riprendere
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleResumeExercise(exercise.id)}
-                              className="flex-1"
-                            >
-                              Riprendi esercizio
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+                      <ExerciseCard
+                        key={exercise.id}
+                        exercise={exercise}
+                        actuals={exerciseActuals}
+                        restTimer={restTimer}
+                        isSkipped={isSkipped}
+                        editableValues={{
+                          reps: getEditableValue(exercise.id, 'reps', exercise.reps),
+                          load: getEditableValue(exercise.id, 'load', exercise.load || ''),
+                          rest: getEditableValue(exercise.id, 'rest', exercise.rest || ''),
+                        }}
+                        onValueChange={(field, value) => updateEditableValue(exercise.id, field, value)}
+                        onCompleteSet={() => handleCompleteSet(exercise, migratedPhase, group)}
+                        onUndoLastSet={() => handleUndoLastSet(exercise.id)}
+                        onSkip={() => handleSkipExercise(exercise.id)}
+                        onResume={() => handleResumeExercise(exercise.id)}
+                        onOpenHistory={() => {
+                          setHistoryDrawerExercise({ id: exercise.id, name: exercise.name });
+                          setHistoryDrawerOpen(true);
+                        }}
+                      />
                     );
                   })}
                 </div>
@@ -585,6 +348,7 @@ export default function LiveSession() {
         })}
       </div>
 
+      {/* Review dialog */}
       <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
         <DialogContent>
           <DialogHeader>
@@ -631,6 +395,7 @@ export default function LiveSession() {
           clientId={resolvedClientId || ''}
           exerciseId={historyDrawerExercise.id}
           exerciseName={historyDrawerExercise.name}
+          currentSessionId={sessionId || undefined}
         />
       )}
 

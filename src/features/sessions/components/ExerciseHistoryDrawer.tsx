@@ -12,6 +12,7 @@ interface ExerciseHistoryDrawerProps {
   clientId: string;
   exerciseId: string;
   exerciseName: string;
+  currentSessionId?: string;
 }
 
 export function ExerciseHistoryDrawer({
@@ -20,19 +21,31 @@ export function ExerciseHistoryDrawer({
   clientId,
   exerciseId,
   exerciseName,
+  currentSessionId,
 }: ExerciseHistoryDrawerProps) {
   const { data: history = [], isLoading } = useExerciseHistory(clientId, exerciseId, 10);
 
+  // Filter out current session
+  const filteredHistory = currentSessionId 
+    ? history.filter(actual => actual.session_id !== currentSessionId)
+    : history;
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+      <SheetContent 
+        side="bottom" 
+        className="max-h-[70vh] rounded-t-2xl overflow-y-auto"
+      >
+        {/* Drag handle */}
+        <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mt-2 mb-3" />
+
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
+          <SheetTitle className="flex items-center gap-2 text-[16px] font-semibold">
             <History className="h-5 w-5" />
             Storico performance
           </SheetTitle>
           <SheetDescription>
-            Ultime 10 performance per <strong>{exerciseName}</strong>
+            Ultime performance per <strong>{exerciseName}</strong>
           </SheetDescription>
         </SheetHeader>
 
@@ -41,17 +54,17 @@ export function ExerciseHistoryDrawer({
             <div className="flex items-center justify-center py-8">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
             </div>
-          ) : history.length === 0 ? (
+          ) : filteredHistory.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">Nessuna performance registrata</p>
             </div>
           ) : (
             <>
               <div className="space-y-3">
-                {history.map((actual, index) => (
+                {filteredHistory.map((actual, index) => (
                   <div
                     key={actual.id}
-                    className="border rounded-lg p-4 space-y-2 hover:bg-accent/50 transition-colors"
+                    className="border rounded-lg p-4 space-y-2 hover:bg-accent/50 transition-colors min-h-[44px]"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1">
@@ -106,7 +119,7 @@ export function ExerciseHistoryDrawer({
                 ))}
               </div>
 
-              {history.length >= 10 && (
+              {filteredHistory.length >= 10 && (
                 <p className="text-xs text-center text-muted-foreground">
                   Mostrando le ultime 10 performance
                 </p>
@@ -116,7 +129,7 @@ export function ExerciseHistoryDrawer({
         </div>
 
         <div className="mt-6 pt-4 border-t">
-          <Button variant="outline" className="w-full" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" className="w-full h-11" onClick={() => onOpenChange(false)}>
             Chiudi
           </Button>
         </div>
