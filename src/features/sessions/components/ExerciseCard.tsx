@@ -88,11 +88,6 @@ export function ExerciseCard({
         </div>
       </div>
 
-      {/* Media placeholder */}
-      <div className="mt-3 h-[120px] rounded-[12px] bg-muted/30 border border-dashed border-border flex flex-col items-center justify-center gap-1">
-        <span className="text-muted-foreground text-[13px]">Video esercizio (in arrivo)</span>
-      </div>
-
       {/* Target subheader */}
       <p className="text-[13px] text-muted-foreground mt-2">
         Target: {exercise.sets} × {exercise.reps}
