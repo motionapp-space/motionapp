@@ -28,19 +28,19 @@ export function Topbar({ showMenuButton = false, onMenuClick }: TopbarProps) {
               <Menu className="h-5 w-5" />
             </Button>
           )}
-          {showBack && onBack && (
+        {showBack && onBack && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onBack}
-              className="shrink-0"
+              className="shrink-0 h-8 w-8 border border-border hover:bg-muted"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
           {title && (
             <div className="flex flex-col min-w-0">
-              <h1 className="text-[16px] font-semibold leading-[22px] truncate">
+              <h1 className="text-[20px] font-semibold leading-[28px] tracking-[-0.01em] text-foreground truncate">
                 {title}
               </h1>
               {subtitle && (
