@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Clock, Calendar, Activity, UserCheck, UserX, CalendarPlus, Play, X } from "lucide-react";
+import { Clock, Calendar, UserCheck, UserX, CalendarPlus, Play, X } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { format, parseISO, differenceInSeconds } from "date-fns";
 import { it } from "date-fns/locale";
@@ -143,9 +143,9 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
 
         {/* Tab: Sessioni Con PT */}
         <TabsContent value="with_coach" className="space-y-4">
-          <h3 className="text-[15px] font-semibold text-foreground">
-            Sessioni svolte insieme al personal trainer
-          </h3>
+              <h3 className="text-base font-semibold leading-6 text-foreground mb-4">
+                Sessioni svolte insieme al personal trainer
+              </h3>
 
           {withCoachSessions.length === 0 ? (
             <Card>
@@ -177,9 +177,9 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
 
         {/* Tab: Sessioni Autonome */}
         <TabsContent value="autonomous" className="space-y-4">
-          <h3 className="text-[15px] font-semibold text-foreground">
-            Sessioni svolte dal cliente in autonomia
-          </h3>
+              <h3 className="text-base font-semibold leading-6 text-foreground mb-4">
+                Sessioni svolte dal cliente in autonomia
+              </h3>
 
           {autonomousSessions.length === 0 ? (
             <Card>
@@ -247,16 +247,17 @@ function SessionCard({
     <Card
       className={cn(
         "overflow-hidden transition-colors",
-        isDiscarded ? "opacity-60" : "",
-        !isInProgress ? "cursor-pointer" : "",
-        isReadOnly ? "hover:bg-muted/30 opacity-90" : "hover:bg-accent/50"
+        isInProgress && "border-l-4 border-l-primary/70 bg-primary/5",
+        isDiscarded && "opacity-60",
+        !isInProgress && "cursor-pointer hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-primary/20",
+        isReadOnly && "opacity-90"
       )}
       onClick={!isInProgress ? onViewDetails : undefined}
     >
       <CardContent className="p-4">
         <div className="space-y-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 space-y-2">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1 space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
                 {getStatusBadge(session.status)}
                 {isReadOnly && (
@@ -309,41 +310,35 @@ function SessionCard({
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* CTA for in_progress sessions */}
-              {isInProgress && !isReadOnly && (
-                <div className="flex items-center gap-2">
-                  <Button 
-                    size="sm" 
-                    className="h-9 px-3.5 text-sm font-medium rounded-[10px] gap-1.5"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onResume();
-                    }}
-                  >
-                    <Play className="h-4 w-4" />
-                    Riprendi
-                  </Button>
-                  <Button 
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDiscard();
-                    }}
-                    aria-label="Chiudi sessione"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-              
-              {/* Activity icon for non-in-progress sessions */}
-              {!isInProgress && (
-                <Activity className="h-5 w-5 text-muted-foreground" />
-              )}
-            </div>
+            {/* CTA per sessioni in_progress - centrate verticalmente */}
+            {isInProgress && !isReadOnly && (
+              <div className="flex items-center gap-2 self-center shrink-0">
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  className="h-9 px-3.5 text-sm font-medium rounded-[10px] gap-1.5"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onResume();
+                  }}
+                >
+                  <Play className="h-4 w-4" />
+                  Riprendi
+                </Button>
+                <Button 
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDiscard();
+                  }}
+                  aria-label="Chiudi sessione"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
