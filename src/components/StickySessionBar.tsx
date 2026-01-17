@@ -218,34 +218,46 @@ export function StickySessionBar() {
 
             {/* Open session - only when NOT on live page */}
             {!isOnLiveSessionPage && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/session/live?sessionId=${activeSession.id}`);
-                }}
-                title="Apri sessione"
-              >
-                <ExternalLink className="h-[18px] w-[18px]" strokeWidth={2} />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/session/live?sessionId=${activeSession.id}`);
+                    }}
+                  >
+                    <ExternalLink className="h-[18px] w-[18px]" strokeWidth={2} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Apri sessione</p>
+                </TooltipContent>
+              </Tooltip>
             )}
 
             {/* Complete - only when NOT on live page (live page has its own finish button) */}
             {!isOnLiveSessionPage && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowCompleteDialog(true);
-                }}
-                title="Completa"
-              >
-                <Check className="h-[18px] w-[18px]" strokeWidth={2} />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCompleteDialog(true);
+                    }}
+                  >
+                    <Check className="h-[18px] w-[18px]" strokeWidth={2} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Completa</p>
+                </TooltipContent>
+              </Tooltip>
             )}
 
             {/* Finish Session - primary button on live page */}
@@ -264,18 +276,24 @@ export function StickySessionBar() {
 
             {/* Cancel - only when NOT on live page */}
             {!isOnLiveSessionPage && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCancel();
-                }}
-                title="Annulla"
-              >
-                <Trash2 className="h-[18px] w-[18px]" strokeWidth={2} />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCancel();
+                    }}
+                  >
+                    <Trash2 className="h-[18px] w-[18px]" strokeWidth={2} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Annulla</p>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         </div>
