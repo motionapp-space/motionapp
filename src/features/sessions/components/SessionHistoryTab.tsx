@@ -49,6 +49,12 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
     const seconds = differenceInSeconds(parseISO(endAt), parseISO(startAt));
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
+    
+    // If duration is abnormally long (>8h), show warning
+    if (hours >= 8) {
+      return "Durata anomala";
+    }
+    
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   };
 
@@ -56,9 +62,23 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
     // Only show badges for non-completed sessions
     switch (status) {
       case "in_progress":
-        return <Badge variant="secondary">In corso</Badge>;
+        return (
+          <Badge 
+            variant="secondary" 
+            className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-foreground"
+          >
+            In corso
+          </Badge>
+        );
       case "discarded":
-        return <Badge variant="outline" className="text-muted-foreground">Scartata</Badge>;
+        return (
+          <Badge 
+            variant="outline" 
+            className="text-xs font-medium px-2 py-0.5 rounded-full text-muted-foreground"
+          >
+            Scartata
+          </Badge>
+        );
       default:
         return null; // completed sessions show no badge
     }
@@ -123,9 +143,9 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
 
         {/* Tab: Sessioni Con PT */}
         <TabsContent value="with_coach" className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+          <h3 className="text-[15px] font-semibold text-foreground">
             Sessioni svolte insieme al personal trainer
-          </p>
+          </h3>
 
           {withCoachSessions.length === 0 ? (
             <Card>
@@ -157,9 +177,9 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
 
         {/* Tab: Sessioni Autonome */}
         <TabsContent value="autonomous" className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+          <h3 className="text-[15px] font-semibold text-foreground">
             Sessioni svolte dal cliente in autonomia
-          </p>
+          </h3>
 
           {autonomousSessions.length === 0 ? (
             <Card>
@@ -295,21 +315,24 @@ function SessionCard({
                 <div className="flex items-center gap-2">
                   <Button 
                     size="sm" 
+                    className="h-9 px-3.5 text-sm font-medium rounded-[10px] gap-1.5"
                     onClick={(e) => {
                       e.stopPropagation();
                       onResume();
                     }}
                   >
-                    <Play className="h-4 w-4 mr-1" />
+                    <Play className="h-4 w-4" />
                     Riprendi
                   </Button>
                   <Button 
-                    size="sm" 
+                    size="icon"
                     variant="ghost"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDiscard();
                     }}
+                    aria-label="Chiudi sessione"
                   >
                     <X className="h-4 w-4" />
                   </Button>
