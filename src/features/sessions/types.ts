@@ -1,4 +1,4 @@
-export type SessionStatus = "in_progress" | "completed" | "cancelled";
+export type SessionStatus = "in_progress" | "completed" | "discarded";
 export type SessionSource = "with_coach" | "autonomous";
 
 export interface ExerciseRef {

@@ -1,17 +1,22 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Clock, Calendar, Activity, UserCheck, UserX, CalendarPlus } from "lucide-react";
+import { Clock, Calendar, Activity, UserCheck, UserX, CalendarPlus, Play, X } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { format, parseISO, differenceInSeconds } from "date-fns";
 import { it } from "date-fns/locale";
 import { listSessions } from "../api/sessions.api";
+import { useUpdateSession } from "../hooks/useUpdateSession";
+import { useSessionStore } from "@/stores/useSessionStore";
 import type { TrainingSessionWithClient } from "../types";
 import { SessionDetailDrawer } from "./SessionDetailDrawer";
 import { cn } from "@/lib/utils";
 import { getCoachClientId } from "@/lib/coach-client";
+import { toast } from "sonner";
 
 interface SessionHistoryTabProps {
   clientId: string;
@@ -19,6 +24,12 @@ interface SessionHistoryTabProps {
 
 export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const setActiveSession = useSessionStore((s) => s.setActiveSession);
+  const clearActiveSession = useSessionStore((s) => s.clearActiveSession);
+  const activeSession = useSessionStore((s) => s.activeSession);
+  const { mutateAsync: updateSession } = useUpdateSession();
 
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["sessions", clientId],
@@ -42,16 +53,46 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: any; label: string }> = {
-      completed: { variant: "default", label: "Completata" },
-      in_progress: { variant: "secondary", label: "In corso" },
-      interrupted: { variant: "secondary", label: "Interrotta" },
-      cancelled: { variant: "destructive", label: "Annullata" },
-      planned: { variant: "outline", label: "Pianificata" },
-      no_show: { variant: "destructive", label: "No show" },
-    };
-    const config = variants[status] || variants.planned;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    // Only show badges for non-completed sessions
+    switch (status) {
+      case "in_progress":
+        return <Badge variant="secondary">In corso</Badge>;
+      case "discarded":
+        return <Badge variant="outline" className="text-muted-foreground">Scartata</Badge>;
+      default:
+        return null; // completed sessions show no badge
+    }
+  };
+
+  const handleResume = async (session: TrainingSessionWithClient) => {
+    // Inject into Zustand store
+    setActiveSession(session);
+    // Navigate to live session
+    navigate(`/session/live?sessionId=${session.id}`);
+  };
+
+  const handleDiscard = async (session: TrainingSessionWithClient) => {
+    try {
+      await updateSession({
+        id: session.id,
+        updates: {
+          status: "discarded",
+          ended_at: new Date().toISOString(),
+        },
+      });
+      
+      // If this was the active session, clear it
+      if (activeSession?.id === session.id) {
+        clearActiveSession();
+      }
+      
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      
+      toast.success("Sessione chiusa");
+    } catch (error) {
+      toast.error("Errore nel chiudere la sessione");
+    }
   };
 
   if (isLoading) {
@@ -103,6 +144,8 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
                   key={session.id}
                   session={session}
                   onViewDetails={() => setDetailSessionId(session.id)}
+                  onResume={() => handleResume(session)}
+                  onDiscard={() => handleDiscard(session)}
                   isReadOnly={false}
                   formatDuration={formatDuration}
                   getStatusBadge={getStatusBadge}
@@ -135,6 +178,8 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
                   key={session.id}
                   session={session}
                   onViewDetails={() => setDetailSessionId(session.id)}
+                  onResume={() => handleResume(session)}
+                  onDiscard={() => handleDiscard(session)}
                   isReadOnly={true}
                   formatDuration={formatDuration}
                   getStatusBadge={getStatusBadge}
@@ -156,27 +201,37 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
 
 // Helper component to render session card
 interface SessionCardProps {
-  session: TrainingSessionWithClient;
+  session: TrainingSessionWithClient & { plan_day_snapshot?: { plan_name?: string } | null };
   onViewDetails: () => void;
+  onResume: () => void;
+  onDiscard: () => void;
   isReadOnly: boolean;
   formatDuration: (startAt?: string, endAt?: string) => string;
-  getStatusBadge: (status: string) => JSX.Element;
+  getStatusBadge: (status: string) => JSX.Element | null;
 }
 
 function SessionCard({
   session,
   onViewDetails,
+  onResume,
+  onDiscard,
   isReadOnly,
   formatDuration,
   getStatusBadge,
 }: SessionCardProps) {
+  const isInProgress = session.status === "in_progress";
+  const isDiscarded = session.status === "discarded";
+  const planName = (session as any).plan_day_snapshot?.plan_name;
+
   return (
     <Card
       className={cn(
-        "overflow-hidden cursor-pointer transition-colors",
+        "overflow-hidden transition-colors",
+        isDiscarded ? "opacity-60" : "",
+        !isInProgress ? "cursor-pointer" : "",
         isReadOnly ? "hover:bg-muted/30 opacity-90" : "hover:bg-accent/50"
       )}
-      onClick={onViewDetails}
+      onClick={!isInProgress ? onViewDetails : undefined}
     >
       <CardContent className="p-4">
         <div className="space-y-3">
@@ -196,6 +251,13 @@ function SessionCard({
                   </div>
                 )}
               </div>
+
+              {/* Plan name (replaces "Piano collegato" badge) */}
+              {planName && (
+                <p className="text-sm text-muted-foreground">
+                  Piano: {planName}
+                </p>
+              )}
 
               <div className="flex items-center gap-3 text-sm">
                 {session.started_at && (
@@ -228,12 +290,36 @@ function SessionCard({
             </div>
 
             <div className="flex items-center gap-2">
-              {session.plan_id && (
-                <Badge variant="secondary" className="text-xs">
-                  Piano collegato
-                </Badge>
+              {/* CTA for in_progress sessions */}
+              {isInProgress && !isReadOnly && (
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onResume();
+                    }}
+                  >
+                    <Play className="h-4 w-4 mr-1" />
+                    Riprendi
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDiscard();
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               )}
-              <Activity className="h-5 w-5 text-muted-foreground" />
+              
+              {/* Activity icon for non-in-progress sessions */}
+              {!isInProgress && (
+                <Activity className="h-5 w-5 text-muted-foreground" />
+              )}
             </div>
           </div>
         </div>

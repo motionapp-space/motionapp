@@ -51,14 +51,10 @@ export function SessionDetailDrawer({ open, onOpenChange, sessionId }: SessionDe
         return <Badge variant="default">Completata</Badge>;
       case "in_progress":
         return <Badge variant="secondary">In corso</Badge>;
-      case "interrupted":
-        return <Badge variant="secondary">Interrotta</Badge>;
-      case "cancelled":
-        return <Badge variant="destructive">Annullata</Badge>;
-      case "no_show":
-        return <Badge variant="outline">No show</Badge>;
+      case "discarded":
+        return <Badge variant="outline" className="text-muted-foreground">Scartata</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return null;
     }
   };
 

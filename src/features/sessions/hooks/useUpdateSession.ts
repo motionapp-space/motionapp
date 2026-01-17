@@ -37,7 +37,7 @@ export function useUpdateSession() {
       queryClient.invalidateQueries({ queryKey: ["session", session.id] });
       
       // Update global store immediately when session ends
-      if (session.status === "completed" || session.status === "cancelled") {
+      if (session.status === "completed" || session.status === "discarded") {
         useSessionStore.getState().clearActiveSession();
       }
     },

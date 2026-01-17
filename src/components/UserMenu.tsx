@@ -75,11 +75,11 @@ export function UserMenu() {
       await updateSession({
         id: activeSession.id,
         updates: {
-          status: "cancelled",
+          status: "discarded",
           ended_at: new Date().toISOString(),
         },
       });
-      toast.success("Sessione annullata");
+      toast.success("Sessione chiusa");
       setShowLogoutDialog(false);
       performLogout();
     } catch (error) {
