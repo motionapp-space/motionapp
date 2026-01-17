@@ -19,7 +19,7 @@ export function EditableChip({
 }: EditableChipProps) {
   return (
     <div className={cn("flex items-center gap-1.5", className)}>
-      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.04em]">
+      <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.04em]">
         {label}
       </label>
       <input
@@ -28,7 +28,7 @@ export function EditableChip({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-9 px-3.5 text-[14px] font-medium rounded-full border border-input bg-background min-w-16 text-center focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        className="h-9 px-3.5 text-[14px] font-medium tabular-nums rounded-full border border-input bg-background min-w-16 text-center focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
       />
     </div>
   );

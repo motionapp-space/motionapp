@@ -62,14 +62,14 @@ export function ExerciseCard({
           <div className="flex items-center gap-2 flex-wrap">
             <h3
               className={cn(
-                "text-[16px] font-semibold",
+                "text-[18px] font-semibold leading-[24px]",
                 isSkipped && "line-through text-muted-foreground"
               )}
             >
               {exercise.name || "Esercizio senza nome"}
             </h3>
             {isSkipped && (
-              <Badge variant="outline" className="text-[11px]">
+              <Badge variant="outline" className="text-[11px] font-medium">
                 Saltato
               </Badge>
             )}
@@ -78,25 +78,22 @@ export function ExerciseCard({
 
         <div className="flex items-center gap-3 shrink-0">
           <span
-            className={cn(
-              "h-[22px] px-2 text-[11px] rounded-full inline-flex items-center font-medium",
-              getBadgeStyles()
-            )}
+            className="h-[22px] px-2 text-[12px] rounded-full inline-flex items-center font-semibold bg-muted text-foreground"
           >
-            Serie {actuals.length}/{exercise.sets}
+            {actuals.length}/{exercise.sets} serie
           </span>
         </div>
       </div>
 
       {/* Target subheader */}
-      <p className="text-[13px] text-muted-foreground mt-2">
+      <p className="text-[12px] font-normal text-muted-foreground mt-2 leading-[18px]">
         Target: {exercise.sets} × {exercise.reps}
         {exercise.load && ` @ ${exercise.load}`}
         {exercise.rest && ` · Recupero: ${exercise.rest}`}
       </p>
 
       {exercise.goal && (
-        <p className="text-[13px] text-muted-foreground italic mt-1">
+        <p className="text-[12px] font-normal text-muted-foreground italic mt-1 leading-[18px]">
           Obiettivo: {exercise.goal}
         </p>
       )}
@@ -113,7 +110,7 @@ export function ExerciseCard({
       {/* Valori prossima serie (only if not skipped) */}
       {!isSkipped && (
         <div className="mt-3 p-3 rounded-[12px] bg-muted/30">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground mb-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-2">
             Prossima serie
           </p>
           <div className="flex flex-wrap items-center gap-3">
@@ -146,7 +143,7 @@ export function ExerciseCard({
           Recupero: {formatRestTimer(restTimer)}
         </p>
       ) : actuals.length > 0 && exercise.rest && (
-        <p className="mt-2 text-[13px] text-muted-foreground">
+        <p className="mt-2 text-[13px] font-normal text-muted-foreground">
           Ultimo recupero: {exercise.rest}
         </p>
       )}
@@ -154,7 +151,7 @@ export function ExerciseCard({
       {/* Completed sets */}
       {actuals.length > 0 && (
         <div className="mt-3">
-          <p className="text-[13px] font-medium mb-2">Serie completate</p>
+          <p className="text-[14px] font-semibold leading-[20px] mb-2">Serie completate</p>
           <div className="flex flex-wrap gap-2">
             {actuals.map((actual, idx) => {
               const repsDiff = actual.reps !== exercise.reps;
@@ -165,7 +162,7 @@ export function ExerciseCard({
                 <span
                   key={actual.id}
                   className={cn(
-                    "h-8 px-3 rounded-full text-[13px] bg-muted flex items-center",
+                    "h-8 px-3 rounded-full text-[13px] font-medium bg-muted flex items-center",
                     (repsDiff || loadDiff) &&
                       "border border-orange-500 text-orange-700 dark:text-orange-400"
                   )}
@@ -196,7 +193,7 @@ export function ExerciseCard({
             {actuals.length > 0 ? (
               <Button
                 variant="outline"
-                className="h-10 rounded-[10px] text-[14px]"
+                className="h-10 rounded-[10px] text-[14px] font-medium"
                 onClick={onUndoLastSet}
               >
                 Annulla ultima serie
@@ -209,7 +206,7 @@ export function ExerciseCard({
             <button
               type="button"
               onClick={onSkip}
-              className="text-[14px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="text-[14px] font-medium text-muted-foreground hover:text-foreground hover:underline transition-colors"
             >
               Salta
             </button>
@@ -220,7 +217,7 @@ export function ExerciseCard({
         <div className="mt-4">
           <Button
             variant="outline"
-            className="w-full h-11 rounded-[10px]"
+            className="w-full h-11 rounded-[10px] text-[14px] font-medium"
             onClick={onResume}
           >
             Riprendi esercizio
