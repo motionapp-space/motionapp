@@ -247,9 +247,9 @@ export default function LiveSession() {
     try {
       await updateSession.mutateAsync({
         id: sessionId!,
-        updates: { status: "cancelled" },
+        updates: { status: "discarded" },
       });
-      toast.success("Sessione annullata");
+      toast.success("Sessione chiusa");
       if (resolvedClientId) navigate(`/clients/${resolvedClientId}?tab=sessions`);
     } catch (error) {
       toast.error("Errore nell'annullare la sessione");

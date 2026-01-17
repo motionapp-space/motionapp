@@ -110,12 +110,12 @@ export function StickySessionBar() {
       await updateSession.mutateAsync({
         id: activeSession.id,
         updates: {
-          status: "cancelled",
+          status: "discarded",
           ended_at: new Date().toISOString(),
         },
       });
       
-      toast.success("Sessione annullata");
+      toast.success("Sessione chiusa");
       
       // Fade out animation
       setIsVisible(false);
