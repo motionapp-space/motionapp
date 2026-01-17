@@ -197,11 +197,11 @@ const ClientDetail = () => {
           className="space-y-6 mt-6"
         >
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="profile" className="text-sm data-[state=active]:font-semibold data-[state=active]:shadow-sm">{toSentenceCase("Profilo")}</TabsTrigger>
-            <TabsTrigger value="plans" className="text-sm data-[state=active]:font-semibold data-[state=active]:shadow-sm">{toSentenceCase("Piani")}</TabsTrigger>
-            <TabsTrigger value="appointments" className="text-sm data-[state=active]:font-semibold data-[state=active]:shadow-sm">{toSentenceCase("Appuntamenti")}</TabsTrigger>
-            <TabsTrigger value="sessions" className="text-sm data-[state=active]:font-semibold data-[state=active]:shadow-sm">{toSentenceCase("Sessioni")}</TabsTrigger>
-            <TabsTrigger value="packages" className="text-sm data-[state=active]:font-semibold data-[state=active]:shadow-sm">{toSentenceCase("Pacchetti")}</TabsTrigger>
+            <TabsTrigger value="profile">{toSentenceCase("Profilo")}</TabsTrigger>
+            <TabsTrigger value="plans">{toSentenceCase("Piani")}</TabsTrigger>
+            <TabsTrigger value="appointments">{toSentenceCase("Appuntamenti")}</TabsTrigger>
+            <TabsTrigger value="sessions">{toSentenceCase("Sessioni")}</TabsTrigger>
+            <TabsTrigger value="packages">{toSentenceCase("Pacchetti")}</TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
