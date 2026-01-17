@@ -179,22 +179,28 @@ export function StickySessionBar() {
           {/* Right section - Actions */}
           <div className="flex items-center gap-2">
             {/* Pause/Resume */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11"
-              onClick={(e) => {
-                e.stopPropagation();
-                isPaused ? resumeSession() : pauseSession();
-              }}
-              title={isPaused ? "Riprendi" : "Pausa"}
-            >
-            {isPaused ? (
-                <Play className="h-[18px] w-[18px]" strokeWidth={2} />
-              ) : (
-                <Pause className="h-[18px] w-[18px]" strokeWidth={2} />
-              )}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    isPaused ? resumeSession() : pauseSession();
+                  }}
+                >
+                  {isPaused ? (
+                    <Play className="h-[18px] w-[18px]" strokeWidth={2} />
+                  ) : (
+                    <Pause className="h-[18px] w-[18px]" strokeWidth={2} />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isPaused ? "Riprendi" : "Pausa"}</p>
+              </TooltipContent>
+            </Tooltip>
 
             {/* Notes hint - only on live page */}
             {isOnLiveSessionPage && (
