@@ -356,7 +356,7 @@ const Clients = () => {
             <DialogHeader className="shrink-0">
               <DialogTitle>{toSentenceCase("Nuovo cliente")}</DialogTitle>
             </DialogHeader>
-            <div className="flex-1 overflow-y-auto space-y-4 py-4">
+            <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1 -mx-1">
               <div className="space-y-2">
                 <Label htmlFor="first_name">{toSentenceCase("Nome")} *</Label>
                 <Input
@@ -921,7 +921,7 @@ const Clients = () => {
             <DialogHeader className="shrink-0">
               <DialogTitle>{toSentenceCase("Nuovo cliente")}</DialogTitle>
             </DialogHeader>
-            <div className="flex-1 overflow-y-auto space-y-4 py-4">
+            <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1 -mx-1">
               <div className="space-y-2">
                 <Label htmlFor="first_name">{toSentenceCase("Nome")} *</Label>
                 <Input
@@ -1514,7 +1514,7 @@ const Clients = () => {
           <DialogHeader className="shrink-0">
             <DialogTitle>{toSentenceCase("Nuovo cliente")}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1 -mx-1">
             <div className="space-y-2">
               <Label htmlFor="first_name">{toSentenceCase("Nome")} *</Label>
               <Input
