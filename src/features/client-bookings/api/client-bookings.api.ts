@@ -5,7 +5,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getClientCoachClientId } from "@/lib/coach-client";
-import type { 
+import { buildEventSnapshot, buildBookingRequestSnapshot, queueBookingEmailWithSnapshot } from "@/lib/email-snapshot";
+import type {
   ClientBookingSettings, 
   ClientAppointmentView, 
   ClientAppointmentStatus,
@@ -226,31 +227,11 @@ export async function getClientAppointments(): Promise<ClientAppointmentView[]> 
 }
 
 /**
- * Helper to queue booking-related emails via edge function
- */
-async function queueBookingEmail(params: {
-  type: 'request_created' | 'accepted' | 'counter_proposed' | 'cancelled';
-  bookingRequestId?: string;
-  eventId?: string;
-  actorUserId: string;
-}): Promise<void> {
-  try {
-    const { error } = await supabase.functions.invoke('queue-booking-email', {
-      body: params
-    });
-    if (error) {
-      console.warn('[queueBookingEmail] Failed to queue email:', error);
-    }
-  } catch (e) {
-    console.warn('[queueBookingEmail] Failed to queue email:', e);
-  }
-}
-
-/**
  * Create a new booking request with economic choice
  */
 export async function createBookingRequest(input: CreateBookingRequestInput): Promise<{ id: string }> {
   const { coachClientId } = await getClientCoachClientId();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { data, error } = await supabase
     .from("booking_requests")
@@ -263,19 +244,30 @@ export async function createBookingRequest(input: CreateBookingRequestInput): Pr
       economic_type: input.economicType,
       selected_package_id: input.economicType === 'package' ? input.packageId : null,
     })
-    .select('id')
+    .select('id, requested_start_at, requested_end_at, notes, coach_client_id')
     .single();
 
   if (error) throw error;
 
-  // Queue email notification to coach
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user && data?.id) {
-    await queueBookingEmail({
-      type: 'request_created',
-      bookingRequestId: data.id,
-      actorUserId: user.id,
-    });
+  // Queue email notification to coach usando snapshot
+  if (user && data) {
+    try {
+      const snapshot = await buildBookingRequestSnapshot({
+        id: data.id,
+        requested_start_at: data.requested_start_at,
+        requested_end_at: data.requested_end_at,
+        notes: data.notes,
+        coach_client_id: data.coach_client_id,
+      }, 'client');
+      
+      await queueBookingEmailWithSnapshot({
+        type: 'appointment_request_created',
+        actorUserId: user.id,
+        snapshot,
+      });
+    } catch (e) {
+      console.warn('Failed to queue booking email:', e);
+    }
   }
 
   return { id: data.id };
@@ -285,6 +277,28 @@ export async function createBookingRequest(input: CreateBookingRequestInput): Pr
  * Cancel a booking request (set to CANCELED_BY_CLIENT)
  */
 export async function cancelBookingRequest(requestId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // 1. Fetch request data BEFORE modifying
+  const { data: request, error: fetchError } = await supabase
+    .from("booking_requests")
+    .select("id, requested_start_at, requested_end_at, notes, coach_client_id")
+    .eq("id", requestId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Build snapshot BEFORE update
+  let snapshot;
+  if (user && request) {
+    try {
+      snapshot = await buildBookingRequestSnapshot(request, 'client');
+    } catch (e) {
+      console.warn('Failed to build snapshot:', e);
+    }
+  }
+
+  // 3. Execute update
   const { error } = await supabase
     .from("booking_requests")
     .update({ status: 'CANCELED_BY_CLIENT' })
@@ -292,14 +306,17 @@ export async function cancelBookingRequest(requestId: string): Promise<void> {
 
   if (error) throw error;
 
-  // Queue cancellation email to coach
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await queueBookingEmail({
-      type: 'cancelled',
-      bookingRequestId: requestId,
-      actorUserId: user.id,
-    });
+  // 4. Queue email with snapshot
+  if (user && snapshot) {
+    try {
+      await queueBookingEmailWithSnapshot({
+        type: 'appointment_cancelled',
+        actorUserId: user.id,
+        snapshot,
+      });
+    } catch (e) {
+      console.warn('Failed to queue booking email:', e);
+    }
   }
 }
 
@@ -307,6 +324,28 @@ export async function cancelBookingRequest(requestId: string): Promise<void> {
  * Cancel an appointment (event) via RPC with ledger management
  */
 export async function cancelAppointment(eventId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // 1. Fetch event data BEFORE cancelling
+  const { data: event, error: fetchError } = await supabase
+    .from("events")
+    .select("id, title, start_at, end_at, coach_client_id")
+    .eq("id", eventId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Build snapshot BEFORE cancel
+  let snapshot;
+  if (user && event) {
+    try {
+      snapshot = await buildEventSnapshot(event, 'client');
+    } catch (e) {
+      console.warn('Failed to build snapshot:', e);
+    }
+  }
+
+  // 3. Cancel via RPC
   const { data, error } = await supabase.rpc('cancel_event_with_ledger', {
     p_event_id: eventId,
     p_actor: 'client'
@@ -317,14 +356,17 @@ export async function cancelAppointment(eventId: string) {
   const result = data as Record<string, unknown> | null;
   if (result?.error) throw new Error(String(result.error));
   
-  // Queue cancellation email to coach
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await queueBookingEmail({
-      type: 'cancelled',
-      eventId,
-      actorUserId: user.id,
-    });
+  // 4. Queue cancellation email with snapshot
+  if (user && snapshot) {
+    try {
+      await queueBookingEmailWithSnapshot({
+        type: 'appointment_cancelled',
+        actorUserId: user.id,
+        snapshot,
+      });
+    } catch (e) {
+      console.warn('Failed to queue booking email:', e);
+    }
   }
   
   return result;
@@ -365,7 +407,28 @@ export async function acceptChangeProposal(eventId: string): Promise<void> {
  * Reject a change proposal from coach (cancels the appointment via RPC + resets proposal fields)
  */
 export async function rejectChangeProposal(eventId: string) {
-  // 1. Call cancel RPC (handles ledger + session_status)
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // 1. Fetch event data BEFORE cancelling
+  const { data: event, error: fetchError } = await supabase
+    .from("events")
+    .select("id, title, start_at, end_at, coach_client_id")
+    .eq("id", eventId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Build snapshot BEFORE cancel
+  let snapshot;
+  if (user && event) {
+    try {
+      snapshot = await buildEventSnapshot(event, 'client');
+    } catch (e) {
+      console.warn('Failed to build snapshot:', e);
+    }
+  }
+
+  // 3. Call cancel RPC (handles ledger + session_status)
   const { data, error } = await supabase.rpc('cancel_event_with_ledger', {
     p_event_id: eventId,
     p_actor: 'client'
@@ -376,8 +439,7 @@ export async function rejectChangeProposal(eventId: string) {
   const result = data as Record<string, unknown> | null;
   if (result?.error) throw new Error(String(result.error));
   
-  // 2. Reset proposal fields (best-effort, non-blocking)
-  // UI gestirà stato "canceled" prioritariamente
+  // 4. Reset proposal fields (best-effort, non-blocking)
   try {
     await supabase
       .from("events")
@@ -391,14 +453,17 @@ export async function rejectChangeProposal(eventId: string) {
     console.warn("Could not reset proposal fields:", updateError);
   }
 
-  // Queue cancellation email to coach
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await queueBookingEmail({
-      type: 'cancelled',
-      eventId,
-      actorUserId: user.id,
-    });
+  // 5. Queue cancellation email with snapshot
+  if (user && snapshot) {
+    try {
+      await queueBookingEmailWithSnapshot({
+        type: 'appointment_cancelled',
+        actorUserId: user.id,
+        snapshot,
+      });
+    } catch (e) {
+      console.warn('Failed to queue booking email:', e);
+    }
   }
   
   return result;
@@ -425,6 +490,28 @@ export async function acceptCounterProposal(requestId: string): Promise<{ event_
  * Reject a counter-proposal from coach (set booking request to CANCELED_BY_CLIENT)
  */
 export async function rejectCounterProposal(requestId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // 1. Fetch request data BEFORE modifying
+  const { data: request, error: fetchError } = await supabase
+    .from("booking_requests")
+    .select("id, requested_start_at, requested_end_at, counter_proposal_start_at, counter_proposal_end_at, notes, coach_client_id")
+    .eq("id", requestId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Build snapshot BEFORE update
+  let snapshot;
+  if (user && request) {
+    try {
+      snapshot = await buildBookingRequestSnapshot(request, 'client');
+    } catch (e) {
+      console.warn('Failed to build snapshot:', e);
+    }
+  }
+
+  // 3. Execute update
   const { error } = await supabase
     .from("booking_requests")
     .update({ status: 'CANCELED_BY_CLIENT' })
@@ -432,14 +519,17 @@ export async function rejectCounterProposal(requestId: string): Promise<void> {
 
   if (error) throw error;
 
-  // Queue cancellation email to coach
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await queueBookingEmail({
-      type: 'cancelled',
-      bookingRequestId: requestId,
-      actorUserId: user.id,
-    });
+  // 4. Queue email with snapshot
+  if (user && snapshot) {
+    try {
+      await queueBookingEmailWithSnapshot({
+        type: 'appointment_cancelled',
+        actorUserId: user.id,
+        snapshot,
+      });
+    } catch (e) {
+      console.warn('Failed to queue booking email:', e);
+    }
   }
 }
 
