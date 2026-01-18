@@ -886,6 +886,75 @@ export type Database = {
         }
         Relationships: []
       }
+      email_messages: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          failed_at: string | null
+          id: string
+          last_error: string | null
+          provider_message_id: string | null
+          recipient_user_id: string | null
+          scheduled_at: string
+          sender_user_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["email_status"]
+          template_data: Json
+          to_email: string
+          type: Database["public"]["Enums"]["email_type"]
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          failed_at?: string | null
+          id?: string
+          last_error?: string | null
+          provider_message_id?: string | null
+          recipient_user_id?: string | null
+          scheduled_at?: string
+          sender_user_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["email_status"]
+          template_data: Json
+          to_email: string
+          type: Database["public"]["Enums"]["email_type"]
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          failed_at?: string | null
+          id?: string
+          last_error?: string | null
+          provider_message_id?: string | null
+          recipient_user_id?: string | null
+          scheduled_at?: string
+          sender_user_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["email_status"]
+          template_data?: Json
+          to_email?: string
+          type?: Database["public"]["Enums"]["email_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_messages_recipient_user_id_fkey"
+            columns: ["recipient_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_messages_sender_user_id_fkey"
+            columns: ["sender_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           aligned_to_slot: boolean | null
@@ -2201,6 +2270,13 @@ export type Database = {
         | "ATTIVO"
         | "INATTIVO"
         | "ARCHIVIATO"
+      email_status: "pending" | "sent" | "failed"
+      email_type:
+        | "client_invite"
+        | "appointment_request_created"
+        | "appointment_accepted"
+        | "appointment_counter_proposed"
+        | "appointment_cancelled"
       invite_status: "pending" | "accepted" | "expired" | "revoked"
       ledger_reason:
         | "CONFIRM"
@@ -2381,6 +2457,14 @@ export const Constants = {
         "ATTIVO",
         "INATTIVO",
         "ARCHIVIATO",
+      ],
+      email_status: ["pending", "sent", "failed"],
+      email_type: [
+        "client_invite",
+        "appointment_request_created",
+        "appointment_accepted",
+        "appointment_counter_proposed",
+        "appointment_cancelled",
       ],
       invite_status: ["pending", "accepted", "expired", "revoked"],
       ledger_reason: [

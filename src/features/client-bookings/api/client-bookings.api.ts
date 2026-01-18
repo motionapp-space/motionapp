@@ -226,12 +226,33 @@ export async function getClientAppointments(): Promise<ClientAppointmentView[]> 
 }
 
 /**
+ * Helper to queue booking-related emails via edge function
+ */
+async function queueBookingEmail(params: {
+  type: 'request_created' | 'accepted' | 'counter_proposed' | 'cancelled';
+  bookingRequestId?: string;
+  eventId?: string;
+  actorUserId: string;
+}): Promise<void> {
+  try {
+    const { error } = await supabase.functions.invoke('queue-booking-email', {
+      body: params
+    });
+    if (error) {
+      console.warn('[queueBookingEmail] Failed to queue email:', error);
+    }
+  } catch (e) {
+    console.warn('[queueBookingEmail] Failed to queue email:', e);
+  }
+}
+
+/**
  * Create a new booking request with economic choice
  */
-export async function createBookingRequest(input: CreateBookingRequestInput): Promise<void> {
+export async function createBookingRequest(input: CreateBookingRequestInput): Promise<{ id: string }> {
   const { coachClientId } = await getClientCoachClientId();
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("booking_requests")
     .insert({
       coach_client_id: coachClientId,
@@ -241,9 +262,23 @@ export async function createBookingRequest(input: CreateBookingRequestInput): Pr
       status: 'PENDING',
       economic_type: input.economicType,
       selected_package_id: input.economicType === 'package' ? input.packageId : null,
-    });
+    })
+    .select('id')
+    .single();
 
   if (error) throw error;
+
+  // Queue email notification to coach
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user && data?.id) {
+    await queueBookingEmail({
+      type: 'request_created',
+      bookingRequestId: data.id,
+      actorUserId: user.id,
+    });
+  }
+
+  return { id: data.id };
 }
 
 /**
@@ -256,6 +291,16 @@ export async function cancelBookingRequest(requestId: string): Promise<void> {
     .eq("id", requestId);
 
   if (error) throw error;
+
+  // Queue cancellation email to coach
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await queueBookingEmail({
+      type: 'cancelled',
+      bookingRequestId: requestId,
+      actorUserId: user.id,
+    });
+  }
 }
 
 /**
@@ -271,6 +316,16 @@ export async function cancelAppointment(eventId: string) {
   
   const result = data as Record<string, unknown> | null;
   if (result?.error) throw new Error(String(result.error));
+  
+  // Queue cancellation email to coach
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await queueBookingEmail({
+      type: 'cancelled',
+      eventId,
+      actorUserId: user.id,
+    });
+  }
   
   return result;
 }
@@ -335,6 +390,16 @@ export async function rejectChangeProposal(eventId: string) {
   } catch (updateError) {
     console.warn("Could not reset proposal fields:", updateError);
   }
+
+  // Queue cancellation email to coach
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await queueBookingEmail({
+      type: 'cancelled',
+      eventId,
+      actorUserId: user.id,
+    });
+  }
   
   return result;
 }
@@ -366,6 +431,16 @@ export async function rejectCounterProposal(requestId: string): Promise<void> {
     .eq("id", requestId);
 
   if (error) throw error;
+
+  // Queue cancellation email to coach
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await queueBookingEmail({
+      type: 'cancelled',
+      bookingRequestId: requestId,
+      actorUserId: user.id,
+    });
+  }
 }
 
 /**

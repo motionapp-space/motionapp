@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
+import { queueEmail } from "../_shared/email-outbox.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -255,97 +255,24 @@ serve(async (req) => {
 
     console.log(`Invite ${invite.id} marked as accepted`);
 
-    // Send confirmation email via Resend
+    // Queue confirmation email via Email Outbox Pattern
     const appUrl = Deno.env.get('APP_URL') || 'https://qadgzwsmiadxwwvsrauz.lovable.app';
-    const resendApiKey = Deno.env.get('RESEND_API_KEY');
     
-    if (resendApiKey) {
-      try {
-        const resend = new Resend(resendApiKey);
-        
-        await resend.emails.send({
-          from: 'Motion <noreply@info.motionapp.xyz>',
-          to: [invite.email],
-          subject: 'Account Motion attivato con successo',
-          html: `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-            </head>
-            <body style="margin: 0; padding: 0; font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #eef0f3;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #eef0f3; padding: 40px 20px;">
-                <tr>
-                  <td align="center">
-                    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #fcfcfc; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                      <!-- Header -->
-                      <tr>
-                        <td style="background: linear-gradient(135deg, #2db875 0%, #22a066 100%); padding: 32px; text-align: center;">
-                          <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; font-family: 'Montserrat', sans-serif;">Benvenuto su Studio AI!</h1>
-                        </td>
-                      </tr>
-                      <!-- Content -->
-                      <tr>
-                        <td style="padding: 40px 32px;">
-                          <h2 style="margin: 0 0 16px 0; color: #2d3340; font-size: 24px; font-weight: 600; font-family: 'Montserrat', sans-serif;">
-                            Ciao ${client.first_name}!
-                          </h2>
-                          <p style="margin: 0 0 24px 0; color: #6b7280; font-size: 16px; line-height: 1.6; font-family: 'Montserrat', sans-serif;">
-                            Il tuo account su <strong style="color: #2d3340;">Studio AI</strong> è stato attivato con successo! 
-                            Ora puoi accedere alla piattaforma per visualizzare i tuoi programmi di allenamento e gestire le tue prenotazioni.
-                          </p>
-                          
-                          <!-- Success Badge -->
-                          <div style="margin: 24px 0; padding: 20px; background-color: #f0fdf4; border-radius: 12px; border-left: 4px solid #2db875; text-align: center;">
-                            <p style="margin: 0; color: #166534; font-size: 18px; font-weight: 600; font-family: 'Montserrat', sans-serif;">
-                              Account attivo
-                            </p>
-                            <p style="margin: 8px 0 0 0; color: #15803d; font-size: 14px; font-family: 'Montserrat', sans-serif;">
-                              Email: ${invite.email}
-                            </p>
-                          </div>
-                          
-                          <!-- CTA Button -->
-                          <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
-                            <tr>
-                              <td align="center">
-                                <a href="${appUrl}/client/auth" style="display: inline-block; padding: 16px 32px; background-color: #2264d1; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 12px; font-family: 'Montserrat', sans-serif;">
-                                  Accedi alla piattaforma
-                                </a>
-                              </td>
-                            </tr>
-                          </table>
-                          
-                          <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center; font-family: 'Montserrat', sans-serif;">
-                            Usa la tua email e la password che hai appena creato per accedere.
-                          </p>
-                        </td>
-                      </tr>
-                      <!-- Footer -->
-                      <tr>
-                        <td style="padding: 24px 32px; background-color: #eef0f3; text-align: center;">
-                          <p style="margin: 0; color: #6b7280; font-size: 12px; font-family: 'Montserrat', sans-serif;">
-                            Hai bisogno di aiuto? Contatta il tuo coach.
-                          </p>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </body>
-            </html>
-          `,
-        });
-        
-        console.log(`Confirmation email sent to ${invite.email}`);
-      } catch (emailErr) {
-        console.error('Confirmation email failed (non-fatal):', emailErr);
-      }
-    } else {
-      console.warn('RESEND_API_KEY not configured, skipping confirmation email');
+    try {
+      await queueEmail(supabaseAdmin, {
+        type: 'client_invite', // Stesso template, variante "account attivato"
+        toEmail: invite.email,
+        recipientUserId: authUserId,
+        senderUserId: null, // Sistema
+        templateData: {
+          client_first_name: client.first_name,
+          is_activation_confirmation: true, // Flag per template
+          login_url: `${appUrl}/client/auth`,
+        },
+      });
+      console.log(`Confirmation email queued for: ${invite.email}`);
+    } catch (emailError) {
+      console.warn('Failed to queue confirmation email (non-fatal):', emailError);
     }
 
     return new Response(
