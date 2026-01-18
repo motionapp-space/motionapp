@@ -2,53 +2,61 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { counterProposeBookingRequest } from "../api/booking-requests.api";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-/**
- * Helper to queue booking-related emails via edge function
- */
-async function queueBookingEmail(params: {
-  type: 'request_created' | 'accepted' | 'counter_proposed' | 'cancelled';
-  bookingRequestId?: string;
-  eventId?: string;
-  actorUserId: string;
-}): Promise<void> {
-  try {
-    const { error } = await supabase.functions.invoke('queue-booking-email', {
-      body: params
-    });
-    if (error) {
-      console.warn('[queueBookingEmail] Failed to queue email:', error);
-    }
-  } catch (e) {
-    console.warn('[queueBookingEmail] Failed to queue email:', e);
-  }
-}
+import { buildBookingRequestSnapshot, queueBookingEmailWithSnapshot } from "@/lib/email-snapshot";
 
 export function useCounterProposeBookingRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, startAt, endAt }: { id: string; startAt: string; endAt: string }) =>
-      counterProposeBookingRequest(id, startAt, endAt),
-    onSuccess: async (_, variables) => {
+    mutationFn: async ({ id, startAt, endAt }: { id: string; startAt: string; endAt: string }) => {
+      // 1. Fetch full request data PRIMA della controproposta
+      const { data: fullRequest, error } = await supabase
+        .from("booking_requests")
+        .select("*")
+        .eq("id", id)
+        .single();
+      
+      if (error || !fullRequest) throw new Error("Booking request not found");
+      
+      // 2. Aggiorna request con controproposta
+      await counterProposeBookingRequest(id, startAt, endAt);
+      
+      // 3. Costruisci snapshot con i nuovi dati della controproposta
+      // Aggiorniamo manualmente i campi della controproposta nello snapshot
+      let snapshot;
+      try {
+        snapshot = await buildBookingRequestSnapshot({
+          ...fullRequest,
+          counter_proposal_start_at: startAt,
+          counter_proposal_end_at: endAt,
+        }, 'coach');
+      } catch (e) {
+        console.warn("Could not build booking request snapshot:", e);
+      }
+      
+      return { snapshot };
+    },
+    onSuccess: async ({ snapshot }) => {
       queryClient.invalidateQueries({ queryKey: ["booking-requests"] });
       toast({
         title: "Controproposta inviata",
         description: "La controproposta è stata inviata al cliente.",
       });
 
-      // Queue counter-proposal email notification to client
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await queueBookingEmail({
-            type: 'counter_proposed',
-            bookingRequestId: variables.id,
-            actorUserId: user.id,
-          });
+      // Queue counter-proposal email notification to client usando snapshot
+      if (snapshot) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await queueBookingEmailWithSnapshot({
+              type: 'appointment_counter_proposed',
+              actorUserId: user.id,
+              snapshot,
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to queue booking email:', e);
         }
-      } catch (e) {
-        console.warn('Failed to queue booking email:', e);
       }
     },
     onError: (error: Error) => {

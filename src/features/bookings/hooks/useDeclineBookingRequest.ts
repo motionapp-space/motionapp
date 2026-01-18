@@ -2,52 +2,55 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { declineBookingRequest } from "../api/booking-requests.api";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-/**
- * Helper to queue booking-related emails via edge function
- */
-async function queueBookingEmail(params: {
-  type: 'request_created' | 'accepted' | 'counter_proposed' | 'cancelled';
-  bookingRequestId?: string;
-  eventId?: string;
-  actorUserId: string;
-}): Promise<void> {
-  try {
-    const { error } = await supabase.functions.invoke('queue-booking-email', {
-      body: params
-    });
-    if (error) {
-      console.warn('[queueBookingEmail] Failed to queue email:', error);
-    }
-  } catch (e) {
-    console.warn('[queueBookingEmail] Failed to queue email:', e);
-  }
-}
+import { buildBookingRequestSnapshot, queueBookingEmailWithSnapshot } from "@/lib/email-snapshot";
 
 export function useDeclineBookingRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: declineBookingRequest,
-    onSuccess: async (_, requestId) => {
+    mutationFn: async (requestId: string) => {
+      // 1. Fetch full request data per lo snapshot PRIMA del decline
+      const { data: fullRequest, error } = await supabase
+        .from("booking_requests")
+        .select("*")
+        .eq("id", requestId)
+        .single();
+      
+      if (error || !fullRequest) throw new Error("Booking request not found");
+      
+      let snapshot;
+      try {
+        snapshot = await buildBookingRequestSnapshot(fullRequest, 'coach');
+      } catch (e) {
+        console.warn("Could not build booking request snapshot:", e);
+      }
+      
+      // 2. Decline
+      await declineBookingRequest(requestId);
+      
+      return { snapshot };
+    },
+    onSuccess: async ({ snapshot }) => {
       queryClient.invalidateQueries({ queryKey: ["booking-requests"] });
       toast({
         title: "Richiesta rifiutata",
         description: "La richiesta è stata rifiutata.",
       });
 
-      // Queue cancellation email notification to client
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await queueBookingEmail({
-            type: 'cancelled',
-            bookingRequestId: requestId,
-            actorUserId: user.id,
-          });
+      // Queue cancellation email notification to client usando snapshot
+      if (snapshot) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await queueBookingEmailWithSnapshot({
+              type: 'appointment_cancelled',
+              actorUserId: user.id,
+              snapshot,
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to queue booking email:', e);
         }
-      } catch (e) {
-        console.warn('Failed to queue booking email:', e);
       }
     },
     onError: (error: Error) => {

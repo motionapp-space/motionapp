@@ -17,6 +17,7 @@ import { handleEventConfirm } from "@/features/packages/api/calendar-integration
 import { createLedgerEntry } from "@/features/packages/api/ledger.api";
 import { createPackage } from "@/features/packages/api/packages.api";
 import { supabase } from "@/integrations/supabase/client";
+import { buildEventSnapshot, queueBookingEmailWithSnapshot } from "@/lib/email-snapshot";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -742,6 +743,20 @@ export function EventEditorModal({
     if (!event) return;
     setIsCancelling(true);
 
+    // 1. Costruisci snapshot PRIMA della cancellazione (dati disponibili)
+    let snapshot;
+    try {
+      snapshot = await buildEventSnapshot({
+        id: event.id,
+        title: event.title,
+        start_at: event.start_at,
+        end_at: event.end_at,
+        coach_client_id: event.coach_client_id,
+      }, 'coach');
+    } catch (e) {
+      console.warn('Could not build event snapshot for email:', e);
+    }
+
     try {
       const { data, error } = await supabase.rpc('cancel_event_with_ledger', {
         p_event_id: event.id,
@@ -782,16 +797,14 @@ export function EventEditorModal({
       }
 
       // Queue email notification to client only if event was actually cancelled
-      if (!alreadyCanceled) {
+      if (!alreadyCanceled && snapshot) {
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            await supabase.functions.invoke('queue-booking-email', {
-              body: {
-                type: 'cancelled',
-                eventId: event.id,
-                actorUserId: user.id,
-              }
+            await queueBookingEmailWithSnapshot({
+              type: 'appointment_cancelled',
+              actorUserId: user.id,
+              snapshot,
             });
           }
         } catch (e) {
