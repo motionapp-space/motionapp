@@ -780,6 +780,24 @@ export function EventEditorModal({
       } else {
         toast.success("Evento cancellato");
       }
+
+      // Queue email notification to client only if event was actually cancelled
+      if (!alreadyCanceled) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.functions.invoke('queue-booking-email', {
+              body: {
+                type: 'cancelled',
+                eventId: event.id,
+                actorUserId: user.id,
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to queue cancellation email:', e);
+        }
+      }
       
       onOpenChange(false);
     } catch (error: any) {

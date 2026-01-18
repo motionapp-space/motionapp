@@ -3,6 +3,7 @@ import { deleteEvent, getEventById } from "../api/events.api";
 import { toast } from "@/hooks/use-toast";
 import { logClientActivity } from "@/features/clients/api/activities.api";
 import { getCoachClientDetails } from "@/lib/coach-client";
+import { supabase } from "@/integrations/supabase/client";
 
 export function useDeleteEvent() {
   const queryClient = useQueryClient();
@@ -36,6 +37,22 @@ export function useDeleteEvent() {
         title: "Appuntamento eliminato",
         description: "L'appuntamento è stato eliminato con successo.",
       });
+
+      // Queue email notification to client
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.functions.invoke('queue-booking-email', {
+            body: {
+              type: 'cancelled',
+              eventId: deletedEvent.id,
+              actorUserId: user.id,
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to queue cancellation email:', e);
+      }
     },
     onError: (error: Error) => {
       toast({
