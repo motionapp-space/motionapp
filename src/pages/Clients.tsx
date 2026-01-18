@@ -76,7 +76,7 @@ const Clients = () => {
   const unarchiveMutation = useUnarchiveClient();
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [withInvite, setWithInvite] = useState(false);
+  const [withInvite, setWithInvite] = useState(true);
   const [inviteDialogData, setInviteDialogData] = useState<{
     inviteLink: string;
     clientName: string;
@@ -352,11 +352,11 @@ const Clients = () => {
         
         {/* Dialog creazione cliente */}
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+            <DialogHeader className="shrink-0">
               <DialogTitle>{toSentenceCase("Nuovo cliente")}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="flex-1 overflow-y-auto space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="first_name">{toSentenceCase("Nome")} *</Label>
                 <Input
@@ -451,26 +451,24 @@ const Clients = () => {
               </div>
               
               {/* Checkbox Invito */}
-              {formData.email.trim() && (
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
-                  <Checkbox
-                    id="withInvite-zero"
-                    checked={withInvite}
-                    onCheckedChange={(checked) => setWithInvite(checked === true)}
-                  />
-                  <div className="space-y-1">
-                    <Label htmlFor="withInvite-zero" className="cursor-pointer flex items-center gap-2 font-medium">
-                      <Mail className="h-4 w-4" />
-                      Invia email di invito
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Verrà inviata un'email al cliente con il link per creare il suo account.
-                    </p>
-                  </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
+                <Checkbox
+                  id="withInvite-zero"
+                  checked={withInvite}
+                  onCheckedChange={(checked) => setWithInvite(checked === true)}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="withInvite-zero" className="cursor-pointer flex items-center gap-2 font-medium">
+                    <Mail className="h-4 w-4" />
+                    Invia email di invito
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Verrà inviata un'email al cliente con il link per creare il suo account.
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 {toSentenceCase("Annulla")}
               </Button>
@@ -919,11 +917,11 @@ const Clients = () => {
 
         {/* Dialog creazione cliente */}
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+            <DialogHeader className="shrink-0">
               <DialogTitle>{toSentenceCase("Nuovo cliente")}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="flex-1 overflow-y-auto space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="first_name">{toSentenceCase("Nome")} *</Label>
                 <Input
@@ -1018,26 +1016,24 @@ const Clients = () => {
               </div>
               
               {/* Checkbox Invito */}
-              {formData.email.trim() && (
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
-                  <Checkbox
-                    id="withInvite-first"
-                    checked={withInvite}
-                    onCheckedChange={(checked) => setWithInvite(checked === true)}
-                  />
-                  <div className="space-y-1">
-                    <Label htmlFor="withInvite-first" className="cursor-pointer flex items-center gap-2 font-medium">
-                      <Mail className="h-4 w-4" />
-                      Invia email di invito
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Verrà inviata un'email al cliente con il link per creare il suo account.
-                    </p>
-                  </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
+                <Checkbox
+                  id="withInvite-first"
+                  checked={withInvite}
+                  onCheckedChange={(checked) => setWithInvite(checked === true)}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="withInvite-first" className="cursor-pointer flex items-center gap-2 font-medium">
+                    <Mail className="h-4 w-4" />
+                    Invia email di invito
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Verrà inviata un'email al cliente con il link per creare il suo account.
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 {toSentenceCase("Annulla")}
               </Button>
@@ -1514,11 +1510,11 @@ const Clients = () => {
 
       {/* Create Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+          <DialogHeader className="shrink-0">
             <DialogTitle>{toSentenceCase("Nuovo cliente")}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="first_name">{toSentenceCase("Nome")} *</Label>
               <Input
@@ -1613,26 +1609,24 @@ const Clients = () => {
             </div>
             
             {/* Checkbox Invito */}
-            {formData.email.trim() && (
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
-                <Checkbox
-                  id="withInvite-active"
-                  checked={withInvite}
-                  onCheckedChange={(checked) => setWithInvite(checked === true)}
-                />
-                <div className="space-y-1">
-                  <Label htmlFor="withInvite-active" className="cursor-pointer flex items-center gap-2 font-medium">
-                    <Mail className="h-4 w-4" />
-                    Invia email di invito
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Verrà inviata un'email al cliente con il link per creare il suo account.
-                  </p>
-                </div>
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
+              <Checkbox
+                id="withInvite-active"
+                checked={withInvite}
+                onCheckedChange={(checked) => setWithInvite(checked === true)}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="withInvite-active" className="cursor-pointer flex items-center gap-2 font-medium">
+                  <Mail className="h-4 w-4" />
+                  Invia email di invito
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Verrà inviata un'email al cliente con il link per creare il suo account.
+                </p>
               </div>
-            )}
+            </div>
           </div>
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
               {toSentenceCase("Annulla")}
             </Button>
