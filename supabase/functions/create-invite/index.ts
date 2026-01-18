@@ -160,9 +160,9 @@ serve(async (req) => {
         });
 
         const { error: sendError } = await resend.emails.send({
-          from: 'Studio AI <onboarding@resend.dev>',
+          from: 'Motion <noreply@info.motionapp.xyz>',
           to: [client.email],
-          subject: 'Sei stato invitato a Studio AI',
+          subject: 'Sei stato invitato a Motion',
           html: `
             <!DOCTYPE html>
             <html>
