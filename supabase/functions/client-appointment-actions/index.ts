@@ -2,14 +2,15 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { queueEmail } from "../_shared/email-outbox.ts";
 import { 
-  buildEventSnapshot, 
-  buildBookingRequestSnapshot,
+  buildEventEmailSnapshot, 
+  buildBookingRequestEmailSnapshot,
   type BookingEmailSnapshot 
 } from "../_shared/email-snapshots/index.ts";
 import { 
   type ClientActionType, 
-  getEmailTypeForAction 
+  getEmailDispatchConfig 
 } from "../_shared/action-email-mapping.ts";
+import { buildTemplateData } from "../_shared/email-template-data.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -107,7 +108,7 @@ serve(async (req) => {
         }
 
         // 1. Build snapshot server-side BEFORE mutation
-        snapshot = await buildEventSnapshot(supabaseAdmin, eventId, 'client');
+        snapshot = await buildEventEmailSnapshot(supabaseAdmin, eventId, 'client');
 
         // 2. Execute cancel via RPC
         const { data: cancelData, error: cancelError } = await supabaseAdmin.rpc('cancel_event_with_ledger', {
@@ -140,7 +141,7 @@ serve(async (req) => {
         }
 
         // 1. Build snapshot server-side BEFORE mutation
-        snapshot = await buildEventSnapshot(supabaseAdmin, eventId, 'client');
+        snapshot = await buildEventEmailSnapshot(supabaseAdmin, eventId, 'client');
 
         // 2. Cancel via RPC
         const { data: cancelData, error: cancelError } = await supabaseAdmin.rpc('cancel_event_with_ledger', {
@@ -183,7 +184,7 @@ serve(async (req) => {
         }
 
         // 1. Build snapshot server-side BEFORE mutation
-        snapshot = await buildBookingRequestSnapshot(supabaseAdmin, bookingRequestId, 'client');
+        snapshot = await buildBookingRequestEmailSnapshot(supabaseAdmin, bookingRequestId, 'client');
 
         // 2. Update status
         const { error: updateError } = await supabaseAdmin
@@ -213,7 +214,7 @@ serve(async (req) => {
         }
 
         // 1. Build snapshot server-side BEFORE mutation
-        snapshot = await buildBookingRequestSnapshot(supabaseAdmin, bookingRequestId, 'client');
+        snapshot = await buildBookingRequestEmailSnapshot(supabaseAdmin, bookingRequestId, 'client');
 
         // 2. Update status
         const { error: updateError } = await supabaseAdmin
@@ -260,7 +261,7 @@ serve(async (req) => {
         if (insertError) throw new Error(insertError.message);
 
         // 2. Build snapshot from newly created request
-        snapshot = await buildBookingRequestSnapshot(supabaseAdmin, newRequest.id, 'client');
+        snapshot = await buildBookingRequestEmailSnapshot(supabaseAdmin, newRequest.id, 'client');
 
         result = { id: newRequest.id };
         break;
@@ -284,7 +285,7 @@ serve(async (req) => {
         }
 
         // 1. Build snapshot BEFORE finalization
-        snapshot = await buildBookingRequestSnapshot(supabaseAdmin, bookingRequestId, 'client');
+        snapshot = await buildBookingRequestEmailSnapshot(supabaseAdmin, bookingRequestId, 'client');
 
         // 2. Finalize via RPC
         const { data: eventId, error: finalizeError } = await supabaseAdmin.rpc('finalize_booking_request', {
@@ -305,32 +306,31 @@ serve(async (req) => {
         throw new Error(`Unknown action: ${action}`);
     }
 
-    // 3. Queue email usando la mappa action → email_type
-    const emailType = getEmailTypeForAction(action);
-    if (emailType && snapshot) {
-      // Determine recipient based on actor role
-      const recipientEmail = snapshot.actor_role === 'client' 
+    // 3. Queue email using dispatch config (recipientRole esplicito)
+    const dispatchConfig = getEmailDispatchConfig(action);
+    if (dispatchConfig && snapshot) {
+      // CORREZIONE 1: Routing basato su recipientRole ESPLICITO (non actor_role)
+      const recipientEmail = dispatchConfig.recipientRole === 'coach' 
         ? snapshot.coach_email 
         : snapshot.client_email;
-      const recipientUserId = snapshot.actor_role === 'client'
+      const recipientUserId = dispatchConfig.recipientRole === 'coach'
         ? snapshot.coach_user_id
         : snapshot.client_user_id;
-      const senderUserId = snapshot.actor_role === 'client'
-        ? snapshot.client_user_id
-        : snapshot.coach_user_id;
+      const senderUserId = dispatchConfig.recipientRole === 'coach'
+        ? snapshot.client_user_id  // Se recipient è coach, sender è client
+        : snapshot.coach_user_id;  // Se recipient è client, sender è coach
 
-      console.log(`[client-appointment-actions] Queueing email: type=${emailType}, to=${recipientEmail}`);
+      console.log(`[client-appointment-actions] Queueing email: type=${dispatchConfig.emailType}, to=${recipientEmail}, recipientRole=${dispatchConfig.recipientRole}`);
+
+      // CORREZIONE 2: Usare buildTemplateData per separare snapshot da templateData
+      const templateData = buildTemplateData(dispatchConfig.emailType, snapshot);
 
       await queueEmail(supabaseAdmin, {
-        type: emailType,
+        type: dispatchConfig.emailType,
         toEmail: recipientEmail,
         recipientUserId: recipientUserId ?? null,
         senderUserId: senderUserId ?? null,
-        templateData: {
-          ...snapshot,
-          // Add context for cancelled emails
-          ...(emailType === 'appointment_cancelled' ? { cancelled_by: snapshot.actor_role } : {})
-        }
+        templateData,
       });
 
       console.log(`[client-appointment-actions] Email queued successfully`);
