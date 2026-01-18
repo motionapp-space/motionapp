@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.signup-coach]
 verify_jwt = false
+
+[functions.queue-booking-email]
+verify_jwt = false
+
+[functions.client-appointment-actions]
+verify_jwt = false

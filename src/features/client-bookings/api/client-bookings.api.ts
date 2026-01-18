@@ -1,11 +1,12 @@
 /**
  * API functions for Client Bookings
  * All functions operate from the client's perspective using user_id
+ * 
+ * Email queuing is handled server-side by client-appointment-actions edge function.
  */
 
 import { supabase } from "@/integrations/supabase/client";
 import { getClientCoachClientId } from "@/lib/coach-client";
-import { buildEventSnapshot, buildBookingRequestSnapshot, queueBookingEmailWithSnapshot } from "@/lib/email-snapshot";
 import type {
   ClientBookingSettings, 
   ClientAppointmentView, 
@@ -227,149 +228,58 @@ export async function getClientAppointments(): Promise<ClientAppointmentView[]> 
 }
 
 /**
- * Create a new booking request with economic choice
+ * Create a new booking request with economic choice.
+ * Email notification is handled server-side.
  */
 export async function createBookingRequest(input: CreateBookingRequestInput): Promise<{ id: string }> {
   const { coachClientId } = await getClientCoachClientId();
-  const { data: { user } } = await supabase.auth.getUser();
 
-  const { data, error } = await supabase
-    .from("booking_requests")
-    .insert({
-      coach_client_id: coachClientId,
-      requested_start_at: input.requestedStartAt,
-      requested_end_at: input.requestedEndAt,
-      notes: input.notes || null,
-      status: 'PENDING',
-      economic_type: input.economicType,
-      selected_package_id: input.economicType === 'package' ? input.packageId : null,
-    })
-    .select('id, requested_start_at, requested_end_at, notes, coach_client_id')
-    .single();
+  const { data, error } = await supabase.functions.invoke('client-appointment-actions', {
+    body: { 
+      action: 'create_booking_request', 
+      coachClientId,
+      requestData: {
+        requestedStartAt: input.requestedStartAt,
+        requestedEndAt: input.requestedEndAt,
+        notes: input.notes,
+        economicType: input.economicType,
+        packageId: input.packageId,
+      }
+    }
+  });
 
   if (error) throw error;
-
-  // Queue email notification to coach usando snapshot
-  if (user && data) {
-    try {
-      const snapshot = await buildBookingRequestSnapshot({
-        id: data.id,
-        requested_start_at: data.requested_start_at,
-        requested_end_at: data.requested_end_at,
-        notes: data.notes,
-        coach_client_id: data.coach_client_id,
-      }, 'client');
-      
-      await queueBookingEmailWithSnapshot({
-        type: 'appointment_request_created',
-        actorUserId: user.id,
-        snapshot,
-      });
-    } catch (e) {
-      console.warn('Failed to queue booking email:', e);
-    }
-  }
-
-  return { id: data.id };
+  if (data?.error) throw new Error(data.error);
+  
+  return { id: data.result?.id || data.result };
 }
 
 /**
- * Cancel a booking request (set to CANCELED_BY_CLIENT)
+ * Cancel a booking request (set to CANCELED_BY_CLIENT).
+ * Email notification is handled server-side.
  */
 export async function cancelBookingRequest(requestId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  // 1. Fetch request data BEFORE modifying
-  const { data: request, error: fetchError } = await supabase
-    .from("booking_requests")
-    .select("id, requested_start_at, requested_end_at, notes, coach_client_id")
-    .eq("id", requestId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  // 2. Build snapshot BEFORE update
-  let snapshot;
-  if (user && request) {
-    try {
-      snapshot = await buildBookingRequestSnapshot(request, 'client');
-    } catch (e) {
-      console.warn('Failed to build snapshot:', e);
-    }
-  }
-
-  // 3. Execute update
-  const { error } = await supabase
-    .from("booking_requests")
-    .update({ status: 'CANCELED_BY_CLIENT' })
-    .eq("id", requestId);
+  const { data, error } = await supabase.functions.invoke('client-appointment-actions', {
+    body: { action: 'cancel_booking_request', bookingRequestId: requestId }
+  });
 
   if (error) throw error;
-
-  // 4. Queue email with snapshot
-  if (user && snapshot) {
-    try {
-      await queueBookingEmailWithSnapshot({
-        type: 'appointment_cancelled',
-        actorUserId: user.id,
-        snapshot,
-      });
-    } catch (e) {
-      console.warn('Failed to queue booking email:', e);
-    }
-  }
+  if (data?.error) throw new Error(data.error);
 }
 
 /**
- * Cancel an appointment (event) via RPC with ledger management
+ * Cancel an appointment (event) via server-side action.
+ * Email notification is handled server-side.
  */
 export async function cancelAppointment(eventId: string) {
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  // 1. Fetch event data BEFORE cancelling
-  const { data: event, error: fetchError } = await supabase
-    .from("events")
-    .select("id, title, start_at, end_at, coach_client_id")
-    .eq("id", eventId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  // 2. Build snapshot BEFORE cancel
-  let snapshot;
-  if (user && event) {
-    try {
-      snapshot = await buildEventSnapshot(event, 'client');
-    } catch (e) {
-      console.warn('Failed to build snapshot:', e);
-    }
-  }
-
-  // 3. Cancel via RPC
-  const { data, error } = await supabase.rpc('cancel_event_with_ledger', {
-    p_event_id: eventId,
-    p_actor: 'client'
+  const { data, error } = await supabase.functions.invoke('client-appointment-actions', {
+    body: { action: 'cancel_appointment', eventId }
   });
+
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
   
-  if (error) throw new Error(error.message);
-  
-  const result = data as Record<string, unknown> | null;
-  if (result?.error) throw new Error(String(result.error));
-  
-  // 4. Queue cancellation email with snapshot
-  if (user && snapshot) {
-    try {
-      await queueBookingEmailWithSnapshot({
-        type: 'appointment_cancelled',
-        actorUserId: user.id,
-        snapshot,
-      });
-    } catch (e) {
-      console.warn('Failed to queue booking email:', e);
-    }
-  }
-  
-  return result;
+  return data.result;
 }
 
 /**
@@ -404,133 +314,46 @@ export async function acceptChangeProposal(eventId: string): Promise<void> {
 }
 
 /**
- * Reject a change proposal from coach (cancels the appointment via RPC + resets proposal fields)
+ * Reject a change proposal from coach (cancels the appointment + resets proposal fields).
+ * Email notification is handled server-side.
  */
 export async function rejectChangeProposal(eventId: string) {
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  // 1. Fetch event data BEFORE cancelling
-  const { data: event, error: fetchError } = await supabase
-    .from("events")
-    .select("id, title, start_at, end_at, coach_client_id")
-    .eq("id", eventId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  // 2. Build snapshot BEFORE cancel
-  let snapshot;
-  if (user && event) {
-    try {
-      snapshot = await buildEventSnapshot(event, 'client');
-    } catch (e) {
-      console.warn('Failed to build snapshot:', e);
-    }
-  }
-
-  // 3. Call cancel RPC (handles ledger + session_status)
-  const { data, error } = await supabase.rpc('cancel_event_with_ledger', {
-    p_event_id: eventId,
-    p_actor: 'client'
+  const { data, error } = await supabase.functions.invoke('client-appointment-actions', {
+    body: { action: 'reject_change_proposal', eventId }
   });
-  
-  if (error) throw new Error(error.message);
-  
-  const result = data as Record<string, unknown> | null;
-  if (result?.error) throw new Error(String(result.error));
-  
-  // 4. Reset proposal fields (best-effort, non-blocking)
-  try {
-    await supabase
-      .from("events")
-      .update({
-        proposed_start_at: null,
-        proposed_end_at: null,
-        proposal_status: null
-      })
-      .eq("id", eventId);
-  } catch (updateError) {
-    console.warn("Could not reset proposal fields:", updateError);
-  }
-
-  // 5. Queue cancellation email with snapshot
-  if (user && snapshot) {
-    try {
-      await queueBookingEmailWithSnapshot({
-        type: 'appointment_cancelled',
-        actorUserId: user.id,
-        snapshot,
-      });
-    } catch (e) {
-      console.warn('Failed to queue booking email:', e);
-    }
-  }
-  
-  return result;
-}
-
-/**
- * Accept a counter-proposal from coach (finalizes request and creates event via RPC)
- */
-export async function acceptCounterProposal(requestId: string): Promise<{ event_id: string }> {
-  const { data, error } = await supabase.rpc("finalize_booking_request", {
-    p_request_id: requestId,
-  });
-  
-  if (error) {
-    // Propagate standardized error message
-    throw new Error(error.message === 'Slot non disponibile' 
-      ? 'Slot non disponibile' 
-      : error.message);
-  }
-  return { event_id: data };
-}
-
-/**
- * Reject a counter-proposal from coach (set booking request to CANCELED_BY_CLIENT)
- */
-export async function rejectCounterProposal(requestId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  // 1. Fetch request data BEFORE modifying
-  const { data: request, error: fetchError } = await supabase
-    .from("booking_requests")
-    .select("id, requested_start_at, requested_end_at, counter_proposal_start_at, counter_proposal_end_at, notes, coach_client_id")
-    .eq("id", requestId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  // 2. Build snapshot BEFORE update
-  let snapshot;
-  if (user && request) {
-    try {
-      snapshot = await buildBookingRequestSnapshot(request, 'client');
-    } catch (e) {
-      console.warn('Failed to build snapshot:', e);
-    }
-  }
-
-  // 3. Execute update
-  const { error } = await supabase
-    .from("booking_requests")
-    .update({ status: 'CANCELED_BY_CLIENT' })
-    .eq("id", requestId);
 
   if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  
+  return data.result;
+}
 
-  // 4. Queue email with snapshot
-  if (user && snapshot) {
-    try {
-      await queueBookingEmailWithSnapshot({
-        type: 'appointment_cancelled',
-        actorUserId: user.id,
-        snapshot,
-      });
-    } catch (e) {
-      console.warn('Failed to queue booking email:', e);
-    }
-  }
+/**
+ * Accept a counter-proposal from coach (finalizes request and creates event).
+ * Email notification is handled server-side.
+ */
+export async function acceptCounterProposal(requestId: string): Promise<{ event_id: string }> {
+  const { data, error } = await supabase.functions.invoke('client-appointment-actions', {
+    body: { action: 'accept_counter_proposal', bookingRequestId: requestId }
+  });
+
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  
+  return { event_id: data.result?.event_id };
+}
+
+/**
+ * Reject a counter-proposal from coach (set booking request to CANCELED_BY_CLIENT).
+ * Email notification is handled server-side.
+ */
+export async function rejectCounterProposal(requestId: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('client-appointment-actions', {
+    body: { action: 'reject_counter_proposal', bookingRequestId: requestId }
+  });
+
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
 }
 
 /**
