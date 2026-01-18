@@ -8,7 +8,7 @@ import type { BookingEmailSnapshot, SupabaseAdminClient } from "./types.ts";
  * @param eventId - ID dell'evento
  * @param actorRole - Ruolo dell'attore che ha generato l'azione
  */
-export async function buildEventSnapshot(
+export async function buildEventEmailSnapshot(
   supabaseAdmin: SupabaseAdminClient,
   eventId: string,
   actorRole: 'coach' | 'client'

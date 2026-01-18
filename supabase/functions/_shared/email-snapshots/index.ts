@@ -6,5 +6,5 @@
  */
 
 export type { BookingEmailSnapshot, SupabaseAdminClient } from "./types.ts";
-export { buildEventSnapshot } from "./buildEventSnapshot.ts";
-export { buildBookingRequestSnapshot } from "./buildBookingRequestSnapshot.ts";
+export { buildEventEmailSnapshot } from "./buildEventEmailSnapshot.ts";
+export { buildBookingRequestEmailSnapshot } from "./buildBookingRequestEmailSnapshot.ts";
