@@ -264,9 +264,9 @@ serve(async (req) => {
         const resend = new Resend(resendApiKey);
         
         await resend.emails.send({
-          from: 'Studio AI <onboarding@resend.dev>',
+          from: 'Motion <noreply@info.motionapp.xyz>',
           to: [invite.email],
-          subject: 'Account Studio AI attivato con successo',
+          subject: 'Account Motion attivato con successo',
           html: `
             <!DOCTYPE html>
             <html>
