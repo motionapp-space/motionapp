@@ -57,7 +57,7 @@ function formatRestTime(seconds: number): string {
   return seconds < 0 ? `−${formatted}` : formatted;
 }
 
-// ================== Session Header Timer ==================
+// ================== Session Header Timer (Compact) ==================
 
 function SessionHeaderTimer() {
   const store = useClientSessionStore();
@@ -76,32 +76,87 @@ function SessionHeaderTimer() {
   const elapsed = store.getElapsedSeconds();
   const isOvertime = remainingRest < 0;
 
+  // Compact layout: rest prioritized when active
   if (isRestActive) {
     return (
-      <div className="text-center">
-        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-          {isOvertime ? 'Recupero superato' : 'Recupero'}
-        </p>
+      <div className="flex items-center gap-3">
         <span className={cn(
-          "text-[28px] font-semibold leading-[32px] tabular-nums font-mono",
+          "text-[24px] font-semibold tabular-nums font-mono",
           isOvertime ? "text-destructive" : "text-primary"
         )}>
           {formatRestTime(remainingRest)}
         </span>
-        <p className="text-[13px] text-muted-foreground mt-1">
-          Durata: {formatElapsedTime(elapsed)}
-        </p>
+        <span className="text-[13px] text-muted-foreground">
+          {formatElapsedTime(elapsed)}
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="text-center">
-      <div className="flex items-center justify-center gap-2">
-        <Timer className="h-5 w-5 text-muted-foreground" />
-        <span className="text-[22px] font-semibold tabular-nums font-mono">
-          {formatElapsedTime(elapsed)}
-        </span>
+    <span className="text-[13px] text-muted-foreground tabular-nums font-mono">
+      {formatElapsedTime(elapsed)}
+    </span>
+  );
+}
+
+// ================== Completed Series Chips ==================
+
+interface CompletedSeriesChipsProps {
+  actuals: ExerciseActual[];
+  exerciseIds: string[];
+  numExercises: number;
+}
+
+function CompletedSeriesChips({ actuals, exerciseIds, numExercises }: CompletedSeriesChipsProps) {
+  const groupActuals = actuals.filter(a => exerciseIds.includes(a.exercise_id));
+  const completedSeries = Math.floor(groupActuals.length / numExercises);
+  
+  if (completedSeries === 0) return null;
+
+  // Group actuals by set_index to display series info
+  // For superset: show aggregated info per series
+  const seriesData: Array<{ index: number; summary: string }> = [];
+  
+  for (let i = 1; i <= completedSeries; i++) {
+    // Find actuals for this series (by set_index or position)
+    const seriesActuals = groupActuals.filter(a => a.set_index === i);
+    
+    if (seriesActuals.length > 0) {
+      // If superset: just show "#1", "#2", etc. with first exercise's data
+      const first = seriesActuals[0];
+      const loadDisplay = first.load ? `${first.load}` : '';
+      seriesData.push({
+        index: i,
+        summary: loadDisplay ? `${first.reps}×${loadDisplay}` : `${first.reps} reps`
+      });
+    } else {
+      seriesData.push({ index: i, summary: '' });
+    }
+  }
+
+  // Show max 3 chips, then "+N" if more
+  const visibleChips = seriesData.slice(0, 3);
+  const hiddenCount = seriesData.length - 3;
+
+  return (
+    <div className="mt-3">
+      <p className="text-[13px] font-medium text-muted-foreground mb-2">Serie completate</p>
+      <div className="flex flex-wrap gap-2">
+        {visibleChips.map(({ index, summary }) => (
+          <span
+            key={index}
+            className="h-8 px-3 rounded-full bg-muted text-[14px] font-medium flex items-center gap-1"
+          >
+            #{index}
+            {summary && <span className="text-muted-foreground">{summary}</span>}
+          </span>
+        ))}
+        {hiddenCount > 0 && (
+          <span className="h-8 px-3 rounded-full bg-muted text-[14px] font-medium flex items-center text-muted-foreground">
+            +{hiddenCount}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -229,37 +284,35 @@ function SupersetCard({
 
   return (
     <div className={cn(
-      "bg-background border border-muted rounded-2xl p-4 mb-4",
-      allSeriesCompleted && "opacity-60 border-green-500/30"
+      "bg-background border border-muted rounded-2xl p-4",
+      allSeriesCompleted && "opacity-60 border-primary/30"
     )}>
-      {/* Header */}
+      {/* Header - Compact */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="h-7 px-3 rounded-full bg-primary/10 text-primary text-[12px] font-medium flex items-center">
             {group.type === 'circuit' ? 'Circuit' : 'Superset'}
+            {group.label && ` ${group.label}`}
           </span>
-          {group.label && (
-            <span className="text-[12px] text-muted-foreground">{group.label}</span>
-          )}
         </div>
         <span className="text-[12px] font-medium bg-muted rounded-full px-3 py-1">
           Serie {completedSeries}/{targetSeries}
         </span>
       </div>
 
-      {/* Exercises */}
+      {/* Exercises - Compact layout */}
       {group.exercises.map((exercise, idx) => (
-        <div key={exercise.id} className={cn(idx > 0 && "mt-4")}>
-          {/* Exercise name and target */}
+        <div key={exercise.id} className={cn(idx > 0 && "mt-3 pt-3 border-t border-muted")}>
+          {/* Exercise name - more prominent */}
           <h4 className="text-[16px] font-semibold leading-[22px]">
             {exercise.name || 'Esercizio'}
           </h4>
-          <p className="text-[13px] text-muted-foreground mt-1">
-            {exercise.sets} x {exercise.reps}
-            {exercise.rest_seconds && ` • ${exercise.rest_seconds}s rec.`}
+          {/* Target - shown only once per exercise, compact */}
+          <p className="text-[13px] text-muted-foreground">
+            {exercise.sets}×{exercise.reps}
           </p>
 
-          {/* Inputs */}
+          {/* Inputs - inline */}
           <ExerciseInputRow
             exercise={exercise}
             reps={inputValues[exercise.id]?.reps || ''}
@@ -276,23 +329,32 @@ function SupersetCard({
         </div>
       ))}
 
-      {/* CTA - Single button for entire superset */}
-      <Button
-        onClick={handleCompleteSeries}
-        disabled={isCompleting || !allRepsFilled || allSeriesCompleted}
-        className="w-full h-12 rounded-xl text-[16px] font-semibold mt-4"
-      >
-        {isCompleting ? (
-          'Salvataggio...'
-        ) : (
-          <>
-            <Check className="mr-2 h-5 w-5" />
-            Completa serie {nextSeriesIndex}
-          </>
-        )}
-      </Button>
+      {/* Completed Series Chips - CRITICAL FEEDBACK */}
+      <CompletedSeriesChips
+        actuals={actuals}
+        exerciseIds={groupExerciseIds}
+        numExercises={numExercises}
+      />
 
-      {/* Undo - Link style */}
+      {/* CTA - Single button for entire superset */}
+      {!allSeriesCompleted && (
+        <Button
+          onClick={handleCompleteSeries}
+          disabled={isCompleting || !allRepsFilled}
+          className="w-full h-12 rounded-xl text-[16px] font-semibold mt-4"
+        >
+          {isCompleting ? (
+            'Salvataggio...'
+          ) : (
+            <>
+              <Check className="mr-2 h-5 w-5" />
+              Completa serie {nextSeriesIndex}
+            </>
+          )}
+        </Button>
+      )}
+
+      {/* Undo - Link style, below CTA */}
       {hasCompletedSeries && (
         <button
           onClick={handleUndoSeries}
@@ -375,11 +437,11 @@ function SingleExerciseCard({
 
   return (
     <div className={cn(
-      "bg-background border border-muted rounded-2xl p-4 mb-4",
-      allSetsCompleted && "opacity-60 border-green-500/30"
+      "bg-background border border-muted rounded-2xl p-4",
+      allSetsCompleted && "opacity-60 border-primary/30"
     )}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2">
+      {/* Header - Compact */}
+      <div className="flex items-center justify-between mb-1">
         <h4 className="text-[16px] font-semibold leading-[22px]">
           {exercise.name || 'Esercizio'}
         </h4>
@@ -389,8 +451,7 @@ function SingleExerciseCard({
       </div>
 
       <p className="text-[13px] text-muted-foreground">
-        {exercise.sets} x {exercise.reps}
-        {exercise.rest_seconds && ` • ${exercise.rest_seconds}s rec.`}
+        {exercise.sets}×{exercise.reps}
       </p>
 
       {/* Inputs */}
@@ -402,21 +463,30 @@ function SingleExerciseCard({
         setLoad={setLoad}
       />
 
+      {/* Completed Series Chips - CRITICAL FEEDBACK */}
+      <CompletedSeriesChips
+        actuals={actuals}
+        exerciseIds={[exercise.id]}
+        numExercises={1}
+      />
+
       {/* CTA */}
-      <Button
-        onClick={handleCompleteSet}
-        disabled={isCompleting || !reps || allSetsCompleted}
-        className="w-full h-12 rounded-xl text-[16px] font-semibold mt-4"
-      >
-        {isCompleting ? (
-          'Salvataggio...'
-        ) : (
-          <>
-            <Check className="mr-2 h-5 w-5" />
-            Completa serie {nextSetIndex}
-          </>
-        )}
-      </Button>
+      {!allSetsCompleted && (
+        <Button
+          onClick={handleCompleteSet}
+          disabled={isCompleting || !reps}
+          className="w-full h-12 rounded-xl text-[16px] font-semibold mt-4"
+        >
+          {isCompleting ? (
+            'Salvataggio...'
+          ) : (
+            <>
+              <Check className="mr-2 h-5 w-5" />
+              Completa serie {nextSetIndex}
+            </>
+          )}
+        </Button>
+      )}
 
       {/* Undo - Link style */}
       {completedSets > 0 && (
@@ -445,8 +515,9 @@ interface PhaseSectionProps {
 
 function PhaseSection({ phase, dayId, sessionId, actuals, onSetComplete }: PhaseSectionProps) {
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+    <div className="space-y-3">
+      {/* Phase label - subtle */}
+      <h3 className="text-[12px] font-medium text-muted-foreground uppercase tracking-wide px-1">
         {phase.type}
       </h3>
       {phase.groups.map((group) => {
@@ -600,24 +671,30 @@ export default function ClientLiveSession() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b p-4">
+      {/* Header - COMPACT */}
+      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-3">
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
             size="icon"
+            className="h-9 w-9"
             onClick={() => navigate('/client/app/workouts')}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="text-center flex-1">
-            <h1 className="text-lg font-semibold truncate">
+          
+          {/* Center: Title + Timer inline */}
+          <div className="flex items-center gap-3 flex-1 justify-center">
+            <h1 className="text-[18px] font-semibold truncate max-w-[140px]">
               {snapshot.day.title}
             </h1>
+            <SessionHeaderTimer />
           </div>
+          
           <Button
             variant="ghost"
             size="icon"
+            className="h-9 w-9"
             onClick={handlePauseToggle}
           >
             {store.isPaused ? (
@@ -627,18 +704,15 @@ export default function ClientLiveSession() {
             )}
           </Button>
         </div>
-        <div className="flex flex-col items-center mt-3">
-          <SessionHeaderTimer />
-          {store.isPaused && (
-            <Badge variant="secondary" className="mt-2">
-              In pausa
-            </Badge>
-          )}
-        </div>
+        {store.isPaused && (
+          <Badge variant="secondary" className="mt-2 mx-auto block w-fit">
+            In pausa
+          </Badge>
+        )}
       </header>
 
       {/* Content */}
-      <main className="flex-1 p-4 pb-32 space-y-6">
+      <main className="flex-1 p-4 pb-24 space-y-4">
         {snapshot.phases.map((phase, index) => (
           <PhaseSection
             key={`${phase.type}-${index}`}
@@ -651,21 +725,23 @@ export default function ClientLiveSession() {
         ))}
       </main>
 
-      {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 space-y-2">
-        <Button
-          onClick={() => setShowFinishDialog(true)}
-          className="w-full h-12 rounded-xl text-[16px] font-semibold"
-        >
-          <Check className="mr-2 h-5 w-5" />
-          Termina allenamento
-        </Button>
-        <button
-          onClick={() => setShowDiscardDialog(true)}
-          className="w-full text-[14px] text-muted-foreground min-h-[44px]"
-        >
-          Abbandona sessione
-        </button>
+      {/* Footer - Less dominant */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t px-4 py-3">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowDiscardDialog(true)}
+            className="text-[14px] text-muted-foreground min-h-[44px] px-3"
+          >
+            Abbandona
+          </button>
+          <Button
+            onClick={() => setShowFinishDialog(true)}
+            className="flex-1 h-11 rounded-xl text-[15px] font-semibold"
+          >
+            <Check className="mr-2 h-4 w-4" />
+            Termina
+          </Button>
+        </div>
       </footer>
 
       {/* Finish Dialog */}
