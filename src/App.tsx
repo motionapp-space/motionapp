@@ -37,6 +37,7 @@ import ClientLiveSession from "./pages/client/ClientLiveSession";
 import ClientAppointments from "./pages/client/ClientAppointments";
 import ClientAllAppointments from "./pages/client/ClientAllAppointments";
 import ClientAppLayout from "./components/client/ClientAppLayout";
+import ClientSessionLayout from "./components/client/ClientSessionLayout";
 import CoachLayout from "./components/CoachLayout";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { useSessionBridge } from "@/hooks/useSessionBridge";
@@ -124,10 +125,16 @@ const App = () => {
             {/* Client area routes - always accessible, no coach auth required */}
             <Route path="/client/auth" element={<ClientAuth />} />
             <Route path="/client/accept-invite" element={<ClientAcceptInvite />} />
+            
+            {/* Live session - immersive layout (BEFORE /client/app for correct matching) */}
+            <Route path="/client/app/session" element={<ClientSessionLayout />}>
+              <Route index element={<ClientLiveSession />} />
+            </Route>
+            
+            {/* Client app - standard layout */}
             <Route path="/client/app" element={<ClientAppLayout />}>
               <Route index element={<Navigate to="workouts" replace />} />
               <Route path="workouts" element={<ClientWorkouts />} />
-              <Route path="session" element={<ClientLiveSession />} />
               <Route path="appointments" element={<ClientAppointments />} />
               <Route path="appointments/all" element={<ClientAllAppointments />} />
             </Route>
