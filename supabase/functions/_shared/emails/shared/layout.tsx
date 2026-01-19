@@ -1,14 +1,5 @@
 /** @jsxImportSource https://esm.sh/react@18.3.1 */
 import React from 'https://esm.sh/react@18.3.1';
-import {
-  Html,
-  Head,
-  Body,
-  Container,
-  Preview,
-  Section,
-  Img,
-} from 'https://esm.sh/@react-email/components@0.0.22';
 import { colors, fonts, spacing } from './styles.ts';
 
 interface LayoutProps {
@@ -19,42 +10,62 @@ interface LayoutProps {
 /**
  * Layout wrapper comune per tutte le email.
  * Include header con logo, contenuto e footer.
+ * Usa HTML puro per evitare conflitti di versioni React.
  */
 export function Layout({ preview, children }: LayoutProps) {
   return (
-    <Html>
-      <Head />
-      <Preview>{preview}</Preview>
-      <Body style={bodyStyle}>
-        <Container style={containerStyle}>
+    <html lang="it">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{preview}</title>
+        {/* Preview text for email clients */}
+        <span style={{ display: 'none', maxHeight: 0, overflow: 'hidden' }}>
+          {preview}
+        </span>
+      </head>
+      <body style={bodyStyle}>
+        <table
+          role="presentation"
+          cellPadding="0"
+          cellSpacing="0"
+          style={containerStyle}
+        >
           {/* Header */}
-          <Section style={headerStyle}>
-            <Img
-              src="https://qadgzwsmiadxwwvsrauz.supabase.co/storage/v1/object/public/assets/logo.png"
-              alt="Studio AI"
-              width="120"
-              height="auto"
-              style={{ margin: '0 auto' }}
-            />
-          </Section>
-
-          {/* Content */}
-          <Section style={contentStyle}>
-            {children}
-          </Section>
-
-          {/* Footer */}
-          <Section style={footerStyle}>
-            <p style={footerTextStyle}>
-              Questa email è stata inviata da Studio AI.
-            </p>
-            <p style={footerTextStyle}>
-              © {new Date().getFullYear()} Studio AI. Tutti i diritti riservati.
-            </p>
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+          <tbody>
+            <tr>
+              <td style={headerStyle}>
+                <img
+                  src="https://qadgzwsmiadxwwvsrauz.supabase.co/storage/v1/object/public/assets/logo.png"
+                  alt="Studio AI"
+                  width="120"
+                  style={{ display: 'block', margin: '0 auto' }}
+                />
+              </td>
+            </tr>
+            
+            {/* Content */}
+            <tr>
+              <td style={contentStyle}>
+                {children}
+              </td>
+            </tr>
+            
+            {/* Footer */}
+            <tr>
+              <td style={footerStyle}>
+                <p style={footerTextStyle}>
+                  Questa email è stata inviata da Studio AI.
+                </p>
+                <p style={footerTextStyle}>
+                  © {new Date().getFullYear()} Studio AI. Tutti i diritti riservati.
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </body>
+    </html>
   );
 }
 
@@ -72,6 +83,7 @@ const containerStyle: React.CSSProperties = {
   borderRadius: '8px',
   overflow: 'hidden',
   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+  width: '100%',
 };
 
 const headerStyle: React.CSSProperties = {

@@ -6,7 +6,7 @@
  */
 
 import React from 'https://esm.sh/react@18.3.1';
-import { render } from 'https://esm.sh/@react-email/components@0.0.22';
+import { renderToStaticMarkup } from 'https://esm.sh/react-dom@18.3.1/server?deps=react@18.3.1';
 import type { EmailType } from "../email-outbox.ts";
 import { resolveEmailTemplate, determineRecipient } from "./index.ts";
 import type { RenderedEmail } from "./types.ts";
@@ -76,10 +76,10 @@ export async function renderEmail(emailMessage: {
   // 4. Genera subject
   const subject = template.subject(templateData);
   
-  // 5. Renderizza HTML
-  const html = render(
-    React.createElement(template.component, templateData)
-  );
+  // 5. Renderizza HTML usando react-dom/server direttamente
+  // Questo evita problemi di versioni React con @react-email/components
+  const element = React.createElement(template.component, templateData);
+  const html = '<!DOCTYPE html>' + renderToStaticMarkup(element);
   
   console.log(`[renderEmail] Successfully rendered: ${templateKey}, subject: "${subject}"`);
   
