@@ -2069,10 +2069,20 @@ export type Database = {
       }
     }
     Functions: {
-      cancel_event_with_ledger: {
-        Args: { p_actor: string; p_event_id: string; p_now?: string }
-        Returns: Json
-      }
+      cancel_event_with_ledger:
+        | {
+            Args: { p_actor: string; p_event_id: string; p_now?: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_actor: string
+              p_client_user_id?: string
+              p_event_id: string
+              p_now?: string
+            }
+            Returns: Json
+          }
       cancel_series_with_ledger: {
         Args: { p_actor: string; p_now?: string; p_series_id: string }
         Returns: Json
@@ -2083,6 +2093,10 @@ export type Database = {
       }
       check_client_owns_coach_client: {
         Args: { p_coach_client_id: string }
+        Returns: boolean
+      }
+      check_client_owns_coach_client_internal: {
+        Args: { p_coach_client_id: string; p_user_id: string }
         Returns: boolean
       }
       check_coach_owns_coach_client: {

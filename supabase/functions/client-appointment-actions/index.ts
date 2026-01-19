@@ -110,10 +110,11 @@ serve(async (req) => {
         // 1. Build snapshot server-side BEFORE mutation
         snapshot = await buildEventEmailSnapshot(supabaseAdmin, eventId, 'client');
 
-        // 2. Execute cancel via RPC
+        // 2. Execute cancel via RPC (pass user.id for service role auth bypass)
         const { data: cancelData, error: cancelError } = await supabaseAdmin.rpc('cancel_event_with_ledger', {
           p_event_id: eventId,
-          p_actor: 'client'
+          p_actor: 'client',
+          p_client_user_id: user.id
         });
 
         if (cancelError) throw new Error(cancelError.message);
@@ -143,10 +144,11 @@ serve(async (req) => {
         // 1. Build snapshot server-side BEFORE mutation
         snapshot = await buildEventEmailSnapshot(supabaseAdmin, eventId, 'client');
 
-        // 2. Cancel via RPC
+        // 2. Cancel via RPC (pass user.id for service role auth bypass)
         const { data: cancelData, error: cancelError } = await supabaseAdmin.rpc('cancel_event_with_ledger', {
           p_event_id: eventId,
-          p_actor: 'client'
+          p_actor: 'client',
+          p_client_user_id: user.id
         });
 
         if (cancelError) throw new Error(cancelError.message);
