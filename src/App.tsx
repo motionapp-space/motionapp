@@ -33,6 +33,7 @@ import ClientAuth from "./pages/client/ClientAuth";
 import ClientAcceptInvite from "./pages/client/ClientAcceptInvite";
 import ClientHome from "./pages/client/ClientHome";
 import ClientWorkouts from "./pages/client/ClientWorkouts";
+import ClientLiveSession from "./pages/client/ClientLiveSession";
 import ClientAppointments from "./pages/client/ClientAppointments";
 import ClientAllAppointments from "./pages/client/ClientAllAppointments";
 import ClientAppLayout from "./components/client/ClientAppLayout";
@@ -126,6 +127,7 @@ const App = () => {
             <Route path="/client/app" element={<ClientAppLayout />}>
               <Route index element={<Navigate to="workouts" replace />} />
               <Route path="workouts" element={<ClientWorkouts />} />
+              <Route path="session" element={<ClientLiveSession />} />
               <Route path="appointments" element={<ClientAppointments />} />
               <Route path="appointments/all" element={<ClientAllAppointments />} />
             </Route>
