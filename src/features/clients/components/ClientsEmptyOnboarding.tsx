@@ -10,7 +10,7 @@ export function ClientsEmptyOnboarding({ onCreateClient }: ClientsEmptyOnboardin
     <div className="flex-1 flex items-center justify-center p-6">
       <EmptyState
         icon={UserPlus}
-        title="Benvenuto in Studio AI"
+        title="Benvenuto in Motion"
         description="Inizia aggiungendo il tuo primo cliente"
         action={{
           label: "Crea il tuo primo cliente",

@@ -42,9 +42,9 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
         collapsed ? "justify-center px-2" : "px-5"
       )}>
         {collapsed ? (
-          <span className="text-xl font-bold tracking-tight text-primary">S</span>
+          <span className="text-xl font-bold tracking-tight text-primary">M</span>
         ) : (
-          <span className="text-xl font-bold tracking-tight">Studio AI</span>
+          <span className="text-xl font-bold tracking-tight">Motion</span>
         )}
       </div>
 
