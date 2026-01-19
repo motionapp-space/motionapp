@@ -558,46 +558,52 @@ export default function ClientLiveSession() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Top Bar - Sticky 96px, 3 rows */}
-      <header className="sticky top-0 z-50 h-[96px] bg-background border-b border-muted px-4 pt-3 pb-2 flex flex-col">
-        {/* Row 1: Back - Title - Pause */}
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 shrink-0 -ml-2"
-            onClick={() => navigate('/client/app/workouts')}
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
+      <header className="sticky top-0 z-50 bg-background border-b border-muted">
+        <div className="h-[96px] px-4 pt-3 pb-2 flex flex-col justify-between">
+          {/* Row 1: Navigation - h-8 */}
+          <div className="h-8 flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0"
+              onClick={() => navigate('/client/app/workouts')}
+            >
+              <ArrowLeft className="size-6 text-foreground" />
+            </Button>
 
-          <span className="text-[18px] font-semibold leading-[24px] truncate max-w-[200px]">
-            {snapshot.day.title}
-          </span>
+            <span className="text-[18px] font-semibold leading-[24px] text-foreground truncate max-w-[200px] text-center">
+              {snapshot.day.title}
+            </span>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 shrink-0 -mr-2"
-            onClick={handlePauseToggle}
-          >
-            {store.isPaused ? <Play className="h-6 w-6" /> : <Pause className="h-6 w-6" />}
-          </Button>
-        </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0"
+              onClick={handlePauseToggle}
+            >
+              {store.isPaused ? (
+                <Play className="size-6 text-muted-foreground" />
+              ) : (
+                <Pause className="size-6 text-muted-foreground" />
+              )}
+            </Button>
+          </div>
 
-        {/* Row 2: Context - Phase · X / Y */}
-        <div className="text-center mt-1">
-          <span className="text-[13px] text-muted-foreground">
-            {currentFlatGroup?.phaseType || 'Warm-up'} · {store.currentGroupIndex + 1} / {store.totalGroups}
-          </span>
-        </div>
+          {/* Row 2: Context - h-5 */}
+          <div className="h-5 flex items-center justify-center">
+            <span className="text-[13px] leading-[20px] text-muted-foreground font-normal">
+              {currentFlatGroup?.phaseType || 'Warm-up'} · {store.currentGroupIndex + 1} / {store.totalGroups}
+            </span>
+          </div>
 
-        {/* Row 3: Timer */}
-        <div className="text-center mt-1">
-          <TopBarTimer />
+          {/* Row 3: Timer - h-8 */}
+          <div className="h-8 flex items-center justify-center">
+            <TopBarTimer />
+          </div>
         </div>
       </header>
 
-      {/* Pause Badge */}
+      {/* Pause Badge - outside header */}
       {store.isPaused && (
         <div className="bg-background border-b px-4 py-2">
           <Badge variant="secondary" className="mx-auto block w-fit">
@@ -606,8 +612,8 @@ export default function ClientLiveSession() {
         </div>
       )}
 
-      {/* Content - Single group */}
-      <main className="flex-1 pb-28">
+      {/* Content - starts after 96px header */}
+      <main className="flex-1 pb-[calc(80px+env(safe-area-inset-bottom))]">
         {/* Group Header */}
         {currentFlatGroup && (
           <div className="mt-4 px-4 flex items-center justify-between">
