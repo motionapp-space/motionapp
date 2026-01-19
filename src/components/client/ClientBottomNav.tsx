@@ -10,7 +10,7 @@ const ClientBottomNav = () => {
   const location = useLocation();
   
   // Hide during live session (immersive mode)
-  if (location.pathname.includes("/session")) {
+  if (location.pathname.startsWith("/client/app/session")) {
     return null;
   }
   

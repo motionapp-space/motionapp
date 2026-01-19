@@ -105,7 +105,7 @@ function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
   if (isRestActive) {
     return (
       <span className={cn(
-        "text-[22px] font-semibold tracking-tight tabular-nums",
+        "text-[22px] font-semibold tracking-tight tabular-nums min-w-[96px] text-center",
         isOvertime ? "text-destructive" : "text-primary"
       )}>
         {formatRestTime(remainingRest)}
@@ -117,7 +117,7 @@ function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
   if (!showSessionDuration) return null;
   
   return (
-    <span className="text-[14px] font-medium text-muted-foreground tabular-nums">
+    <span className="text-[14px] font-medium text-muted-foreground tabular-nums min-w-[96px] text-center">
       {formatElapsedTime(elapsed)}
     </span>
   );
@@ -362,7 +362,7 @@ function GroupCard({
   return (
     <>
       {/* Card container - Notion-like, soft border */}
-      <div className="mt-4 mx-4 p-4 rounded-2xl bg-background border border-muted/60 space-y-5">
+      <div className="mt-3 p-5 rounded-2xl bg-background border border-muted/60 space-y-5">
         {/* Exercises */}
         {group.exercises.map((exercise, idx) => (
           <ExerciseBlock
@@ -542,9 +542,9 @@ export default function ClientLiveSession() {
   // Loading state
   if (isActiveLoading || isDetailLoading) {
     return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-[88px] w-full" />
+      <div className="h-[100dvh] overflow-hidden bg-background flex flex-col min-h-0 items-center justify-center p-4">
+        <div className="space-y-4 w-full max-w-[520px]">
+          <Skeleton className="h-[96px] w-full" />
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-32 w-full" />
         </div>
@@ -555,7 +555,7 @@ export default function ClientLiveSession() {
   // No active session
   if (!sessionId || !snapshot) {
     return (
-      <div className="flex flex-col min-h-screen bg-background items-center justify-center p-4">
+      <div className="h-[100dvh] overflow-hidden bg-background flex flex-col min-h-0 items-center justify-center p-4">
         <Dumbbell className="h-16 w-16 text-muted-foreground mb-4" />
         <h2 className="text-xl font-semibold mb-2">Nessuna sessione attiva</h2>
         <p className="text-muted-foreground text-center mb-4">
@@ -583,9 +583,9 @@ export default function ClientLiveSession() {
   const isLastGroup = store.currentGroupIndex === store.totalGroups - 1;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="h-[100dvh] overflow-hidden bg-background flex flex-col min-h-0">
       {/* Top Bar - Sticky 96px, 3 rows with breathing room */}
-      <header className="sticky top-0 z-50 bg-background border-b border-muted">
+      <header className="sticky top-0 z-50 shrink-0 isolate overflow-hidden bg-background border-b border-muted">
         <div className="h-[96px] px-4 pt-3 pb-3 flex flex-col">
           {/* Row 1: Navigation */}
           <div className="flex items-center justify-between">
@@ -639,45 +639,44 @@ export default function ClientLiveSession() {
         </div>
       )}
 
-      {/* Content wrapper with proper bottom padding for sticky bars */}
-      <main className="flex-1 max-w-[520px] mx-auto w-full pb-[140px]">
-        {/* Group Header - pills + badge */}
-        {currentFlatGroup && (
-          <div className="mt-4 px-4 flex items-center justify-between">
-            {/* Left: Group type pill (only for superset/circuit) */}
-            {groupTypeLabel ? (
-              <span className="h-8 text-[13px] font-medium bg-primary/10 text-primary rounded-full px-3 flex items-center">
-                {groupTypeLabel}
-              </span>
-            ) : (
-              <span />
-            )}
-            
-            {/* Right: Series badge */}
-            <SeriesBadge 
-              completed={currentGroupSeriesInfo.completed} 
-              target={currentGroupSeriesInfo.target} 
-            />
-          </div>
-        )}
+      {/* Main scroll container (ONLY scrollable element) */}
+      <main className="flex-1 min-h-0 overflow-y-auto">
+        <div className="px-4 pt-6 pb-6 max-w-[520px] mx-auto w-full">
+          {/* Group Header - pills + badge */}
+          {currentFlatGroup && (
+            <div className="flex items-center justify-between gap-2">
+              {/* Left: Group type pill (only for superset/circuit) */}
+              {groupTypeLabel ? (
+                <span className="h-8 text-[13px] font-medium bg-primary/10 text-primary rounded-full px-3 flex items-center">
+                  {groupTypeLabel}
+                </span>
+              ) : (
+                <span />
+              )}
+              
+              {/* Right: Series badge */}
+              <SeriesBadge 
+                completed={currentGroupSeriesInfo.completed} 
+                target={currentGroupSeriesInfo.target} 
+              />
+            </div>
+          )}
 
-        {/* Group Card */}
-        {currentFlatGroup && (
-          <GroupCard
-            flatGroup={currentFlatGroup}
-            dayId={snapshot.day.id}
-            sessionId={sessionId}
-            actuals={actuals}
-            onSeriesComplete={handleSetComplete}
-          />
-        )}
+          {/* Group Card */}
+          {currentFlatGroup && (
+            <GroupCard
+              flatGroup={currentFlatGroup}
+              dayId={snapshot.day.id}
+              sessionId={sessionId}
+              actuals={actuals}
+              onSeriesComplete={handleSetComplete}
+            />
+          )}
+        </div>
       </main>
 
-      {/* Navigation Bar - Sticky above footer */}
-      <div 
-        className="sticky z-40 bg-background border-t border-muted h-[64px] px-4 flex items-center justify-between"
-        style={{ bottom: '88px' }}
-      >
+      {/* Navigation Bar - Always visible, NOT sticky (outside scroll container) */}
+      <nav className="shrink-0 h-[64px] bg-background border-t border-muted px-4 flex items-center justify-between">
         <Button
           variant="ghost"
           onClick={() => store.prevGroup()}
@@ -703,10 +702,10 @@ export default function ClientLiveSession() {
           Successivo
           <ChevronRight className="size-[18px]" />
         </Button>
-      </div>
+      </nav>
 
-      {/* Footer - Sticky Bottom (always visible) */}
-      <footer className="sticky bottom-0 z-30 bg-background border-t border-muted px-4 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
+      {/* Footer - Always visible, NOT sticky (outside scroll container) */}
+      <footer className="shrink-0 bg-background border-t border-muted px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
         <Button
           onClick={() => setShowFinishDialog(true)}
           className="w-full h-14 rounded-2xl text-[16px] font-semibold gap-2"
