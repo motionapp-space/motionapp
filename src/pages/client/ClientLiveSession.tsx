@@ -274,7 +274,6 @@ function SupersetCard({
     });
   };
 
-  const allSeriesCompleted = completedSeries >= targetSeries;
   const hasCompletedSeries = completedSeries > 0;
 
   // Check if all reps are filled
@@ -282,11 +281,19 @@ function SupersetCard({
     inputValues[ex.id]?.reps && inputValues[ex.id].reps.trim() !== ''
   );
 
+  // Badge styling based on completion state
+  const getBadgeClasses = () => {
+    if (completedSeries > targetSeries) {
+      return "bg-emerald-500/20 text-emerald-700 font-medium";
+    }
+    if (completedSeries === targetSeries) {
+      return "bg-emerald-500/15 text-emerald-700 font-medium";
+    }
+    return "bg-muted text-foreground";
+  };
+
   return (
-    <div className={cn(
-      "bg-background border border-muted rounded-2xl p-4",
-      allSeriesCompleted && "opacity-60 border-primary/30"
-    )}>
+    <div className="bg-background border border-muted rounded-2xl p-4">
       {/* Header - Compact */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -295,7 +302,7 @@ function SupersetCard({
             {group.label && ` ${group.label}`}
           </span>
         </div>
-        <span className="text-[12px] font-medium bg-muted rounded-full px-3 py-1">
+        <span className={cn("h-7 px-3 rounded-full text-[13px] leading-none flex items-center", getBadgeClasses())}>
           Serie {completedSeries}/{targetSeries}
         </span>
       </div>
@@ -336,23 +343,18 @@ function SupersetCard({
         numExercises={numExercises}
       />
 
-      {/* CTA - Single button for entire superset */}
-      {!allSeriesCompleted && (
-        <Button
-          onClick={handleCompleteSeries}
-          disabled={isCompleting || !allRepsFilled}
-          className="w-full h-12 rounded-xl text-[16px] font-semibold mt-4"
-        >
-          {isCompleting ? (
-            'Salvataggio...'
-          ) : (
-            <>
-              <Check className="mr-2 h-5 w-5" />
-              Completa serie {nextSeriesIndex}
-            </>
-          )}
-        </Button>
-      )}
+      {/* CTA - Always enabled, never hidden */}
+      <Button
+        onClick={handleCompleteSeries}
+        disabled={isCompleting || !allRepsFilled}
+        className="w-full h-12 rounded-xl text-[16px] font-semibold mt-4"
+      >
+        {isCompleting ? (
+          'Salvataggio...'
+        ) : (
+          <>✓ Completa serie {nextSeriesIndex}</>
+        )}
+      </Button>
 
       {/* Undo - Link style, below CTA */}
       {hasCompletedSeries && (
@@ -433,20 +435,28 @@ function SingleExerciseCard({
     });
   };
 
-  const allSetsCompleted = completedSets >= exercise.sets;
+  const targetSets = exercise.sets;
+
+  // Badge styling based on completion state
+  const getBadgeClasses = () => {
+    if (completedSets > targetSets) {
+      return "bg-emerald-500/20 text-emerald-700 font-medium";
+    }
+    if (completedSets === targetSets) {
+      return "bg-emerald-500/15 text-emerald-700 font-medium";
+    }
+    return "bg-muted text-foreground";
+  };
 
   return (
-    <div className={cn(
-      "bg-background border border-muted rounded-2xl p-4",
-      allSetsCompleted && "opacity-60 border-primary/30"
-    )}>
+    <div className="bg-background border border-muted rounded-2xl p-4">
       {/* Header - Compact */}
       <div className="flex items-center justify-between mb-1">
         <h4 className="text-[16px] font-semibold leading-[22px]">
           {exercise.name || 'Esercizio'}
         </h4>
-        <span className="text-[12px] font-medium bg-muted rounded-full px-3 py-1">
-          Serie {completedSets}/{exercise.sets}
+        <span className={cn("h-7 px-3 rounded-full text-[13px] leading-none flex items-center", getBadgeClasses())}>
+          Serie {completedSets}/{targetSets}
         </span>
       </div>
 
@@ -470,23 +480,18 @@ function SingleExerciseCard({
         numExercises={1}
       />
 
-      {/* CTA */}
-      {!allSetsCompleted && (
-        <Button
-          onClick={handleCompleteSet}
-          disabled={isCompleting || !reps}
-          className="w-full h-12 rounded-xl text-[16px] font-semibold mt-4"
-        >
-          {isCompleting ? (
-            'Salvataggio...'
-          ) : (
-            <>
-              <Check className="mr-2 h-5 w-5" />
-              Completa serie {nextSetIndex}
-            </>
-          )}
-        </Button>
-      )}
+      {/* CTA - Always enabled, never hidden */}
+      <Button
+        onClick={handleCompleteSet}
+        disabled={isCompleting || !reps}
+        className="w-full h-12 rounded-xl text-[16px] font-semibold mt-4"
+      >
+        {isCompleting ? (
+          'Salvataggio...'
+        ) : (
+          <>✓ Completa serie {nextSetIndex}</>
+        )}
+      </Button>
 
       {/* Undo - Link style */}
       {completedSets > 0 && (
