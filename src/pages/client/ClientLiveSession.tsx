@@ -87,7 +87,7 @@ function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
     return (
       <div className="text-center">
         <span className={cn(
-          "text-[20px] font-semibold tabular-nums font-mono",
+          "text-[22px] font-semibold tabular-nums font-mono",
           isOvertime ? "text-destructive" : "text-primary"
         )}>
           {formatRestTime(remainingRest)}
@@ -300,7 +300,7 @@ function GroupCard({
 
       completeSeries(inputs, {
         onSuccess: () => onSeriesComplete(restSeconds, group.id),
-        onError: (error) => toast.error(error.message || 'Errore nel salvataggio'),
+        onError: (error) => toast.error(error.message || 'Errore nel completamento'),
       });
     } else {
       // Single exercise
@@ -341,7 +341,7 @@ function GroupCard({
   );
 
   return (
-    <div className="mx-4 mt-3 p-4 rounded-2xl border border-muted bg-background space-y-5">
+    <div className="px-4 mt-4 space-y-6">
       {/* Exercises */}
       {group.exercises.map((exercise, idx) => (
         <ExerciseBlock
@@ -484,10 +484,9 @@ export default function ClientLiveSession() {
       {
         onSuccess: () => {
           store.clear();
-          toast.success('Allenamento completato! 💪');
           navigate('/client/app/workouts');
         },
-        onError: (error) => toast.error(error.message || 'Errore'),
+        onError: (error) => toast.error(error.message || 'Errore nel salvataggio'),
       }
     );
   };
@@ -497,7 +496,6 @@ export default function ClientLiveSession() {
     discardSession(sessionId, {
       onSuccess: () => {
         store.clear();
-        toast.info('Allenamento abbandonato');
         navigate('/client/app/workouts');
       },
       onError: (error) => toast.error(error.message || 'Errore'),
@@ -558,9 +556,9 @@ export default function ClientLiveSession() {
   const groupTypeLabel = getGroupTypeLabel();
 
   return (
-    <div className="flex flex-col min-h-screen bg-muted/30">
-      {/* Top Bar - Sticky 88px, 3 rows */}
-      <header className="sticky top-0 z-50 h-[88px] bg-background border-b border-muted px-4 pt-3 pb-2 flex flex-col">
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Top Bar - Sticky 96px, 3 rows */}
+      <header className="sticky top-0 z-50 h-[96px] bg-background border-b border-muted px-4 pt-3 pb-2 flex flex-col">
         {/* Row 1: Back - Title - Pause */}
         <div className="flex items-center justify-between">
           <Button
@@ -630,7 +628,7 @@ export default function ClientLiveSession() {
           </div>
         )}
 
-        {/* Group Card */}
+        {/* Group Content (no card) */}
         {currentFlatGroup && (
           <GroupCard
             flatGroup={currentFlatGroup}
@@ -693,9 +691,22 @@ export default function ClientLiveSession() {
               {actuals.length} serie.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Continua</AlertDialogCancel>
-            <AlertDialogAction onClick={handleFinish} disabled={isFinishing}>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+            <AlertDialogCancel className="sm:flex-1">Continua</AlertDialogCancel>
+            <button
+              onClick={() => {
+                setShowFinishDialog(false);
+                setShowDiscardDialog(true);
+              }}
+              className="text-[14px] text-destructive hover:underline underline-offset-2 min-h-[44px]"
+            >
+              Abbandona sessione
+            </button>
+            <AlertDialogAction 
+              onClick={handleFinish} 
+              disabled={isFinishing}
+              className="sm:flex-1"
+            >
               {isFinishing ? 'Salvataggio...' : 'Termina'}
             </AlertDialogAction>
           </AlertDialogFooter>
