@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { User, Dumbbell } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,6 +20,9 @@ import { SessionHistorySection } from "@/features/client-workouts/components/Ses
 import { WorkoutDayDetailSheet } from "@/features/client-workouts/components/WorkoutDayDetailSheet";
 import { PlanOverviewSheet } from "@/features/client-workouts/components/PlanOverviewSheet";
 import { countDayExercises } from "@/features/client-workouts/utils/plan-utils";
+import { useStartClientSession } from "@/features/session-tracking/hooks/useClientSessionTracking";
+import { useClientSessionStore } from "@/stores/useClientSessionStore";
+import { toast } from "sonner";
 
 export default function ClientWorkouts() {
   const { data: client, isLoading: isClientLoading } = useCurrentClient();
@@ -55,6 +59,7 @@ export default function ClientWorkouts() {
 }
 
 function ClientWorkoutsContent() {
+  const navigate = useNavigate();
   const { data: activePlan, isLoading: isPlanLoading } = useClientActivePlan();
   const { data: sessions, isLoading: isSessionsLoading } = useClientSessions();
   const { day: nextDay, exerciseCount } = useNextWorkoutDay(activePlan, sessions);
@@ -74,6 +79,10 @@ function ClientWorkoutsContent() {
   
   // Ref for scrolling to history
   const historyRef = useRef<HTMLDivElement>(null);
+
+  // Session tracking
+  const { mutateAsync: startSession, isPending: isStarting } = useStartClientSession();
+  const sessionStore = useClientSessionStore();
 
   // Determine display day (selected or next)
   const displayDay = selectedDayId
@@ -103,6 +112,21 @@ function ClientWorkoutsContent() {
     if (day) {
       setSelectedDayId(dayId);
       setDayDetailOpen(true);
+    }
+  };
+
+  const handleStartSession = async () => {
+    if (!activePlan || !displayDay) return;
+    try {
+      const session = await startSession({
+        plan: activePlan.data,
+        planId: activePlan.id,
+        dayId: displayDay.id,
+      });
+      sessionStore.start(session.id, Date.now());
+      navigate(`/client/app/session?sessionId=${session.id}`);
+    } catch (error) {
+      toast.error("Errore nell'avvio della sessione");
     }
   };
 
@@ -153,11 +177,11 @@ function ClientWorkoutsContent() {
             exercisesCount={displayDay ? countDayExercises(displayDay) : exerciseCount}
             estimatedMinutes={45}
             status="todo"
-            onStart={() => {}}
+            onStart={handleStartSession}
             onChangeDay={() => setChangeDayOpen(true)}
             onViewDetail={() => setDayDetailOpen(true)}
-            startDisabled
-            startDisabledReason="Funzionalità in arrivo"
+            startDisabled={isStarting}
+            startDisabledReason={isStarting ? "Avvio in corso..." : undefined}
             isLoading={isLoading}
           />
         )}
