@@ -105,7 +105,7 @@ function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
   if (isRestActive) {
     return (
       <span className={cn(
-        "tabular-nums font-mono text-[22px] font-semibold leading-none min-w-[88px] text-center",
+        "tabular-nums font-mono text-[22px] font-semibold leading-[28px] min-w-[104px] px-2 text-center",
         isOvertime ? "text-destructive" : "text-primary"
       )}>
         {formatRestTime(remainingRest)}
@@ -117,7 +117,7 @@ function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
   if (!showSessionDuration) return null;
   
   return (
-    <span className="tabular-nums font-mono text-[14px] font-medium text-muted-foreground min-w-[88px] text-center">
+    <span className="tabular-nums font-mono text-[14px] font-medium text-muted-foreground leading-[20px] min-w-[104px] px-2 text-center">
       {formatElapsedTime(elapsed)}
     </span>
   );
@@ -585,7 +585,7 @@ export default function ClientLiveSession() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {/* Top Bar - Sticky 96px, 3 rows with breathing room */}
-      <header className="sticky top-0 z-50 shrink-0 isolate overflow-hidden bg-background border-b border-muted/60">
+      <header className="sticky top-0 z-50 shrink-0 isolate bg-background border-b border-muted/60">
         <div className="h-[96px] px-4 pt-3 pb-3 flex flex-col">
           {/* Row 1: Navigation */}
           <div className="flex items-center justify-between">
@@ -624,7 +624,7 @@ export default function ClientLiveSession() {
           </div>
 
           {/* Row 3: Timer - focal element with min-w for layout stability */}
-          <div className="h-8 flex items-center justify-center mt-[6px]">
+          <div className="mt-2 h-9 flex items-center justify-center">
             <TopBarTimer />
           </div>
         </div>
