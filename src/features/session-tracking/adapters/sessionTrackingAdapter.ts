@@ -62,4 +62,15 @@ export interface SessionTrackingAdapter {
    * No-op if no actuals exist for the exercise
    */
   undoLastActual(sessionId: string, exerciseId: string): Promise<void>;
+
+  /**
+   * Create multiple actuals in a batch (for superset/circuit)
+   */
+  createActualsBatch(sessionId: string, inputs: CreateActualInput[]): Promise<ExerciseActual[]>;
+
+  /**
+   * Undo last series for a group (superset/circuit)
+   * Deletes the last N actuals where N = number of exercises in the group
+   */
+  undoGroupLastSeries(sessionId: string, exerciseIds: string[], count: number): Promise<void>;
 }

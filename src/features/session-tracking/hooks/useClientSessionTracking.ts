@@ -7,7 +7,12 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientSessionTrackingAdapter } from '../adapters/clientSessionTrackingAdapter';
-import { createSessionTrackingService, type StartSessionParams, type CompleteSetParams } from '../services/sessionTrackingService';
+import { 
+  createSessionTrackingService, 
+  type StartSessionParams, 
+  type CompleteSetParams,
+  type CompleteSupersetSeriesParams,
+} from '../services/sessionTrackingService';
 
 // Create service instance with client adapter
 const service = createSessionTrackingService(clientSessionTrackingAdapter);
@@ -128,6 +133,36 @@ export function useDiscardClientSession() {
     mutationFn: (sessionId: string) => service.discardSession({ sessionId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.all });
+    },
+  });
+}
+
+/**
+ * Complete a superset/circuit series (batch create actuals)
+ */
+export function useCompleteSupersetSeries(sessionId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (inputs: CompleteSupersetSeriesParams['inputs']) =>
+      service.completeSupersetSeries({ sessionId, inputs }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.actuals(sessionId) });
+    },
+  });
+}
+
+/**
+ * Undo last series for a superset/circuit
+ */
+export function useUndoSupersetLastSeries(sessionId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (exerciseIds: string[]) =>
+      service.undoSupersetLastSeries({ sessionId, exerciseIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.actuals(sessionId) });
     },
   });
 }

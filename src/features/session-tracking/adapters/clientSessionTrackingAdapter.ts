@@ -157,4 +157,58 @@ export const clientSessionTrackingAdapter: SessionTrackingAdapter = {
 
     if (deleteError) throw deleteError;
   },
+
+  /**
+   * Create multiple actuals in a batch (for superset/circuit)
+   */
+  async createActualsBatch(sessionId: string, inputs: CreateActualInput[]): Promise<ExerciseActual[]> {
+    const { data, error } = await supabase
+      .from('exercise_actuals')
+      .insert(inputs.map(input => ({
+        session_id: sessionId,
+        day_id: input.day_id,
+        section_id: input.section_id,
+        group_id: input.group_id,
+        exercise_id: input.exercise_id,
+        set_index: input.set_index,
+        reps: input.reps,
+        load: input.load,
+        rest: input.rest,
+        rpe: input.rpe,
+        note: input.note,
+      })))
+      .select();
+
+    if (error) throw error;
+    return (data || []) as ExerciseActual[];
+  },
+
+  /**
+   * Undo last series for a group (superset/circuit)
+   * Deletes the last N actuals where N = count (number of exercises in group)
+   */
+  async undoGroupLastSeries(sessionId: string, exerciseIds: string[], count: number): Promise<void> {
+    // Find the last N actuals for these exercises in this session
+    const { data: lastActuals, error: findError } = await supabase
+      .from('exercise_actuals')
+      .select('id')
+      .eq('session_id', sessionId)
+      .in('exercise_id', exerciseIds)
+      .order('created_at', { ascending: false })
+      .limit(count);
+
+    if (findError) throw findError;
+
+    // No-op if no actuals found
+    if (!lastActuals || lastActuals.length === 0) return;
+
+    const idsToDelete = lastActuals.map(a => a.id);
+
+    const { error: deleteError } = await supabase
+      .from('exercise_actuals')
+      .delete()
+      .in('id', idsToDelete);
+
+    if (deleteError) throw deleteError;
+  },
 };

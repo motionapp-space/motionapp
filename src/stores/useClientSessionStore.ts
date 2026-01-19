@@ -25,6 +25,10 @@ interface ClientSessionState {
   
   // State flags
   isPaused: boolean;
+  
+  // Rest timer (per gruppo, non esercizio)
+  restTimerEndMs: number | null;
+  restTimerGroupId: string | null;
 }
 
 interface ClientSessionActions {
@@ -57,6 +61,26 @@ interface ClientSessionActions {
    * Sync store with an existing session (e.g., after page refresh)
    */
   syncWithSession: (sessionId: string, startedAt: string) => void;
+  
+  /**
+   * Start rest timer for a group (superset/circuit/single)
+   */
+  startRestTimer: (durationSeconds: number, groupId: string) => void;
+  
+  /**
+   * Clear rest timer
+   */
+  clearRestTimer: () => void;
+  
+  /**
+   * Get remaining rest seconds (negative if overtime)
+   */
+  getRemainingRestSeconds: () => number;
+  
+  /**
+   * Check if rest timer is active
+   */
+  isRestActive: () => boolean;
 }
 
 const initialState: ClientSessionState = {
@@ -65,6 +89,8 @@ const initialState: ClientSessionState = {
   pausedAtMs: null,
   accumulatedPauseMs: 0,
   isPaused: false,
+  restTimerEndMs: null,
+  restTimerGroupId: null,
 };
 
 export const useClientSessionStore = create<ClientSessionState & ClientSessionActions>()(
@@ -133,6 +159,31 @@ export const useClientSessionStore = create<ClientSessionState & ClientSessionAc
           isPaused: false,
         });
       },
+
+      startRestTimer: (durationSeconds, groupId) => {
+        set({
+          restTimerEndMs: Date.now() + durationSeconds * 1000,
+          restTimerGroupId: groupId,
+        });
+      },
+
+      clearRestTimer: () => {
+        set({
+          restTimerEndMs: null,
+          restTimerGroupId: null,
+        });
+      },
+
+      getRemainingRestSeconds: () => {
+        const { restTimerEndMs } = get();
+        if (!restTimerEndMs) return 0;
+        return Math.floor((restTimerEndMs - Date.now()) / 1000);
+      },
+
+      isRestActive: () => {
+        const { restTimerEndMs } = get();
+        return restTimerEndMs !== null;
+      },
     }),
     {
       name: 'clientActiveSession',
@@ -143,6 +194,8 @@ export const useClientSessionStore = create<ClientSessionState & ClientSessionAc
         pausedAtMs: state.pausedAtMs,
         accumulatedPauseMs: state.accumulatedPauseMs,
         isPaused: state.isPaused,
+        restTimerEndMs: state.restTimerEndMs,
+        restTimerGroupId: state.restTimerGroupId,
       }),
     }
   )
