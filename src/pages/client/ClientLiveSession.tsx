@@ -52,6 +52,25 @@ interface FlatGroup {
   group: SnapshotGroup;
 }
 
+// ================== Phase Type Translation ==================
+
+function translatePhaseType(phaseType: string): string {
+  const translations: Record<string, string> = {
+    'warm-up': 'Riscaldamento',
+    'warmup': 'Riscaldamento',
+    'Warm-up': 'Riscaldamento',
+    'Warmup': 'Riscaldamento',
+    'main': 'Corpo principale',
+    'Main': 'Corpo principale',
+    'cooldown': 'Defaticamento',
+    'cool-down': 'Defaticamento',
+    'Cooldown': 'Defaticamento',
+    'stretching': 'Stretching',
+    'Stretching': 'Stretching',
+  };
+  return translations[phaseType] || phaseType;
+}
+
 // ================== Format Rest Time ==================
 
 function formatRestTime(seconds: number): string {
@@ -85,14 +104,12 @@ function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
   // When rest is active, show ONLY the countdown (20px primary/destructive)
   if (isRestActive) {
     return (
-      <div className="text-center">
-        <span className={cn(
-          "text-[22px] font-semibold tabular-nums font-mono",
-          isOvertime ? "text-destructive" : "text-primary"
-        )}>
-          {formatRestTime(remainingRest)}
-        </span>
-      </div>
+      <span className={cn(
+        "text-[20px] font-semibold leading-[24px] tabular-nums",
+        isOvertime ? "text-destructive" : "text-primary"
+      )}>
+        {formatRestTime(remainingRest)}
+      </span>
     );
   }
 
@@ -100,7 +117,7 @@ function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
   if (!showSessionDuration) return null;
   
   return (
-    <span className="text-[14px] text-muted-foreground tabular-nums font-mono">
+    <span className="text-[14px] font-medium text-muted-foreground tabular-nums">
       {formatElapsedTime(elapsed)}
     </span>
   );
@@ -143,13 +160,13 @@ function CompletedSeriesChips({ actuals, exerciseIds, numExercises }: CompletedS
       <p className="text-[13px] font-medium text-muted-foreground mb-2">
         Serie completate
       </p>
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-wrap gap-2">
         {seriesData.map(({ index, summary }) => (
           <span
             key={index}
-            className="h-8 px-3 rounded-full bg-muted text-[13px] font-medium flex items-center gap-1 shrink-0"
+            className="h-8 px-3 rounded-full bg-background border border-muted/50 text-[13px] font-medium tabular-nums flex items-center gap-1.5 shrink-0"
           >
-            #{index}
+            <span className="text-foreground">#{index}</span>
             {summary && <span className="text-muted-foreground">{summary}</span>}
           </span>
         ))}
@@ -176,9 +193,9 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
   const targetDisplay = `${exercise.sets} × ${exercise.reps || '10'}${restDisplay ? ` · ${restDisplay}` : ''}`;
 
   return (
-    <div className={cn(showDivider && "pt-4 border-t border-muted/60")}>
+    <div className={cn(showDivider && "pt-5 border-t border-muted/50")}>
       {/* Exercise Name */}
-      <h4 className="text-[17px] font-semibold">
+      <h4 className="text-[17px] font-semibold leading-[22px]">
         {exercise.name || 'Esercizio'}
       </h4>
       
@@ -196,7 +213,7 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
             inputMode="numeric"
             value={reps}
             onChange={(e) => setReps(e.target.value)}
-            className="h-11 rounded-xl text-[16px] font-medium text-center"
+            className="h-11 rounded-xl text-[16px] font-medium text-center px-3"
             placeholder={exercise.reps || '10'}
           />
         </div>
@@ -207,7 +224,7 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
             inputMode="decimal"
             value={load}
             onChange={(e) => setLoad(e.target.value)}
-            className="h-11 rounded-xl text-[16px] font-medium text-center"
+            className="h-11 rounded-xl text-[16px] font-medium text-center px-3"
             placeholder="kg"
           />
         </div>
@@ -219,13 +236,15 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
 // ================== Series Badge ==================
 
 function SeriesBadge({ completed, target }: { completed: number; target: number }) {
-  const getBadgeClasses = () => {
-    if (completed >= target) return "bg-emerald-500/15 text-emerald-700";
-    return "bg-muted text-foreground";
-  };
+  const isComplete = completed >= target;
 
   return (
-    <span className={cn("text-[13px] font-medium rounded-full px-3 py-1", getBadgeClasses())}>
+    <span className={cn(
+      "h-8 text-[13px] font-medium rounded-full px-3 flex items-center",
+      isComplete 
+        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" 
+        : "bg-muted text-foreground"
+    )}>
       Serie {completed}/{target}
     </span>
   );
@@ -341,54 +360,58 @@ function GroupCard({
   );
 
   return (
-    <div className="px-4 mt-4 space-y-6">
-      {/* Exercises */}
-      {group.exercises.map((exercise, idx) => (
-        <ExerciseBlock
-          key={exercise.id}
-          exercise={exercise}
-          reps={inputValues[exercise.id]?.reps || ''}
-          setReps={(value) => setInputValues(prev => ({
-            ...prev,
-            [exercise.id]: { ...prev[exercise.id], reps: value }
-          }))}
-          load={inputValues[exercise.id]?.load || ''}
-          setLoad={(value) => setInputValues(prev => ({
-            ...prev,
-            [exercise.id]: { ...prev[exercise.id], load: value }
-          }))}
-          showDivider={idx > 0}
+    <>
+      {/* Card container - lighter Notion style */}
+      <div className="mt-3 mx-4 p-4 rounded-2xl bg-muted/20 border border-muted/40 space-y-5">
+        {/* Exercises */}
+        {group.exercises.map((exercise, idx) => (
+          <ExerciseBlock
+            key={exercise.id}
+            exercise={exercise}
+            reps={inputValues[exercise.id]?.reps || ''}
+            setReps={(value) => setInputValues(prev => ({
+              ...prev,
+              [exercise.id]: { ...prev[exercise.id], reps: value }
+            }))}
+            load={inputValues[exercise.id]?.load || ''}
+            setLoad={(value) => setInputValues(prev => ({
+              ...prev,
+              [exercise.id]: { ...prev[exercise.id], load: value }
+            }))}
+            showDivider={idx > 0}
+          />
+        ))}
+
+        {/* Completed Series Chips */}
+        <CompletedSeriesChips
+          actuals={actuals}
+          exerciseIds={groupExerciseIds}
+          numExercises={numExercises}
         />
-      ))}
 
-      {/* Completed Series Chips */}
-      <CompletedSeriesChips
-        actuals={actuals}
-        exerciseIds={groupExerciseIds}
-        numExercises={numExercises}
-      />
-
-      {/* CTA */}
-      <Button
-        onClick={handleComplete}
-        disabled={isCompleting || !allRepsFilled}
-        className="w-full h-14 rounded-2xl text-[16px] font-semibold"
-      >
-        {isCompleting ? 'Salvataggio...' : `✓ Completa serie ${nextSeriesIndex}`}
-      </Button>
-
-      {/* Undo - Secondary action */}
-      {completedSeries > 0 && (
-        <button
-          onClick={handleUndo}
-          disabled={isUndoing}
-          className="text-[14px] text-muted-foreground min-h-[44px] flex items-center gap-1 hover:underline underline-offset-2"
+        {/* CTA */}
+        <Button
+          onClick={handleComplete}
+          disabled={isCompleting || !allRepsFilled}
+          className="w-full h-14 rounded-2xl text-[16px] font-semibold gap-2"
         >
-          <Undo2 className="h-4 w-4" />
-          {isUndoing ? 'Annullo...' : 'Annulla ultima serie'}
-        </button>
-      )}
-    </div>
+          <Check className="size-[18px]" />
+          {isCompleting ? 'Salvataggio...' : `Completa serie ${nextSeriesIndex}`}
+        </Button>
+
+        {/* Undo - Secondary action */}
+        {completedSeries > 0 && (
+          <button
+            onClick={handleUndo}
+            disabled={isUndoing}
+            className="mt-3 text-[14px] text-muted-foreground font-medium min-h-[44px] flex items-center gap-2 hover:underline underline-offset-2"
+          >
+            <Undo2 className="size-[18px]" />
+            {isUndoing ? 'Annullo...' : 'Annulla ultima serie'}
+          </button>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -555,20 +578,22 @@ export default function ClientLiveSession() {
 
   const groupTypeLabel = getGroupTypeLabel();
 
+  const isLastGroup = store.currentGroupIndex === store.totalGroups - 1;
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      {/* Top Bar - Sticky 96px, 3 rows */}
-      <header className="sticky top-0 z-50 bg-background border-b border-muted">
-        <div className="h-[96px] px-4 pt-3 pb-2 flex flex-col justify-between">
-          {/* Row 1: Navigation - h-8 */}
-          <div className="h-8 flex items-center justify-between">
+      {/* Top Bar - Sticky 88px, 3 rows */}
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-muted">
+        <div className="h-[88px] px-4 pt-3 pb-2 flex flex-col gap-1">
+          {/* Row 1: Navigation */}
+          <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               size="icon"
-              className="size-8 shrink-0"
+              className="size-11 shrink-0 -ml-2"
               onClick={() => navigate('/client/app/workouts')}
             >
-              <ArrowLeft className="size-6 text-foreground" />
+              <ArrowLeft className="size-5" />
             </Button>
 
             <span className="text-[18px] font-semibold leading-[24px] text-foreground truncate max-w-[200px] text-center">
@@ -578,26 +603,26 @@ export default function ClientLiveSession() {
             <Button
               variant="ghost"
               size="icon"
-              className="size-8 shrink-0"
+              className="size-11 shrink-0 -mr-2"
               onClick={handlePauseToggle}
             >
               {store.isPaused ? (
-                <Play className="size-6 text-muted-foreground" />
+                <Play className="size-5" />
               ) : (
-                <Pause className="size-6 text-muted-foreground" />
+                <Pause className="size-5" />
               )}
             </Button>
           </div>
 
-          {/* Row 2: Context - h-5 */}
-          <div className="h-5 flex items-center justify-center">
-            <span className="text-[13px] leading-[20px] text-muted-foreground font-normal">
-              {currentFlatGroup?.phaseType || 'Warm-up'} · {store.currentGroupIndex + 1} / {store.totalGroups}
+          {/* Row 2: Context */}
+          <div className="flex items-center justify-center">
+            <span className="text-[13px] leading-[18px] text-muted-foreground">
+              {translatePhaseType(currentFlatGroup?.phaseType || 'Warm-up')} · {store.currentGroupIndex + 1}/{store.totalGroups}
             </span>
           </div>
 
-          {/* Row 3: Timer - h-8 */}
-          <div className="h-8 flex items-center justify-center">
+          {/* Row 3: Timer */}
+          <div className="flex items-center justify-center">
             <TopBarTimer />
           </div>
         </div>
@@ -612,14 +637,14 @@ export default function ClientLiveSession() {
         </div>
       )}
 
-      {/* Content - starts after 96px header */}
-      <main className="flex-1 pb-[calc(80px+env(safe-area-inset-bottom))]">
+      {/* Content wrapper with max-width for tablet */}
+      <main className="flex-1 max-w-[520px] mx-auto w-full pb-[calc(64px+72px+env(safe-area-inset-bottom)+16px)]">
         {/* Group Header */}
         {currentFlatGroup && (
           <div className="mt-4 px-4 flex items-center justify-between">
             {/* Left: Group type pill (only for superset/circuit) */}
             {groupTypeLabel ? (
-              <span className="text-[13px] font-medium bg-primary/10 text-primary rounded-full px-3 py-1">
+              <span className="h-8 text-[13px] font-medium bg-primary/10 text-primary rounded-full px-3 flex items-center">
                 {groupTypeLabel}
               </span>
             ) : (
@@ -634,7 +659,7 @@ export default function ClientLiveSession() {
           </div>
         )}
 
-        {/* Group Content (no card) */}
+        {/* Group Card */}
         {currentFlatGroup && (
           <GroupCard
             flatGroup={currentFlatGroup}
@@ -644,48 +669,54 @@ export default function ClientLiveSession() {
             onSeriesComplete={handleSetComplete}
           />
         )}
-
-        {/* Group Navigation */}
-        <div className="mt-6 px-4 flex justify-between items-center">
-          <button
-            onClick={() => store.prevGroup()}
-            disabled={!canGoPrev}
-            className={cn(
-              "text-[14px] font-medium min-h-[44px] px-2 flex items-center gap-1",
-              canGoPrev ? "text-muted-foreground" : "text-muted-foreground/40"
-            )}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Precedente
-          </button>
-
-          <button
-            onClick={() => store.nextGroup()}
-            disabled={!canGoNext}
-            className={cn(
-              "text-[14px] font-medium min-h-[44px] px-2 flex items-center gap-1",
-              canGoNext ? "text-muted-foreground" : "text-muted-foreground/40"
-            )}
-          >
-            Successivo
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
       </main>
 
-      {/* Footer - Sticky Bottom */}
+      {/* Navigation Bar - Sticky above footer */}
+      <div 
+        className="sticky z-40 bg-background/95 backdrop-blur border-t border-muted h-[64px] px-4 flex items-center justify-between"
+        style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}
+      >
+        <Button
+          variant="ghost"
+          onClick={() => store.prevGroup()}
+          disabled={!canGoPrev}
+          className={cn(
+            "h-11 px-3 text-[14px] font-medium gap-1",
+            !canGoPrev && "opacity-40 pointer-events-none"
+          )}
+        >
+          <ChevronLeft className="size-[18px]" />
+          Precedente
+        </Button>
+
+        <Button
+          variant="ghost"
+          onClick={() => store.nextGroup()}
+          disabled={!canGoNext}
+          className={cn(
+            "h-11 px-3 text-[14px] font-medium gap-1",
+            !canGoNext && "opacity-40 pointer-events-none"
+          )}
+        >
+          Successivo
+          <ChevronRight className="size-[18px]" />
+        </Button>
+      </div>
+
+      {/* Footer - Sticky Bottom (always visible) */}
       <footer 
-        className="sticky bottom-0 z-40 bg-background border-t p-4"
+        className="sticky bottom-0 z-30 bg-background/95 backdrop-blur border-t border-muted p-4"
         style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom))' }}
       >
         <Button
           onClick={() => setShowFinishDialog(true)}
-          className="w-full h-14 rounded-2xl text-[16px] font-semibold"
+          className="w-full h-14 rounded-2xl text-[16px] font-semibold gap-2"
         >
-          <Check className="mr-2 h-5 w-5" />
+          <Check className="size-[18px]" />
           Termina allenamento
         </Button>
       </footer>
+
 
       {/* Finish Dialog */}
       <AlertDialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
