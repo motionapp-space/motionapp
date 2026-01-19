@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { queueEmail, EmailType } from "../_shared/email-outbox.ts";
+import { buildTemplateData } from "../_shared/email-template-data.ts";
+import type { BookingEmailSnapshot as SharedSnapshot } from "../_shared/email-snapshots/index.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -128,32 +130,27 @@ serve(async (req) => {
       senderUserId = actorUserId;
     }
 
-    // Costruisci template_data direttamente dallo snapshot - nessuna query DB
-    const templateData: Record<string, unknown> = {
-      client_name: snapshot.client_name,
+    // Costruisci template_data usando helper condiviso per formato uniforme
+    const snapshotForTemplate: SharedSnapshot = {
+      event_id: snapshot.event_id,
+      booking_request_id: snapshot.booking_request_id,
+      title: snapshot.title,
+      start_at: snapshot.start_at,
+      end_at: snapshot.end_at,
+      original_start_at: snapshot.original_start_at,
+      original_end_at: snapshot.original_end_at,
+      proposed_start_at: snapshot.proposed_start_at,
+      proposed_end_at: snapshot.proposed_end_at,
+      notes: snapshot.notes,
+      coach_user_id: snapshot.coach_user_id,
       coach_name: snapshot.coach_name,
-      appointment_title: snapshot.title ?? 'Appuntamento',
-      appointment_start_at: snapshot.start_at,
-      appointment_end_at: snapshot.end_at,
-      notes: snapshot.notes ?? '',
+      coach_email: snapshot.coach_email,
+      client_user_id: snapshot.client_user_id,
+      client_name: snapshot.client_name,
+      client_email: snapshot.client_email,
+      actor_role: snapshot.actor_role,
     };
-
-    // Aggiungi campi specifici per tipo
-    if (type === 'appointment_request_created') {
-      templateData.requested_start_at = snapshot.start_at;
-      templateData.requested_end_at = snapshot.end_at;
-    }
-
-    if (type === 'appointment_counter_proposed') {
-      templateData.original_start_at = snapshot.original_start_at;
-      templateData.original_end_at = snapshot.original_end_at;
-      templateData.proposed_start_at = snapshot.proposed_start_at;
-      templateData.proposed_end_at = snapshot.proposed_end_at;
-    }
-
-    if (type === 'appointment_cancelled') {
-      templateData.cancelled_by = snapshot.actor_role;
-    }
+    const templateData = buildTemplateData(type as EmailType, snapshotForTemplate);
 
     // Accoda email
     const result = await queueEmail(supabaseAdmin, {
