@@ -42,6 +42,16 @@ export interface DiscardSessionParams {
   sessionId: string;
 }
 
+export interface CompleteSupersetSeriesParams {
+  sessionId: string;
+  inputs: Array<ActualInput & CreateActualInput>;
+}
+
+export interface UndoSupersetLastSeriesParams {
+  sessionId: string;
+  exerciseIds: string[];
+}
+
 /**
  * Factory function to create a session tracking service
  * Injects the adapter for testability and role-specific behavior
@@ -134,6 +144,23 @@ export function createSessionTrackingService(adapter: SessionTrackingAdapter) {
      */
     async listActuals(sessionId: string) {
       return adapter.listActuals(sessionId);
+    },
+
+    /**
+     * Complete a superset/circuit series (batch create actuals)
+     */
+    async completeSupersetSeries({ sessionId, inputs }: CompleteSupersetSeriesParams) {
+      // Validate all inputs
+      inputs.forEach(input => assertValidActualInput(input));
+      return adapter.createActualsBatch(sessionId, inputs);
+    },
+
+    /**
+     * Undo the last series for a superset/circuit
+     * Deletes N actuals where N = number of exercises in the group
+     */
+    async undoSupersetLastSeries({ sessionId, exerciseIds }: UndoSupersetLastSeriesParams) {
+      return adapter.undoGroupLastSeries(sessionId, exerciseIds, exerciseIds.length);
     },
   };
 }
