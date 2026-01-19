@@ -52,7 +52,7 @@ const ClientAuth = () => {
           </div>
           <div className="text-center">
             <h1 className="text-4xl font-bold tracking-tight text-foreground">
-              Studio AI
+              Motion
             </h1>
             <p className="mt-2 text-muted-foreground">Area Clienti</p>
           </div>

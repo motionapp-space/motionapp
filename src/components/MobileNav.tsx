@@ -34,7 +34,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
       <SheetContent side="left" className="w-[280px] p-0 bg-muted border-r-0">
         <SheetHeader className="h-16 flex flex-row items-center justify-start px-5">
           <SheetTitle className="text-xl font-bold tracking-tight text-left">
-            Studio AI
+            Motion
           </SheetTitle>
         </SheetHeader>
         
