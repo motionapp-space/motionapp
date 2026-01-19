@@ -5,18 +5,18 @@
  * Renders exercises from session.plan_day_snapshot.
  * 
  * Features:
- * - Priority rest countdown in header
+ * - Sticky top bar (h-14) with back, title, timer, pause
+ * - Sticky bottom bar with "Termina allenamento" CTA
  * - Superset/circuit as single unit (1 CTA, 1 counter)
- * - Touch-first inputs (h-11, rounded-xl)
+ * - Touch-first inputs with placeholders only
  * - Zero toast during live session
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Play, Pause, Check, Undo2, Dumbbell, Timer } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Check, Undo2, Dumbbell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -57,17 +57,14 @@ function formatRestTime(seconds: number): string {
   return seconds < 0 ? `−${formatted}` : formatted;
 }
 
-// ================== Session Header Timer (Compact) ==================
+// ================== Top Bar Timer ==================
 
-function SessionHeaderTimer() {
+function TopBarTimer() {
   const store = useClientSessionStore();
   const [, forceUpdate] = useState(0);
 
-  // Update every second
   useEffect(() => {
-    const interval = setInterval(() => {
-      forceUpdate(n => n + 1);
-    }, 1000);
+    const interval = setInterval(() => forceUpdate(n => n + 1), 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -76,25 +73,21 @@ function SessionHeaderTimer() {
   const elapsed = store.getElapsedSeconds();
   const isOvertime = remainingRest < 0;
 
-  // Compact layout: rest prioritized when active
+  // When rest is active, show ONLY the countdown
   if (isRestActive) {
     return (
-      <div className="flex items-center gap-3">
-        <span className={cn(
-          "text-[24px] font-semibold tabular-nums font-mono",
-          isOvertime ? "text-destructive" : "text-primary"
-        )}>
-          {formatRestTime(remainingRest)}
-        </span>
-        <span className="text-[13px] text-muted-foreground">
-          {formatElapsedTime(elapsed)}
-        </span>
-      </div>
+      <span className={cn(
+        "text-[15px] font-semibold tabular-nums font-mono",
+        isOvertime ? "text-destructive" : "text-foreground"
+      )}>
+        {formatRestTime(remainingRest)}
+      </span>
     );
   }
 
+  // Default: session duration
   return (
-    <span className="text-[13px] text-muted-foreground tabular-nums font-mono">
+    <span className="text-[13px] font-medium text-muted-foreground tabular-nums font-mono">
       {formatElapsedTime(elapsed)}
     </span>
   );
@@ -114,57 +107,51 @@ function CompletedSeriesChips({ actuals, exerciseIds, numExercises }: CompletedS
   
   if (completedSeries === 0) return null;
 
-  // Group actuals by set_index to display series info
-  // For superset: show aggregated info per series
+  // Group actuals by set_index
   const seriesData: Array<{ index: number; summary: string }> = [];
   
   for (let i = 1; i <= completedSeries; i++) {
-    // Find actuals for this series (by set_index or position)
     const seriesActuals = groupActuals.filter(a => a.set_index === i);
     
     if (seriesActuals.length > 0) {
-      // If superset: just show "#1", "#2", etc. with first exercise's data
       const first = seriesActuals[0];
       const loadDisplay = first.load ? `${first.load}` : '';
       seriesData.push({
         index: i,
-        summary: loadDisplay ? `${first.reps}×${loadDisplay}` : `${first.reps} reps`
+        summary: loadDisplay ? `${first.reps}×${loadDisplay}` : `${first.reps}`
       });
     } else {
       seriesData.push({ index: i, summary: '' });
     }
   }
 
-  // Show max 3 chips, then "+N" if more
+  // Show max 3 chips
   const visibleChips = seriesData.slice(0, 3);
   const hiddenCount = seriesData.length - 3;
 
   return (
-    <div className="mt-3">
-      <p className="text-[13px] font-medium text-muted-foreground mb-2">Serie completate</p>
-      <div className="flex flex-wrap gap-2">
-        {visibleChips.map(({ index, summary }) => (
-          <span
-            key={index}
-            className="h-8 px-3 rounded-full bg-muted text-[14px] font-medium flex items-center gap-1"
-          >
-            #{index}
-            {summary && <span className="text-muted-foreground">{summary}</span>}
-          </span>
-        ))}
-        {hiddenCount > 0 && (
-          <span className="h-8 px-3 rounded-full bg-muted text-[14px] font-medium flex items-center text-muted-foreground">
-            +{hiddenCount}
-          </span>
-        )}
-      </div>
+    <div className="flex flex-wrap gap-2">
+      {visibleChips.map(({ index, summary }) => (
+        <span
+          key={index}
+          className="h-7 px-3 rounded-full bg-muted text-[13px] font-medium flex items-center gap-1"
+        >
+          #{index}
+          {summary && <span className="text-muted-foreground">{summary}</span>}
+        </span>
+      ))}
+      {hiddenCount > 0 && (
+        <span className="h-7 px-3 rounded-full bg-muted text-[13px] flex items-center text-muted-foreground">
+          +{hiddenCount}
+        </span>
+      )}
     </div>
   );
 }
 
-// ================== Exercise Input Row ==================
+// ================== Exercise Inputs (Placeholder Only) ==================
 
-interface ExerciseInputRowProps {
+interface ExerciseInputsProps {
   exercise: SnapshotExercise;
   reps: string;
   setReps: (value: string) => void;
@@ -172,32 +159,42 @@ interface ExerciseInputRowProps {
   setLoad: (value: string) => void;
 }
 
-function ExerciseInputRow({ exercise, reps, setReps, load, setLoad }: ExerciseInputRowProps) {
+function ExerciseInputs({ exercise, reps, setReps, load, setLoad }: ExerciseInputsProps) {
   return (
-    <div className="grid grid-cols-2 gap-3 mt-3">
-      <div>
-        <Label className="text-[11px] font-medium text-muted-foreground">Reps</Label>
-        <Input
-          type="text"
-          inputMode="numeric"
-          value={reps}
-          onChange={(e) => setReps(e.target.value)}
-          className="h-11 rounded-xl text-[16px] font-medium text-center"
-          placeholder={exercise.reps || '10'}
-        />
-      </div>
-      <div>
-        <Label className="text-[11px] font-medium text-muted-foreground">Carico</Label>
-        <Input
-          type="text"
-          inputMode="decimal"
-          value={load}
-          onChange={(e) => setLoad(e.target.value)}
-          className="h-11 rounded-xl text-[16px] font-medium text-center"
-          placeholder="0 kg"
-        />
-      </div>
+    <div className="grid grid-cols-2 gap-3">
+      <Input
+        type="text"
+        inputMode="numeric"
+        value={reps}
+        onChange={(e) => setReps(e.target.value)}
+        className="h-11 rounded-xl text-[16px] font-medium text-center"
+        placeholder={`Reps (${exercise.reps || '10'})`}
+      />
+      <Input
+        type="text"
+        inputMode="decimal"
+        value={load}
+        onChange={(e) => setLoad(e.target.value)}
+        className="h-11 rounded-xl text-[16px] font-medium text-center"
+        placeholder="Carico (kg)"
+      />
     </div>
+  );
+}
+
+// ================== Series Badge ==================
+
+function SeriesBadge({ completed, target }: { completed: number; target: number }) {
+  const getBadgeClasses = () => {
+    if (completed > target) return "bg-emerald-500/20 text-emerald-700 font-medium";
+    if (completed === target) return "bg-emerald-500/15 text-emerald-700 font-medium";
+    return "bg-muted text-foreground";
+  };
+
+  return (
+    <span className={cn("h-7 px-3 rounded-full text-[13px] leading-none flex items-center", getBadgeClasses())}>
+      Serie {completed}/{target}
+    </span>
   );
 }
 
@@ -220,7 +217,6 @@ function SupersetCard({
   actuals,
   onSeriesComplete,
 }: SupersetCardProps) {
-  // State for each exercise's inputs
   const [inputValues, setInputValues] = useState<Record<string, { reps: string; load: string }>>(() => {
     const initial: Record<string, { reps: string; load: string }> = {};
     group.exercises.forEach(ex => {
@@ -232,19 +228,15 @@ function SupersetCard({
   const { mutate: completeSeries, isPending: isCompleting } = useCompleteSupersetSeries(sessionId);
   const { mutate: undoSeries, isPending: isUndoing } = useUndoSupersetLastSeries(sessionId);
 
-  // Robust series counting: Math.floor(groupActuals / numExercises)
   const numExercises = group.exercises.length;
   const groupExerciseIds = group.exercises.map(e => e.id);
   const groupActuals = actuals.filter(a => groupExerciseIds.includes(a.exercise_id));
   const completedSeries = Math.floor(groupActuals.length / numExercises);
   const targetSeries = Math.min(...group.exercises.map(e => e.sets));
   const nextSeriesIndex = completedSeries + 1;
-
-  // Get rest seconds from first exercise (group-level rest)
   const restSeconds = group.exercises[0]?.rest_seconds || 60;
 
   const handleCompleteSeries = () => {
-    // Build inputs for all exercises in the group
     const inputs = group.exercises.map(ex => ({
       day_id: dayId,
       section_id: phaseType,
@@ -257,115 +249,82 @@ function SupersetCard({
     }));
 
     completeSeries(inputs, {
-      onSuccess: () => {
-        onSeriesComplete(restSeconds, group.id);
-      },
-      onError: (error) => {
-        toast.error(error.message || 'Errore nel salvataggio');
-      },
+      onSuccess: () => onSeriesComplete(restSeconds, group.id),
+      onError: (error) => toast.error(error.message || 'Errore nel salvataggio'),
     });
   };
 
   const handleUndoSeries = () => {
     undoSeries(groupExerciseIds, {
-      onError: (error) => {
-        toast.error(error.message || 'Errore');
-      },
+      onError: (error) => toast.error(error.message || 'Errore'),
     });
   };
 
-  const hasCompletedSeries = completedSeries > 0;
-
-  // Check if all reps are filled
   const allRepsFilled = group.exercises.every(ex => 
     inputValues[ex.id]?.reps && inputValues[ex.id].reps.trim() !== ''
   );
 
-  // Badge styling based on completion state
-  const getBadgeClasses = () => {
-    if (completedSeries > targetSeries) {
-      return "bg-emerald-500/20 text-emerald-700 font-medium";
-    }
-    if (completedSeries === targetSeries) {
-      return "bg-emerald-500/15 text-emerald-700 font-medium";
-    }
-    return "bg-muted text-foreground";
-  };
-
   return (
     <div className="bg-background border border-muted rounded-2xl p-4">
-      {/* Header - Compact */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="h-7 px-3 rounded-full bg-primary/10 text-primary text-[12px] font-medium flex items-center">
-            {group.type === 'circuit' ? 'Circuit' : 'Superset'}
-            {group.label && ` ${group.label}`}
-          </span>
-        </div>
-        <span className={cn("h-7 px-3 rounded-full text-[13px] leading-none flex items-center", getBadgeClasses())}>
-          Serie {completedSeries}/{targetSeries}
+      {/* Header - Single line */}
+      <div className="flex items-center justify-between mb-4">
+        <span className="h-7 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[12px] font-medium">
+          {group.type === 'circuit' ? 'Circuit' : 'Superset'}
+          {group.label && ` ${group.label}`}
         </span>
+        <SeriesBadge completed={completedSeries} target={targetSeries} />
       </div>
 
-      {/* Exercises - Compact layout */}
-      {group.exercises.map((exercise, idx) => (
-        <div key={exercise.id} className={cn(idx > 0 && "mt-3 pt-3 border-t border-muted")}>
-          {/* Exercise name - more prominent */}
-          <h4 className="text-[16px] font-semibold leading-[22px]">
-            {exercise.name || 'Esercizio'}
-          </h4>
-          {/* Target - shown only once per exercise, compact */}
-          <p className="text-[13px] text-muted-foreground">
-            {exercise.sets}×{exercise.reps}
-          </p>
+      {/* Exercises - Clean, no redundant labels */}
+      <div className="space-y-4">
+        {group.exercises.map((exercise, idx) => (
+          <div key={exercise.id} className={cn(idx > 0 && "pt-4 border-t border-muted")}>
+            <h4 className="text-[16px] font-semibold mb-2">
+              {exercise.name || 'Esercizio'}
+            </h4>
+            <ExerciseInputs
+              exercise={exercise}
+              reps={inputValues[exercise.id]?.reps || ''}
+              setReps={(value) => setInputValues(prev => ({
+                ...prev,
+                [exercise.id]: { ...prev[exercise.id], reps: value }
+              }))}
+              load={inputValues[exercise.id]?.load || ''}
+              setLoad={(value) => setInputValues(prev => ({
+                ...prev,
+                [exercise.id]: { ...prev[exercise.id], load: value }
+              }))}
+            />
+          </div>
+        ))}
+      </div>
 
-          {/* Inputs - inline */}
-          <ExerciseInputRow
-            exercise={exercise}
-            reps={inputValues[exercise.id]?.reps || ''}
-            setReps={(value) => setInputValues(prev => ({
-              ...prev,
-              [exercise.id]: { ...prev[exercise.id], reps: value }
-            }))}
-            load={inputValues[exercise.id]?.load || ''}
-            setLoad={(value) => setInputValues(prev => ({
-              ...prev,
-              [exercise.id]: { ...prev[exercise.id], load: value }
-            }))}
-          />
-        </div>
-      ))}
-
-      {/* Completed Series Chips - CRITICAL FEEDBACK */}
-      <CompletedSeriesChips
-        actuals={actuals}
-        exerciseIds={groupExerciseIds}
-        numExercises={numExercises}
-      />
-
-      {/* CTA - Always enabled, never hidden */}
+      {/* CTA - Always visible */}
       <Button
         onClick={handleCompleteSeries}
         disabled={isCompleting || !allRepsFilled}
         className="w-full h-12 rounded-xl text-[16px] font-semibold mt-4"
       >
-        {isCompleting ? (
-          'Salvataggio...'
-        ) : (
-          <>✓ Completa serie {nextSeriesIndex}</>
-        )}
+        {isCompleting ? 'Salvataggio...' : `✓ Completa serie ${nextSeriesIndex}`}
       </Button>
 
-      {/* Undo - Link style, below CTA */}
-      {hasCompletedSeries && (
-        <button
-          onClick={handleUndoSeries}
-          disabled={isUndoing}
-          className="text-[14px] font-medium text-muted-foreground flex items-center gap-1 mt-3 min-h-[44px]"
-        >
-          <Undo2 className="h-4 w-4" />
-          {isUndoing ? 'Annullo...' : 'Annulla ultima serie'}
-        </button>
+      {/* Completed series + Undo - Below CTA */}
+      {completedSeries > 0 && (
+        <div className="mt-4 space-y-3">
+          <CompletedSeriesChips
+            actuals={actuals}
+            exerciseIds={groupExerciseIds}
+            numExercises={numExercises}
+          />
+          <button
+            onClick={handleUndoSeries}
+            disabled={isUndoing}
+            className="text-[13px] text-muted-foreground flex items-center gap-1 min-h-[44px]"
+          >
+            <Undo2 className="h-4 w-4" />
+            {isUndoing ? 'Annullo...' : 'Annulla ultima serie'}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -398,9 +357,9 @@ function SingleExerciseCard({
   const { mutate: completeSet, isPending: isCompleting } = useCompleteClientSet(sessionId);
   const { mutate: undoLastSet, isPending: isUndoing } = useUndoClientLastSet(sessionId);
 
-  // Filter actuals for this exercise
   const exerciseActuals = actuals.filter(a => a.exercise_id === exercise.id);
   const completedSets = exerciseActuals.length;
+  const targetSets = exercise.sets;
   const nextSetIndex = completedSets + 1;
   const restSeconds = exercise.rest_seconds || 60;
 
@@ -417,55 +376,30 @@ function SingleExerciseCard({
         rest: restSeconds.toString(),
       },
       {
-        onSuccess: () => {
-          onSetComplete(restSeconds, group.id);
-        },
-        onError: (error) => {
-          toast.error(error.message || 'Errore nel salvataggio');
-        },
+        onSuccess: () => onSetComplete(restSeconds, group.id),
+        onError: (error) => toast.error(error.message || 'Errore nel salvataggio'),
       }
     );
   };
 
   const handleUndo = () => {
     undoLastSet(exercise.id, {
-      onError: (error) => {
-        toast.error(error.message || 'Errore');
-      },
+      onError: (error) => toast.error(error.message || 'Errore'),
     });
-  };
-
-  const targetSets = exercise.sets;
-
-  // Badge styling based on completion state
-  const getBadgeClasses = () => {
-    if (completedSets > targetSets) {
-      return "bg-emerald-500/20 text-emerald-700 font-medium";
-    }
-    if (completedSets === targetSets) {
-      return "bg-emerald-500/15 text-emerald-700 font-medium";
-    }
-    return "bg-muted text-foreground";
   };
 
   return (
     <div className="bg-background border border-muted rounded-2xl p-4">
-      {/* Header - Compact */}
-      <div className="flex items-center justify-between mb-1">
-        <h4 className="text-[16px] font-semibold leading-[22px]">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-[16px] font-semibold">
           {exercise.name || 'Esercizio'}
         </h4>
-        <span className={cn("h-7 px-3 rounded-full text-[13px] leading-none flex items-center", getBadgeClasses())}>
-          Serie {completedSets}/{targetSets}
-        </span>
+        <SeriesBadge completed={completedSets} target={targetSets} />
       </div>
 
-      <p className="text-[13px] text-muted-foreground">
-        {exercise.sets}×{exercise.reps}
-      </p>
-
       {/* Inputs */}
-      <ExerciseInputRow
+      <ExerciseInputs
         exercise={exercise}
         reps={reps}
         setReps={setReps}
@@ -473,36 +407,32 @@ function SingleExerciseCard({
         setLoad={setLoad}
       />
 
-      {/* Completed Series Chips - CRITICAL FEEDBACK */}
-      <CompletedSeriesChips
-        actuals={actuals}
-        exerciseIds={[exercise.id]}
-        numExercises={1}
-      />
-
-      {/* CTA - Always enabled, never hidden */}
+      {/* CTA */}
       <Button
         onClick={handleCompleteSet}
         disabled={isCompleting || !reps}
         className="w-full h-12 rounded-xl text-[16px] font-semibold mt-4"
       >
-        {isCompleting ? (
-          'Salvataggio...'
-        ) : (
-          <>✓ Completa serie {nextSetIndex}</>
-        )}
+        {isCompleting ? 'Salvataggio...' : `✓ Completa serie ${nextSetIndex}`}
       </Button>
 
-      {/* Undo - Link style */}
+      {/* Completed series + Undo - Below CTA */}
       {completedSets > 0 && (
-        <button
-          onClick={handleUndo}
-          disabled={isUndoing}
-          className="text-[14px] font-medium text-muted-foreground flex items-center gap-1 mt-3 min-h-[44px]"
-        >
-          <Undo2 className="h-4 w-4" />
-          {isUndoing ? 'Annullo...' : 'Annulla ultima serie'}
-        </button>
+        <div className="mt-4 space-y-3">
+          <CompletedSeriesChips
+            actuals={actuals}
+            exerciseIds={[exercise.id]}
+            numExercises={1}
+          />
+          <button
+            onClick={handleUndo}
+            disabled={isUndoing}
+            className="text-[13px] text-muted-foreground flex items-center gap-1 min-h-[44px]"
+          >
+            <Undo2 className="h-4 w-4" />
+            {isUndoing ? 'Annullo...' : 'Annulla ultima serie'}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -521,12 +451,10 @@ interface PhaseSectionProps {
 function PhaseSection({ phase, dayId, sessionId, actuals, onSetComplete }: PhaseSectionProps) {
   return (
     <div className="space-y-3">
-      {/* Phase label - subtle */}
       <h3 className="text-[12px] font-medium text-muted-foreground uppercase tracking-wide px-1">
         {phase.type}
       </h3>
       {phase.groups.map((group) => {
-        // Dispatch based on group type
         if (group.type === 'superset' || group.type === 'circuit') {
           return (
             <SupersetCard
@@ -541,7 +469,6 @@ function PhaseSection({ phase, dayId, sessionId, actuals, onSetComplete }: Phase
           );
         }
 
-        // Single exercise (group.type === 'single' or default)
         return (
           <SingleExerciseCard
             key={group.id}
@@ -572,10 +499,7 @@ export default function ClientLiveSession() {
 
   // Queries
   const { data: activeSession, isLoading: isActiveLoading } = useClientActiveSession();
-  
-  // Determine which session to use
   const sessionId = sessionIdFromUrl || activeSession?.id || store.activeSessionId;
-
   const { data: sessionDetail, isLoading: isDetailLoading } = useClientSessionDetail(sessionId || undefined);
   const { data: actuals = [], refetch: refetchActuals } = useClientSessionActuals(sessionId || undefined);
 
@@ -590,7 +514,7 @@ export default function ClientLiveSession() {
     }
   }, [sessionDetail?.id, sessionDetail?.started_at]);
 
-  // Parse snapshot - sessionDetail comes from DB with plan_day_snapshot
+  // Parse snapshot
   const snapshot = useMemo(() => {
     if (!sessionDetail) return null;
     const detail = sessionDetail as unknown as { plan_day_snapshot?: unknown };
@@ -615,9 +539,7 @@ export default function ClientLiveSession() {
           toast.success('Allenamento completato! 💪');
           navigate('/client/app/workouts');
         },
-        onError: (error) => {
-          toast.error(error.message || 'Errore');
-        },
+        onError: (error) => toast.error(error.message || 'Errore'),
       }
     );
   };
@@ -630,9 +552,7 @@ export default function ClientLiveSession() {
         toast.info('Allenamento abbandonato');
         navigate('/client/app/workouts');
       },
-      onError: (error) => {
-        toast.error(error.message || 'Errore');
-      },
+      onError: (error) => toast.error(error.message || 'Errore'),
     });
   };
 
@@ -649,7 +569,7 @@ export default function ClientLiveSession() {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <div className="p-4 space-y-4">
-          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-14 w-full" />
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-32 w-full" />
         </div>
@@ -675,49 +595,49 @@ export default function ClientLiveSession() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      {/* Header - COMPACT */}
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-3">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9"
-            onClick={() => navigate('/client/app/workouts')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          
-          {/* Center: Title + Timer inline */}
-          <div className="flex items-center gap-3 flex-1 justify-center">
-            <h1 className="text-[18px] font-semibold truncate max-w-[140px]">
-              {snapshot.day.title}
-            </h1>
-            <SessionHeaderTimer />
-          </div>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9"
-            onClick={handlePauseToggle}
-          >
-            {store.isPaused ? (
-              <Play className="h-5 w-5" />
-            ) : (
-              <Pause className="h-5 w-5" />
-            )}
-          </Button>
+    <div className="flex flex-col min-h-screen bg-muted/30">
+      {/* Top Bar - Sticky h-14 */}
+      <header className="sticky top-0 z-50 h-14 bg-background/95 backdrop-blur border-b flex items-center px-4">
+        {/* Left: Back */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 shrink-0"
+          onClick={() => navigate('/client/app/workouts')}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+
+        {/* Center: Title + Timer */}
+        <div className="flex-1 flex flex-col items-center justify-center min-w-0">
+          <span className="text-[16px] font-semibold leading-tight truncate max-w-[200px]">
+            {snapshot.day.title}
+          </span>
+          <TopBarTimer />
         </div>
-        {store.isPaused && (
-          <Badge variant="secondary" className="mt-2 mx-auto block w-fit">
-            In pausa
-          </Badge>
-        )}
+
+        {/* Right: Pause */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 shrink-0"
+          onClick={handlePauseToggle}
+        >
+          {store.isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+        </Button>
       </header>
 
-      {/* Content */}
-      <main className="flex-1 p-4 pb-24 space-y-4">
+      {/* Pause Badge */}
+      {store.isPaused && (
+        <div className="bg-background border-b px-4 py-2">
+          <Badge variant="secondary" className="mx-auto block w-fit">
+            In pausa
+          </Badge>
+        </div>
+      )}
+
+      {/* Content - Scrollable */}
+      <main className="flex-1 p-4 pb-28 space-y-6">
         {snapshot.phases.map((phase, index) => (
           <PhaseSection
             key={`${phase.type}-${index}`}
@@ -730,21 +650,21 @@ export default function ClientLiveSession() {
         ))}
       </main>
 
-      {/* Footer - Less dominant */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t px-4 py-3">
+      {/* Bottom Bar - Sticky */}
+      <footer className="sticky bottom-0 z-50 bg-background border-t p-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowDiscardDialog(true)}
-            className="text-[14px] text-muted-foreground min-h-[44px] px-3"
+            className="text-[14px] text-muted-foreground min-h-[48px] px-4"
           >
             Abbandona
           </button>
           <Button
             onClick={() => setShowFinishDialog(true)}
-            className="flex-1 h-11 rounded-xl text-[15px] font-semibold"
+            className="flex-1 h-12 rounded-xl text-[16px] font-semibold"
           >
-            <Check className="mr-2 h-4 w-4" />
-            Termina
+            <Check className="mr-2 h-5 w-5" />
+            Termina allenamento
           </Button>
         </div>
       </footer>
