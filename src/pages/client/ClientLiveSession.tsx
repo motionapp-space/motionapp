@@ -105,7 +105,7 @@ function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
   if (isRestActive) {
     return (
       <span className={cn(
-        "text-[22px] font-semibold tracking-tight tabular-nums min-w-[96px] text-center",
+        "tabular-nums font-mono text-[22px] font-semibold leading-none min-w-[88px] text-center",
         isOvertime ? "text-destructive" : "text-primary"
       )}>
         {formatRestTime(remainingRest)}
@@ -117,7 +117,7 @@ function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
   if (!showSessionDuration) return null;
   
   return (
-    <span className="text-[14px] font-medium text-muted-foreground tabular-nums min-w-[96px] text-center">
+    <span className="tabular-nums font-mono text-[14px] font-medium text-muted-foreground min-w-[88px] text-center">
       {formatElapsedTime(elapsed)}
     </span>
   );
@@ -542,7 +542,7 @@ export default function ClientLiveSession() {
   // Loading state
   if (isActiveLoading || isDetailLoading) {
     return (
-      <div className="h-[100dvh] overflow-hidden bg-background flex flex-col min-h-0 items-center justify-center p-4">
+      <div className="flex-1 flex flex-col min-h-0 items-center justify-center p-4">
         <div className="space-y-4 w-full max-w-[520px]">
           <Skeleton className="h-[96px] w-full" />
           <Skeleton className="h-32 w-full" />
@@ -555,7 +555,7 @@ export default function ClientLiveSession() {
   // No active session
   if (!sessionId || !snapshot) {
     return (
-      <div className="h-[100dvh] overflow-hidden bg-background flex flex-col min-h-0 items-center justify-center p-4">
+      <div className="flex-1 flex flex-col min-h-0 items-center justify-center p-4">
         <Dumbbell className="h-16 w-16 text-muted-foreground mb-4" />
         <h2 className="text-xl font-semibold mb-2">Nessuna sessione attiva</h2>
         <p className="text-muted-foreground text-center mb-4">
@@ -583,9 +583,9 @@ export default function ClientLiveSession() {
   const isLastGroup = store.currentGroupIndex === store.totalGroups - 1;
 
   return (
-    <div className="h-[100dvh] overflow-hidden bg-background flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {/* Top Bar - Sticky 96px, 3 rows with breathing room */}
-      <header className="sticky top-0 z-50 shrink-0 isolate overflow-hidden bg-background border-b border-muted">
+      <header className="sticky top-0 z-50 shrink-0 isolate overflow-hidden bg-background border-b border-muted/60">
         <div className="h-[96px] px-4 pt-3 pb-3 flex flex-col">
           {/* Row 1: Navigation */}
           <div className="flex items-center justify-between">
@@ -623,8 +623,8 @@ export default function ClientLiveSession() {
             </span>
           </div>
 
-          {/* Row 3: Timer - focal element */}
-          <div className="flex items-center justify-center mt-[6px]">
+          {/* Row 3: Timer - focal element with min-w for layout stability */}
+          <div className="h-8 flex items-center justify-center mt-[6px]">
             <TopBarTimer />
           </div>
         </div>
@@ -675,37 +675,35 @@ export default function ClientLiveSession() {
         </div>
       </main>
 
-      {/* Navigation Bar - Always visible, NOT sticky (outside scroll container) */}
-      <nav className="shrink-0 h-[64px] bg-background border-t border-muted px-4 flex items-center justify-between">
-        <Button
-          variant="ghost"
+      {/* Navigation Bar - Always visible, shrink-0 (outside scroll container) */}
+      <nav className="shrink-0 h-[56px] border-t border-muted/60 bg-background px-4 flex items-center justify-between">
+        <button
           onClick={() => store.prevGroup()}
           disabled={!canGoPrev}
           className={cn(
-            "h-11 px-3 text-[14px] font-medium gap-1",
+            "h-11 px-2 text-[15px] font-medium text-muted-foreground flex items-center gap-1",
             !canGoPrev && "opacity-40 pointer-events-none"
           )}
         >
           <ChevronLeft className="size-[18px]" />
           Precedente
-        </Button>
+        </button>
 
-        <Button
-          variant="ghost"
+        <button
           onClick={() => store.nextGroup()}
           disabled={!canGoNext}
           className={cn(
-            "h-11 px-3 text-[14px] font-medium gap-1",
+            "h-11 px-2 text-[15px] font-medium text-muted-foreground flex items-center gap-1",
             !canGoNext && "opacity-40 pointer-events-none"
           )}
         >
           Successivo
           <ChevronRight className="size-[18px]" />
-        </Button>
+        </button>
       </nav>
 
-      {/* Footer - Always visible, NOT sticky (outside scroll container) */}
-      <footer className="shrink-0 bg-background border-t border-muted px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+      {/* Footer - Always visible, shrink-0 (outside scroll container) */}
+      <footer className="shrink-0 bg-background px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] border-t border-muted/60">
         <Button
           onClick={() => setShowFinishDialog(true)}
           className="w-full h-14 rounded-2xl text-[16px] font-semibold gap-2"

@@ -9,11 +9,6 @@ const navItems = [
 const ClientBottomNav = () => {
   const location = useLocation();
   
-  // Hide during live session (immersive mode)
-  if (location.pathname.startsWith("/client/app/session")) {
-    return null;
-  }
-  
   // Mostra la bottom nav solo nelle route /client/app/*
   if (!location.pathname.startsWith("/client/app")) {
     return null;
