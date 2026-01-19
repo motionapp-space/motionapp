@@ -29,6 +29,10 @@ interface ClientSessionState {
   // Rest timer (per gruppo, non esercizio)
   restTimerEndMs: number | null;
   restTimerGroupId: string | null;
+  
+  // Step navigation
+  currentGroupIndex: number;
+  totalGroups: number;
 }
 
 interface ClientSessionActions {
@@ -81,6 +85,31 @@ interface ClientSessionActions {
    * Check if rest timer is active
    */
   isRestActive: () => boolean;
+  
+  /**
+   * Set current group index (with bounds check)
+   */
+  setCurrentGroupIndex: (index: number) => void;
+  
+  /**
+   * Navigate to next group
+   */
+  nextGroup: () => void;
+  
+  /**
+   * Navigate to previous group
+   */
+  prevGroup: () => void;
+  
+  /**
+   * Set total groups count
+   */
+  setTotalGroups: (count: number) => void;
+  
+  /**
+   * Reset navigation state
+   */
+  resetNavigation: () => void;
 }
 
 const initialState: ClientSessionState = {
@@ -91,6 +120,8 @@ const initialState: ClientSessionState = {
   isPaused: false,
   restTimerEndMs: null,
   restTimerGroupId: null,
+  currentGroupIndex: 0,
+  totalGroups: 0,
 };
 
 export const useClientSessionStore = create<ClientSessionState & ClientSessionActions>()(
@@ -184,6 +215,42 @@ export const useClientSessionStore = create<ClientSessionState & ClientSessionAc
         const { restTimerEndMs } = get();
         return restTimerEndMs !== null;
       },
+
+      setCurrentGroupIndex: (index) => {
+        const { totalGroups } = get();
+        if (totalGroups === 0) {
+          set({ currentGroupIndex: 0 });
+          return;
+        }
+        const bounded = Math.max(0, Math.min(index, totalGroups - 1));
+        set({ currentGroupIndex: bounded });
+      },
+
+      nextGroup: () => {
+        const { currentGroupIndex, totalGroups } = get();
+        if (currentGroupIndex < totalGroups - 1) {
+          set({ currentGroupIndex: currentGroupIndex + 1 });
+        }
+      },
+
+      prevGroup: () => {
+        const { currentGroupIndex } = get();
+        if (currentGroupIndex > 0) {
+          set({ currentGroupIndex: currentGroupIndex - 1 });
+        }
+      },
+
+      setTotalGroups: (count) => {
+        const { currentGroupIndex } = get();
+        set({ 
+          totalGroups: count,
+          currentGroupIndex: count > 0 ? Math.min(currentGroupIndex, count - 1) : 0,
+        });
+      },
+
+      resetNavigation: () => {
+        set({ currentGroupIndex: 0, totalGroups: 0 });
+      },
     }),
     {
       name: 'clientActiveSession',
@@ -196,6 +263,8 @@ export const useClientSessionStore = create<ClientSessionState & ClientSessionAc
         isPaused: state.isPaused,
         restTimerEndMs: state.restTimerEndMs,
         restTimerGroupId: state.restTimerGroupId,
+        currentGroupIndex: state.currentGroupIndex,
+        totalGroups: state.totalGroups,
       }),
     }
   )
