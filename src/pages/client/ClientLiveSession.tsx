@@ -583,9 +583,9 @@ export default function ClientLiveSession() {
   const isLastGroup = store.currentGroupIndex === store.totalGroups - 1;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <div className="flex-1 flex flex-col min-h-0">
       {/* Top Bar - Sticky 96px, 3 rows with breathing room */}
-      <header className="sticky top-0 z-50 shrink-0 isolate bg-background border-b border-muted/60">
+      <header className="sticky top-0 z-50 shrink-0 bg-background border-b border-muted/60">
         <div className="h-[96px] px-4 pt-3 pb-3 flex flex-col">
           {/* Row 1: Navigation */}
           <div className="flex items-center justify-between">
