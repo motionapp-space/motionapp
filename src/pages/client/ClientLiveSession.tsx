@@ -430,6 +430,7 @@ export default function ClientLiveSession() {
   // Dynamic header height measurement
   const headerRef = useRef<HTMLElement | null>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useLayoutEffect(() => {
     if (!headerRef.current) return;
@@ -609,7 +610,12 @@ export default function ClientLiveSession() {
       {/* Top Bar - Sticky 96px, 3 rows with breathing room */}
       <header
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 w-full z-50 bg-background border-b border-muted/60 pt-[env(safe-area-inset-top)]"
+        className={cn(
+          "fixed top-0 left-0 right-0 w-full z-50 bg-background pt-[env(safe-area-inset-top)] transition-shadow duration-150",
+          isScrolled 
+            ? "border-b border-border/80 shadow-sm" 
+            : "border-b border-border/60"
+        )}
       >
         <div className="px-4 pt-3 pb-3 flex flex-col">
           {/* Row 1: Navigation */}
@@ -658,6 +664,10 @@ export default function ClientLiveSession() {
         {/* Main scroll container (ONLY scrollable element) */}
         <main
           className="flex-1 min-h-0 overflow-y-auto"
+          onScroll={(e) => {
+            const next = e.currentTarget.scrollTop > 0;
+            setIsScrolled((prev) => (prev === next ? prev : next));
+          }}
           style={{ paddingTop: headerHeight + 16 }}
         >
           {/* Pause Badge - inside scroll */}
@@ -671,7 +681,7 @@ export default function ClientLiveSession() {
           <div className="px-4 pb-6 max-w-[520px] mx-auto w-full">
           {/* Group Header - pills + badge */}
           {currentFlatGroup && (
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 mb-4">
               {/* Left: Group type pill (only for superset/circuit) */}
               {groupTypeLabel ? (
                 <span className="h-8 text-[13px] font-medium bg-primary/10 text-primary rounded-full px-3 flex items-center">
@@ -733,7 +743,7 @@ export default function ClientLiveSession() {
       <footer className="shrink-0 bg-background px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] border-t border-muted/60">
         <Button
           onClick={() => setShowFinishDialog(true)}
-          className="w-full h-14 rounded-2xl text-[16px] font-semibold gap-2"
+          className="w-full h-12 rounded-2xl text-[16px] font-semibold gap-2"
         >
           <Check className="size-[18px]" />
           Termina allenamento
