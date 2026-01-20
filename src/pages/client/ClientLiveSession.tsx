@@ -423,11 +423,12 @@ export default function ClientLiveSession() {
   const [headerHeight, setHeaderHeight] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const FALLBACK_HEADER = 140;
+  const FALLBACK_HEADER = 96; // Matches max header height to prevent jump on re-mount
   const effectiveHeaderHeight = headerHeight > 0 ? headerHeight : FALLBACK_HEADER;
 
   useLayoutEffect(() => {
     let rafId: number | null = null;
+    let rafId2: number | null = null;
     let ro: ResizeObserver | null = null;
 
     const measure = () => {
@@ -440,7 +441,11 @@ export default function ClientLiveSession() {
     measure();
 
     // RAF fallback: retry next frame if ref wasn't ready
-    rafId = requestAnimationFrame(measure);
+    rafId = requestAnimationFrame(() => {
+      measure();
+      // Double-check after another frame (for re-mount scenarios)
+      rafId2 = requestAnimationFrame(measure);
+    });
 
     // ResizeObserver - attach when element is available
     ro = new ResizeObserver(measure);
@@ -453,10 +458,18 @@ export default function ClientLiveSession() {
 
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
+      if (rafId2) cancelAnimationFrame(rafId2);
       if (ro) ro.disconnect();
       window.removeEventListener("resize", measure);
     };
   }, []);
+
+  // Re-measure when header ref becomes available (re-mount fix)
+  useEffect(() => {
+    if (headerRef.current && headerHeight === 0) {
+      setHeaderHeight(headerRef.current.getBoundingClientRect().height);
+    }
+  });
 
   // Reset scroll state on mount
   useEffect(() => {
