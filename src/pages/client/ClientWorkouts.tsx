@@ -228,6 +228,12 @@ function ClientWorkoutsContent() {
         day={displayDay || null}
         open={dayDetailOpen}
         onOpenChange={setDayDetailOpen}
+        onStartSession={() => {
+          if (displayDay) {
+            setDayDetailOpen(false);
+            handleSelectDay(displayDay.id);
+          }
+        }}
       />
 
       <PlanOverviewSheet

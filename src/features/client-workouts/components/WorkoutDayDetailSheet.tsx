@@ -9,9 +9,10 @@ interface WorkoutDayDetailSheetProps {
   day: Day | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onStartSession?: () => void;
 }
 
-export function WorkoutDayDetailSheet({ day, open, onOpenChange }: WorkoutDayDetailSheetProps) {
+export function WorkoutDayDetailSheet({ day, open, onOpenChange, onStartSession }: WorkoutDayDetailSheetProps) {
   if (!day) return null;
 
   const exerciseCount = countDayExercises(day);
@@ -44,13 +45,10 @@ export function WorkoutDayDetailSheet({ day, open, onOpenChange }: WorkoutDayDet
         </div>
         
         <div className="sticky bottom-0 pt-4 pb-2 bg-background border-t">
-          <Button className="w-full" size="lg" disabled>
+          <Button className="w-full" size="lg" onClick={onStartSession}>
             <Play className="h-4 w-4 mr-2" />
             Registra sessione
           </Button>
-          <p className="text-xs text-muted-foreground text-center mt-2">
-            Funzionalità in arrivo
-          </p>
         </div>
       </SheetContent>
     </Sheet>
