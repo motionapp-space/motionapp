@@ -1,4 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { UserCheck } from "lucide-react";
 import { SessionCompletionChart } from "./SessionCompletionChart";
 
 interface SessionHistoryCardProps {
@@ -6,6 +8,7 @@ interface SessionHistoryCardProps {
   date: string;
   completedExercises: number;
   totalExercises: number;
+  isWithCoach?: boolean;
   onClick: () => void;
 }
 
@@ -14,6 +17,7 @@ export function SessionHistoryCard({
   date, 
   completedExercises, 
   totalExercises,
+  isWithCoach,
   onClick 
 }: SessionHistoryCardProps) {
   return (
@@ -27,9 +31,17 @@ export function SessionHistoryCard({
             <p className="font-medium text-sm text-foreground truncate">
               {title}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {date}
-            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-xs text-muted-foreground">
+                {date}
+              </p>
+              {isWithCoach && (
+                <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5 gap-1">
+                  <UserCheck className="w-3 h-3" />
+                  Con coach
+                </Badge>
+              )}
+            </div>
           </div>
           <SessionCompletionChart 
             completed={completedExercises} 
