@@ -393,7 +393,7 @@ function GroupCard({
             className="w-full h-11 rounded-2xl text-sm font-semibold gap-2"
           >
             <Check className="size-[18px]" strokeWidth={2} />
-            {isCompleting ? 'Salvataggio...' : `Completa serie ${nextSeriesIndex}`}
+            {isCompleting ? 'Salvataggio...' : 'Completa serie'}
           </Button>
 
           {/* Undo - lighter emphasis */}
