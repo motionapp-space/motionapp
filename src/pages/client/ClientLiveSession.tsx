@@ -620,7 +620,7 @@ export default function ClientLiveSession() {
               className="size-11 shrink-0 -ml-2"
               onClick={() => navigate('/client/app/workouts')}
             >
-              <ArrowLeft className="size-6" />
+              <ArrowLeft className="size-5" strokeWidth={2} />
             </Button>
 
             <span className="text-[18px] font-semibold leading-[24px] text-foreground truncate max-w-[200px] text-center">
@@ -634,9 +634,9 @@ export default function ClientLiveSession() {
               onClick={handlePauseToggle}
             >
               {store.isPaused ? (
-                <Play className="size-6" />
+                <Play className="size-5" strokeWidth={2} />
               ) : (
-                <Pause className="size-6" />
+                <Pause className="size-5" strokeWidth={2} />
               )}
             </Button>
           </div>
@@ -658,7 +658,7 @@ export default function ClientLiveSession() {
         {/* Main scroll container (ONLY scrollable element) */}
         <main
           className="flex-1 min-h-0 overflow-y-auto"
-          style={{ paddingTop: headerHeight }}
+          style={{ paddingTop: headerHeight + 16 }}
         >
           {/* Pause Badge - inside scroll */}
           {store.isPaused && (
