@@ -429,25 +429,51 @@ export default function ClientLiveSession() {
 
   // Dynamic header height measurement
   const headerRef = useRef<HTMLElement | null>(null);
+  const mainRef = useRef<HTMLDivElement | null>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
+  const FALLBACK_HEADER = 140;
+  const effectiveHeaderHeight = headerHeight > 0 ? headerHeight : FALLBACK_HEADER;
+
   useLayoutEffect(() => {
-    if (!headerRef.current) return;
+    let rafId: number | null = null;
+    let ro: ResizeObserver | null = null;
 
-    const el = headerRef.current;
-    const update = () => setHeaderHeight(el.offsetHeight);
-
-    update();
-
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-
-    window.addEventListener("resize", update);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", update);
+    const measure = () => {
+      if (headerRef.current) {
+        setHeaderHeight(headerRef.current.getBoundingClientRect().height);
+      }
     };
+
+    // Immediate measure
+    measure();
+
+    // RAF fallback: retry next frame if ref wasn't ready
+    rafId = requestAnimationFrame(measure);
+
+    // ResizeObserver - attach when element is available
+    ro = new ResizeObserver(measure);
+    if (headerRef.current) {
+      ro.observe(headerRef.current);
+    }
+
+    // Also listen for window resize
+    window.addEventListener("resize", measure);
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      if (ro) ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  // Reset scroll state on mount
+  useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTo({ top: 0 });
+    }
+    setIsScrolled(false);
   }, []);
   const [showFinishDialog, setShowFinishDialog] = useState(false);
 
@@ -657,22 +683,32 @@ export default function ClientLiveSession() {
       </header>
 
         {/* Main scroll container (ONLY scrollable element) */}
-        <main
-          className="flex-1 min-h-0 overflow-y-auto"
-          onScroll={(e) => {
-            const next = e.currentTarget.scrollTop > 0;
-            setIsScrolled((prev) => (prev === next ? prev : next));
-          }}
-          style={{ paddingTop: headerHeight + 16 }}
-        >
-          {/* Pause Badge - inside scroll */}
-          {store.isPaused && (
-            <div className="bg-background border-b border-muted px-4 py-2">
-              <Badge variant="secondary" className="mx-auto block w-fit">
-                In pausa
-              </Badge>
-            </div>
+      <main
+        ref={mainRef}
+        className="flex-1 min-h-0 overflow-y-auto"
+        onScroll={(e) => {
+          const next = e.currentTarget.scrollTop > 0;
+          setIsScrolled((prev) => (prev === next ? prev : next));
+        }}
+        style={{ paddingTop: effectiveHeaderHeight + 16 }}
+      >
+        {/* Pause Badge - reserved height to prevent layout jump */}
+        <div 
+          className={cn(
+            "h-10 flex items-center justify-center transition-all duration-150",
+            store.isPaused ? "border-b border-muted bg-background" : "border-b border-transparent"
           )}
+        >
+          <Badge 
+            variant="secondary" 
+            className={cn(
+              "transition-opacity duration-150",
+              store.isPaused ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}
+          >
+            In pausa
+          </Badge>
+        </div>
           <div className="px-4 pb-6 max-w-[520px] mx-auto w-full">
           {/* Group Header - pills + badge */}
           {currentFlatGroup && (
