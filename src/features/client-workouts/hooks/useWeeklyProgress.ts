@@ -87,7 +87,7 @@ export function useWeeklyProgress(
     const weekStart = startOfWeek(now, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
 
-    // Find completed day IDs this week
+    // Find completed day IDs this week (for reference)
     const completedDayIds = new Set<string>(
       (sessions || [])
         .filter((s) => {
@@ -98,31 +98,39 @@ export function useWeeklyProgress(
         .map((s) => s.day_id!)
     );
 
-    const completedCount = completedDayIds.size;
+    // Calculate which weekday indices (0=Mon, 6=Sun) have completed sessions
+    const completedWeekDayIndices = new Set<number>(
+      (sessions || [])
+        .filter((s) => {
+          if (!s.started_at) return false;
+          const sessionDate = new Date(s.started_at);
+          return isWithinInterval(sessionDate, { start: weekStart, end: weekEnd });
+        })
+        .map((s) => {
+          const sessionDate = new Date(s.started_at!);
+          const jsDay = sessionDate.getDay(); // 0=Sun, 1=Mon, ...
+          return jsDay === 0 ? 6 : jsDay - 1; // Convert to 0=Mon, 6=Sun
+        })
+    );
+
+    const completedCount = completedWeekDayIndices.size;
     const remainingCount = Math.max(0, totalDays - completedCount);
     const percentage = totalDays > 0 ? Math.round((completedCount / totalDays) * 100) : 0;
     const isWeekCompleted = completedCount >= totalDays;
 
-    // Build weekDays array - map plan days to week days
-    // Since plan.data.days is ordered, we map them sequentially to the week
+    // Build weekDays array
+    // isPlanned: first N days where N = number of days in the plan (indicates target frequency)
+    // isCompleted: based on actual calendar day the session was completed
     const weekDays: WeekDay[] = WEEK_DAY_LABELS.map(({ key, label }, index) => {
-      const planDay = planDays[index]; // Map by index (Day 1 = Monday, etc.)
+      const isPlanned = index < planDays.length;
+      const isCompleted = completedWeekDayIndices.has(index);
       
-      if (!planDay) {
-        return {
-          key,
-          label,
-          isPlanned: false,
-          isCompleted: false,
-        };
-      }
-
       return {
         key,
         label,
-        isPlanned: true,
-        isCompleted: completedDayIds.has(planDay.id),
-        dayId: planDay.id,
+        isPlanned,
+        isCompleted,
+        dayId: planDays[index]?.id,
       };
     });
 
