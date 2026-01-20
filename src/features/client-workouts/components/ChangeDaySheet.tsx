@@ -1,4 +1,4 @@
-import { Check, Dumbbell } from "lucide-react";
+import { Dumbbell } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -11,7 +11,6 @@ export interface PlanDayOption {
   id: string;
   title: string;
   exercisesCount: number;
-  isCompletedThisWeek: boolean;
   estimatedMinutes?: number;
 }
 
@@ -56,20 +55,9 @@ export function ChangeDaySheet({
                   !isSelected && "bg-card hover:bg-muted border border-border"
                 )}
               >
-                {/* Icon/Status */}
-                <div
-                  className={cn(
-                    "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
-                    day.isCompletedThisWeek 
-                      ? "bg-green-500 text-white" 
-                      : "bg-primary/10"
-                  )}
-                >
-                  {day.isCompletedThisWeek ? (
-                    <Check className="w-4 h-4" strokeWidth={3} />
-                  ) : (
-                    <Dumbbell className="w-4 h-4 text-primary" />
-                  )}
+                {/* Icon */}
+                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10">
+                  <Dumbbell className="w-4 h-4 text-primary" />
                 </div>
 
                 {/* Content */}
@@ -82,13 +70,6 @@ export function ChangeDaySheet({
                     {day.estimatedMinutes && ` · ~${day.estimatedMinutes} min`}
                   </p>
                 </div>
-
-                {/* Completed badge */}
-                {day.isCompletedThisWeek && (
-                  <span className="text-xs text-green-600 font-medium">
-                    Completato
-                  </span>
-                )}
               </button>
             );
           })}
