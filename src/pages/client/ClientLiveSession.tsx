@@ -174,7 +174,7 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
   return (
     <div className={cn(showDivider && "pt-4 border-t border-border/40")}>
       {/* Exercise Name */}
-      <h4 className="text-lg font-semibold leading-snug">
+      <h4 className="text-base font-semibold leading-snug">
         {exercise.name || 'Esercizio'}
       </h4>
       
