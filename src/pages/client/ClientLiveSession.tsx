@@ -765,7 +765,7 @@ export default function ClientLiveSession() {
             {showRest ? (
               <>
                 <span className="text-xs text-muted-foreground">Recupero</span>
-                <span className="text-base font-mono font-semibold tabular-nums text-primary">
+                <span className="text-base font-semibold tabular-nums text-primary">
                   {formatRestTime(clampedRest)}
                 </span>
               </>
