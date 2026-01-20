@@ -31,7 +31,6 @@ export function ChangeDaySheet({
   onSelectDay,
 }: ChangeDaySheetProps) {
   const handleSelect = (day: PlanDayOption) => {
-    if (day.isCompletedThisWeek) return;
     onSelectDay(day.id);
     onOpenChange(false);
   };
@@ -46,18 +45,15 @@ export function ChangeDaySheet({
         <div className="space-y-2 overflow-y-auto">
           {days.map((day) => {
             const isSelected = day.id === currentDayId;
-            const isDisabled = day.isCompletedThisWeek;
 
             return (
               <button
                 key={day.id}
                 onClick={() => handleSelect(day)}
-                disabled={isDisabled}
                 className={cn(
                   "w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left",
-                  isSelected && !isDisabled && "bg-primary/10 border border-primary",
-                  !isSelected && !isDisabled && "bg-card hover:bg-muted border border-border",
-                  isDisabled && "opacity-50 cursor-not-allowed bg-muted"
+                  isSelected && "bg-primary/10 border border-primary",
+                  !isSelected && "bg-card hover:bg-muted border border-border"
                 )}
               >
                 {/* Icon/Status */}
@@ -78,10 +74,7 @@ export function ChangeDaySheet({
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <p className={cn(
-                    "font-medium truncate",
-                    isDisabled && "text-muted-foreground"
-                  )}>
+                  <p className="font-medium truncate">
                     {day.title}
                   </p>
                   <p className="text-sm text-muted-foreground">
