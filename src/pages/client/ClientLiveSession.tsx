@@ -81,42 +81,35 @@ function formatRestTime(seconds: number): string {
   return seconds < 0 ? `−${formatted}` : formatted;
 }
 
-// ================== Top Bar Timer ==================
+// ================== Compact Timer Display (for header row 2) ==================
 
-interface TopBarTimerProps {
+interface HeaderTimerProps {
   elapsed: number;
   remainingRest: number;
   isRestActive: boolean;
 }
 
-function TopBarTimer({ elapsed, remainingRest, isRestActive }: TopBarTimerProps) {
-  // Clamp to 0 for MVP (no negative countdown)
+function HeaderTimer({ elapsed, remainingRest, isRestActive }: HeaderTimerProps) {
   const clampedRest = Math.max(0, remainingRest);
   const showRest = isRestActive && remainingRest > 0;
 
-  return (
-    <div className="flex flex-col items-center gap-0.5">
-      {/* Row 1: Rest countdown (or invisible placeholder for stable height) */}
-      <div 
-        className={cn(
-          "flex items-center gap-2 h-7 transition-opacity duration-150",
-          showRest ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
-        aria-hidden={!showRest}
-      >
-        <Badge variant="secondary" className="text-xs font-medium px-2 py-0.5">
-          Recupero
-        </Badge>
-        <span className="tabular-nums font-mono text-xl font-semibold tracking-tight leading-7 text-primary">
+  if (showRest) {
+    // Rest active: compact pill with countdown
+    return (
+      <div className="flex items-center gap-1.5 h-7 px-2 rounded-full bg-muted">
+        <span className="text-xs font-medium text-muted-foreground">Recupero</span>
+        <span className="text-base font-mono font-semibold tabular-nums text-primary">
           {formatRestTime(clampedRest)}
         </span>
       </div>
-      {/* Row 2: Session duration (brand-consistent, NO mono) */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Durata sessione</span>
-        <span className="text-sm font-semibold text-foreground tabular-nums">{formatElapsedTime(elapsed)}</span>
-      </div>
-    </div>
+    );
+  }
+
+  // No rest: just duration
+  return (
+    <span className="text-xs text-muted-foreground tabular-nums">
+      Durata {formatElapsedTime(elapsed)}
+    </span>
   );
 }
 
@@ -204,24 +197,24 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
       {/* Inputs */}
       <div className="grid grid-cols-2 gap-3 mt-3">
         <div>
-          <label className="text-xs uppercase tracking-wide text-muted-foreground mb-1 block">Reps</label>
+          <label className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1 block">Reps</label>
           <Input
             type="text"
             inputMode="numeric"
             value={reps}
             onChange={(e) => setReps(e.target.value)}
-            className="h-12 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30"
+            className="h-11 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30"
             placeholder={exercise.reps || '10'}
           />
         </div>
         <div>
-          <label className="text-xs uppercase tracking-wide text-muted-foreground mb-1 block">Carico</label>
+          <label className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1 block">Carico</label>
           <Input
             type="text"
             inputMode="decimal"
             value={load}
             onChange={(e) => setLoad(e.target.value)}
-            className="h-12 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/70"
+            className="h-11 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/70"
             placeholder="kg"
           />
         </div>
@@ -666,7 +659,7 @@ export default function ClientLiveSession() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Top Bar - Sticky 96px, 3 rows with breathing room */}
+      {/* Top Bar - Compact 2-row layout, max ~96px */}
       <header
         ref={headerRef}
         className={cn(
@@ -676,9 +669,9 @@ export default function ClientLiveSession() {
             : "border-b border-border/60"
         )}
       >
-        <div className="px-4 pt-3 pb-2 flex flex-col gap-1">
-          {/* Row 1: Navigation */}
-          <div className="flex items-center justify-between h-10">
+        <div className="px-4 pt-2 pb-2 flex flex-col">
+          {/* Row 1: Exit (left) — Title (center) — placeholder (right) */}
+          <div className="flex items-center justify-between h-11">
             <button
               onClick={() => navigate("/client/app/workouts")}
               className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] -ml-1 px-1"
@@ -687,25 +680,24 @@ export default function ClientLiveSession() {
               <span className="text-sm font-medium">Esci</span>
             </button>
 
+            <span className="text-base font-semibold leading-6 text-center line-clamp-1 max-w-[200px] absolute left-1/2 -translate-x-1/2">
+              {snapshot?.day?.title || 'Allenamento'}
+            </span>
+
             {/* Spacer with fixed width for symmetry */}
             <div className="w-11 h-11" aria-hidden="true" />
           </div>
 
-          {/* Row 2: Day name + phase */}
-          <div className="flex flex-col items-center">
-            <span className="text-base font-semibold leading-tight text-center line-clamp-1 max-w-[280px]">
-              {snapshot?.day?.title || 'Allenamento'}
-            </span>
-            {currentFlatGroup && (
-              <span className="text-sm text-muted-foreground">
-                {translatePhaseType(currentFlatGroup.phaseType)}
+          {/* Row 2: Phase (left) — Timer (right) */}
+          <div className="flex items-center justify-between h-9">
+            {currentFlatGroup ? (
+              <span className="text-xs text-muted-foreground leading-4">
+                {translatePhaseType(currentFlatGroup.phaseType)} · {store.currentGroupIndex + 1}/{store.totalGroups}
               </span>
+            ) : (
+              <span />
             )}
-          </div>
-
-          {/* Row 3: Timer (stable height) */}
-          <div className="min-h-[44px] flex items-center justify-center">
-            <TopBarTimer elapsed={elapsed} remainingRest={remainingRest} isRestActive={isRestActive} />
+            <HeaderTimer elapsed={elapsed} remainingRest={remainingRest} isRestActive={isRestActive} />
           </div>
         </div>
       </header>
@@ -723,10 +715,10 @@ export default function ClientLiveSession() {
         <div className="px-4 pb-6 max-w-[520px] mx-auto w-full">
           {/* Group Header - pills + badge */}
           {currentFlatGroup && (
-            <div className="flex items-center justify-between gap-3 mt-3 mb-3">
+            <div className="flex items-center justify-between gap-3 mt-2 mb-3">
               {/* Left: Group type pill (only for superset/circuit) */}
               {groupTypeLabel ? (
-                <span className="h-9 text-sm font-medium bg-primary/10 text-primary rounded-full px-4 flex items-center">
+                <span className="h-8 text-sm font-medium bg-primary/10 text-primary rounded-full px-3 flex items-center">
                   {groupTypeLabel}
                 </span>
               ) : (
