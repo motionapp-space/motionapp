@@ -111,10 +111,11 @@ function TopBarTimer({ elapsed, remainingRest, isRestActive }: TopBarTimerProps)
           {formatRestTime(clampedRest)}
         </span>
       </div>
-      {/* Row 2: Session duration (always visible) */}
-      <span className="text-xs text-muted-foreground tabular-nums font-mono">
-        Durata sessione {formatElapsedTime(elapsed)}
-      </span>
+      {/* Row 2: Session duration (brand-consistent, NO mono) */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Durata sessione</span>
+        <span className="text-sm font-semibold text-foreground tabular-nums">{formatElapsedTime(elapsed)}</span>
+      </div>
     </div>
   );
 }
@@ -675,7 +676,7 @@ export default function ClientLiveSession() {
             : "border-b border-border/60"
         )}
       >
-        <div className="px-4 pt-2 pb-2 flex flex-col">
+        <div className="px-4 pt-3 pb-2 flex flex-col gap-1">
           {/* Row 1: Navigation */}
           <div className="flex items-center justify-between h-10">
             <button
@@ -702,8 +703,8 @@ export default function ClientLiveSession() {
             )}
           </div>
 
-          {/* Row 3: Timer (stable height with 2 rows always) */}
-          <div className="mt-1 min-h-[48px] flex items-center justify-center">
+          {/* Row 3: Timer (stable height) */}
+          <div className="min-h-[44px] flex items-center justify-center">
             <TopBarTimer elapsed={elapsed} remainingRest={remainingRest} isRestActive={isRestActive} />
           </div>
         </div>
@@ -717,12 +718,12 @@ export default function ClientLiveSession() {
           const next = e.currentTarget.scrollTop > 0;
           setIsScrolled((prev) => (prev === next ? prev : next));
         }}
-        style={{ paddingTop: effectiveHeaderHeight + 12 }}
+        style={{ paddingTop: effectiveHeaderHeight + 8 }}
       >
         <div className="px-4 pb-6 max-w-[520px] mx-auto w-full">
           {/* Group Header - pills + badge */}
           {currentFlatGroup && (
-            <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center justify-between gap-3 mt-3 mb-3">
               {/* Left: Group type pill (only for superset/circuit) */}
               {groupTypeLabel ? (
                 <span className="h-9 text-sm font-medium bg-primary/10 text-primary rounded-full px-4 flex items-center">
