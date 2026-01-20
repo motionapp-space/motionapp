@@ -1,11 +1,12 @@
 /**
  * Client Live Session Page (Step-Based, Mobile-First)
  * 
- * - One group visible at a time
- * - Manual navigation between groups (Prev/Next)
- * - Sticky 88px top bar with context
- * - Sticky bottom bar with "Termina allenamento"
- * - No infinite scroll, maximum immersion
+ * MVP "Best-in-class" implementation:
+ * - Stable 3-row header (Row 3 always reserved h-8 for rest timer)
+ * - FALLBACK_HEADER = 140 for iOS safe-area + 3 rows
+ * - Single scroll container with stable layout
+ * - CTA block above series history chips
+ * - Dynamic footer styling based on completion
  */
 
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
@@ -14,7 +15,6 @@ import { ArrowLeft, Check, Undo2, Dumbbell, ChevronLeft, ChevronRight } from 'lu
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,12 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatElapsedTime } from '@/features/session-tracking/core/elapsed';
+import {
+  formatRestTime,
+  getExerciseAbbrev,
+  formatExerciseActual,
+  formatLoadDisplay,
+} from '@/features/session-tracking/utils/formatters';
 import {
   useClientActiveSession,
   useClientSessionDetail,
@@ -71,93 +77,73 @@ function translatePhaseType(phaseType: string): string {
   return translations[phaseType] || phaseType;
 }
 
-// ================== Format Rest Time ==================
-
-function formatRestTime(seconds: number): string {
-  const absSeconds = Math.abs(seconds);
-  const mins = Math.floor(absSeconds / 60);
-  const secs = absSeconds % 60;
-  const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  return seconds < 0 ? `−${formatted}` : formatted;
-}
-
-// ================== Compact Timer Display (for header row 2) ==================
-
-interface HeaderTimerProps {
-  elapsed: number;
-  remainingRest: number;
-  isRestActive: boolean;
-}
-
-function HeaderTimer({ elapsed, remainingRest, isRestActive }: HeaderTimerProps) {
-  const clampedRest = Math.max(0, remainingRest);
-  const showRest = isRestActive && remainingRest > 0;
-
-  if (showRest) {
-    // Rest active: compact pill with countdown
-    return (
-      <div className="flex items-center gap-1.5 h-7 px-2 rounded-full bg-muted">
-        <span className="text-xs font-medium text-muted-foreground">Recupero</span>
-        <span className="text-base font-mono font-semibold tabular-nums text-primary">
-          {formatRestTime(clampedRest)}
-        </span>
-      </div>
-    );
-  }
-
-  // No rest: just duration
-  return (
-    <span className="text-xs text-muted-foreground tabular-nums">
-      Durata {formatElapsedTime(elapsed)}
-    </span>
-  );
-}
-
-// ================== Completed Series Chips ==================
+// ================== Completed Series Chips (MVP: Complete Sets Only) ==================
 
 interface CompletedSeriesChipsProps {
   actuals: ExerciseActual[];
   exerciseIds: string[];
   numExercises: number;
+  exercises: SnapshotExercise[];
 }
 
-function CompletedSeriesChips({ actuals, exerciseIds, numExercises }: CompletedSeriesChipsProps) {
+function CompletedSeriesChips({ actuals, exerciseIds, numExercises, exercises }: CompletedSeriesChipsProps) {
   const groupActuals = actuals.filter(a => exerciseIds.includes(a.exercise_id));
-  const completedSeries = Math.floor(groupActuals.length / numExercises);
   
-  if (completedSeries === 0) return null;
-
-  // Group actuals by set_index
-  const seriesData: Array<{ index: number; summary: string }> = [];
+  // Group by set_index
+  const setIndexMap = new Map<number, ExerciseActual[]>();
+  groupActuals.forEach(a => {
+    const existing = setIndexMap.get(a.set_index) || [];
+    setIndexMap.set(a.set_index, [...existing, a]);
+  });
   
-  for (let i = 1; i <= completedSeries; i++) {
-    const seriesActuals = groupActuals.filter(a => a.set_index === i);
-    
-    if (seriesActuals.length > 0) {
-      const first = seriesActuals[0];
-      const loadDisplay = first.load ? `${first.load}` : '';
-      seriesData.push({
-        index: i,
-        summary: loadDisplay ? `${first.reps}×${loadDisplay}` : `${first.reps}`
-      });
-    } else {
-      seriesData.push({ index: i, summary: '' });
+  // Only include COMPLETE sets (all exercises present)
+  const completeSets: number[] = [];
+  setIndexMap.forEach((setActuals, setIndex) => {
+    const uniqueExercises = new Set(setActuals.map(a => a.exercise_id));
+    if (uniqueExercises.size === numExercises) {
+      completeSets.push(setIndex);
     }
-  }
+  });
+  completeSets.sort((a, b) => a - b);
+  
+  if (completeSets.length === 0) return null;
+
+  const seriesData = completeSets.map(setIndex => {
+    const setActuals = setIndexMap.get(setIndex) || [];
+    
+    // Dedupe: last entry per exercise wins (handles retries/duplicates)
+    const actualByExercise = new Map<string, ExerciseActual>();
+    setActuals.forEach(a => actualByExercise.set(a.exercise_id, a));
+    
+    if (numExercises > 1) {
+      // Superset/circuit: show all exercises
+      const parts = exercises.map(ex => {
+        const actual = actualByExercise.get(ex.id);
+        const abbrev = getExerciseAbbrev(ex.name);
+        return formatExerciseActual(abbrev, actual!.reps, actual!.load);
+      });
+      return { index: setIndex, summary: parts.join(' · ') };
+    } else {
+      // Single exercise
+      const actual = actualByExercise.get(exercises[0].id);
+      return { 
+        index: setIndex, 
+        summary: formatLoadDisplay(actual!.reps, actual!.load)
+      };
+    }
+  });
 
   return (
     <div className="mt-4">
-      <p className="text-sm font-medium text-muted-foreground">
-        Serie completate
-      </p>
+      <p className="text-sm font-medium text-muted-foreground">Serie completate</p>
       <div className="flex flex-wrap gap-2 mt-1.5">
         {seriesData.map(({ index, summary }) => (
           <span
             key={index}
-            className="h-7 px-2 rounded-full bg-muted text-xs font-medium tabular-nums flex items-center gap-1 shrink-0"
+            className="h-8 px-3 rounded-full bg-muted text-sm font-medium tabular-nums flex items-center gap-1.5 shrink-0"
           >
             <span className="text-foreground">#{index}</span>
-            {summary && <span className="text-muted-foreground">{summary}</span>}
+            <span className="text-muted-foreground">{summary}</span>
           </span>
         ))}
       </div>
@@ -180,7 +166,10 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
   const restDisplay = exercise.rest_seconds 
     ? `Recupero ${exercise.rest_seconds}s` 
     : '';
-  const targetDisplay = `${exercise.sets} × ${exercise.reps || '10'}${restDisplay ? ` · ${restDisplay}` : ''}`;
+  
+  // Graceful degradation: show reps only if present (no default to 10)
+  const repsDisplay = exercise.reps ? ` × ${exercise.reps} rip` : '';
+  const targetDisplay = `Obiettivo · ${exercise.sets} serie${repsDisplay}${restDisplay ? ` · ${restDisplay}` : ''}`;
 
   return (
     <div className={cn(showDivider && "pt-4 border-t border-border/40")}>
@@ -204,7 +193,7 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
             value={reps}
             onChange={(e) => setReps(e.target.value)}
             className="h-10 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30"
-            placeholder={exercise.reps || '10'}
+            placeholder={exercise.reps || '—'}
           />
         </div>
         <div>
@@ -223,10 +212,19 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
   );
 }
 
-// ================== Series Badge ==================
+// ================== Series Badge (Clamp + Conditional Styling) ==================
 
 function SeriesBadge({ completed, target }: { completed: number; target: number }) {
-  const isComplete = completed >= target;
+  // Clamp to prevent Serie 6/3 display
+  const clampedCompleted = Math.min(completed, target);
+  
+  // Dev warning for data integrity
+  if (import.meta.env.DEV && completed > target) {
+    console.warn(`[SeriesBadge] Data integrity: completed (${completed}) > target (${target})`);
+  }
+  
+  // Only apply success styling when EXACTLY complete
+  const isComplete = clampedCompleted === target && target > 0;
 
   return (
     <span className={cn(
@@ -235,7 +233,7 @@ function SeriesBadge({ completed, target }: { completed: number; target: number 
         ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" 
         : "bg-muted text-foreground"
     )}>
-      Serie {completed}/{target}
+      Serie {clampedCompleted}/{target}
     </span>
   );
 }
@@ -288,7 +286,22 @@ function GroupCard({
   const numExercises = group.exercises.length;
   const groupExerciseIds = group.exercises.map(e => e.id);
   const groupActuals = actuals.filter(a => groupExerciseIds.includes(a.exercise_id));
-  const completedSeries = Math.floor(groupActuals.length / numExercises);
+  
+  // Calculate completed series using set_index completeness
+  const setIndexMap = new Map<number, Set<string>>();
+  groupActuals.forEach(a => {
+    const existing = setIndexMap.get(a.set_index) || new Set();
+    existing.add(a.exercise_id);
+    setIndexMap.set(a.set_index, existing);
+  });
+  
+  let completedSeries = 0;
+  setIndexMap.forEach((exerciseSet) => {
+    if (exerciseSet.size === numExercises) {
+      completedSeries++;
+    }
+  });
+  
   const targetSeries = Math.min(...group.exercises.map(e => e.sets));
   const nextSeriesIndex = completedSeries + 1;
   const restSeconds = group.exercises[0]?.rest_seconds || 60;
@@ -372,36 +385,37 @@ function GroupCard({
           />
         ))}
 
-        {/* Completed Series Chips */}
-        <CompletedSeriesChips
-          actuals={actuals}
-          exerciseIds={groupExerciseIds}
-          numExercises={numExercises}
-        />
-
-        {/* CTA - Primary, isolated */}
-        <div className="mt-4">
+        {/* CTA Block - FIRST, before history */}
+        <div className="mt-4 space-y-2">
           <Button
             onClick={handleComplete}
             disabled={isCompleting || !allRepsFilled}
             className="w-full h-12 rounded-2xl text-base font-semibold gap-2"
           >
-            <Check className="size-4" />
+            <Check className="size-[18px]" strokeWidth={2} />
             {isCompleting ? 'Salvataggio...' : `Completa serie ${nextSeriesIndex}`}
           </Button>
 
-          {/* Undo - Secondary action */}
+          {/* Undo - lighter emphasis */}
           {completedSeries > 0 && (
             <button
               onClick={handleUndo}
               disabled={isUndoing}
-              className="mt-2 text-sm text-muted-foreground font-medium min-h-[44px] flex items-center gap-1.5 hover:underline underline-offset-2"
+              className="text-sm text-muted-foreground font-medium min-h-[44px] flex items-center gap-2 transition-colors hover:text-foreground"
             >
-              <Undo2 className="size-3.5" />
+              <Undo2 className="size-4" />
               {isUndoing ? 'Annullo...' : 'Annulla ultima serie'}
             </button>
           )}
         </div>
+
+        {/* Series history - AFTER CTA */}
+        <CompletedSeriesChips
+          actuals={actuals}
+          exerciseIds={groupExerciseIds}
+          numExercises={numExercises}
+          exercises={group.exercises}
+        />
       </div>
     </>
   );
@@ -423,7 +437,8 @@ export default function ClientLiveSession() {
   const [headerHeight, setHeaderHeight] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const FALLBACK_HEADER = 96; // Matches max header height to prevent jump on re-mount
+  // FALLBACK_HEADER = 140 for iOS safe-area + 3 rows + font scaling
+  const FALLBACK_HEADER = 140;
   const effectiveHeaderHeight = headerHeight > 0 ? headerHeight : FALLBACK_HEADER;
 
   useLayoutEffect(() => {
@@ -478,6 +493,7 @@ export default function ClientLiveSession() {
     }
     setIsScrolled(false);
   }, []);
+
   const [showFinishDialog, setShowFinishDialog] = useState(false);
 
   // Queries
@@ -541,7 +557,22 @@ export default function ClientLiveSession() {
     const numExercises = group.exercises.length;
     const groupExerciseIds = group.exercises.map(e => e.id);
     const groupActuals = actuals.filter(a => groupExerciseIds.includes(a.exercise_id));
-    const completedSeries = Math.floor(groupActuals.length / numExercises);
+    
+    // Calculate completed series using set_index completeness
+    const setIndexMap = new Map<number, Set<string>>();
+    groupActuals.forEach(a => {
+      const existing = setIndexMap.get(a.set_index) || new Set();
+      existing.add(a.exercise_id);
+      setIndexMap.set(a.set_index, existing);
+    });
+    
+    let completedSeries = 0;
+    setIndexMap.forEach((exerciseSet) => {
+      if (exerciseSet.size === numExercises) {
+        completedSeries++;
+      }
+    });
+    
     const targetSeries = Math.min(...group.exercises.map(e => e.sets));
     
     return { completed: completedSeries, target: targetSeries };
@@ -622,17 +653,27 @@ export default function ClientLiveSession() {
   const elapsed = store.getElapsedSeconds();
   const remainingRest = store.getRemainingRestSeconds();
   const isRestActive = store.isRestActive();
+  
+  // Rest display: showRest based on isRestActive (not remaining > 0) to avoid flicker
+  const showRest = isRestActive;
+  const clampedRest = Math.max(0, remainingRest);
 
   // Navigation handlers
   const canGoPrev = store.currentGroupIndex > 0;
   const canGoNext = store.currentGroupIndex < store.totalGroups - 1;
+  const isLastGroup = store.currentGroupIndex === store.totalGroups - 1;
+  
+  // Dynamic footer: filled only when last group is complete
+  const isLastGroupComplete = isLastGroup && 
+    currentGroupSeriesInfo.completed >= currentGroupSeriesInfo.target &&
+    currentGroupSeriesInfo.target > 0;
 
   // Loading state
   if (isActiveLoading || isDetailLoading) {
     return (
       <div className="flex-1 flex flex-col min-h-0 items-center justify-center p-4">
         <div className="space-y-4 w-full max-w-[520px]">
-          <Skeleton className="h-[96px] w-full" />
+          <Skeleton className="h-[140px] w-full" />
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-32 w-full" />
         </div>
@@ -668,11 +709,9 @@ export default function ClientLiveSession() {
 
   const groupTypeLabel = getGroupTypeLabel();
 
-  const isLastGroup = store.currentGroupIndex === store.totalGroups - 1;
-
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Top Bar - Compact 2-row layout, max ~96px */}
+      {/* Top Bar - Stable 3-row layout with reserved Row 3 */}
       <header
         ref={headerRef}
         className={cn(
@@ -701,7 +740,7 @@ export default function ClientLiveSession() {
             <div className="w-11 h-11" aria-hidden="true" />
           </div>
 
-          {/* Row 2: Phase (left) — Timer (right) */}
+          {/* Row 2: Phase (left) — Duration (right) */}
           <div className="flex items-center justify-between h-9">
             {currentFlatGroup ? (
               <span className="text-xs text-muted-foreground leading-4">
@@ -710,12 +749,32 @@ export default function ClientLiveSession() {
             ) : (
               <span />
             )}
-            <HeaderTimer elapsed={elapsed} remainingRest={remainingRest} isRestActive={isRestActive} />
+            <span className="text-xs text-muted-foreground tabular-nums">
+              Durata {formatElapsedTime(elapsed)}
+            </span>
+          </div>
+
+          {/* Row 3: Rest timer (ALWAYS reserved h-8, empty when inactive) */}
+          <div
+            className={cn(
+              "h-8 flex items-center justify-center gap-2 transition-opacity duration-150",
+              showRest ? "opacity-100" : "opacity-0"
+            )}
+            aria-hidden={!showRest}
+          >
+            {showRest ? (
+              <>
+                <span className="text-xs text-muted-foreground">Recupero</span>
+                <span className="text-base font-mono font-semibold tabular-nums text-primary">
+                  {formatRestTime(clampedRest)}
+                </span>
+              </>
+            ) : null}
           </div>
         </div>
       </header>
 
-        {/* Main scroll container (ONLY scrollable element) */}
+      {/* Main scroll container (ONLY scrollable element) */}
       <main
         ref={mainRef}
         className="flex-1 min-h-0 overflow-y-auto"
@@ -760,6 +819,7 @@ export default function ClientLiveSession() {
       </main>
 
       {/* Navigation Bar - Always visible, shrink-0 (outside scroll container) */}
+      {/* REMOVED redundant counter - already in header Row 2 */}
       <nav className="shrink-0 h-12 border-t border-border/40 bg-background px-4 flex items-center justify-between">
         <button
           onClick={() => store.prevGroup()}
@@ -772,10 +832,6 @@ export default function ClientLiveSession() {
           <ChevronLeft className="size-4" />
           Precedente
         </button>
-
-        <span className="text-sm text-muted-foreground tabular-nums">
-          {store.currentGroupIndex + 1} / {store.totalGroups}
-        </span>
 
         <button
           onClick={() => store.nextGroup()}
@@ -790,11 +846,15 @@ export default function ClientLiveSession() {
         </button>
       </nav>
 
-      {/* Footer - Always visible, shrink-0 (outside scroll container) */}
+      {/* Footer - Dynamic styling based on completion */}
       <footer className="shrink-0 bg-background px-4 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))] border-t border-border/40">
         <Button
           onClick={() => setShowFinishDialog(true)}
-          className="w-full h-12 rounded-2xl text-base font-semibold gap-2"
+          variant={isLastGroupComplete ? "default" : "outline"}
+          className={cn(
+            "w-full h-12 rounded-2xl text-base font-semibold gap-2",
+            !isLastGroupComplete && "text-muted-foreground border-border"
+          )}
         >
           <Check className="size-4" />
           Termina allenamento
