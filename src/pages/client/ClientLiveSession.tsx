@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Play, Pause, Check, Undo2, Dumbbell, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Check, Undo2, Dumbbell, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -84,42 +84,38 @@ function formatRestTime(seconds: number): string {
 // ================== Top Bar Timer ==================
 
 interface TopBarTimerProps {
-  showSessionDuration?: boolean;
+  elapsed: number;
+  remainingRest: number;
+  isRestActive: boolean;
 }
 
-function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
-  const store = useClientSessionStore();
-  const [, forceUpdate] = useState(0);
+function TopBarTimer({ elapsed, remainingRest, isRestActive }: TopBarTimerProps) {
+  // Clamp to 0 for MVP (no negative countdown)
+  const clampedRest = Math.max(0, remainingRest);
+  const showRest = isRestActive && remainingRest > 0;
 
-  useEffect(() => {
-    const interval = setInterval(() => forceUpdate(n => n + 1), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const isRestActive = store.isRestActive();
-  const remainingRest = store.getRemainingRestSeconds();
-  const elapsed = store.getElapsedSeconds();
-  const isOvertime = remainingRest < 0;
-
-  // When rest is active, show ONLY the countdown
-  if (isRestActive) {
-    return (
-      <span className={cn(
-        "tabular-nums font-mono text-lg font-semibold tracking-tight min-w-[104px] px-2 text-center",
-        isOvertime ? "text-destructive" : "text-primary"
-      )}>
-        {formatRestTime(remainingRest)}
-      </span>
-    );
-  }
-
-  // Default: session duration
-  if (!showSessionDuration) return null;
-  
   return (
-    <span className="tabular-nums font-mono text-sm font-medium text-muted-foreground leading-[20px] min-w-[104px] px-2 text-center">
-      {formatElapsedTime(elapsed)}
-    </span>
+    <div className="flex flex-col items-center gap-0.5">
+      {/* Row 1: Rest countdown (or invisible placeholder for stable height) */}
+      <div 
+        className={cn(
+          "flex items-center gap-2 h-7 transition-opacity duration-150",
+          showRest ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        aria-hidden={!showRest}
+      >
+        <Badge variant="secondary" className="text-xs font-medium px-2 py-0.5">
+          Recupero
+        </Badge>
+        <span className="tabular-nums font-mono text-xl font-semibold tracking-tight leading-7 text-primary">
+          {formatRestTime(clampedRest)}
+        </span>
+      </div>
+      {/* Row 2: Session duration (always visible) */}
+      <span className="text-xs text-muted-foreground tabular-nums font-mono">
+        Durata sessione {formatElapsedTime(elapsed)}
+      </span>
+    </div>
   );
 }
 
@@ -576,13 +572,49 @@ export default function ClientLiveSession() {
     });
   };
 
-  const handlePauseToggle = () => {
-    if (store.isPaused) {
-      store.resume();
-    } else {
-      store.pause();
-    }
-  };
+  // Centralized timer tick (single interval, visibility-aware)
+  const [, setTimerTick] = useState(0);
+
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const tick = () => setTimerTick(n => n + 1);
+
+    const startInterval = () => {
+      if (!intervalId) {
+        intervalId = setInterval(tick, 1000);
+      }
+    };
+
+    const stopInterval = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        stopInterval();
+      } else {
+        tick(); // Immediate update when visible
+        startInterval();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    startInterval();
+
+    return () => {
+      stopInterval();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
+
+  // Compute timer values (re-computed each tick)
+  const elapsed = store.getElapsedSeconds();
+  const remainingRest = store.getRemainingRestSeconds();
+  const isRestActive = store.isRestActive();
 
   // Navigation handlers
   const canGoPrev = store.currentGroupIndex > 0;
@@ -654,13 +686,8 @@ export default function ClientLiveSession() {
               <span className="text-sm font-medium">Esci</span>
             </button>
 
-            <button 
-              onClick={handlePauseToggle}
-              className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
-              aria-label={store.isPaused ? "Riprendi" : "Pausa"}
-            >
-              {store.isPaused ? <Play className="size-5" /> : <Pause className="size-5" />}
-            </button>
+            {/* Spacer with fixed width for symmetry */}
+            <div className="w-11 h-11" aria-hidden="true" />
           </div>
 
           {/* Row 2: Day name + phase */}
@@ -675,9 +702,9 @@ export default function ClientLiveSession() {
             )}
           </div>
 
-          {/* Row 3: Timer (rest or elapsed) */}
-          <div className="mt-1 h-8 flex items-center justify-center">
-            <TopBarTimer />
+          {/* Row 3: Timer (stable height with 2 rows always) */}
+          <div className="mt-1 min-h-[48px] flex items-center justify-center">
+            <TopBarTimer elapsed={elapsed} remainingRest={remainingRest} isRestActive={isRestActive} />
           </div>
         </div>
       </header>
@@ -690,26 +717,9 @@ export default function ClientLiveSession() {
           const next = e.currentTarget.scrollTop > 0;
           setIsScrolled((prev) => (prev === next ? prev : next));
         }}
-        style={{ paddingTop: effectiveHeaderHeight + 16 }}
+        style={{ paddingTop: effectiveHeaderHeight + 12 }}
       >
-        {/* Pause Badge - reserved height to prevent layout jump */}
-        <div 
-          className={cn(
-            "h-10 flex items-center justify-center transition-all duration-150",
-            store.isPaused ? "border-b border-muted bg-background" : "border-b border-transparent"
-          )}
-        >
-          <Badge 
-            variant="secondary" 
-            className={cn(
-              "transition-opacity duration-150",
-              store.isPaused ? "opacity-100" : "opacity-0 pointer-events-none"
-            )}
-          >
-            In pausa
-          </Badge>
-        </div>
-          <div className="px-4 pb-6 max-w-[520px] mx-auto w-full">
+        <div className="px-4 pb-6 max-w-[520px] mx-auto w-full">
           {/* Group Header - pills + badge */}
           {currentFlatGroup && (
             <div className="flex items-center justify-between gap-3 mb-3">
