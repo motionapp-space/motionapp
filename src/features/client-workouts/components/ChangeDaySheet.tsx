@@ -1,10 +1,13 @@
+import { useState, useEffect } from "react";
 import { Dumbbell } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetFooter,
 } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export interface PlanDayOption {
@@ -29,26 +32,41 @@ export function ChangeDaySheet({
   currentDayId,
   onSelectDay,
 }: ChangeDaySheetProps) {
-  const handleSelect = (day: PlanDayOption) => {
-    onSelectDay(day.id);
-    onOpenChange(false);
+  const [selectedDayId, setSelectedDayId] = useState<string | undefined>(undefined);
+
+  // Reset selection when drawer opens
+  useEffect(() => {
+    if (open) {
+      setSelectedDayId(undefined);
+    }
+  }, [open]);
+
+  const handleDayClick = (day: PlanDayOption) => {
+    setSelectedDayId(day.id);
+  };
+
+  const handleStartSession = () => {
+    if (selectedDayId) {
+      onSelectDay(selectedDayId);
+      onOpenChange(false);
+    }
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[60vh] rounded-t-2xl">
+      <SheetContent side="bottom" className="h-[60vh] rounded-t-2xl flex flex-col">
         <SheetHeader className="pb-4">
           <SheetTitle>Scegli un giorno</SheetTitle>
         </SheetHeader>
 
-        <div className="space-y-2 overflow-y-auto">
+        <div className="space-y-2 overflow-y-auto flex-1">
           {days.map((day) => {
-            const isSelected = day.id === currentDayId;
+            const isSelected = day.id === selectedDayId;
 
             return (
               <button
                 key={day.id}
-                onClick={() => handleSelect(day)}
+                onClick={() => handleDayClick(day)}
                 className={cn(
                   "w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left",
                   isSelected && "bg-primary/10 border border-primary",
@@ -74,6 +92,16 @@ export function ChangeDaySheet({
             );
           })}
         </div>
+
+        <SheetFooter className="pt-4 border-t mt-4">
+          <Button 
+            className="w-full h-11 rounded-2xl text-sm"
+            disabled={!selectedDayId}
+            onClick={handleStartSession}
+          >
+            Avvia sessione
+          </Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );
