@@ -8,7 +8,7 @@
  * - No infinite scroll, maximum immersion
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Play, Pause, Check, Undo2, Dumbbell, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -426,6 +426,28 @@ export default function ClientLiveSession() {
 
   const store = useClientSessionStore();
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+  // Dynamic header height measurement
+  const headerRef = useRef<HTMLElement | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    if (!headerRef.current) return;
+
+    const el = headerRef.current;
+    const update = () => setHeaderHeight(el.offsetHeight);
+
+    update();
+
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
   const [showFinishDialog, setShowFinishDialog] = useState(false);
 
   // Queries
@@ -585,8 +607,11 @@ export default function ClientLiveSession() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Top Bar - Sticky 96px, 3 rows with breathing room */}
-      <header className="fixed top-0 left-0 right-0 w-full z-50 bg-background border-b border-muted/60 pt-[env(safe-area-inset-top)] h-[calc(96px+env(safe-area-inset-top))]">
-        <div className="h-full px-4 pt-3 pb-3 flex flex-col">
+      <header
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 w-full z-50 bg-background border-b border-muted/60 pt-[env(safe-area-inset-top)]"
+      >
+        <div className="px-4 pt-3 pb-3 flex flex-col">
           {/* Row 1: Navigation */}
           <div className="flex items-center justify-between">
             <Button
@@ -631,7 +656,10 @@ export default function ClientLiveSession() {
       </header>
 
         {/* Main scroll container (ONLY scrollable element) */}
-        <main className="flex-1 min-h-0 overflow-y-auto pt-[calc(96px+env(safe-area-inset-top))]">
+        <main
+          className="flex-1 min-h-0 overflow-y-auto"
+          style={{ paddingTop: headerHeight }}
+        >
           {/* Pause Badge - inside scroll */}
           {store.isPaused && (
             <div className="bg-background border-b border-muted px-4 py-2">
