@@ -583,9 +583,9 @@ export default function ClientLiveSession() {
   const isLastGroup = store.currentGroupIndex === store.totalGroups - 1;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <div className="flex-1 flex flex-col min-h-0">
       {/* Top Bar - Sticky 96px, 3 rows with breathing room */}
-      <header className="sticky top-0 z-50 shrink-0 isolate bg-background border-b border-muted/60">
+      <header className="fixed top-0 left-0 right-0 w-full z-50 bg-background border-b border-muted/60 overflow-hidden pt-[env(safe-area-inset-top)]">
         <div className="h-[96px] px-4 pt-3 pb-3 flex flex-col">
           {/* Row 1: Navigation */}
           <div className="flex items-center justify-between">
@@ -630,18 +630,17 @@ export default function ClientLiveSession() {
         </div>
       </header>
 
-      {/* Pause Badge - outside header */}
-      {store.isPaused && (
-        <div className="bg-background border-b border-muted px-4 py-2">
-          <Badge variant="secondary" className="mx-auto block w-fit">
-            In pausa
-          </Badge>
-        </div>
-      )}
-
-      {/* Main scroll container (ONLY scrollable element) */}
-      <main className="flex-1 min-h-0 overflow-y-auto">
-        <div className="px-4 pt-6 pb-6 max-w-[520px] mx-auto w-full">
+        {/* Main scroll container (ONLY scrollable element) */}
+        <main className="flex-1 min-h-0 overflow-y-auto pt-[calc(96px+env(safe-area-inset-top))]">
+          {/* Pause Badge - inside scroll */}
+          {store.isPaused && (
+            <div className="bg-background border-b border-muted px-4 py-2">
+              <Badge variant="secondary" className="mx-auto block w-fit">
+                In pausa
+              </Badge>
+            </div>
+          )}
+          <div className="px-4 pb-6 max-w-[520px] mx-auto w-full">
           {/* Group Header - pills + badge */}
           {currentFlatGroup && (
             <div className="flex items-center justify-between gap-2">
