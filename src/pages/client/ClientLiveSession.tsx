@@ -134,13 +134,13 @@ function CompletedSeriesChips({ actuals, exerciseIds, numExercises, exercises }:
   });
 
   return (
-    <div className="mt-4">
+    <div className="mt-3">
       <p className="text-sm font-medium text-muted-foreground">Serie completate</p>
       <div className="flex flex-wrap gap-2 mt-1.5">
         {seriesData.map(({ index, summary }) => (
           <span
             key={index}
-            className="h-8 px-3 rounded-full bg-muted text-sm font-medium tabular-nums flex items-center gap-1.5 shrink-0"
+            className="h-7 px-3 rounded-full bg-muted text-xs font-medium tabular-nums flex items-center gap-1.5 shrink-0"
           >
             <span className="text-foreground">#{index}</span>
             <span className="text-muted-foreground">{summary}</span>
@@ -179,12 +179,12 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
       </h4>
       
       {/* Target */}
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground leading-tight mt-0.5">
         {targetDisplay}
       </p>
       
       {/* Inputs */}
-      <div className="grid grid-cols-2 gap-3 mt-3">
+      <div className="grid grid-cols-2 gap-2.5 mt-3">
         <div>
           <label className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1 block">Reps</label>
           <Input
@@ -192,7 +192,7 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
             inputMode="numeric"
             value={reps}
             onChange={(e) => setReps(e.target.value)}
-            className="h-10 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30"
+            className="h-9 rounded-xl text-sm font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30"
             placeholder={exercise.reps || '—'}
           />
         </div>
@@ -203,7 +203,7 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
             inputMode="decimal"
             value={load}
             onChange={(e) => setLoad(e.target.value)}
-            className="h-10 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/70"
+            className="h-9 rounded-xl text-sm font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/60"
             placeholder="kg"
           />
         </div>
@@ -228,7 +228,7 @@ function SeriesBadge({ completed, target }: { completed: number; target: number 
 
   return (
     <span className={cn(
-      "h-9 text-sm font-medium rounded-full px-4 flex items-center",
+      "h-8 text-sm font-medium rounded-full px-3 flex items-center",
       isComplete 
         ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" 
         : "bg-muted text-foreground"
@@ -365,7 +365,7 @@ function GroupCard({
   return (
     <>
       {/* Card container - Notion-like, soft border */}
-      <div className="p-4 rounded-2xl bg-background border border-border/60 space-y-4">
+      <div className="p-3.5 rounded-2xl bg-background border border-border/60 space-y-3">
         {/* Exercises */}
         {group.exercises.map((exercise, idx) => (
           <ExerciseBlock
@@ -386,11 +386,11 @@ function GroupCard({
         ))}
 
         {/* CTA Block - FIRST, before history */}
-        <div className="mt-4 space-y-2">
+        <div className="mt-3 space-y-2">
           <Button
             onClick={handleComplete}
             disabled={isCompleting || !allRepsFilled}
-            className="w-full h-12 rounded-2xl text-base font-semibold gap-2"
+            className="w-full h-11 rounded-2xl text-sm font-semibold gap-2"
           >
             <Check className="size-[18px]" strokeWidth={2} />
             {isCompleting ? 'Salvataggio...' : `Completa serie ${nextSeriesIndex}`}
@@ -401,7 +401,7 @@ function GroupCard({
             <button
               onClick={handleUndo}
               disabled={isUndoing}
-              className="text-sm text-muted-foreground font-medium min-h-[44px] flex items-center gap-2 transition-colors hover:text-foreground"
+              className="text-sm text-muted-foreground font-medium min-h-[44px] flex items-center gap-1.5 transition-colors hover:text-foreground"
             >
               <Undo2 className="size-4" />
               {isUndoing ? 'Annullo...' : 'Annulla ultima serie'}
@@ -743,13 +743,13 @@ export default function ClientLiveSession() {
           {/* Row 2: Phase (left) — Duration (right) */}
           <div className="flex items-center justify-between h-9">
             {currentFlatGroup ? (
-              <span className="text-xs text-muted-foreground leading-4">
+              <span className="text-xs text-muted-foreground/80 leading-4">
                 {translatePhaseType(currentFlatGroup.phaseType)} · {store.currentGroupIndex + 1}/{store.totalGroups}
               </span>
             ) : (
               <span />
             )}
-            <span className="text-xs text-muted-foreground tabular-nums">
+            <span className="text-xs text-muted-foreground/80 tabular-nums">
               Durata {formatElapsedTime(elapsed)}
             </span>
           </div>
@@ -787,7 +787,7 @@ export default function ClientLiveSession() {
         <div className="px-4 pb-6 max-w-[520px] mx-auto w-full">
           {/* Group Header - pills + badge */}
           {currentFlatGroup && (
-            <div className="flex items-center justify-between gap-3 mt-2 mb-3">
+            <div className="flex items-center justify-between gap-2 mt-2 mb-3">
               {/* Left: Group type pill (only for superset/circuit) */}
               {groupTypeLabel ? (
                 <span className="h-8 text-sm font-medium bg-primary/10 text-primary rounded-full px-3 flex items-center">
@@ -852,7 +852,7 @@ export default function ClientLiveSession() {
           onClick={() => setShowFinishDialog(true)}
           variant={isLastGroupComplete ? "default" : "outline"}
           className={cn(
-            "w-full h-12 rounded-2xl text-base font-semibold gap-2",
+            "w-full h-11 rounded-2xl text-sm font-semibold gap-2",
             !isLastGroupComplete && "text-muted-foreground border-border"
           )}
         >
