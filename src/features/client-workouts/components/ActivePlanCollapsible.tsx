@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ChevronDown, FileText } from "lucide-react";
+import { ChevronDown, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -13,7 +13,6 @@ interface PlanDay {
   id: string;
   title: string;
   exercisesCount: number;
-  isCompletedThisWeek: boolean;
 }
 
 interface ActivePlanCollapsibleProps {
@@ -104,20 +103,9 @@ export function ActivePlanCollapsible({
                       onClick={() => onDayClick?.(day.id)}
                       className="w-full flex items-center gap-2.5 py-1.5 px-2 rounded-md hover:bg-muted transition-colors text-left"
                     >
-                      {/* Status indicator - blue only */}
-                      <div
-                        className={cn(
-                          "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium flex-shrink-0",
-                          day.isCompletedThisWeek
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground"
-                        )}
-                      >
-                        {day.isCompletedThisWeek ? (
-                          <Check className="w-3 h-3" strokeWidth={3} />
-                        ) : (
-                          index + 1
-                        )}
+                      {/* Day number indicator */}
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium flex-shrink-0 bg-muted text-muted-foreground">
+                        {index + 1}
                       </div>
 
                       {/* Day info - compact */}

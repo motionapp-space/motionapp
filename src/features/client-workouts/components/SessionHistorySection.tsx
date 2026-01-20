@@ -8,13 +8,13 @@ import { it } from "date-fns/locale";
 import { ClientEmptyState } from "@/components/client/ClientEmptyState";
 import { SessionHistoryCard } from "./SessionHistoryCard";
 import { ClientSessionDetailSheet } from "./ClientSessionDetailSheet";
-import type { ClientSession } from "../api/client-sessions.api";
+import type { ClientSessionWithCounts } from "../api/client-sessions.api";
 import type { ClientActivePlan } from "../api/client-plans.api";
 import { countDayExercises } from "../utils/plan-utils";
 import { countExercisesFromDayStructure } from "../utils/countExercisesFromDayStructure";
 
 interface SessionHistorySectionProps {
-  sessions: ClientSession[] | undefined;
+  sessions: ClientSessionWithCounts[] | undefined;
   plan: ClientActivePlan | null | undefined;
   isLoading: boolean;
 }
@@ -91,8 +91,8 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
               ? countExercisesFromDayStructure(snapshot.day_structure)
               : (dayFromPlan ? countDayExercises(dayFromPlan) : 0);
             
-            // For now, we use totalExercises as completed since we don't have partial tracking yet
-            const completedExercises = totalExercises;
+            // Use real count from exercise_actuals (exercises with at least 1 series)
+            const completedExercises = session.completedExercisesCount;
 
             const formattedDate = session.started_at 
               ? format(new Date(session.started_at), "d MMM yyyy", { locale: it })

@@ -94,7 +94,6 @@ function ClientWorkoutsContent() {
     id: d.id,
     title: d.title,
     exercisesCount: countDayExercises(d),
-    isCompletedThisWeek: weekly.completedDayIds.has(d.id),
     estimatedMinutes: 45, // placeholder
   }));
 

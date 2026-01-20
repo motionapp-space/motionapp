@@ -23,10 +23,14 @@ export interface ClientSession {
   plan_day_snapshot: PlanDaySnapshot | null;
 }
 
-export async function getClientSessions(): Promise<ClientSession[]> {
+export interface ClientSessionWithCounts extends ClientSession {
+  completedExercisesCount: number;
+}
+
+export async function getClientSessions(): Promise<ClientSessionWithCounts[]> {
   const { coachClientId } = await getClientCoachClientId();
 
-  const { data, error } = await supabase
+  const { data: sessions, error } = await supabase
     .from("training_sessions")
     .select("id, status, started_at, ended_at, source, plan_id, day_id, plan_day_snapshot")
     .eq("coach_client_id", coachClientId)
@@ -35,7 +39,36 @@ export async function getClientSessions(): Promise<ClientSession[]> {
     .limit(30);
 
   if (error) throw error;
-  return (data || []) as ClientSession[];
+
+  const sessionList = (sessions || []) as ClientSession[];
+  
+  if (sessionList.length === 0) {
+    return [];
+  }
+
+  // Fetch exercise_actuals for all sessions to count unique exercises
+  const sessionIds = sessionList.map(s => s.id);
+  
+  const { data: actuals, error: actualsError } = await supabase
+    .from("exercise_actuals")
+    .select("session_id, exercise_id")
+    .in("session_id", sessionIds);
+
+  if (actualsError) throw actualsError;
+
+  // Group by session_id and count unique exercise_ids
+  const countMap = new Map<string, Set<string>>();
+  for (const actual of actuals || []) {
+    if (!countMap.has(actual.session_id)) {
+      countMap.set(actual.session_id, new Set());
+    }
+    countMap.get(actual.session_id)!.add(actual.exercise_id);
+  }
+
+  return sessionList.map(s => ({
+    ...s,
+    completedExercisesCount: countMap.get(s.id)?.size || 0
+  }));
 }
 
 export async function getClientSessionActuals(sessionId: string): Promise<ExerciseActual[]> {
