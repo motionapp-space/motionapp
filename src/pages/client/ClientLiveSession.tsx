@@ -154,7 +154,7 @@ function CompletedSeriesChips({ actuals, exerciseIds, numExercises }: CompletedS
         {seriesData.map(({ index, summary }) => (
           <span
             key={index}
-            className="h-8 px-3 rounded-full bg-muted text-sm font-medium tabular-nums flex items-center gap-1.5 shrink-0"
+            className="h-7 px-2 rounded-full bg-muted text-xs font-medium tabular-nums flex items-center gap-1 shrink-0"
           >
             <span className="text-foreground">#{index}</span>
             {summary && <span className="text-muted-foreground">{summary}</span>}
@@ -203,7 +203,7 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
             inputMode="numeric"
             value={reps}
             onChange={(e) => setReps(e.target.value)}
-            className="h-11 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30"
+            className="h-10 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30"
             placeholder={exercise.reps || '10'}
           />
         </div>
@@ -214,7 +214,7 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
             inputMode="decimal"
             value={load}
             onChange={(e) => setLoad(e.target.value)}
-            className="h-11 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/70"
+            className="h-10 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/70"
             placeholder="kg"
           />
         </div>
