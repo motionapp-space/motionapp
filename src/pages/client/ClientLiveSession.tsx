@@ -101,11 +101,11 @@ function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
   const elapsed = store.getElapsedSeconds();
   const isOvertime = remainingRest < 0;
 
-  // When rest is active, show ONLY the countdown (22px primary/destructive)
+  // When rest is active, show ONLY the countdown
   if (isRestActive) {
     return (
       <span className={cn(
-        "tabular-nums font-mono text-[22px] font-semibold leading-[28px] min-w-[104px] px-2 text-center",
+        "tabular-nums font-mono text-lg font-semibold tracking-tight min-w-[104px] px-2 text-center",
         isOvertime ? "text-destructive" : "text-primary"
       )}>
         {formatRestTime(remainingRest)}
@@ -113,11 +113,11 @@ function TopBarTimer({ showSessionDuration = true }: TopBarTimerProps) {
     );
   }
 
-  // Default: session duration (14px muted)
+  // Default: session duration
   if (!showSessionDuration) return null;
   
   return (
-    <span className="tabular-nums font-mono text-[14px] font-medium text-muted-foreground leading-[20px] min-w-[104px] px-2 text-center">
+    <span className="tabular-nums font-mono text-sm font-medium text-muted-foreground leading-[20px] min-w-[104px] px-2 text-center">
       {formatElapsedTime(elapsed)}
     </span>
   );
@@ -156,15 +156,15 @@ function CompletedSeriesChips({ actuals, exerciseIds, numExercises }: CompletedS
   }
 
   return (
-    <div className="mt-5">
-      <p className="text-[13px] font-medium text-muted-foreground">
+    <div className="mt-4">
+      <p className="text-sm font-medium text-muted-foreground">
         Serie completate
       </p>
-      <div className="flex flex-wrap gap-2 mt-2">
+      <div className="flex flex-wrap gap-2 mt-1.5">
         {seriesData.map(({ index, summary }) => (
           <span
             key={index}
-            className="h-8 px-3 rounded-full bg-muted/60 text-[13px] font-medium tabular-nums flex items-center gap-1.5 shrink-0"
+            className="h-8 px-3 rounded-full bg-muted text-sm font-medium tabular-nums flex items-center gap-1.5 shrink-0"
           >
             <span className="text-foreground">#{index}</span>
             {summary && <span className="text-muted-foreground">{summary}</span>}
@@ -193,38 +193,38 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
   const targetDisplay = `${exercise.sets} × ${exercise.reps || '10'}${restDisplay ? ` · ${restDisplay}` : ''}`;
 
   return (
-    <div className={cn(showDivider && "pt-5 border-t border-muted/50")}>
+    <div className={cn(showDivider && "pt-4 border-t border-border/40")}>
       {/* Exercise Name */}
-      <h4 className="text-[17px] font-semibold leading-[22px]">
+      <h4 className="text-lg font-semibold leading-snug">
         {exercise.name || 'Esercizio'}
       </h4>
       
       {/* Target */}
-      <p className="text-[13px] text-muted-foreground mt-[2px]">
+      <p className="text-sm text-muted-foreground">
         {targetDisplay}
       </p>
       
       {/* Inputs */}
-      <div className="grid grid-cols-2 gap-4 mt-4">
+      <div className="grid grid-cols-2 gap-3 mt-3">
         <div>
-          <label className="text-[12px] text-muted-foreground mb-1 block">Reps</label>
+          <label className="text-xs uppercase tracking-wide text-muted-foreground mb-1 block">Reps</label>
           <Input
             type="text"
             inputMode="numeric"
             value={reps}
             onChange={(e) => setReps(e.target.value)}
-            className="h-11 rounded-xl text-[16px] font-medium text-center px-3"
+            className="h-12 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30"
             placeholder={exercise.reps || '10'}
           />
         </div>
         <div>
-          <label className="text-[12px] text-muted-foreground mb-1 block">Carico</label>
+          <label className="text-xs uppercase tracking-wide text-muted-foreground mb-1 block">Carico</label>
           <Input
             type="text"
             inputMode="decimal"
             value={load}
             onChange={(e) => setLoad(e.target.value)}
-            className="h-11 rounded-xl text-[16px] font-medium text-center px-3 placeholder:text-muted-foreground placeholder:font-normal"
+            className="h-12 rounded-xl text-base font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/70"
             placeholder="kg"
           />
         </div>
@@ -240,7 +240,7 @@ function SeriesBadge({ completed, target }: { completed: number; target: number 
 
   return (
     <span className={cn(
-      "h-8 text-[13px] font-medium rounded-full px-3 flex items-center",
+      "h-9 text-sm font-medium rounded-full px-4 flex items-center",
       isComplete 
         ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" 
         : "bg-muted text-foreground"
@@ -362,7 +362,7 @@ function GroupCard({
   return (
     <>
       {/* Card container - Notion-like, soft border */}
-      <div className="mt-3 p-5 rounded-2xl bg-background border border-muted/60 space-y-5">
+      <div className="p-4 rounded-2xl bg-background border border-border/60 space-y-4">
         {/* Exercises */}
         {group.exercises.map((exercise, idx) => (
           <ExerciseBlock
@@ -390,13 +390,13 @@ function GroupCard({
         />
 
         {/* CTA - Primary, isolated */}
-        <div className="mt-6">
+        <div className="mt-4">
           <Button
             onClick={handleComplete}
             disabled={isCompleting || !allRepsFilled}
-            className="w-full h-14 rounded-2xl text-[16px] font-semibold gap-2"
+            className="w-full h-12 rounded-2xl text-base font-semibold gap-2"
           >
-            <Check className="size-[18px]" />
+            <Check className="size-4" />
             {isCompleting ? 'Salvataggio...' : `Completa serie ${nextSeriesIndex}`}
           </Button>
 
@@ -405,9 +405,9 @@ function GroupCard({
             <button
               onClick={handleUndo}
               disabled={isUndoing}
-              className="mt-3 text-[14px] text-muted-foreground font-medium min-h-[44px] flex items-center gap-2 hover:underline underline-offset-2"
+              className="mt-2 text-sm text-muted-foreground font-medium min-h-[44px] flex items-center gap-1.5 hover:underline underline-offset-2"
             >
-              <Undo2 className="size-[18px]" />
+              <Undo2 className="size-3.5" />
               {isUndoing ? 'Annullo...' : 'Annulla ultima serie'}
             </button>
           )}
@@ -617,45 +617,40 @@ export default function ClientLiveSession() {
             : "border-b border-border/60"
         )}
       >
-        <div className="px-4 pt-3 pb-3 flex flex-col">
+        <div className="px-4 pt-2 pb-2 flex flex-col">
           {/* Row 1: Navigation */}
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-11 shrink-0 -ml-2"
-              onClick={() => navigate('/client/app/workouts')}
+          <div className="flex items-center justify-between h-10">
+            <button
+              onClick={() => navigate("/client/app/workouts")}
+              className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] -ml-1 px-1"
             >
-              <ArrowLeft className="size-5" strokeWidth={2} />
-            </Button>
+              <ChevronLeft className="size-5" />
+              <span className="text-sm font-medium">Esci</span>
+            </button>
 
-            <span className="text-[18px] font-semibold leading-[24px] text-foreground truncate max-w-[200px] text-center">
-              {snapshot.day.title}
-            </span>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-11 shrink-0 -mr-2"
+            <button 
               onClick={handlePauseToggle}
+              className="size-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label={store.isPaused ? "Riprendi" : "Pausa"}
             >
-              {store.isPaused ? (
-                <Play className="size-5" strokeWidth={2} />
-              ) : (
-                <Pause className="size-5" strokeWidth={2} />
-              )}
-            </Button>
+              {store.isPaused ? <Play className="size-5" /> : <Pause className="size-5" />}
+            </button>
           </div>
 
-          {/* Row 2: Context */}
-          <div className="flex items-center justify-center mt-[2px]">
-            <span className="text-[13px] leading-[18px] text-muted-foreground">
-              {translatePhaseType(currentFlatGroup?.phaseType || 'Warm-up')} · {store.currentGroupIndex + 1}/{store.totalGroups}
+          {/* Row 2: Day name + phase */}
+          <div className="flex flex-col items-center">
+            <span className="text-base font-semibold leading-tight text-center line-clamp-1 max-w-[280px]">
+              {snapshot?.day?.title || 'Allenamento'}
             </span>
+            {currentFlatGroup && (
+              <span className="text-sm text-muted-foreground">
+                {translatePhaseType(currentFlatGroup.phaseType)}
+              </span>
+            )}
           </div>
 
-          {/* Row 3: Timer - focal element with min-w for layout stability */}
-          <div className="mt-2 h-9 flex items-center justify-center">
+          {/* Row 3: Timer (rest or elapsed) */}
+          <div className="mt-1 h-8 flex items-center justify-center">
             <TopBarTimer />
           </div>
         </div>
@@ -681,10 +676,10 @@ export default function ClientLiveSession() {
           <div className="px-4 pb-6 max-w-[520px] mx-auto w-full">
           {/* Group Header - pills + badge */}
           {currentFlatGroup && (
-            <div className="flex items-center justify-between gap-2 mb-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
               {/* Left: Group type pill (only for superset/circuit) */}
               {groupTypeLabel ? (
-                <span className="h-8 text-[13px] font-medium bg-primary/10 text-primary rounded-full px-3 flex items-center">
+                <span className="h-9 text-sm font-medium bg-primary/10 text-primary rounded-full px-4 flex items-center">
                   {groupTypeLabel}
                 </span>
               ) : (
@@ -713,39 +708,43 @@ export default function ClientLiveSession() {
       </main>
 
       {/* Navigation Bar - Always visible, shrink-0 (outside scroll container) */}
-      <nav className="shrink-0 h-[56px] border-t border-muted/60 bg-background px-4 flex items-center justify-between">
+      <nav className="shrink-0 h-12 border-t border-border/40 bg-background px-4 flex items-center justify-between">
         <button
           onClick={() => store.prevGroup()}
           disabled={!canGoPrev}
           className={cn(
-            "h-11 px-2 text-[15px] font-medium text-muted-foreground flex items-center gap-1",
+            "h-10 px-1 text-sm font-medium text-muted-foreground flex items-center gap-1",
             !canGoPrev && "opacity-40 pointer-events-none"
           )}
         >
-          <ChevronLeft className="size-[18px]" />
+          <ChevronLeft className="size-4" />
           Precedente
         </button>
+
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {store.currentGroupIndex + 1} / {store.totalGroups}
+        </span>
 
         <button
           onClick={() => store.nextGroup()}
           disabled={!canGoNext}
           className={cn(
-            "h-11 px-2 text-[15px] font-medium text-muted-foreground flex items-center gap-1",
+            "h-10 px-1 text-sm font-medium text-muted-foreground flex items-center gap-1",
             !canGoNext && "opacity-40 pointer-events-none"
           )}
         >
           Successivo
-          <ChevronRight className="size-[18px]" />
+          <ChevronRight className="size-4" />
         </button>
       </nav>
 
       {/* Footer - Always visible, shrink-0 (outside scroll container) */}
-      <footer className="shrink-0 bg-background px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] border-t border-muted/60">
+      <footer className="shrink-0 bg-background px-4 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))] border-t border-border/40">
         <Button
           onClick={() => setShowFinishDialog(true)}
-          className="w-full h-12 rounded-2xl text-[16px] font-semibold gap-2"
+          className="w-full h-12 rounded-2xl text-base font-semibold gap-2"
         >
-          <Check className="size-[18px]" />
+          <Check className="size-4" />
           Termina allenamento
         </Button>
       </footer>
