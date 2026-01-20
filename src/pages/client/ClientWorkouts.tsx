@@ -97,9 +97,21 @@ function ClientWorkoutsContent() {
     estimatedMinutes: 45, // placeholder
   }));
 
-  const handleSelectDay = (dayId: string) => {
-    setSelectedDayId(dayId);
+  const handleSelectDay = async (dayId: string) => {
+    if (!activePlan) return;
     setChangeDayOpen(false);
+    
+    try {
+      const session = await startSession({
+        plan: activePlan.data,
+        planId: activePlan.id,
+        dayId: dayId,
+      });
+      sessionStore.start(session.id, Date.now());
+      navigate(`/client/app/session?sessionId=${session.id}`);
+    } catch (error) {
+      toast.error("Errore nell'avvio della sessione");
+    }
   };
 
   const handleGoHistory = () => {
