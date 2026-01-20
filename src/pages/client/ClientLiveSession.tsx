@@ -296,17 +296,27 @@ function GroupCard({
   });
   
   let completedSeries = 0;
-  setIndexMap.forEach((exerciseSet) => {
+  let maxSetIndex = 0;
+  setIndexMap.forEach((exerciseSet, setIndex) => {
     if (exerciseSet.size === numExercises) {
       completedSeries++;
+      maxSetIndex = Math.max(maxSetIndex, setIndex);
     }
   });
   
   const targetSeries = Math.min(...group.exercises.map(e => e.sets));
-  const nextSeriesIndex = completedSeries + 1;
+  const MAX_SERIES_LIMIT = 30;
+  // Use MAX set_index + 1 to prevent overwrites after Undo
+  const nextSeriesIndex = maxSetIndex + 1;
   const restSeconds = group.exercises[0]?.rest_seconds || 60;
 
   const handleComplete = () => {
+    // Prevent recording beyond 30 series
+    if (nextSeriesIndex > MAX_SERIES_LIMIT) {
+      toast.info('Hai raggiunto il limite massimo di 30 serie');
+      return;
+    }
+    
     if (isMultiExercise) {
       // Batch complete for superset/circuit
       const inputs = group.exercises.map(ex => ({
@@ -389,7 +399,7 @@ function GroupCard({
         <div className="mt-3 space-y-2">
           <Button
             onClick={handleComplete}
-            disabled={isCompleting || !allRepsFilled}
+            disabled={isCompleting || !allRepsFilled || nextSeriesIndex > MAX_SERIES_LIMIT}
             className="w-full h-11 rounded-2xl text-sm font-semibold gap-2"
           >
             <Check className="size-[18px]" strokeWidth={2} />
