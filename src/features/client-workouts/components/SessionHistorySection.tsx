@@ -105,6 +105,7 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
                 date={formattedDate}
                 completedExercises={completedExercises}
                 totalExercises={totalExercises}
+                isWithCoach={session.source === "with_coach"}
                 onClick={() => setSelectedSessionId(session.id)}
               />
             );
