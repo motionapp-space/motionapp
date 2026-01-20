@@ -585,8 +585,8 @@ export default function ClientLiveSession() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Top Bar - Sticky 96px, 3 rows with breathing room */}
-      <header className="fixed top-0 left-0 right-0 w-full z-50 bg-background border-b border-muted/60 overflow-hidden pt-[env(safe-area-inset-top)]">
-        <div className="h-[96px] px-4 pt-3 pb-3 flex flex-col">
+      <header className="fixed top-0 left-0 right-0 w-full z-50 bg-background border-b border-muted/60 pt-[env(safe-area-inset-top)] h-[calc(96px+env(safe-area-inset-top))]">
+        <div className="h-full px-4 pt-3 pb-3 flex flex-col">
           {/* Row 1: Navigation */}
           <div className="flex items-center justify-between">
             <Button
