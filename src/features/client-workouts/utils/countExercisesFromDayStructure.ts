@@ -1,19 +1,30 @@
 /**
- * Counts total exercises from a day_structure snapshot.
- * Handles phases → groups → exercises structure.
+ * Counts total groups from a day_structure snapshot.
+ * A group = 1 unit (single exercise, superset, or circuit)
  */
-export function countExercisesFromDayStructure(dayStructure: any): number {
+export function countGroupsFromDayStructure(dayStructure: any): number {
   const phases = dayStructure?.phases;
   if (!Array.isArray(phases)) return 0;
 
   let total = 0;
   for (const phase of phases) {
     const groups = phase?.groups;
-    if (!Array.isArray(groups)) continue;
-    for (const group of groups) {
-      const exercises = group?.exercises;
-      if (Array.isArray(exercises)) total += exercises.length;
-    }
+    if (Array.isArray(groups)) total += groups.length;
+  }
+  return total;
+}
+
+/**
+ * Counts total groups from a phases array (new snapshot format).
+ * A group = 1 unit (single exercise, superset, or circuit)
+ */
+export function countGroupsFromPhases(phases: any[]): number {
+  if (!Array.isArray(phases)) return 0;
+
+  let total = 0;
+  for (const phase of phases) {
+    const groups = phase?.groups;
+    if (Array.isArray(groups)) total += groups.length;
   }
   return total;
 }
@@ -32,3 +43,6 @@ export function findExerciseNameFromDayStructure(dayStructure: any, exerciseId: 
   }
   return null;
 }
+
+// Legacy exports for backwards compatibility
+export const countExercisesFromDayStructure = countGroupsFromDayStructure;
