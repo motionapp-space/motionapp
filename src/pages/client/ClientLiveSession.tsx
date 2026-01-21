@@ -950,39 +950,49 @@ export default function ClientLiveSession() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col mt-6 gap-3 sm:flex-col">
-            <AlertDialogCancel className="w-full h-14 text-base">
-              Continua allenamento
-            </AlertDialogCancel>
+            {/* PRIMARY: Continua (azione sicura) */}
             <AlertDialogAction 
-              onClick={handleFinish} 
+              onClick={() => setShowFinishDialog(false)}
+              className="w-full h-14 text-base"
+            >
+              Continua allenamento
+            </AlertDialogAction>
+            {/* SECONDARY: Termina (azione distruttiva) */}
+            <AlertDialogCancel 
+              onClick={handleFinish}
               disabled={isFinishing}
               className="w-full h-14 text-base"
             >
               {isFinishing ? 'Salvataggio...' : 'Termina allenamento'}
-            </AlertDialogAction>
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Exit Dialog - Confirm exit without finishing */}
+      {/* Exit Dialog - Card modale centrata */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[calc(100%-32px)] max-w-[420px] rounded-2xl p-6">
           <AlertDialogHeader>
             <AlertDialogTitle>Uscire dall'allenamento?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="mt-2">
               Le serie già completate verranno salvate.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Continua allenamento</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                // Exit without terminating: session stays in_progress for resume
-                navigate('/client/app/workouts');
-              }}
+          <AlertDialogFooter className="flex-col mt-6 gap-3 sm:flex-col">
+            {/* PRIMARY: Continua (azione sicura) */}
+            <AlertDialogAction 
+              onClick={() => setShowExitDialog(false)}
+              className="w-full h-14 text-base"
+            >
+              Continua allenamento
+            </AlertDialogAction>
+            {/* SECONDARY: Esci (azione rischiosa) */}
+            <AlertDialogCancel 
+              onClick={() => navigate('/client/app/workouts')}
+              className="w-full h-14 text-base"
             >
               Esci
-            </AlertDialogAction>
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
