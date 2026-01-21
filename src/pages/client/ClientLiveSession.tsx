@@ -11,7 +11,7 @@
 
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Check, Undo2, Dumbbell, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Check, Undo2, Dumbbell, ChevronLeft, ChevronRight, StopCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -893,11 +893,18 @@ export default function ClientLiveSession() {
               onClick={() => store.prevGroup()}
               disabled={!canGoPrev}
               className={cn(
-                "text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2",
+                "min-h-[44px] px-3 py-2 rounded-lg",
+                "inline-flex items-center gap-1",
+                "text-sm text-muted-foreground",
+                "cursor-pointer select-none",
+                "active:bg-muted/40",
+                "focus-visible:bg-muted/40 focus-visible:outline-none",
+                "transition-colors",
                 !canGoPrev && "opacity-40 pointer-events-none"
               )}
             >
-              ‹ Precedente
+              <ChevronLeft className="h-4 w-4" />
+              <span>Precedente</span>
             </button>
 
             <button
@@ -905,11 +912,18 @@ export default function ClientLiveSession() {
               onClick={() => store.nextGroup()}
               disabled={!canGoNext}
               className={cn(
-                "text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2",
+                "min-h-[44px] px-3 py-2 rounded-lg",
+                "inline-flex items-center gap-1",
+                "text-sm text-muted-foreground",
+                "cursor-pointer select-none",
+                "active:bg-muted/40",
+                "focus-visible:bg-muted/40 focus-visible:outline-none",
+                "transition-colors",
                 !canGoNext && "opacity-40 pointer-events-none"
               )}
             >
-              Successivo ›
+              <span>Successivo</span>
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 
@@ -918,13 +932,20 @@ export default function ClientLiveSession() {
             type="button"
             onClick={() => setShowFinishDialog(true)}
             className={cn(
-              "w-full min-h-[44px] flex items-center justify-center text-sm transition-colors",
+              "w-full min-h-[44px] px-3 py-2 rounded-lg",
+              "inline-flex items-center justify-center gap-2",
+              "text-sm",
+              "cursor-pointer select-none",
+              "active:bg-destructive/10 active:underline",
+              "focus-visible:bg-destructive/10 focus-visible:underline focus-visible:outline-none",
+              "transition-colors",
               isLastGroupComplete
-                ? "text-destructive/70 hover:text-destructive"
-                : "text-destructive/50 hover:text-destructive"
+                ? "text-destructive/60"
+                : "text-destructive/50"
             )}
           >
-            Termina allenamento
+            <StopCircle className="h-4 w-4" />
+            <span>Termina allenamento</span>
           </button>
         </div>
       </div>
