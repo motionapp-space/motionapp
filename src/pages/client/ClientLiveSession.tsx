@@ -163,47 +163,43 @@ interface ExerciseBlockProps {
 }
 
 function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: ExerciseBlockProps) {
-  const restDisplay = exercise.rest_seconds 
-    ? `Recupero ${exercise.rest_seconds}s` 
-    : '';
-  
-  // Graceful degradation: show reps only if present (no default to 10)
-  const repsDisplay = exercise.reps ? ` × ${exercise.reps} rip` : '';
-  const targetDisplay = `Obiettivo · ${exercise.sets} serie${repsDisplay}${restDisplay ? ` · ${restDisplay}` : ''}`;
+  // Target line: show only reps target (no rest info here)
+  const repsDisplay = exercise.reps ? `${exercise.reps} rip` : '';
+  const targetDisplay = repsDisplay ? `Target · ${repsDisplay}` : `Target · ${exercise.sets} serie`;
 
   return (
     <div className={cn(showDivider && "pt-4 border-t border-border/40")}>
       {/* Exercise Name */}
-      <h4 className="text-base font-semibold leading-snug">
+      <h4 className="text-base font-semibold leading-6">
         {exercise.name || 'Esercizio'}
       </h4>
       
-      {/* Target */}
-      <p className="text-sm text-muted-foreground leading-tight mt-0.5">
+      {/* Target - no rest info */}
+      <p className="text-sm text-muted-foreground leading-5">
         {targetDisplay}
       </p>
       
-      {/* Inputs */}
-      <div className="grid grid-cols-2 gap-2.5 mt-3">
+      {/* Inputs - 44px height, 16px font */}
+      <div className="grid grid-cols-2 gap-4 mt-3">
         <div>
-          <label className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1 block">Reps</label>
+          <label className="text-xs tracking-wide text-muted-foreground block">REPS</label>
           <Input
             type="text"
             inputMode="numeric"
             value={reps}
             onChange={(e) => setReps(e.target.value)}
-            className="h-9 rounded-xl text-sm font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30"
+            className="mt-2 h-11 rounded-[10px] text-base px-3 bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30"
             placeholder={exercise.reps || '—'}
           />
         </div>
         <div>
-          <label className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1 block">Carico</label>
+          <label className="text-xs tracking-wide text-muted-foreground block">CARICO</label>
           <Input
             type="text"
             inputMode="decimal"
             value={load}
             onChange={(e) => setLoad(e.target.value)}
-            className="h-9 rounded-xl text-sm font-medium text-center bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/60"
+            className="mt-2 h-11 rounded-[10px] text-base px-3 bg-muted/30 border-border focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder:text-muted-foreground/60"
             placeholder="kg"
           />
         </div>
@@ -711,12 +707,12 @@ export default function ClientLiveSession() {
     );
   }
 
-  // Group type label
+  // Group type label - use label directly if available, else prefix with type
   const getGroupTypeLabel = () => {
     if (!currentFlatGroup) return null;
     const { group } = currentFlatGroup;
-    if (group.type === 'superset') return `Superset${group.label ? ` ${group.label}` : ''}`;
-    if (group.type === 'circuit') return `Circuit${group.label ? ` ${group.label}` : ''}`;
+    if (group.type === 'superset') return group.label || 'Superset';
+    if (group.type === 'circuit') return group.label || 'Circuit';
     return null;
   };
 
@@ -764,7 +760,7 @@ export default function ClientLiveSession() {
             </div>
 
             <div className="w-[132px] text-right flex flex-col justify-center">
-              {showRest ? (
+              {showRest && clampedRest > 0 ? (
                 <>
                   <div className="text-xs text-muted-foreground leading-4">
                     Recupero
@@ -793,15 +789,15 @@ export default function ClientLiveSession() {
         }}
         style={{ paddingTop: effectiveHeaderHeight + 8 }}
       >
-        <div className="px-4 pb-6 max-w-[520px] mx-auto w-full">
-          {/* Group Header - pills + badge */}
+        <div className="px-4 pt-6 pb-6 max-w-[520px] mx-auto w-full">
+          {/* Group Header - simple text + badge */}
           {currentFlatGroup && (
-            <div className="flex items-center justify-between gap-2 mt-2 mb-3">
-              {/* Left: Group type pill (only for superset/circuit) */}
+            <div className="flex items-center justify-between gap-2 mb-3">
+              {/* Left: Group type text (only for superset/circuit) */}
               {groupTypeLabel ? (
-                <span className="h-8 text-sm font-medium bg-primary/10 text-primary rounded-full px-3 flex items-center">
+                <div className="text-sm font-medium text-foreground">
                   {groupTypeLabel}
-                </span>
+                </div>
               ) : (
                 <span />
               )}
@@ -827,49 +823,51 @@ export default function ClientLiveSession() {
         </div>
       </main>
 
-      {/* Navigation Bar - Always visible, shrink-0 (outside scroll container) */}
-      {/* REMOVED redundant counter - already in header Row 2 */}
-      <nav className="shrink-0 h-12 border-t border-border/40 bg-background px-4 flex items-center justify-between">
-        <button
-          onClick={() => store.prevGroup()}
-          disabled={!canGoPrev}
-          className={cn(
-            "h-10 px-1 text-sm font-medium text-muted-foreground flex items-center gap-1",
-            !canGoPrev && "opacity-40 pointer-events-none"
-          )}
-        >
-          <ChevronLeft className="size-4" />
-          Precedente
-        </button>
+      {/* Bottom Bar - Nav + Termina unified, no empty space */}
+      <div className="sticky bottom-0 z-20 bg-background border-t border-border pb-[env(safe-area-inset-bottom)]">
+        <div className="px-4 py-3 space-y-2">
+          {/* Nav row */}
+          <div className="flex items-center justify-between min-h-[44px]">
+            <button
+              type="button"
+              onClick={() => store.prevGroup()}
+              disabled={!canGoPrev}
+              className={cn(
+                "text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2",
+                !canGoPrev && "opacity-40 pointer-events-none"
+              )}
+            >
+              ‹ Precedente
+            </button>
 
-        <button
-          onClick={() => store.nextGroup()}
-          disabled={!canGoNext}
-          className={cn(
-            "h-10 px-1 text-sm font-medium text-muted-foreground flex items-center gap-1",
-            !canGoNext && "opacity-40 pointer-events-none"
-          )}
-        >
-          Successivo
-          <ChevronRight className="size-4" />
-        </button>
-      </nav>
+            <button
+              type="button"
+              onClick={() => store.nextGroup()}
+              disabled={!canGoNext}
+              className={cn(
+                "text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2",
+                !canGoNext && "opacity-40 pointer-events-none"
+              )}
+            >
+              Successivo ›
+            </button>
+          </div>
 
-      {/* Footer - Textual button, dynamic opacity based on completion */}
-      <footer className="shrink-0 bg-background px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
-        <button
-          type="button"
-          onClick={() => setShowFinishDialog(true)}
-          className={cn(
-            "w-full min-h-[44px] flex items-center justify-center text-sm transition-colors",
-            isLastGroupComplete
-              ? "text-destructive/70 hover:text-destructive"
-              : "text-destructive/50 hover:text-destructive"
-          )}
-        >
-          Termina allenamento
-        </button>
-      </footer>
+          {/* Termina row */}
+          <button
+            type="button"
+            onClick={() => setShowFinishDialog(true)}
+            className={cn(
+              "w-full min-h-[44px] flex items-center justify-center text-sm transition-colors",
+              isLastGroupComplete
+                ? "text-destructive/70 hover:text-destructive"
+                : "text-destructive/50 hover:text-destructive"
+            )}
+          >
+            Termina allenamento
+          </button>
+        </div>
+      </div>
 
 
       {/* Finish Dialog */}
