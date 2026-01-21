@@ -884,8 +884,7 @@ export default function ClientLiveSession() {
       </main>
 
       {/* Bottom Bar - Nav + Termina unified, no empty space */}
-      <div className="sticky bottom-0 z-20 bg-background border-t border-border pb-[env(safe-area-inset-bottom)]">
-        <div className="px-4 py-3 space-y-3">
+      <div className="sticky bottom-0 z-20 bg-background border-t border-border px-4 py-2 space-y-2 pb-[calc(env(safe-area-inset-bottom)+8px)]">
           {/* Nav row */}
           <div className="flex items-center justify-between">
             <button
@@ -947,7 +946,6 @@ export default function ClientLiveSession() {
             <StopCircle className="h-4 w-4" />
             <span>Termina allenamento</span>
           </button>
-        </div>
       </div>
 
 
