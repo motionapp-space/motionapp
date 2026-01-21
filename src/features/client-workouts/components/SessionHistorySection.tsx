@@ -54,14 +54,14 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
             Allenamenti completati
           </p>
         </div>
-        {hasMore && !showAll && (
+        {hasMore && (
           <Button 
             variant="link" 
             size="sm" 
             className="h-auto p-0 text-sm text-primary font-medium"
-            onClick={() => setShowAll(true)}
+            onClick={() => setShowAll(!showAll)}
           >
-            Mostra tutti
+            {showAll ? "Nascondi" : "Mostra tutti"}
           </Button>
         )}
       </div>
