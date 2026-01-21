@@ -9,6 +9,9 @@ export type PlanDaySnapshot = {
   day_id?: string;
   day_title?: string;
   day_structure?: any;
+  // New snapshot format fields
+  day?: { id: string; order: number; title: string };
+  phases?: any[];
   warning?: 'PLAN_NOT_FOUND' | 'DAY_NOT_FOUND' | string;
 };
 
@@ -46,23 +49,26 @@ export async function getClientSessions(): Promise<ClientSessionWithCounts[]> {
     return [];
   }
 
-  // Fetch exercise_actuals for all sessions to count unique exercises
+  // Fetch exercise_actuals for all sessions to count unique groups
   const sessionIds = sessionList.map(s => s.id);
   
   const { data: actuals, error: actualsError } = await supabase
     .from("exercise_actuals")
-    .select("session_id, exercise_id")
+    .select("session_id, group_id")
     .in("session_id", sessionIds);
 
   if (actualsError) throw actualsError;
 
-  // Group by session_id and count unique exercise_ids
+  // Group by session_id and count unique group_ids
+  // A group = 1 unit (single exercise, superset, or circuit)
   const countMap = new Map<string, Set<string>>();
   for (const actual of actuals || []) {
     if (!countMap.has(actual.session_id)) {
       countMap.set(actual.session_id, new Set());
     }
-    countMap.get(actual.session_id)!.add(actual.exercise_id);
+    if (actual.group_id) {
+      countMap.get(actual.session_id)!.add(actual.group_id);
+    }
   }
 
   return sessionList.map(s => ({

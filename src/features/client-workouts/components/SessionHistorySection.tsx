@@ -10,8 +10,8 @@ import { SessionHistoryCard } from "./SessionHistoryCard";
 import { ClientSessionDetailSheet } from "./ClientSessionDetailSheet";
 import type { ClientSessionWithCounts } from "../api/client-sessions.api";
 import type { ClientActivePlan } from "../api/client-plans.api";
-import { countDayExercises } from "../utils/plan-utils";
-import { countExercisesFromDayStructure } from "../utils/countExercisesFromDayStructure";
+import { countDayGroups } from "../utils/plan-utils";
+import { countGroupsFromDayStructure, countGroupsFromPhases } from "../utils/countExercisesFromDayStructure";
 
 interface SessionHistorySectionProps {
   sessions: ClientSessionWithCounts[] | undefined;
@@ -85,14 +85,23 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
               ? plan.data.days.find(d => d.id === session.day_id)
               : null;
 
-            const title = snapshot?.day_title ?? dayFromPlan?.title ?? "Sessione di allenamento";
+            // Support both snapshot formats:
+            // - New: snapshot.day.title, snapshot.phases
+            // - Old: snapshot.day_title, snapshot.day_structure
+            const title = snapshot?.day_title 
+              ?? snapshot?.day?.title 
+              ?? dayFromPlan?.title 
+              ?? "Sessione di allenamento";
             
-            const totalExercises = snapshot?.day_structure 
-              ? countExercisesFromDayStructure(snapshot.day_structure)
-              : (dayFromPlan ? countDayExercises(dayFromPlan) : 0);
+            // Count groups (not individual exercises) - a superset/circuit = 1 unit
+            const totalGroups = snapshot?.day_structure 
+              ? countGroupsFromDayStructure(snapshot.day_structure)
+              : snapshot?.phases 
+                ? countGroupsFromPhases(snapshot.phases)
+                : (dayFromPlan ? countDayGroups(dayFromPlan) : 0);
             
-            // Use real count from exercise_actuals (exercises with at least 1 series)
-            const completedExercises = session.completedExercisesCount;
+            // Use real count from exercise_actuals (groups with at least 1 series)
+            const completedGroups = session.completedExercisesCount;
 
             const formattedDate = session.started_at 
               ? format(new Date(session.started_at), "d MMM yyyy", { locale: it })
@@ -103,8 +112,8 @@ export function SessionHistorySection({ sessions, plan, isLoading }: SessionHist
                 key={session.id}
                 title={title}
                 date={formattedDate}
-                completedExercises={completedExercises}
-                totalExercises={totalExercises}
+                completedExercises={completedGroups}
+                totalExercises={totalGroups}
                 isWithCoach={session.source === "with_coach"}
                 onClick={() => setSelectedSessionId(session.id)}
               />
