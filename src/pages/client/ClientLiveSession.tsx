@@ -932,8 +932,9 @@ export default function ClientLiveSession() {
 
 
       {/* Finish Dialog */}
+      {/* Finish Dialog - Card modale centrata */}
       <AlertDialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
-        <AlertDialogContent className="max-w-sm">
+        <AlertDialogContent className="w-[calc(100%-32px)] max-w-[420px] rounded-2xl p-6">
           <AlertDialogHeader>
             <AlertDialogTitle>Terminare l'allenamento?</AlertDialogTitle>
             <AlertDialogDescription className="mt-2">
