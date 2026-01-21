@@ -405,9 +405,9 @@ function GroupCard({
           <Button
             onClick={handleComplete}
             disabled={isCompleting || !allRepsFilled || nextSeriesIndex > MAX_SERIES_LIMIT}
-            className="w-full h-14 rounded-[14px] text-base font-semibold gap-2"
+            className="w-full h-14 rounded-[14px] text-base font-medium leading-6 tracking-normal gap-2"
           >
-            <Check className="size-[18px]" strokeWidth={2} />
+            <Check className="h-[18px] w-[18px] opacity-90" strokeWidth={2} />
             {isCompleting ? 'Salvataggio...' : 'Completa serie'}
           </Button>
 
@@ -885,7 +885,7 @@ export default function ClientLiveSession() {
 
       {/* Bottom Bar - Nav + Termina unified, no empty space */}
       <div className="sticky bottom-0 z-20 bg-background border-t border-border pb-[env(safe-area-inset-bottom)]">
-        <div className="px-4 py-3 space-y-4">
+        <div className="px-4 py-3 space-y-3">
           {/* Nav row */}
           <div className="flex items-center justify-between">
             <button
