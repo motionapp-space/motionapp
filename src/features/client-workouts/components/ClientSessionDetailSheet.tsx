@@ -6,7 +6,8 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, User, UserCheck } from "lucide-react";
+import { Clock, User, UserCheck, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { format, differenceInMinutes } from "date-fns";
 import { it } from "date-fns/locale";
 import { useClientSessionDetail } from "../hooks/useClientSessionDetail";
@@ -14,6 +15,7 @@ import type { ClientSession, PlanDaySnapshot } from "../api/client-sessions.api"
 import type { ClientActivePlan } from "../api/client-plans.api";
 import type { ExerciseActual } from "@/features/sessions/types";
 import { findExerciseNameFromDayStructure } from "../utils/countExercisesFromDayStructure";
+import { useDiscardClientSession } from "@/features/session-tracking/hooks/useClientSessionTracking";
 
 interface ClientSessionDetailSheetProps {
   session: ClientSession | null;
@@ -129,6 +131,19 @@ export function ClientSessionDetailSheet({
   const { data: actuals, isLoading } = useClientSessionDetail(
     open && session ? session.id : undefined
   );
+  
+  const { mutate: discardSession, isPending: isRemoving } = useDiscardClientSession();
+
+  const handleRemoveFromHistory = () => {
+    if (!session) return;
+    discardSession(session.id, {
+      onSuccess: () => {
+        toast.success('Sessione rimossa dalla cronologia');
+        onOpenChange(false);
+      },
+      onError: (error: Error) => toast.error(error.message || 'Errore'),
+    });
+  };
 
   if (!session) return null;
 
@@ -194,6 +209,19 @@ export function ClientSessionDetailSheet({
               ))}
             </div>
           )}
+
+          {/* Remove from history button */}
+          <div className="pt-4 border-t mt-6">
+            <button
+              type="button"
+              onClick={handleRemoveFromHistory}
+              disabled={isRemoving}
+              className="w-full min-h-[44px] px-3 py-2 text-sm font-medium text-destructive/70 hover:text-destructive hover:bg-destructive/5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isRemoving ? 'Rimozione...' : 'Rimuovi dalla cronologia'}
+            </button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

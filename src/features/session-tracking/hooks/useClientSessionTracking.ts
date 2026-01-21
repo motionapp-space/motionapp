@@ -166,3 +166,23 @@ export function useUndoSupersetLastSeries(sessionId: string) {
     },
   });
 }
+
+/**
+ * Discard session with cleanup (deletes actuals, marks discarded)
+ * Use for "Exit without saving" flow
+ */
+export function useDiscardClientSessionWithCleanup() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sessionId: string) =>
+      service.discardSessionWithCleanup({ sessionId }),
+    onSuccess: (_, sessionId) => {
+      // Invalidate all related queries to prevent stale data
+      queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.active });
+      queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.detail(sessionId) });
+      queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.actuals(sessionId) });
+    },
+  });
+}

@@ -73,4 +73,10 @@ export interface SessionTrackingAdapter {
    * Deletes the last N actuals where N = number of exercises in the group
    */
   undoGroupLastSeries(sessionId: string, exerciseIds: string[], count: number): Promise<void>;
+
+  /**
+   * Discard session and delete all associated actuals
+   * Atomically: deletes actuals + sets status to 'discarded'
+   */
+  discardSessionWithCleanup(sessionId: string): Promise<void>;
 }

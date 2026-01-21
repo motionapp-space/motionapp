@@ -2200,6 +2200,10 @@ export type Database = {
         Args: { p_coach_client_id: string; p_plan_id: string }
         Returns: boolean
       }
+      discard_training_session: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
       expire_packages: { Args: { p_now?: string }; Returns: Json }
       finalize_booking_request: {
         Args: { p_request_id: string }
