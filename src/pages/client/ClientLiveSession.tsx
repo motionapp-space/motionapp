@@ -828,10 +828,9 @@ export default function ClientLiveSession() {
               <span className="text-sm text-muted-foreground">Recupero</span>
               <span
                 className={cn(
-                  "font-semibold",
                   showRest && clampedRest > 0 
-                    ? "text-primary text-lg leading-none" 
-                    : "text-muted-foreground text-sm font-normal"
+                    ? "text-lg text-primary font-semibold leading-none" 
+                    : "text-sm text-muted-foreground"
                 )}
               >
                 {formatRestTime(clampedRest)}
