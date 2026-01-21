@@ -45,6 +45,14 @@ export async function listSessions(filters: SessionsFilters = {}): Promise<Train
   const { data, error } = await query;
   if (error) throw error;
 
+  // Filter out autonomous sessions that are still in progress
+  // Coach should only see autonomous sessions after they're completed
+  const filteredData = (data || []).filter((session: any) => {
+    const isAutonomousInProgress = 
+      session.source === 'autonomous' && session.status === 'in_progress';
+    return !isAutonomousInProgress;
+  });
+
   // Get client details
   const clientIds = coachClients.map(cc => cc.client_id);
   const { data: clients } = await supabase
@@ -55,7 +63,7 @@ export async function listSessions(filters: SessionsFilters = {}): Promise<Train
   const clientMap = new Map(clients?.map(c => [c.id, c]) || []);
   const ccMap = new Map(coachClients.map(cc => [cc.id, cc.client_id]));
 
-  return (data || []).map((session: any) => {
+  return filteredData.map((session: any) => {
     const clientId = ccMap.get(session.coach_client_id);
     const client = clientId ? clientMap.get(clientId) : null;
     return {
@@ -159,6 +167,7 @@ export async function getActiveSession(userId?: string): Promise<TrainingSession
     .select("*")
     .in("coach_client_id", coachClients.map(cc => cc.id))
     .eq("status", "in_progress")
+    .eq("source", "with_coach") // Only coach-initiated sessions show in sticky bar
     .gte("started_at", twelveHoursAgo.toISOString())
     .order("started_at", { ascending: false })
     .limit(1)
