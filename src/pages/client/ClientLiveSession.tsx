@@ -214,13 +214,13 @@ function SeriesBadge({ completed, target }: { completed: number; target: number 
   // Clamp to prevent Serie 6/3 display
   const clampedCompleted = Math.min(completed, target);
   
+  // Do NOT clamp display: show actual completed (can exceed target)
+  const isComplete = completed >= target && target > 0;
+
   // Dev warning for data integrity
   if (import.meta.env.DEV && completed > target) {
-    console.warn(`[SeriesBadge] Data integrity: completed (${completed}) > target (${target})`);
+    console.warn(`[SeriesBadge] completed (${completed}) > target (${target})`);
   }
-  
-  // Only apply success styling when EXACTLY complete
-  const isComplete = clampedCompleted === target && target > 0;
 
   return (
     <span
@@ -231,7 +231,7 @@ function SeriesBadge({ completed, target }: { completed: number; target: number 
           : "bg-muted text-muted-foreground"
       )}
     >
-      Serie {clampedCompleted}/{target}
+      Serie {completed}/{target}
       {isComplete ? <span className="ml-1">✓</span> : null}
     </span>
   );
@@ -726,24 +726,28 @@ export default function ClientLiveSession() {
         className="sticky top-0 z-20 bg-background border-b border-border pt-[env(safe-area-inset-top)]"
       >
         <div className="h-24 px-4 flex flex-col">
-          {/* Row 1 - 56px */}
-          <div className="h-14 flex items-center justify-between">
+          {/* Row 1 - 56px, grid for perfect centering */}
+          <div className="h-14 grid grid-cols-[44px_1fr_44px] items-center">
+            {/* Left: back button */}
             <button
               type="button"
               onClick={() => navigate("/client/app/workouts")}
-              className="min-h-[44px] -ml-1 px-1 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="min-h-[44px] w-11 -ml-1 inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Indietro"
             >
-              Esci
+              <ChevronLeft className="h-5 w-5" />
             </button>
 
-            <div className="flex-1 min-w-0 px-2 text-center">
+            {/* Center: title */}
+            <div className="min-w-0 text-center">
               <div className="text-base font-semibold leading-6 truncate">
                 {snapshot?.day?.title || "Allenamento"}
               </div>
             </div>
 
-            <div className="min-h-[44px] inline-flex items-center text-sm text-muted-foreground tabular-nums">
-              Durata {formatElapsedTime(elapsed)}
+            {/* Right: duration (no label) */}
+            <div className="min-h-[44px] inline-flex items-center justify-end text-sm text-muted-foreground tabular-nums">
+              {formatElapsedTime(elapsed)}
             </div>
           </div>
 
@@ -759,21 +763,17 @@ export default function ClientLiveSession() {
               )}
             </div>
 
-            <div className="w-[132px] text-right flex flex-col justify-center">
-              {showRest && clampedRest > 0 ? (
-                <>
-                  <div className="text-xs text-muted-foreground leading-4">
-                    Recupero
-                  </div>
-                  <div className="text-lg font-semibold text-primary leading-5 tabular-nums">
-                    {formatRestTime(clampedRest)}
-                  </div>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground leading-5 tabular-nums">
-                  Recupero · 00:00
-                </div>
-              )}
+            {/* Right: Rest — fixed width, single-line, vertically centered */}
+            <div className="w-[132px] flex items-baseline justify-end gap-2 text-right tabular-nums py-1">
+              <span className="text-sm text-muted-foreground leading-5">Recupero</span>
+              <span
+                className={cn(
+                  "leading-5 font-semibold",
+                  showRest && clampedRest > 0 ? "text-primary text-lg" : "text-muted-foreground text-sm font-normal"
+                )}
+              >
+                {formatRestTime(clampedRest)}
+              </span>
             </div>
           </div>
         </div>
