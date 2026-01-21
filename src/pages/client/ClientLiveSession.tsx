@@ -43,6 +43,7 @@ import {
   useFinishClientSession,
   useCompleteSupersetSeries,
   useUndoSupersetLastSeries,
+  useDiscardClientSessionWithCleanup,
 } from '@/features/session-tracking/hooks/useClientSessionTracking';
 import { useClientSessionStore } from '@/stores/useClientSessionStore';
 import type { PlanDaySnapshot, SnapshotExercise, SnapshotGroup } from '@/features/session-tracking/core/types';
@@ -444,7 +445,7 @@ export default function ClientLiveSession() {
   const sessionIdFromUrl = searchParams.get('sessionId');
 
   const store = useClientSessionStore();
-  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
   // Dynamic header height measurement
   const headerRef = useRef<HTMLElement | null>(null);
@@ -519,7 +520,7 @@ export default function ClientLiveSession() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [showFinishDialog, setShowFinishDialog] = useState(false);
+  // Removed showFinishDialog - now unified in showLeaveDialog
 
   // Queries
   const { data: activeSession, isLoading: isActiveLoading } = useClientActiveSession();
@@ -529,6 +530,7 @@ export default function ClientLiveSession() {
 
   // Mutations
   const { mutate: finishSession, isPending: isFinishing } = useFinishClientSession();
+  const { mutate: discardWithCleanup, isPending: isDiscarding } = useDiscardClientSessionWithCleanup();
 
   // Guard anti-cross-session: robust sync store with DB
   useEffect(() => {
@@ -625,7 +627,13 @@ export default function ClientLiveSession() {
     refetchActuals();
   };
 
-  const handleFinish = () => {
+  // Handler: Continue workout (close dialog)
+  const handleContinue = () => {
+    setShowLeaveDialog(false);
+  };
+
+  // Handler: End workout (save as completed)
+  const handleEndWorkout = () => {
     if (!sessionId) return;
     finishSession(
       { sessionId },
@@ -637,6 +645,18 @@ export default function ClientLiveSession() {
         onError: (error) => toast.error(error.message || 'Errore nel salvataggio'),
       }
     );
+  };
+
+  // Handler: Exit without saving (discard + delete actuals)
+  const handleExitWithoutSaving = () => {
+    if (!sessionId) return;
+    discardWithCleanup(sessionId, {
+      onSuccess: () => {
+        store.clear();
+        navigate('/client/app/workouts');
+      },
+      onError: (error) => toast.error(error.message || 'Errore'),
+    });
   };
 
 
@@ -710,7 +730,7 @@ export default function ClientLiveSession() {
   // Handle exit (back button)
   const handleExitClick = () => {
     if (shouldConfirmExit) {
-      setShowExitDialog(true);
+      setShowLeaveDialog(true);
     } else {
       navigate('/client/app/workouts');
     }
@@ -727,7 +747,7 @@ export default function ClientLiveSession() {
       if (shouldConfirmExit) {
         // Re-push state to prevent navigation
         window.history.pushState({ sessionActive: true }, '');
-        setShowExitDialog(true);
+        setShowLeaveDialog(true);
       } else {
         navigate('/client/app/workouts');
       }
@@ -931,7 +951,7 @@ export default function ClientLiveSession() {
           {/* Termina row */}
           <button
             type="button"
-            onClick={() => setShowFinishDialog(true)}
+            onClick={() => setShowLeaveDialog(true)}
             className={cn(
               "w-full min-h-[44px] px-3 py-2 rounded-lg",
               "inline-flex items-center justify-center gap-2",
@@ -949,69 +969,56 @@ export default function ClientLiveSession() {
       </div>
 
 
-      {/* Finish Dialog */}
-      {/* Finish Dialog - Card modale centrata */}
-      <AlertDialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
-        <AlertDialogContent className="w-[calc(100%-32px)] max-w-[420px] rounded-2xl p-6">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Terminare l'allenamento?</AlertDialogTitle>
-            <AlertDialogDescription className="mt-2">
-              {actuals.length === 0 ? (
-                <>
-                  Non hai completato nessuna serie.
-                  <br />
-                  Se termini ora, l'allenamento verrà salvato come completato.
-                </>
-              ) : (
-                'Le serie completate verranno salvate.'
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col mt-6 gap-3 sm:flex-col">
-            {/* PRIMARY: Continua (azione sicura) */}
-            <AlertDialogAction 
-              onClick={() => setShowFinishDialog(false)}
-              className="w-full h-14 text-base"
-            >
-              Continua allenamento
-            </AlertDialogAction>
-            {/* SECONDARY: Termina (azione distruttiva) */}
-            <AlertDialogCancel 
-              onClick={handleFinish}
-              disabled={isFinishing}
-              className="w-full h-14 text-base"
-            >
-              {isFinishing ? 'Salvataggio...' : 'Termina allenamento'}
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Exit Dialog - Card modale centrata */}
-      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+      {/* Unified Leave Dialog - 3 actions */}
+      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
         <AlertDialogContent className="w-[calc(100%-32px)] max-w-[420px] rounded-2xl p-6">
           <AlertDialogHeader>
             <AlertDialogTitle>Uscire dall'allenamento?</AlertDialogTitle>
-            <AlertDialogDescription className="mt-2">
-              Le serie già completate verranno salvate.
+            <AlertDialogDescription className="mt-2 space-y-2" asChild>
+              <div>
+                {actuals.length > 0 ? (
+                  <>
+                    <p>Se termini l'allenamento, le serie completate verranno salvate.</p>
+                    <p className="text-destructive/70">
+                      Esci senza salvare elimina le serie registrate in questa sessione.
+                    </p>
+                  </>
+                ) : (
+                  <p>Non hai ancora completato nessuna serie.</p>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col mt-6 gap-3 sm:flex-col">
-            {/* PRIMARY: Continua (azione sicura) */}
-            <AlertDialogAction 
-              onClick={() => setShowExitDialog(false)}
-              className="w-full h-14 text-base"
+          
+          <div className="flex flex-col mt-6 gap-3">
+            {/* PRIMARY: Continue — safe action, filled, h-14 */}
+            <Button 
+              onClick={handleContinue}
+              className="w-full h-14 rounded-[14px] text-base font-medium"
             >
               Continua allenamento
-            </AlertDialogAction>
-            {/* SECONDARY: Esci (azione rischiosa) */}
-            <AlertDialogCancel 
-              onClick={() => navigate('/client/app/workouts')}
-              className="w-full h-14 text-base"
+            </Button>
+            
+            {/* SECONDARY: End workout — save, outline, h-14 */}
+            <Button 
+              variant="outline"
+              onClick={handleEndWorkout}
+              disabled={isFinishing}
+              className="w-full h-14 rounded-[14px] text-base font-medium"
             >
-              Esci
-            </AlertDialogCancel>
-          </AlertDialogFooter>
+              {isFinishing ? 'Salvataggio...' : 'Termina allenamento'}
+            </Button>
+            
+            {/* DESTRUCTIVE: Exit without saving — link-style, NOT h-14 */}
+            <button
+              type="button"
+              onClick={handleExitWithoutSaving}
+              disabled={isDiscarding}
+              className="w-full min-h-[44px] px-3 py-2 text-sm font-medium text-destructive/70 hover:text-destructive hover:bg-destructive/5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {isDiscarding ? 'Uscita...' : 'Esci senza salvare'}
+            </button>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </div>

@@ -162,6 +162,13 @@ export function createSessionTrackingService(adapter: SessionTrackingAdapter) {
     async undoSupersetLastSeries({ sessionId, exerciseIds }: UndoSupersetLastSeriesParams) {
       return adapter.undoGroupLastSeries(sessionId, exerciseIds, exerciseIds.length);
     },
+
+    /**
+     * Discard session with full cleanup (delete actuals + mark discarded)
+     */
+    async discardSessionWithCleanup({ sessionId }: DiscardSessionParams) {
+      return adapter.discardSessionWithCleanup(sessionId);
+    },
   };
 }
 

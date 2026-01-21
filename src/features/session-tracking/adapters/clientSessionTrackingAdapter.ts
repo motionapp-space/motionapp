@@ -211,4 +211,15 @@ export const clientSessionTrackingAdapter: SessionTrackingAdapter = {
 
     if (deleteError) throw deleteError;
   },
+
+  /**
+   * Discard session with full cleanup (delete actuals + mark discarded)
+   * Uses database RPC for atomic operation
+   */
+  async discardSessionWithCleanup(sessionId: string): Promise<void> {
+    const { error } = await supabase.rpc('discard_training_session', {
+      p_session_id: sessionId
+    });
+    if (error) throw error;
+  },
 };
