@@ -14,6 +14,12 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { computeElapsedSeconds } from '@/features/session-tracking/core/elapsed';
 
+interface DraftValue {
+  reps?: string;
+  load?: string;
+  touchedAtMs: number;
+}
+
 interface ClientSessionState {
   // Session identity
   activeSessionId: string | null;
@@ -33,6 +39,11 @@ interface ClientSessionState {
   // Step navigation
   currentGroupIndex: number;
   totalGroups: number;
+  
+  // Draft inputs (persist between group changes)
+  draftByExerciseId: Record<string, DraftValue>;
+  updatedAtMs: number | null;
+  persistVersion: number;
 }
 
 interface ClientSessionActions {
@@ -110,6 +121,21 @@ interface ClientSessionActions {
    * Reset navigation state
    */
   resetNavigation: () => void;
+  
+  /**
+   * Touch: update updatedAtMs timestamp
+   */
+  touch: () => void;
+  
+  /**
+   * Set draft for a specific exercise
+   */
+  setDraft: (exerciseId: string, patch: { reps?: string; load?: string }) => void;
+  
+  /**
+   * Clear all drafts
+   */
+  clearDraft: () => void;
 }
 
 const initialState: ClientSessionState = {
@@ -122,6 +148,9 @@ const initialState: ClientSessionState = {
   restTimerGroupId: null,
   currentGroupIndex: 0,
   totalGroups: 0,
+  draftByExerciseId: {},
+  updatedAtMs: null,
+  persistVersion: 1,
 };
 
 export const useClientSessionStore = create<ClientSessionState & ClientSessionActions>()(
@@ -251,10 +280,27 @@ export const useClientSessionStore = create<ClientSessionState & ClientSessionAc
       resetNavigation: () => {
         set({ currentGroupIndex: 0, totalGroups: 0 });
       },
+
+      touch: () => set({ updatedAtMs: Date.now() }),
+
+      setDraft: (exerciseId, patch) =>
+        set((s) => ({
+          draftByExerciseId: {
+            ...s.draftByExerciseId,
+            [exerciseId]: {
+              ...s.draftByExerciseId[exerciseId],
+              ...patch,
+              touchedAtMs: Date.now(),
+            },
+          },
+          updatedAtMs: Date.now(),
+        })),
+
+      clearDraft: () => set({ draftByExerciseId: {}, updatedAtMs: Date.now() }),
     }),
     {
       name: 'clientActiveSession',
-      // Only persist essential state
+      // Persist essential state including drafts
       partialize: (state) => ({
         activeSessionId: state.activeSessionId,
         startedAtMs: state.startedAtMs,
@@ -265,6 +311,9 @@ export const useClientSessionStore = create<ClientSessionState & ClientSessionAc
         restTimerGroupId: state.restTimerGroupId,
         currentGroupIndex: state.currentGroupIndex,
         totalGroups: state.totalGroups,
+        draftByExerciseId: state.draftByExerciseId,
+        updatedAtMs: state.updatedAtMs,
+        persistVersion: state.persistVersion,
       }),
     }
   )

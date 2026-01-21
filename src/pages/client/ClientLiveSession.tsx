@@ -257,22 +257,22 @@ function GroupCard({
   const { group, phaseType } = flatGroup;
   const isMultiExercise = group.type === 'superset' || group.type === 'circuit';
   
-  const [inputValues, setInputValues] = useState<Record<string, { reps: string; load: string }>>(() => {
-    const initial: Record<string, { reps: string; load: string }> = {};
-    group.exercises.forEach(ex => {
-      initial[ex.id] = { reps: ex.reps || '', load: '' };
-    });
-    return initial;
-  });
-
-  // Reset input values when group changes
+  const store = useClientSessionStore();
+  
+  // Initialize drafts for exercises in this group if not already set
   useEffect(() => {
-    const initial: Record<string, { reps: string; load: string }> = {};
     group.exercises.forEach(ex => {
-      initial[ex.id] = { reps: ex.reps || '', load: '' };
+      if (!store.draftByExerciseId[ex.id]) {
+        store.setDraft(ex.id, { reps: ex.reps || '', load: '' });
+      }
     });
-    setInputValues(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group.id]);
+
+  // Get input values from store drafts
+  const getInputValue = (exerciseId: string, field: 'reps' | 'load'): string => {
+    return store.draftByExerciseId[exerciseId]?.[field] ?? '';
+  };
 
   const { mutate: completeSeries, isPending: isCompletingMulti } = useCompleteSupersetSeries(sessionId);
   const { mutate: undoSeries, isPending: isUndoingMulti } = useUndoSupersetLastSeries(sessionId);
@@ -324,13 +324,20 @@ function GroupCard({
         group_id: group.id,
         exercise_id: ex.id,
         set_index: nextSeriesIndex,
-        reps: inputValues[ex.id]?.reps || ex.reps || '',
-        load: inputValues[ex.id]?.load || undefined,
+        reps: getInputValue(ex.id, 'reps') || ex.reps || '',
+        load: getInputValue(ex.id, 'load') || undefined,
         rest: restSeconds.toString(),
       }));
 
       completeSeries(inputs, {
-        onSuccess: () => onSeriesComplete(restSeconds, group.id),
+        onSuccess: () => {
+          // Reset drafts for this group after successful completion
+          group.exercises.forEach(ex => {
+            store.setDraft(ex.id, { reps: ex.reps || '', load: '' });
+          });
+          store.touch();
+          onSeriesComplete(restSeconds, group.id);
+        },
         onError: (error) => toast.error(error.message || 'Errore nel completamento'),
       });
     } else {
@@ -343,12 +350,17 @@ function GroupCard({
           group_id: group.id,
           exercise_id: exercise.id,
           set_index: nextSeriesIndex,
-          reps: inputValues[exercise.id]?.reps || exercise.reps || '',
-          load: inputValues[exercise.id]?.load || undefined,
+          reps: getInputValue(exercise.id, 'reps') || exercise.reps || '',
+          load: getInputValue(exercise.id, 'load') || undefined,
           rest: restSeconds.toString(),
         },
         {
-          onSuccess: () => onSeriesComplete(restSeconds, group.id),
+          onSuccess: () => {
+            // Reset draft for this exercise after successful completion
+            store.setDraft(exercise.id, { reps: exercise.reps || '', load: '' });
+            store.touch();
+            onSeriesComplete(restSeconds, group.id);
+          },
           onError: (error) => toast.error(error.message || 'Errore nel salvataggio'),
         }
       );
@@ -367,9 +379,10 @@ function GroupCard({
     }
   };
 
-  const allRepsFilled = group.exercises.every(ex => 
-    inputValues[ex.id]?.reps && inputValues[ex.id].reps.trim() !== ''
-  );
+  const allRepsFilled = group.exercises.every(ex => {
+    const reps = getInputValue(ex.id, 'reps');
+    return reps && reps.trim() !== '';
+  });
 
   return (
     <>
@@ -380,16 +393,10 @@ function GroupCard({
           <ExerciseBlock
             key={exercise.id}
             exercise={exercise}
-            reps={inputValues[exercise.id]?.reps || ''}
-            setReps={(value) => setInputValues(prev => ({
-              ...prev,
-              [exercise.id]: { ...prev[exercise.id], reps: value }
-            }))}
-            load={inputValues[exercise.id]?.load || ''}
-            setLoad={(value) => setInputValues(prev => ({
-              ...prev,
-              [exercise.id]: { ...prev[exercise.id], load: value }
-            }))}
+            reps={getInputValue(exercise.id, 'reps') || exercise.reps || ''}
+            setReps={(value) => store.setDraft(exercise.id, { reps: value })}
+            load={getInputValue(exercise.id, 'load')}
+            setLoad={(value) => store.setDraft(exercise.id, { load: value })}
             showDivider={idx > 0}
           />
         ))}
@@ -439,6 +446,7 @@ export default function ClientLiveSession() {
 
   const store = useClientSessionStore();
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   // Dynamic header height measurement
   const headerRef = useRef<HTMLElement | null>(null);
@@ -503,6 +511,16 @@ export default function ClientLiveSession() {
     setIsScrolled(false);
   }, []);
 
+  // TTL cleanup: clear stale store data (> 12 hours)
+  useEffect(() => {
+    const TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+    const updatedAt = store.updatedAtMs;
+    if (updatedAt && Date.now() - updatedAt > TTL_MS) {
+      store.clear();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [showFinishDialog, setShowFinishDialog] = useState(false);
 
   // Queries
@@ -515,11 +533,27 @@ export default function ClientLiveSession() {
   const { mutate: finishSession, isPending: isFinishing } = useFinishClientSession();
   const { mutate: discardSession, isPending: isDiscarding } = useDiscardClientSession();
 
-  // Sync store with session on load
+  // Guard anti-cross-session: robust sync store with DB
   useEffect(() => {
-    if (sessionDetail && sessionDetail.started_at) {
-      store.syncWithSession(sessionDetail.id, sessionDetail.started_at);
+    if (!sessionDetail || !sessionDetail.started_at) return;
+
+    const dbId = sessionDetail.id;
+    const dbStartedAt = sessionDetail.started_at;
+
+    if (!store.activeSessionId) {
+      // Store empty → sync
+      store.syncWithSession(dbId, dbStartedAt);
+      store.touch();
+      return;
     }
+
+    if (store.activeSessionId !== dbId) {
+      // Store has different session → clear and re-sync
+      store.clear();
+      store.syncWithSession(dbId, dbStartedAt);
+      store.touch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionDetail?.id, sessionDetail?.started_at]);
 
   // Parse snapshot
@@ -677,6 +711,45 @@ export default function ClientLiveSession() {
     currentGroupSeriesInfo.completed >= currentGroupSeriesInfo.target &&
     currentGroupSeriesInfo.target > 0;
 
+  // Exit confirmation logic
+  const hasDraft = Object.keys(store.draftByExerciseId).some(key => {
+    const draft = store.draftByExerciseId[key];
+    return draft?.reps?.trim() || draft?.load?.trim();
+  });
+  const hasRest = store.isRestActive();
+  const hasCompleted = actuals.length > 0;
+  const shouldConfirmExit = hasDraft || hasRest || hasCompleted;
+
+  // Handle exit (back button)
+  const handleExitClick = () => {
+    if (shouldConfirmExit) {
+      setShowExitDialog(true);
+    } else {
+      navigate('/client/app/workouts');
+    }
+  };
+
+  // Intercept system back (browser/mobile)
+  useEffect(() => {
+    if (!sessionId) return;
+    
+    // Push dummy state to enable popstate interception
+    window.history.pushState({ sessionActive: true }, '');
+
+    const handlePopState = () => {
+      if (shouldConfirmExit) {
+        // Re-push state to prevent navigation
+        window.history.pushState({ sessionActive: true }, '');
+        setShowExitDialog(true);
+      } else {
+        navigate('/client/app/workouts');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [sessionId, shouldConfirmExit, navigate]);
+
   // Loading state
   if (isActiveLoading || isDetailLoading) {
     return (
@@ -731,7 +804,7 @@ export default function ClientLiveSession() {
             {/* Left: back button */}
             <button
               type="button"
-              onClick={() => navigate("/client/app/workouts")}
+              onClick={handleExitClick}
               className="min-h-[44px] w-11 -ml-1 inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Indietro"
             >
@@ -921,6 +994,29 @@ export default function ClientLiveSession() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDiscarding ? 'Abbandono...' : 'Abbandona'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Exit Dialog - Confirm exit without finishing */}
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Uscire dall'allenamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le serie già completate verranno salvate.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continua allenamento</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                // Exit without terminating: session stays in_progress for resume
+                navigate('/client/app/workouts');
+              }}
+            >
+              Esci
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
