@@ -789,7 +789,6 @@ export default function ClientLiveSession() {
           const next = e.currentTarget.scrollTop > 0;
           setIsScrolled((prev) => (prev === next ? prev : next));
         }}
-        style={{ paddingTop: effectiveHeaderHeight + 8 }}
       >
         <div className="px-4 pt-6 pb-6 max-w-[520px] mx-auto w-full">
           {/* Group Header - simple text + badge */}
