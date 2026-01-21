@@ -972,11 +972,11 @@ export default function ClientLiveSession() {
       {/* Unified Leave Dialog - 3 actions */}
       <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
         <AlertDialogContent className="w-[calc(100%-32px)] max-w-[420px] rounded-2xl p-6">
-          <AlertDialogHeader className="space-y-2">
+          <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-semibold leading-7">
               Uscire dall'allenamento?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-muted-foreground leading-5" asChild>
+            <AlertDialogDescription className="mt-2 text-sm leading-5 text-muted-foreground" asChild>
               <div className="space-y-1.5">
                 {actuals.length > 0 ? (
                   <>
@@ -992,33 +992,31 @@ export default function ClientLiveSession() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           
-          <div className="flex flex-col mt-5 gap-3">
+          <div className="mt-6 flex flex-col gap-3">
             {/* PRIMARY: Continue — safe action, filled, h-14 */}
             <Button 
               onClick={handleContinue}
-              className="w-full h-14 rounded-[14px] text-base font-medium"
+              className="w-full h-14 rounded-xl text-base font-medium leading-6"
             >
               Continua allenamento
             </Button>
             
-            {/* SECONDARY: End workout — save, outline, h-12 (slightly smaller) */}
+            {/* SECONDARY: End workout — save, outline, h-12 */}
             <Button 
               variant="outline"
               onClick={handleEndWorkout}
               disabled={isFinishing}
-              className="w-full h-12 rounded-[12px] text-sm font-medium"
+              className="w-full h-12 rounded-xl text-base font-medium leading-6"
             >
               {isFinishing ? 'Salvataggio...' : 'Termina allenamento'}
             </Button>
-          </div>
-          
-          {/* DESTRUCTIVE: Exit without saving — text-style, separated */}
-          <div className="mt-4">
+            
+            {/* DESTRUCTIVE: Exit without saving — text-style, intentionally smaller */}
             <button
               type="button"
               onClick={handleExitWithoutSaving}
               disabled={isDiscarding}
-              className="w-full min-h-[44px] px-3 py-2 text-sm font-medium text-destructive/60 hover:text-destructive hover:bg-destructive/5 rounded-lg transition-colors disabled:opacity-50"
+              className="mt-4 w-full min-h-[44px] rounded-lg text-sm font-medium leading-5 text-destructive/70 hover:text-destructive hover:bg-destructive/5 transition-colors disabled:opacity-50"
             >
               {isDiscarding ? 'Uscita...' : 'Esci senza salvare'}
             </button>
