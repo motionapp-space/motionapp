@@ -885,9 +885,9 @@ export default function ClientLiveSession() {
 
       {/* Bottom Bar - Nav + Termina unified, no empty space */}
       <div className="sticky bottom-0 z-20 bg-background border-t border-border pb-[env(safe-area-inset-bottom)]">
-        <div className="px-4 py-3 space-y-2">
+        <div className="px-4 py-3 space-y-4">
           {/* Nav row */}
-          <div className="flex items-center justify-between min-h-[44px]">
+          <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={() => store.prevGroup()}
@@ -895,10 +895,11 @@ export default function ClientLiveSession() {
               className={cn(
                 "min-h-[44px] px-3 py-2 rounded-lg",
                 "inline-flex items-center gap-1",
-                "text-sm text-muted-foreground",
+                "text-sm font-medium text-foreground/70",
+                "bg-muted/30",
                 "cursor-pointer select-none",
-                "active:bg-muted/40",
-                "focus-visible:bg-muted/40 focus-visible:outline-none",
+                "active:bg-muted/50",
+                "focus-visible:bg-muted/50 focus-visible:outline-none",
                 "transition-colors",
                 !canGoPrev && "opacity-40 pointer-events-none"
               )}
@@ -914,10 +915,11 @@ export default function ClientLiveSession() {
               className={cn(
                 "min-h-[44px] px-3 py-2 rounded-lg",
                 "inline-flex items-center gap-1",
-                "text-sm text-muted-foreground",
+                "text-sm font-medium text-foreground/70",
+                "bg-muted/30",
                 "cursor-pointer select-none",
-                "active:bg-muted/40",
-                "focus-visible:bg-muted/40 focus-visible:outline-none",
+                "active:bg-muted/50",
+                "focus-visible:bg-muted/50 focus-visible:outline-none",
                 "transition-colors",
                 !canGoNext && "opacity-40 pointer-events-none"
               )}
@@ -934,14 +936,12 @@ export default function ClientLiveSession() {
             className={cn(
               "w-full min-h-[44px] px-3 py-2 rounded-lg",
               "inline-flex items-center justify-center gap-2",
-              "text-sm",
+              "text-sm font-medium text-destructive/70",
+              "bg-destructive/5",
               "cursor-pointer select-none",
-              "active:bg-destructive/10 active:underline",
-              "focus-visible:bg-destructive/10 focus-visible:underline focus-visible:outline-none",
-              "transition-colors",
-              isLastGroupComplete
-                ? "text-destructive/60"
-                : "text-destructive/50"
+              "active:bg-destructive/10",
+              "focus-visible:bg-destructive/10 focus-visible:outline-none",
+              "transition-colors"
             )}
           >
             <StopCircle className="h-4 w-4" />
