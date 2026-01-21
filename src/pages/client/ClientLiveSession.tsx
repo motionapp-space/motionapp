@@ -752,7 +752,7 @@ export default function ClientLiveSession() {
           </div>
 
           {/* Row 2 - 40px */}
-          <div className="h-10 flex items-center justify-between">
+          <div className="h-10 flex items-end justify-between pb-2">
             <div className="text-sm text-muted-foreground leading-5 truncate">
               {currentFlatGroup ? (
                 <span className="truncate">
@@ -763,8 +763,8 @@ export default function ClientLiveSession() {
               )}
             </div>
 
-            {/* Right: Rest — fixed width, single-line, vertically centered */}
-            <div className="w-[132px] flex items-baseline justify-end gap-2 text-right tabular-nums py-1">
+            {/* Right: Rest — fixed width, single-line, baseline-aligned */}
+            <div className="w-[132px] flex items-baseline justify-end gap-2 tabular-nums">
               <span className="text-sm text-muted-foreground leading-5">Recupero</span>
               <span
                 className={cn(
