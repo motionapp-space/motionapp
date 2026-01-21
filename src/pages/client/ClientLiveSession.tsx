@@ -752,8 +752,8 @@ export default function ClientLiveSession() {
           </div>
 
           {/* Row 2 - 40px */}
-          <div className="h-10 flex items-end justify-between pb-2">
-            <div className="text-sm text-muted-foreground leading-5 truncate">
+          <div className="h-10 flex items-baseline justify-between pt-2">
+            <div className="text-sm text-muted-foreground truncate">
               {currentFlatGroup ? (
                 <span className="truncate">
                   {translatePhaseType(currentFlatGroup.phaseType)} · {store.currentGroupIndex + 1}/{store.totalGroups}
@@ -765,11 +765,13 @@ export default function ClientLiveSession() {
 
             {/* Right: Rest — fixed width, single-line, baseline-aligned */}
             <div className="w-[132px] flex items-baseline justify-end gap-2 tabular-nums">
-              <span className="text-sm text-muted-foreground leading-5">Recupero</span>
+              <span className="text-sm text-muted-foreground">Recupero</span>
               <span
                 className={cn(
-                  "leading-5 font-semibold",
-                  showRest && clampedRest > 0 ? "text-primary text-lg" : "text-muted-foreground text-sm font-normal"
+                  "font-semibold",
+                  showRest && clampedRest > 0 
+                    ? "text-primary text-lg leading-none" 
+                    : "text-muted-foreground text-sm font-normal"
                 )}
               >
                 {formatRestTime(clampedRest)}
