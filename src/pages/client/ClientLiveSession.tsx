@@ -41,7 +41,6 @@ import {
   useCompleteClientSet,
   useUndoClientLastSet,
   useFinishClientSession,
-  useDiscardClientSession,
   useCompleteSupersetSeries,
   useUndoSupersetLastSeries,
 } from '@/features/session-tracking/hooks/useClientSessionTracking';
@@ -445,7 +444,6 @@ export default function ClientLiveSession() {
   const sessionIdFromUrl = searchParams.get('sessionId');
 
   const store = useClientSessionStore();
-  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
 
   // Dynamic header height measurement
@@ -531,7 +529,6 @@ export default function ClientLiveSession() {
 
   // Mutations
   const { mutate: finishSession, isPending: isFinishing } = useFinishClientSession();
-  const { mutate: discardSession, isPending: isDiscarding } = useDiscardClientSession();
 
   // Guard anti-cross-session: robust sync store with DB
   useEffect(() => {
@@ -642,16 +639,6 @@ export default function ClientLiveSession() {
     );
   };
 
-  const handleDiscard = () => {
-    if (!sessionId) return;
-    discardSession(sessionId, {
-      onSuccess: () => {
-        store.clear();
-        navigate('/client/app/workouts');
-      },
-      onError: (error) => toast.error(error.message || 'Errore'),
-    });
-  };
 
   // Centralized timer tick (single interval, visibility-aware)
   const [, setTimerTick] = useState(0);
@@ -946,54 +933,31 @@ export default function ClientLiveSession() {
 
       {/* Finish Dialog */}
       <AlertDialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle>Terminare l'allenamento?</AlertDialogTitle>
-            <AlertDialogDescription>
-              L'allenamento verrà salvato come completato. Hai registrato{' '}
-              {actuals.length} serie.
+            <AlertDialogDescription className="mt-2">
+              {actuals.length === 0 ? (
+                <>
+                  Non hai completato nessuna serie.
+                  <br />
+                  Se termini ora, l'allenamento verrà salvato come completato.
+                </>
+              ) : (
+                'Le serie completate verranno salvate.'
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
-            <AlertDialogCancel className="sm:flex-1">Continua</AlertDialogCancel>
-            <button
-              onClick={() => {
-                setShowFinishDialog(false);
-                setShowDiscardDialog(true);
-              }}
-              className="text-[14px] text-destructive hover:underline underline-offset-2 min-h-[44px]"
-            >
-              Abbandona sessione
-            </button>
+          <AlertDialogFooter className="flex-col mt-6 gap-3 sm:flex-col">
+            <AlertDialogCancel className="w-full h-14 text-base">
+              Continua allenamento
+            </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleFinish} 
               disabled={isFinishing}
-              className="sm:flex-1"
+              className="w-full h-14 text-base"
             >
-              {isFinishing ? 'Salvataggio...' : 'Termina'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Discard Dialog */}
-      <AlertDialog open={showDiscardDialog} onOpenChange={setShowDiscardDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Abbandonare la sessione?</AlertDialogTitle>
-            <AlertDialogDescription>
-              La sessione verrà marcata come abbandonata. Le serie già registrate
-              verranno mantenute per riferimento.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Continua</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDiscard}
-              disabled={isDiscarding}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDiscarding ? 'Abbandono...' : 'Abbandona'}
+              {isFinishing ? 'Salvataggio...' : 'Termina allenamento'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
