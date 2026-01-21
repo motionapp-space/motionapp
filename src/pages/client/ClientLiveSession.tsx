@@ -227,13 +227,16 @@ function SeriesBadge({ completed, target }: { completed: number; target: number 
   const isComplete = clampedCompleted === target && target > 0;
 
   return (
-    <span className={cn(
-      "h-8 text-sm font-medium rounded-full px-3 flex items-center",
-      isComplete 
-        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" 
-        : "bg-muted text-foreground"
-    )}>
+    <span
+      className={cn(
+        "inline-flex items-center justify-center h-6 px-2 py-1 rounded-full text-xs font-medium leading-4",
+        isComplete
+          ? "bg-emerald-500/10 text-emerald-600"
+          : "bg-muted text-muted-foreground"
+      )}
+    >
       Serie {clampedCompleted}/{target}
+      {isComplete ? <span className="ml-1">✓</span> : null}
     </span>
   );
 }
@@ -400,7 +403,7 @@ function GroupCard({
           <Button
             onClick={handleComplete}
             disabled={isCompleting || !allRepsFilled || nextSeriesIndex > MAX_SERIES_LIMIT}
-            className="w-full h-11 rounded-2xl text-sm font-semibold gap-2"
+            className="w-full h-14 rounded-[14px] text-base font-semibold gap-2"
           >
             <Check className="size-[18px]" strokeWidth={2} />
             {isCompleting ? 'Salvataggio...' : 'Completa serie'}
@@ -721,7 +724,7 @@ export default function ClientLiveSession() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Top Bar - Stable 3-row layout with reserved Row 3 */}
+      {/* Top Bar - fixed height (56px), no layout shift */}
       <header
         ref={headerRef}
         className={cn(
@@ -731,55 +734,46 @@ export default function ClientLiveSession() {
             : "border-b border-border/60"
         )}
       >
-        <div className="px-4 pt-2 pb-2 flex flex-col">
-          {/* Row 1: Exit (left) — Title (center) — placeholder (right) */}
-          <div className="flex items-center justify-between h-11">
-            <button
-              onClick={() => navigate("/client/app/workouts")}
-              className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] -ml-1 px-1"
-            >
-              <ChevronLeft className="size-5" />
-              <span className="text-sm font-medium">Esci</span>
-            </button>
-
-            <span className="text-base font-semibold leading-6 text-center line-clamp-1 max-w-[200px] absolute left-1/2 -translate-x-1/2">
-              {snapshot?.day?.title || 'Allenamento'}
-            </span>
-
-            {/* Spacer with fixed width for symmetry */}
-            <div className="w-11 h-11" aria-hidden="true" />
-          </div>
-
-          {/* Row 2: Phase (left) — Duration (right) */}
-          <div className="flex items-center justify-between h-9">
-            {currentFlatGroup ? (
-              <span className="text-xs text-muted-foreground/80 leading-4">
-                {translatePhaseType(currentFlatGroup.phaseType)} · {store.currentGroupIndex + 1}/{store.totalGroups}
-              </span>
-            ) : (
-              <span />
-            )}
-            <span className="text-xs text-muted-foreground/80 tabular-nums">
-              Durata {formatElapsedTime(elapsed)}
-            </span>
-          </div>
-
-          {/* Row 3: Rest timer (ALWAYS reserved h-8, empty when inactive) */}
-          <div
-            className={cn(
-              "h-8 flex items-center justify-center gap-2 transition-opacity duration-150",
-              showRest ? "opacity-100" : "opacity-0"
-            )}
-            aria-hidden={!showRest}
+        <div className="h-14 px-4 flex items-center justify-between">
+          {/* Left: Exit */}
+          <button
+            onClick={() => navigate("/client/app/workouts")}
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] -ml-1 px-1"
           >
+            Esci
+          </button>
+
+          {/* Center: Title + Meta (compact) */}
+          <div className="flex-1 min-w-0 px-2 flex flex-col items-center justify-center">
+            <div className="text-base font-semibold leading-6 truncate">
+              {snapshot?.day?.title || "Allenamento"}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground leading-5 truncate">
+              {currentFlatGroup ? (
+                <span className="truncate">
+                  {translatePhaseType(currentFlatGroup.phaseType)} · {store.currentGroupIndex + 1}/{store.totalGroups}
+                </span>
+              ) : (
+                <span className="truncate"> </span>
+              )}
+              <span className="shrink-0">Durata {formatElapsedTime(elapsed)}</span>
+            </div>
+          </div>
+
+          {/* Right: Rest (fixed width, no shift) */}
+          <div className="w-[112px] text-right flex flex-col justify-center">
             {showRest ? (
               <>
-                <span className="text-xs text-muted-foreground">Recupero</span>
-                <span className="text-base font-semibold tabular-nums text-primary">
+                <div className="text-xs text-muted-foreground leading-4">Recupero</div>
+                <div className="text-lg font-semibold text-primary leading-5 tabular-nums">
                   {formatRestTime(clampedRest)}
-                </span>
+                </div>
               </>
-            ) : null}
+            ) : (
+              <div className="text-sm text-muted-foreground leading-5">
+                Recupero · 00:00
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -856,19 +850,20 @@ export default function ClientLiveSession() {
         </button>
       </nav>
 
-      {/* Footer - Dynamic styling based on completion */}
-      <footer className="shrink-0 bg-background px-4 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))] border-t border-border/40">
-        <Button
+      {/* Footer - textual link, no visual competition with CTA */}
+      <footer className="shrink-0 bg-background px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+        <button
+          type="button"
           onClick={() => setShowFinishDialog(true)}
-          variant={isLastGroupComplete ? "default" : "outline"}
           className={cn(
-            "w-full h-11 rounded-2xl text-sm font-semibold gap-2",
-            !isLastGroupComplete && "text-muted-foreground border-border"
+            "w-full min-h-[44px] flex items-center justify-center text-sm transition-colors",
+            isLastGroupComplete
+              ? "text-destructive/70 hover:text-destructive"
+              : "text-destructive/50 hover:text-destructive"
           )}
         >
-          <Check className="size-4" />
           Termina allenamento
-        </Button>
+        </button>
       </footer>
 
 
