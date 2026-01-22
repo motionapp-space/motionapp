@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,6 +100,14 @@ const ClientAuth = () => {
                   <Eye className="h-5 w-5" />
                 )}
               </button>
+            </div>
+            <div className="flex justify-end">
+              <Link
+                to="/forgot-password?context=client"
+                className="text-sm text-primary hover:underline"
+              >
+                Hai dimenticato la password?
+              </Link>
             </div>
           </div>
 

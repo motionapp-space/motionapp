@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,10 @@ import { PasswordValidationChecklist } from "@/components/auth/PasswordValidatio
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isClientContext = searchParams.get("context") === "client";
+  const loginPath = isClientContext ? "/client/auth" : "/auth";
+  const forgotPasswordPath = isClientContext ? "/forgot-password?context=client" : "/forgot-password";
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -80,11 +84,11 @@ const ResetPassword = () => {
               </p>
             </div>
           </div>
-          <Button 
-            asChild 
+          <Button
+            asChild
             className="w-full h-14 rounded-3xl text-base font-semibold shadow-lg hover:shadow-xl transition-all"
           >
-            <Link to="/forgot-password">Richiedi nuovo link</Link>
+            <Link to={forgotPasswordPath}>Richiedi nuovo link</Link>
           </Button>
         </div>
       </div>
@@ -107,8 +111,8 @@ const ResetPassword = () => {
               </p>
             </div>
           </div>
-          <Button 
-            onClick={() => navigate("/auth")} 
+          <Button
+            onClick={() => navigate(loginPath)}
             className="w-full h-14 rounded-3xl text-base font-semibold shadow-lg hover:shadow-xl transition-all"
           >
             Vai al login
