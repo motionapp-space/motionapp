@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const ForgotPassword = () => {
+  const [searchParams] = useSearchParams();
+  const isClientContext = searchParams.get("context") === "client";
+  const loginPath = isClientContext ? "/client/auth" : "/auth";
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -18,7 +21,7 @@ const ForgotPassword = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/reset-password${isClientContext ? '?context=client' : ''}`,
       });
 
       if (error) throw error;
@@ -51,7 +54,7 @@ const ForgotPassword = () => {
             asChild 
             className="w-full h-14 rounded-3xl text-base font-semibold shadow-lg hover:shadow-xl transition-all"
           >
-            <Link to="/auth">Torna al login</Link>
+            <Link to={loginPath}>Torna al login</Link>
           </Button>
         </div>
       </div>
@@ -101,7 +104,7 @@ const ForgotPassword = () => {
             variant="ghost" 
             className="w-full h-12 rounded-3xl text-base"
           >
-            <Link to="/auth">Torna al login</Link>
+            <Link to={loginPath}>Torna al login</Link>
           </Button>
         </form>
       </div>
