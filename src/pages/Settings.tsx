@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { User, Lock, Shield, Calendar, Package } from "lucide-react";
 import { BookingSettingsForm } from "@/features/bookings/components/BookingSettingsForm";
-import { PackageSettingsForm } from "@/features/packages/components/PackageSettingsForm";
+import { ProductCatalogSettings } from "@/features/products/components/ProductCatalogSettings";
 
 const Settings = () => {
   const [searchParams] = useSearchParams();
@@ -231,7 +231,7 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="packages">
-          <PackageSettingsForm />
+          <ProductCatalogSettings />
         </TabsContent>
 
         <TabsContent value="privacy">
