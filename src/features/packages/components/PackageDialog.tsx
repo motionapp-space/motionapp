@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { format, addMonths } from "date-fns";
 import { it } from "date-fns/locale";
@@ -18,12 +18,14 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { CreatePackageInput } from "../types";
-import { formatCurrency, suggestPackageName } from "../utils/kpi";
-import { usePackageSettings } from "../hooks/usePackageSettings";
+import { formatCurrency } from "../utils/kpi";
+import { useProducts } from "@/features/products/hooks/useProducts";
+import type { Product } from "@/features/products/types";
 
 interface PackageDialogProps {
   open: boolean;
@@ -33,6 +35,8 @@ interface PackageDialogProps {
   isLoading?: boolean;
 }
 
+const CUSTOM_VALUE = "custom";
+
 export function PackageDialog({
   open,
   onOpenChange,
@@ -40,83 +44,98 @@ export function PackageDialog({
   onSubmit,
   isLoading,
 }: PackageDialogProps) {
-  const { data: settings } = usePackageSettings();
-  const [selectedSessions, setSelectedSessions] = useState<number>(5);
-  const [customPrice, setCustomPrice] = useState<boolean>(false);
-  const [customDuration, setCustomDuration] = useState<boolean>(false);
+  const { data: products } = useProducts();
+  
+  // Filter active visible packages and single session
+  const packageProducts = useMemo(() => 
+    products?.filter(p => p.type === "session_pack" && p.is_active && p.is_visible) || [],
+    [products]
+  );
+  const singleSession = products?.find(p => p.type === "single_session");
+  const singleSessionPrice = singleSession?.price_cents || 5000;
+
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [isCustom, setIsCustom] = useState(false);
   
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<CreatePackageInput>({
     defaultValues: {
       coach_client_id: coachClientId,
       total_sessions: 5,
-      name: suggestPackageName(5),
+      name: "Pacchetto 5 sessioni",
       duration_months: 3,
     },
   });
 
-  // Reset form when dialog opens
+  // Set default selection when dialog opens
   useEffect(() => {
     if (open) {
-      setSelectedSessions(5);
-      setCustomPrice(false);
-      setCustomDuration(false);
-      reset({
-        coach_client_id: coachClientId,
-        total_sessions: 5,
-        name: suggestPackageName(5),
-        duration_months: 3,
-      });
-    }
-  }, [open, coachClientId, reset]);
-
-  const priceValue = watch("price_total_cents");
-  const durationValue = watch("duration_months");
-
-  // Update default price and duration when sessions change or dialog opens
-  useEffect(() => {
-    if (settings && open) {
-      // Set default price if not custom
-      if (!customPrice) {
-        const priceKey = `sessions_${selectedSessions}_price` as keyof typeof settings;
-        const defaultPrice = settings[priceKey] as number;
-        if (defaultPrice !== undefined) {
-          setValue("price_total_cents", defaultPrice);
-        }
-      }
-      
-      // Set default duration if not custom
-      if (!customDuration) {
-        const durationKey = `sessions_${selectedSessions}_duration` as keyof typeof settings;
-        const defaultDuration = settings[durationKey] as number;
-        if (defaultDuration !== undefined) {
-          setValue("duration_months", defaultDuration);
-        }
+      setIsCustom(false);
+      // Select first package by default
+      const firstPackage = packageProducts[0];
+      if (firstPackage) {
+        setSelectedProductId(firstPackage.id);
+        applyProductToForm(firstPackage);
+      } else {
+        // No packages, go to custom mode
+        setIsCustom(true);
+        setSelectedProductId(CUSTOM_VALUE);
+        reset({
+          coach_client_id: coachClientId,
+          total_sessions: 5,
+          name: "Pacchetto 5 sessioni",
+          duration_months: 3,
+          price_total_cents: Math.round(singleSessionPrice * 5 * 0.9),
+        });
       }
     }
-  }, [selectedSessions, settings, customPrice, customDuration, setValue, open]);
+  }, [open, packageProducts.length, coachClientId, singleSessionPrice]);
 
-  const handleSessionsChange = (value: string) => {
-    const sessions = parseInt(value);
-    setSelectedSessions(sessions);
+  const applyProductToForm = (product: Product) => {
+    reset({
+      coach_client_id: coachClientId,
+      total_sessions: product.credits_amount,
+      name: product.name,
+      duration_months: product.duration_months,
+      price_total_cents: product.price_cents,
+    });
+  };
+
+  const handleProductChange = (value: string) => {
+    setSelectedProductId(value);
+    
+    if (value === CUSTOM_VALUE) {
+      setIsCustom(true);
+      // Keep current values but allow editing
+      return;
+    }
+    
+    setIsCustom(false);
+    const product = packageProducts.find(p => p.id === value);
+    if (product) {
+      applyProductToForm(product);
+    }
+  };
+
+  const handleCustomSessionsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const sessions = parseInt(e.target.value) || 1;
     setValue("total_sessions", sessions);
-    setValue("name", suggestPackageName(sessions));
-    setCustomPrice(false); // Reset custom price flag
-    setCustomDuration(false); // Reset custom duration flag
+    setValue("name", `Pacchetto ${sessions} sessioni`);
+    // Suggest price with 10% discount
+    setValue("price_total_cents", Math.round(singleSessionPrice * sessions * 0.9));
+    // Suggest duration
+    setValue("duration_months", Math.max(1, Math.ceil(sessions / 3)));
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const cents = Math.round(parseFloat(e.target.value || "0") * 100);
     setValue("price_total_cents", cents);
-    setCustomPrice(true);
   };
 
   const handleDurationChange = (value: string) => {
     setValue("duration_months", parseInt(value));
-    setCustomDuration(true);
   };
 
   const onSubmitForm = (data: CreatePackageInput) => {
-    // Clean up empty strings to null for optional fields
     const cleanedData = {
       ...data,
       expires_at: data.expires_at && data.expires_at.trim() !== '' ? data.expires_at : null,
@@ -125,14 +144,16 @@ export function PackageDialog({
     };
     onSubmit(cleanedData);
     reset();
-    setCustomPrice(false);
   };
 
-  const pricePerSession = priceValue && selectedSessions 
-    ? formatCurrency(priceValue / selectedSessions) 
+  const priceValue = watch("price_total_cents");
+  const totalSessions = watch("total_sessions");
+  const durationValue = watch("duration_months");
+
+  const pricePerSession = priceValue && totalSessions 
+    ? formatCurrency(priceValue / totalSessions) 
     : "N/D";
 
-  // Calculate expiration date based on duration
   const expirationDate = durationValue 
     ? format(addMonths(new Date(), durationValue), "d MMMM yyyy", { locale: it })
     : "";
@@ -148,25 +169,46 @@ export function PackageDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
+          {/* Product Selection */}
           <div className="space-y-2">
-            <Label htmlFor="total_sessions">Numero di sessioni *</Label>
+            <Label>Pacchetto *</Label>
             <Select
-              value={selectedSessions.toString()}
-              onValueChange={handleSessionsChange}
+              value={selectedProductId}
+              onValueChange={handleProductChange}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Seleziona un pacchetto" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="3">3 sessioni</SelectItem>
-                <SelectItem value="5">5 sessioni</SelectItem>
-                <SelectItem value="10">10 sessioni</SelectItem>
-                <SelectItem value="15">15 sessioni</SelectItem>
-                <SelectItem value="20">20 sessioni</SelectItem>
+                {packageProducts.map(product => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name} • {formatCurrency(product.price_cents)}
+                  </SelectItem>
+                ))}
+                {packageProducts.length > 0 && <SelectSeparator />}
+                <SelectItem value={CUSTOM_VALUE}>
+                  ✏️ Personalizzato...
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
+          {/* Custom Sessions Input (only in custom mode) */}
+          {isCustom && (
+            <div className="space-y-2">
+              <Label htmlFor="custom_sessions">Numero di sessioni *</Label>
+              <Input
+                id="custom_sessions"
+                type="number"
+                min="1"
+                max="100"
+                value={totalSessions}
+                onChange={handleCustomSessionsChange}
+              />
+            </div>
+          )}
+
+          {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name">Nome pacchetto *</Label>
             <Input
@@ -177,12 +219,15 @@ export function PackageDialog({
                 maxLength: { value: 80, message: "Massimo 80 caratteri" },
               })}
               placeholder="Es. 10 lezioni individuali"
+              readOnly={!isCustom}
+              className={!isCustom ? "bg-muted" : ""}
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
             )}
           </div>
 
+          {/* Price and Price per Session */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="price">Prezzo totale (€)</Label>
@@ -194,12 +239,9 @@ export function PackageDialog({
                 value={priceValue != null ? (priceValue / 100).toFixed(2) : ""}
                 onChange={handlePriceChange}
                 placeholder="0.00"
+                readOnly={!isCustom}
+                className={!isCustom ? "bg-muted" : ""}
               />
-              {customPrice && (
-                <p className="text-xs text-muted-foreground">
-                  Prezzo personalizzato
-                </p>
-              )}
             </div>
             <div className="space-y-2">
               <Label>Prezzo unitario</Label>
@@ -207,34 +249,34 @@ export function PackageDialog({
             </div>
           </div>
 
+          {/* Duration */}
           <div className="space-y-2">
             <Label htmlFor="duration_months">Durata</Label>
             <Select
               value={durationValue?.toString() || "3"}
               onValueChange={handleDurationChange}
+              disabled={!isCustom}
             >
-              <SelectTrigger>
+              <SelectTrigger className={!isCustom ? "bg-muted" : ""}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="1">1 mese</SelectItem>
                 <SelectItem value="2">2 mesi</SelectItem>
                 <SelectItem value="3">3 mesi</SelectItem>
+                <SelectItem value="4">4 mesi</SelectItem>
+                <SelectItem value="5">5 mesi</SelectItem>
                 <SelectItem value="6">6 mesi</SelectItem>
                 <SelectItem value="9">9 mesi</SelectItem>
                 <SelectItem value="12">12 mesi</SelectItem>
               </SelectContent>
             </Select>
-            {customDuration && (
-              <p className="text-xs text-muted-foreground">
-                Durata personalizzata
-              </p>
-            )}
             <p className="text-xs text-muted-foreground">
               Scadrà il <span className="font-medium">{expirationDate}</span>
             </p>
           </div>
 
+          {/* Payment Method */}
           <div className="space-y-2">
             <Label htmlFor="payment_method">Metodo di pagamento</Label>
             <Input
@@ -244,6 +286,7 @@ export function PackageDialog({
             />
           </div>
 
+          {/* Internal Notes */}
           <div className="space-y-2">
             <Label htmlFor="notes_internal">Note interne</Label>
             <Textarea
