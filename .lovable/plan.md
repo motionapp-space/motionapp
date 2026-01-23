@@ -1,308 +1,145 @@
 
 
-# Fix: Separare `expire` vs `discard` per Session Cleanup
+# Fix: Nomi Esercizi Mancanti nello Storico Sessioni
 
-## Problema Critico
+## Diagnosi
 
-Il sistema attualmente ha solo `discard_training_session` che **cancella tutti gli actuals**. Se usato per cleanup automatico di sessioni zombie, eliminerebbe dati validi (serie registrate dal cliente).
+Il cambio piano **NON ha corrotto i dati storici** - lo snapshot contiene correttamente i nomi degli esercizi. Il problema è un **bug nel codice di lettura** che non riconosce il nuovo formato dello snapshot.
 
----
-
-## Soluzione: Due RPC Distinti
-
-| RPC | Comportamento | Quando Usarlo |
-|-----|---------------|---------------|
-| `expire_training_session` | Solo UPDATE: status → 'discarded', ended_at → now() | Auto-cleanup zombie, client cleanup hook |
-| `discard_training_session` | DELETE actuals + UPDATE session | Solo "Esci senza salvare" esplicito |
-
----
-
-## Fase 1: Database Migration
-
-### 1.1 Creare `expire_training_session` RPC
-
-```sql
-CREATE OR REPLACE FUNCTION public.expire_training_session(p_session_id UUID)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-DECLARE
-  v_coach_client_id UUID;
-  v_client_id UUID;
-  v_coach_id UUID;
-  v_requesting_user UUID;
-  v_is_client BOOLEAN := FALSE;
-  v_is_coach BOOLEAN := FALSE;
-BEGIN
-  v_requesting_user := auth.uid();
-  
-  IF v_requesting_user IS NULL THEN
-    RAISE EXCEPTION 'Not authenticated';
-  END IF;
-  
-  SELECT coach_client_id INTO v_coach_client_id
-  FROM training_sessions
-  WHERE id = p_session_id;
-  
-  IF v_coach_client_id IS NULL THEN
-    RAISE EXCEPTION 'Session not found';
-  END IF;
-  
-  SELECT client_id, coach_id 
-  INTO v_client_id, v_coach_id
-  FROM coach_clients
-  WHERE id = v_coach_client_id;
-  
-  -- Check if user is the CLIENT owner
-  IF EXISTS (
-    SELECT 1 FROM clients 
-    WHERE id = v_client_id AND user_id = v_requesting_user
-  ) THEN
-    v_is_client := TRUE;
-  END IF;
-  
-  -- Check if user is the COACH owner
-  IF v_coach_id = v_requesting_user THEN
-    v_is_coach := TRUE;
-  END IF;
-  
-  IF NOT (v_is_client OR v_is_coach) THEN
-    RAISE EXCEPTION 'Not authorized to expire this session';
-  END IF;
-  
-  -- SOLO UPDATE, NESSUN DELETE degli actuals!
-  UPDATE training_sessions
-  SET status = 'discarded', ended_at = NOW()
-  WHERE id = p_session_id
-    AND status = 'in_progress';  -- Solo sessioni ancora in_progress
-END;
-$$;
-```
-
-### 1.2 Cleanup sessioni zombie esistenti (nella stessa migration)
-
-```sql
--- Marca sessioni zombie (>12h in_progress) come discarded
--- NON cancella actuals
-UPDATE training_sessions 
-SET status = 'discarded', 
-    ended_at = COALESCE(ended_at, NOW())
-WHERE status = 'in_progress' 
-  AND started_at < NOW() - INTERVAL '12 hours';
-```
-
----
-
-## Fase 2: Adapter Layer
-
-### 2.1 Aggiungere metodo `expireSession` all'interfaccia
-
-**File:** `src/features/session-tracking/adapters/sessionTrackingAdapter.ts`
+### Root Cause
 
 ```typescript
-export interface SessionTrackingAdapter {
-  // ... esistenti ...
-  
-  /**
-   * Expire session (soft close) - preserves actuals
-   * Use for zombie cleanup, NOT for explicit discard
-   */
-  expireSession(sessionId: string): Promise<void>;
-}
+// ❌ Cerca snapshot.day_structure (formato LEGACY)
+let exerciseName = snapshot?.day_structure 
+  ? findExerciseNameFromDayStructure(snapshot.day_structure, actual.exercise_id)
+  : null;
 ```
 
-### 2.2 Implementare in `clientSessionTrackingAdapter.ts`
-
-```typescript
-async expireSession(sessionId: string): Promise<void> {
-  const { error } = await supabase.rpc('expire_training_session', {
-    p_session_id: sessionId
-  });
-  if (error) throw error;
-},
-```
-
----
-
-## Fase 3: Service Layer
-
-**File:** `src/features/session-tracking/services/sessionTrackingService.ts`
-
-Aggiungere metodo:
-
-```typescript
-/**
- * Expire session (soft close) - preserves actuals data
- * Use for automatic cleanup of zombie sessions
- */
-async expireSession({ sessionId }: DiscardSessionParams) {
-  return adapter.expireSession(sessionId);
-},
-```
-
----
-
-## Fase 4: Hooks Layer
-
-**File:** `src/features/session-tracking/hooks/useClientSessionTracking.ts`
-
-Aggiungere hook:
-
-```typescript
-/**
- * Expire session (soft close) - preserves actuals
- * Use for zombie cleanup, NOT for "Exit without saving"
- */
-export function useExpireClientSession() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (sessionId: string) =>
-      service.expireSession({ sessionId }),
-    onSuccess: (_, sessionId) => {
-      queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.all });
-      queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.active });
-    },
-  });
+Ma lo snapshot ha formato NUOVO:
+```json
+{
+  "day": { "id": "...", "title": "Giorno 1" },
+  "phases": [...]  // ← Dati QUI, non in day_structure
 }
 ```
 
 ---
 
-## Fase 5: Client Cleanup Hook
+## Soluzione
 
-**Nuovo file:** `src/features/session-tracking/hooks/useClientSessionCleanup.ts`
+### 1. Aggiornare `groupActualsByExercise` in ClientSessionDetailSheet.tsx
+
+Supportare entrambi i formati dello snapshot:
 
 ```typescript
-import { useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
-import { CLIENT_SESSION_KEYS } from './useClientSessionTracking';
+function groupActualsByExercise(
+  actuals: ExerciseActual[],
+  snapshot: PlanDaySnapshot | null,
+  plan: ClientActivePlan | null | undefined
+): GroupedActuals[] {
+  const groups: Record<string, GroupedActuals> = {};
 
-/**
- * Cleanup zombie sessions (>12h) on app load
- * Uses expire (NOT discard) to preserve actuals
- */
-export function useClientSessionCleanup() {
-  const queryClient = useQueryClient();
-  const hasRun = useRef(false);
-
-  useEffect(() => {
-    if (hasRun.current) return;
-    hasRun.current = true;
-
-    async function cleanup() {
-      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+  for (const actual of actuals) {
+    if (!groups[actual.exercise_id]) {
+      let exerciseName: string | null = null;
       
-      // Find own zombie sessions
-      const { data: zombies } = await supabase
-        .from('training_sessions')
-        .select('id')
-        .eq('status', 'in_progress')
-        .lt('started_at', twelveHoursAgo);
-
-      if (!zombies || zombies.length === 0) return;
-
-      // Expire each (preserve actuals)
-      for (const session of zombies) {
-        await supabase.rpc('expire_training_session', {
-          p_session_id: session.id
-        });
+      // 1. NEW FORMAT: snapshot.phases (from buildPlanDaySnapshot)
+      if (snapshot?.phases) {
+        for (const phase of snapshot.phases) {
+          for (const group of phase?.groups || []) {
+            const found = group?.exercises?.find((e: any) => e.id === actual.exercise_id);
+            if (found?.name) {
+              exerciseName = found.name;
+              break;
+            }
+          }
+          if (exerciseName) break;
+        }
+      }
+      
+      // 2. LEGACY FORMAT: snapshot.day_structure.phases
+      if (!exerciseName && snapshot?.day_structure) {
+        exerciseName = findExerciseNameFromDayStructure(snapshot.day_structure, actual.exercise_id);
+      }
+      
+      // 3. FALLBACK: active plan (for very old sessions without snapshot)
+      if (!exerciseName && plan?.data?.days) {
+        // ... existing fallback logic
       }
 
-      queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.all });
+      // 4. FINAL FALLBACK: generic name
+      if (!exerciseName) {
+        exerciseName = `Esercizio ${actual.exercise_id.slice(0, 8)}`;
+      }
+      
+      // ...
     }
-
-    cleanup().catch(console.error);
-  }, [queryClient]);
+  }
 }
 ```
 
----
-
-## Fase 6: Integrare Cleanup in ClientWorkouts
-
-**File:** `src/pages/client/ClientWorkouts.tsx`
+### 2. Aggiungere helper dedicato in countExercisesFromDayStructure.ts
 
 ```typescript
-import { useClientSessionCleanup } from '@/features/session-tracking/hooks/useClientSessionCleanup';
-
-function ClientWorkoutsContent() {
-  // Cleanup zombie sessions on mount
-  useClientSessionCleanup();
-  
-  // ... resto del componente
+/**
+ * Finds exercise name from new snapshot format (with phases at root level)
+ */
+export function findExerciseNameFromPhases(phases: any[], exerciseId: string): string | null {
+  if (!Array.isArray(phases)) return null;
+  for (const phase of phases) {
+    for (const group of phase?.groups || []) {
+      const found = group?.exercises?.find((e: any) => e.id === exerciseId);
+      if (found?.name) return found.name;
+    }
+  }
+  return null;
 }
 ```
 
----
+### 3. Aggiornare il tipo PlanDaySnapshot
 
-## Fase 7: API Coach - Filtrare Sessioni Scartate
-
-**File:** `src/features/sessions/api/sessions.api.ts`
-
-Aggiornare il filtro in `listSessions()`:
+Assicurarsi che il tipo includa entrambi i formati:
 
 ```typescript
-const filteredData = (data || []).filter((session: any) => {
-  // Nascondi sessioni autonome ancora in corso
-  const isAutonomousInProgress = 
-    session.source === 'autonomous' && session.status === 'in_progress';
+export type PlanDaySnapshot = {
+  // Legacy format
+  day_structure?: any;
+  day_title?: string;
   
-  // Nascondi sessioni scartate
-  const isDiscarded = session.status === 'discarded';
+  // New format  
+  day?: { id: string; order: number; title: string };
+  phases?: any[];
   
-  return !isAutonomousInProgress && !isDiscarded;
-});
+  // Common
+  captured_at?: string;
+  plan_id?: string;
+  plan_name?: string;
+  warning?: string;
+};
 ```
 
 ---
 
-## Fase 8: UI Cleanup
-
-**File:** `src/features/sessions/components/SessionHistoryTab.tsx`
-
-1. **Rimuovere badge "Solo lettura"** (righe 263-267)
-2. **Migliorare "Durata anomala"** → mostrare badge "Sessione incompleta" per durate > 8h
-
----
-
-## Riepilogo Chiamate
-
-| Scenario | RPC da Chiamare | Cancella Actuals? |
-|----------|-----------------|-------------------|
-| "Esci senza salvare" in dialog | `discard_training_session` | ✅ Sì |
-| Cleanup zombie client-side | `expire_training_session` | ❌ No |
-| Cleanup zombie server-side (migration) | UPDATE diretto | ❌ No |
-| "Rimuovi dalla cronologia" (history) | UPDATE status via adapter | ❌ No |
-
----
-
-## File da Modificare
+## File da modificare
 
 | File | Azione |
 |------|--------|
-| **Nuova migration SQL** | Creare `expire_training_session` + cleanup zombie |
-| `sessionTrackingAdapter.ts` | Aggiungere interfaccia `expireSession` |
-| `clientSessionTrackingAdapter.ts` | Implementare `expireSession` |
-| `sessionTrackingService.ts` | Aggiungere metodo `expireSession` |
-| `useClientSessionTracking.ts` | Aggiungere hook `useExpireClientSession` |
-| **Nuovo: `useClientSessionCleanup.ts`** | Hook cleanup zombie |
-| `ClientWorkouts.tsx` | Chiamare `useClientSessionCleanup` |
-| `sessions.api.ts` | Filtrare anche `discarded` |
-| `SessionHistoryTab.tsx` | Rimuovere "Solo lettura", fix "Durata anomala" |
+| `src/features/client-workouts/components/ClientSessionDetailSheet.tsx` | Fix logica lettura snapshot |
+| `src/features/client-workouts/utils/countExercisesFromDayStructure.ts` | Aggiungere `findExerciseNameFromPhases` |
+| `src/features/client-workouts/api/client-sessions.api.ts` | Verificare tipo già corretto |
 
 ---
 
-## Checklist Testing
+## Risultato Atteso
 
-- [ ] "Esci senza salvare" → cancella actuals + marca discarded
-- [ ] Sessioni zombie (>12h) vengono expired automaticamente (actuals preservati)
-- [ ] Coach non vede sessioni `in_progress` autonome
-- [ ] Coach non vede sessioni `discarded`
-- [ ] Badge "Solo lettura" rimosso
-- [ ] "Sessione incompleta" mostrato invece di "Durata anomala"
-- [ ] Actuals delle sessioni zombie sono ancora presenti nel DB dopo expire
+Dopo il fix, la sessione del 21 gennaio mostrerà:
+- **Panca piana** (invece di "Esercizio b41c114e")
+- **Trazioni zavorrate** (invece di "Esercizio 8f9de2d2")
+- Gli altri 2 esercizi rimarranno generici perché avevano nome vuoto nel piano originale
+
+---
+
+## Nota sulla Data Quality
+
+Due esercizi nello snapshot originale hanno `name: ""`. Questo non è un bug del sistema di snapshot ma un problema di data quality nel piano originale al momento della creazione della sessione.
 
