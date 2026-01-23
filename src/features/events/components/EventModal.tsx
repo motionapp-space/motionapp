@@ -17,7 +17,7 @@ interface EventModalProps {
   lockedClientId?: string;
   onStartSession?: (clientId: string, eventId: string, linkedPlanId?: string, linkedDayId?: string) => void;
   mode?: 'coach-create' | 'client-booking';
-  onDeleteRequest?: (eventId: string, eventTitle: string) => void;
+  onDeleteRequest?: (eventId: string, eventTitle: string, seriesId?: string | null) => void;
 }
 
 export function EventModal({ 
@@ -69,7 +69,7 @@ export function EventModal({
       initialEndTime={prefillData?.end}
       lockedClientId={lockedClientId}
       onStartSession={onStartSession}
-      onDeleteRequest={onDeleteRequest}
+      onDeleteRequest={(eventId, title, seriesId) => onDeleteRequest?.(eventId, title, seriesId)}
     />
   );
 }

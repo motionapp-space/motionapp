@@ -248,3 +248,25 @@ export async function getUpcomingCoachEvent(): Promise<EventWithClient | null> {
     client_name: client ? `${client.first_name} ${client.last_name}` : "Unknown",
   } as EventWithClient;
 }
+
+/**
+ * Conta gli eventi futuri di una serie (non cancellati, non completati)
+ * @param seriesId - UUID della serie
+ * @param asOfNow - Timestamp di riferimento (default: now) per allineamento con RPC
+ */
+export async function countFutureSeriesEvents(
+  seriesId: string, 
+  asOfNow?: string
+): Promise<number> {
+  const now = asOfNow || new Date().toISOString();
+  
+  const { count, error } = await supabase
+    .from('events')
+    .select('id', { count: 'exact', head: true })
+    .eq('series_id', seriesId)
+    .not('session_status', 'in', '("canceled","done")')
+    .gte('start_at', now);
+  
+  if (error) throw error;
+  return count || 0;
+}

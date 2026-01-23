@@ -3,9 +3,12 @@ import { cn } from "@/lib/utils";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { parseISO, format } from "date-fns";
 import { useTopbar } from "@/contexts/TopbarContext";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useDeleteEvent } from "@/features/events/hooks/useDeleteEvent";
+import { useDeleteSeries } from "@/features/events/hooks/useDeleteSeries";
+import { useQuery } from "@tanstack/react-query";
+import { countFutureSeriesEvents } from "@/features/events/api/events.api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useEventsQuery } from "@/features/events/hooks/useEventsQuery";
 import { CalendarSubHeader } from "@/features/events/components/CalendarSubHeader";
 import { DayView } from "@/features/events/components/DayView";
@@ -58,9 +63,20 @@ const Calendar = () => {
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     eventId: string;
     eventTitle: string;
+    seriesId?: string | null;
   } | null>(null);
+  const [deleteScope, setDeleteScope] = useState<'single' | 'series'>('single');
 
   const deleteEvent = useDeleteEvent();
+  const deleteSeries = useDeleteSeries();
+  
+  // Query per contare eventi futuri della serie (solo se c'è series_id)
+  const { data: futureSeriesCount = 0, isLoading: isLoadingSeriesCount } = useQuery({
+    queryKey: ['series-count', deleteConfirmation?.seriesId],
+    queryFn: () => countFutureSeriesEvents(deleteConfirmation!.seriesId!),
+    enabled: !!deleteConfirmation?.seriesId,
+    staleTime: 0, // Sempre fresh quando apriamo la modale
+  });
 
   const [isClientView, setIsClientView] = useState<boolean>(() => {
     return localStorage.getItem('calendar-client-view') === 'true';
@@ -144,14 +160,27 @@ const Calendar = () => {
     }
   };
 
-  const handleDeleteRequest = (eventId: string, eventTitle: string) => {
-    setDeleteConfirmation({ eventId, eventTitle });
+  const handleDeleteRequest = (
+    eventId: string, 
+    eventTitle: string, 
+    seriesId?: string | null
+  ) => {
+    setDeleteConfirmation({ eventId, eventTitle, seriesId });
+    setDeleteScope('single'); // Reset a default sicuro
   };
 
   const handleConfirmDelete = async () => {
-    if (deleteConfirmation) {
-      await deleteEvent.mutateAsync(deleteConfirmation.eventId);
+    if (!deleteConfirmation) return;
+    
+    try {
+      if (deleteScope === 'series' && deleteConfirmation.seriesId) {
+        await deleteSeries.mutateAsync(deleteConfirmation.seriesId);
+      } else {
+        await deleteEvent.mutateAsync(deleteConfirmation.eventId);
+      }
+    } finally {
       setDeleteConfirmation(null);
+      setDeleteScope('single');
     }
   };
 
@@ -306,7 +335,9 @@ const Calendar = () => {
           onOpenChange={handleEditModalOpenChange}
           mode="coach-create"
           event={selectedEvent}
-          onDeleteRequest={handleDeleteRequest}
+          onDeleteRequest={(eventId, eventTitle, seriesId) => 
+            handleDeleteRequest(eventId, eventTitle, seriesId)
+          }
         />
       )}
 
@@ -319,23 +350,74 @@ const Calendar = () => {
       {/* Delete Confirmation Dialog - managed at Calendar level to avoid modal-on-modal */}
       <AlertDialog 
         open={!!deleteConfirmation} 
-        onOpenChange={(open) => !open && setDeleteConfirmation(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteConfirmation(null);
+            setDeleteScope('single');
+          }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancellare questo appuntamento?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Stai per eliminare l'evento "{deleteConfirmation?.eventTitle}". 
-              Questa azione non può essere annullata.
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p className="text-muted-foreground">
+                  Stai per eliminare l'evento "{deleteConfirmation?.eventTitle}".
+                </p>
+                
+                {/* Scelta serie/singolo - solo se fa parte di una serie con più eventi futuri */}
+                {deleteConfirmation?.seriesId && !isLoadingSeriesCount && futureSeriesCount > 1 && (
+                  <RadioGroup
+                    value={deleteScope}
+                    onValueChange={(v) => setDeleteScope(v as 'single' | 'series')}
+                    className="space-y-3"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="single" id="delete-single" />
+                      <Label htmlFor="delete-single" className="font-normal cursor-pointer">
+                        Solo questo evento
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="series" id="delete-series" />
+                      <Label htmlFor="delete-series" className="font-normal cursor-pointer">
+                        Tutti i {futureSeriesCount} appuntamenti futuri della serie
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                )}
+                
+                {/* Loading state per il conteggio */}
+                {deleteConfirmation?.seriesId && isLoadingSeriesCount && (
+                  <p className="text-sm text-muted-foreground italic">
+                    Verifica appuntamenti della serie...
+                  </p>
+                )}
+                
+                {/* Avviso notifiche - SEMPRE visibile */}
+                <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md text-sm">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <span className="text-amber-800 dark:text-amber-200">
+                    Il cliente riceverà una notifica in-app e via email.
+                  </span>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annulla</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleConfirmDelete}
+              disabled={deleteEvent.isPending || deleteSeries.isPending || isLoadingSeriesCount}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Elimina
+              {(deleteEvent.isPending || deleteSeries.isPending) 
+                ? "Eliminazione..." 
+                : deleteScope === 'series' 
+                  ? `Elimina ${futureSeriesCount} eventi`
+                  : "Elimina"
+              }
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
