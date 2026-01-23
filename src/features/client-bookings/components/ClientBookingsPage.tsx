@@ -4,14 +4,12 @@ import { ClientPageHeader } from "@/components/client/ClientPageHeader";
 import { ClientPageShell } from "@/components/client/ClientPageShell";
 import { useClientBookingSettings } from "../hooks/useClientBookingSettings";
 import { useClientAppointmentsView } from "../hooks/useClientAppointmentsView";
-import { useClientRecentActivity } from "../hooks/useClientRecentActivity";
 import { useRespondToCounterProposal } from "../hooks/useRespondToCounterProposal";
 import { useCancelBookingRequest } from "../hooks/useCancelBookingRequest";
 import { NextAppointmentHeroCard } from "./NextAppointmentHeroCard";
 import { BookingCTA } from "./BookingCTA";
 import { ActiveRequestsSection } from "./ActiveRequestsSection";
 import { FutureAppointmentsPreview } from "./FutureAppointmentsPreview";
-import { RecentActivitySection } from "./RecentActivitySection";
 import { AppointmentDetailSheet } from "./AppointmentDetailSheet";
 import { SlotSelectorSheet } from "./SlotSelectorSheet";
 import type { ClientAppointmentView } from "../types";
@@ -19,7 +17,6 @@ import type { ClientAppointmentView } from "../types";
 export function ClientBookingsPage() {
   const { data: settings, isLoading: settingsLoading } = useClientBookingSettings();
   const { data: appointments, isLoading: appointmentsLoading } = useClientAppointmentsView();
-  const { data: recentActivity = [], isLoading: activityLoading } = useClientRecentActivity();
   const { accept: acceptCounterProposal, reject: rejectCounterProposal, isPending: counterProposalLoading } = useRespondToCounterProposal();
   const cancelRequestMutation = useCancelBookingRequest();
   
@@ -149,11 +146,6 @@ export function ClientBookingsPage() {
         hasNextAppointment={!!nextConfirmed}
         onAppointmentClick={handleViewDetail}
       />
-
-      {/* Section 4: Recent Activity (Collapsible) */}
-      {!activityLoading && (
-        <RecentActivitySection items={recentActivity} />
-      )}
 
       {/* Detail Sheet */}
       <AppointmentDetailSheet

@@ -36,6 +36,7 @@ import ClientWorkouts from "./pages/client/ClientWorkouts";
 import ClientLiveSession from "./pages/client/ClientLiveSession";
 import ClientAppointments from "./pages/client/ClientAppointments";
 import ClientAllAppointments from "./pages/client/ClientAllAppointments";
+import ClientNotifications from "./pages/client/ClientNotifications";
 import ClientAppLayout from "./components/client/ClientAppLayout";
 import ClientSessionLayout from "./components/client/ClientSessionLayout";
 import CoachLayout from "./components/CoachLayout";
@@ -134,9 +135,10 @@ const App = () => {
             {/* Client app - standard layout */}
             <Route path="/client/app" element={<ClientAppLayout />}>
               <Route index element={<Navigate to="workouts" replace />} />
-              <Route path="workouts" element={<ClientWorkouts />} />
+            <Route path="workouts" element={<ClientWorkouts />} />
               <Route path="appointments" element={<ClientAppointments />} />
               <Route path="appointments/all" element={<ClientAllAppointments />} />
+              <Route path="notifications" element={<ClientNotifications />} />
             </Route>
 
             {/* Public routes - accessible without authentication */}
