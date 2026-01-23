@@ -174,7 +174,7 @@ export function EventEditorModal({
     frequency: "weekly",
     interval: 1,
     weekDays: [],
-    monthDay: 1,
+    monthDay: undefined,
     endType: "count",
     endDate: undefined,
     occurrenceCount: 4

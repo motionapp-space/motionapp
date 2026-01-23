@@ -58,6 +58,16 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
     }
   }, [config.enabled, startDate, wasEnabledBefore]);
 
+  // Auto-imposta monthDay quando la frequenza cambia a "monthly"
+  useEffect(() => {
+    if (config.frequency === "monthly" && config.enabled) {
+      const dayOfMonth = startDate.getDate();
+      if (config.monthDay !== dayOfMonth) {
+        updateConfig({ monthDay: dayOfMonth });
+      }
+    }
+  }, [config.frequency, config.enabled, startDate]);
+
   // Calcolo occorrenze totali per il riepilogo live
   const allOccurrences = useMemo(() => {
     if (!config.enabled) return [];

@@ -55,10 +55,18 @@ export function generateRecurrenceOccurrences({
 
       case "monthly":
         nextDate = addMonths(currentDate, interval);
-        // If specific monthDay is set, adjust to that day
-        if (config.monthDay) {
-          nextDate.setDate(Math.min(config.monthDay, new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate()));
+        // Se monthDay è esplicitamente impostato (es. "ogni mese il 15"),
+        // forza quel giorno (gestendo mesi corti)
+        if (config.monthDay && config.monthDay > 0) {
+          const lastDayOfMonth = new Date(
+            nextDate.getFullYear(),
+            nextDate.getMonth() + 1,
+            0
+          ).getDate();
+          nextDate.setDate(Math.min(config.monthDay, lastDayOfMonth));
         }
+        // Se monthDay non è impostato, addMonths già mantiene il giorno originale
+        // e gestisce i mesi corti automaticamente
         break;
 
       case "yearly":
