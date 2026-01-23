@@ -1,82 +1,76 @@
 
-# Fix: Campo Occorrenze Non Modificabile Liberamente
+Obiettivo: risolvere sul campo “prezzo lezione singola” lo stesso problema di UX visto sul campo “numero occorrenze” (impossibile cancellare e riscrivere liberamente).
 
-## Problema
+## Perché succede
+Nel wizard “Nuovo appuntamento” (coach), il prezzo “Lezione singola” è un input controllato con:
+- `value={(singleLessonPrice ?? defaultSinglePrice) / 100}`
+- `onChange={() => setSingleLessonPrice(Math.round(parseFloat(e.target.value) * 100) || defaultSinglePrice)}`
 
-Il campo numerico per le occorrenze non permette di:
-- Cancellare completamente il valore
-- Digitare liberamente un nuovo numero
+Quando l’utente cancella il contenuto del campo:
+- `e.target.value === ""`
+- `parseFloat("")` produce `NaN`
+- il codice fa fallback a `defaultSinglePrice`
+- React ri-renderizza subito e rimette il valore nel campo
+Risultato: non si riesce a svuotare e riscrivere il numero “a mano”.
 
-**Causa**: La validazione nel `onChange` converte immediatamente qualsiasi valore non valido (es. stringa vuota) in `4`, impedendo la modifica libera.
+## Strategia di fix
+Replicare la soluzione già adottata per “occurrenceCount”:
+- mantenere **uno stato locale stringa** per l’input (che può essere anche vuoto)
+- fare parsing/validazione **solo su onBlur**
+- se il campo è vuoto su blur: tornare al default (senza forzare mentre l’utente digita)
 
-```typescript
-// Problema attuale (riga 191-194)
-onChange={(e) => {
-  const value = Math.min(52, Math.max(1, parseInt(e.target.value) || 4));
-  updateConfig({ occurrenceCount: value });  // ← Validazione immediata!
-}}
-```
+## Modifiche previste
 
----
+### 1) EventEditorModal: aggiungere stato locale per il valore digitato
+File: `src/features/events/components/EventEditorModal.tsx`
 
-## Soluzione
+Aggiungere uno state, ad es.:
+- `const [singleLessonPriceInputValue, setSingleLessonPriceInputValue] = useState<string>("");`
 
-Introdurre uno **stato locale per l'input** e validare solo quando l'utente esce dal campo (`onBlur`).
+### 2) Sincronizzare lo state locale quando cambia il contesto
+Sempre in `EventEditorModal.tsx`, aggiungere una `useEffect` che:
+- quando `lessonType !== "single"` resetta `singleLessonPriceInputValue` (opzionale ma evita valori “stale”)
+- quando `lessonType === "single"` imposta l’input con il valore corrente:
+  - `(singleLessonPrice ?? defaultSinglePrice) / 100` come stringa
+- dipendenze tipiche: `[lessonType, singleLessonPrice, defaultSinglePrice]`
 
-### Modifiche in RecurrenceSection.tsx
+Nota: formatter semplice “compatibile con input type=number” (quindi col punto decimale, senza separatori) per evitare valori come “50.00” se non desiderato.
 
-**1. Aggiungere stato locale per l'input**
+### 3) Aggiornare l’Input per usare state locale + onBlur validation
+Sostituire l’Input attuale (righe ~1459-1466) con:
+- `value={singleLessonPriceInputValue}`
+- `onChange={(e) => setSingleLessonPriceInputValue(e.target.value)}`
+- `onBlur={() => { ... }}` dove:
+  - se `singleLessonPriceInputValue.trim() === ""`:
+    - `setSingleLessonPrice(null)` (così torna a usare `defaultSinglePrice`)
+    - rimettere nel campo la stringa del default (così la UI resta coerente)
+  - altrimenti:
+    - `const parsed = parseFloat(singleLessonPriceInputValue)`
+    - se `isNaN(parsed)` -> comportamento come campo vuoto (fallback al default)
+    - altrimenti:
+      - `const cents = Math.max(0, Math.round(parsed * 100))`
+      - `setSingleLessonPrice(cents)`
+      - `setSingleLessonPriceInputValue((cents/100).toString() o formatter)`
 
-```typescript
-const [occurrenceInputValue, setOccurrenceInputValue] = useState<string>(
-  String(config.occurrenceCount || 4)
-);
+Si mantiene:
+- `type="number"`, `min="0"`, `step="0.01"`, className invariata
 
-// Sincronizza quando il valore esterno cambia
-useEffect(() => {
-  setOccurrenceInputValue(String(config.occurrenceCount || 4));
-}, [config.occurrenceCount]);
-```
+### 4) Verifiche rapide in UI
+Scenario di test:
+1. Seleziona “Lezione singola”
+2. Click nel campo prezzo, seleziona tutto, Canc
+   - deve restare vuoto mentre digiti
+3. Digita “40”
+   - deve restare “40” senza reset
+4. Esci dal campo (blur)
+   - deve salvare `4000` centesimi
+5. Cancella tutto e blur
+   - deve tornare al default (es. 50€) senza bloccare l’editing
 
-**2. Modificare l'Input delle occorrenze**
+## Impatto su logica e backend
+Nessuna modifica alla logica di creazione: `priceToUse = singleLessonPrice ?? defaultSinglePrice` continua a funzionare identica.
+Cambiamo solo UX/input handling.
 
-```typescript
-<Input
-  type="number"
-  min="1"
-  max="52"
-  value={occurrenceInputValue}
-  onChange={(e) => {
-    // Permetti qualsiasi input (incluso vuoto)
-    setOccurrenceInputValue(e.target.value);
-  }}
-  onBlur={() => {
-    // Valida e applica solo quando l'utente esce dal campo
-    const parsed = parseInt(occurrenceInputValue);
-    const validValue = isNaN(parsed) ? 4 : Math.min(52, Math.max(1, parsed));
-    setOccurrenceInputValue(String(validValue));
-    updateConfig({ occurrenceCount: validValue });
-  }}
-  className="w-20 h-9"
-/>
-```
+## File coinvolti
+- `src/features/events/components/EventEditorModal.tsx` (unico file)
 
----
-
-## File da Modificare
-
-| File | Azione |
-|------|--------|
-| `src/features/events/components/RecurrenceSection.tsx` | Aggiungere stato locale + onBlur validation |
-
----
-
-## Comportamento Risultante
-
-| Azione utente | Prima (bug) | Dopo (fix) |
-|--------------|-------------|------------|
-| Seleziona tutto + cancella | Torna a "4" | Campo vuoto (editabile) |
-| Digita "12" | Funziona | Funziona |
-| Cancella e digita "8" | Impossibile | Funziona ✓ |
-| Esce dal campo vuoto | N/A | Torna a "4" (default) |
-| Digita "999" e esce | N/A | Diventa "52" (max) |
