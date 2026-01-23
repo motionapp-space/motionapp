@@ -36,6 +36,14 @@ const weekDayLabels = ["D", "L", "M", "M", "G", "V", "S"];
 export function RecurrenceSection({ config, onChange, startDate, maxOccurrences, onMaxOccurrencesExceeded }: RecurrenceSectionProps) {
   const [previewDates, setPreviewDates] = useState<Date[]>([]);
   const [wasEnabledBefore, setWasEnabledBefore] = useState(false);
+  const [occurrenceInputValue, setOccurrenceInputValue] = useState<string>(
+    String(config.occurrenceCount || 4)
+  );
+
+  // Sincronizza quando il valore esterno cambia
+  useEffect(() => {
+    setOccurrenceInputValue(String(config.occurrenceCount || 4));
+  }, [config.occurrenceCount]);
 
   const updateConfig = (updates: Partial<RecurrenceConfig>) => {
     const newConfig = { ...config, ...updates };
@@ -187,10 +195,15 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
                       type="number"
                       min="1"
                       max="52"
-                      value={config.occurrenceCount || 4}
+                      value={occurrenceInputValue}
                       onChange={(e) => {
-                        const value = Math.min(52, Math.max(1, parseInt(e.target.value) || 4));
-                        updateConfig({ occurrenceCount: value });
+                        setOccurrenceInputValue(e.target.value);
+                      }}
+                      onBlur={() => {
+                        const parsed = parseInt(occurrenceInputValue);
+                        const validValue = isNaN(parsed) ? 4 : Math.min(52, Math.max(1, parsed));
+                        setOccurrenceInputValue(String(validValue));
+                        updateConfig({ occurrenceCount: validValue });
                       }}
                       className="w-20 h-9"
                     />
