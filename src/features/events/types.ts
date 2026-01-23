@@ -18,6 +18,7 @@ export interface Event {
   proposal_status?: string;
   proposed_start_at?: string;
   proposed_end_at?: string;
+  series_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +43,7 @@ export interface CreateEventInput {
   session_status?: "scheduled" | "done" | "canceled" | "no_show";
   aligned_to_slot?: boolean;
   source?: 'manual' | 'generated' | 'client';
+  series_id?: string;
 }
 
 export interface UpdateEventInput {

@@ -71,7 +71,7 @@ interface EventEditorModalProps {
   lockedClientId?: string;
   event?: EventWithClient;
   onStartSession?: (clientId: string, eventId: string, linkedPlanId?: string, linkedDayId?: string) => void;
-  onDeleteRequest?: (eventId: string, eventTitle: string) => void;
+  onDeleteRequest?: (eventId: string, eventTitle: string, seriesId?: string | null) => void;
 }
 
 // Helper function to round time to nearest 15 minutes
@@ -524,19 +524,42 @@ export function EventEditorModal({
       if (recurrence.enabled && occurrences.length > 0) {
         toast.info(`Creazione di ${occurrences.length} appuntamenti ricorrenti...`);
 
+        // NUOVO: Generare series_id unico per collegare tutti gli eventi della serie
+        const seriesId = crypto.randomUUID();
+        
+        let successCount = 0;
+        let failCount = 0;
+
         // Creazione batch con Promise.all per performance
         const createPromises = occurrences.map(async (occurrenceDate) => {
           const startAt = setMinutes(setHours(startOfDay(occurrenceDate), startH), startM);
           const endAt = setMinutes(setHours(startOfDay(occurrenceDate), endH), endM);
 
-          return createEvent.mutateAsync({
-            ...basePayload,
-            start_at: startAt.toISOString(),
-            end_at: endAt.toISOString(),
-          });
+          try {
+            const result = await createEvent.mutateAsync({
+              ...basePayload,
+              start_at: startAt.toISOString(),
+              end_at: endAt.toISOString(),
+              series_id: seriesId,
+            });
+            successCount++;
+            return result;
+          } catch (err) {
+            failCount++;
+            console.error('Failed to create occurrence:', err);
+            return null;
+          }
         });
 
-        const createdEvents = await Promise.all(createPromises);
+        const createdEvents = (await Promise.all(createPromises)).filter(Boolean) as Event[];
+
+        // Feedback migliorato per fallimenti parziali
+        if (failCount > 0 && successCount > 0) {
+          toast.warning(`Creati ${successCount} appuntamenti, ${failCount} falliti`);
+        } else if (failCount > 0 && successCount === 0) {
+          toast.error("Creazione fallita per tutti gli appuntamenti");
+          return;
+        }
 
         // Gestione economica in base al tipo di lezione
         if (lessonType === "free") {
@@ -1740,7 +1763,7 @@ export function EventEditorModal({
                         className="text-destructive focus:text-destructive cursor-pointer"
                         onClick={() => {
                           if (event && onDeleteRequest) {
-                            onDeleteRequest(event.id, event.title);
+                            onDeleteRequest(event.id, event.title, event.series_id);
                             onOpenChange(false);
                           }
                         }}
@@ -1764,7 +1787,7 @@ export function EventEditorModal({
                     variant="ghost"
                     onClick={() => {
                       if (event && onDeleteRequest) {
-                        onDeleteRequest(event.id, event.title);
+                        onDeleteRequest(event.id, event.title, event.series_id);
                         onOpenChange(false);
                       }
                     }}

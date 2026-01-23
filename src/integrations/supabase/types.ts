@@ -2130,10 +2130,20 @@ export type Database = {
             }
             Returns: Json
           }
-      cancel_series_with_ledger: {
-        Args: { p_actor: string; p_now?: string; p_series_id: string }
-        Returns: Json
-      }
+      cancel_series_with_ledger:
+        | {
+            Args: { p_actor: string; p_now?: string; p_series_id: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_actor: string
+              p_now?: string
+              p_only_future?: boolean
+              p_series_id: string
+            }
+            Returns: Json
+          }
       capture_session_snapshot: {
         Args: { p_session_id: string }
         Returns: boolean
