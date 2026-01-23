@@ -192,6 +192,7 @@ export function EventEditorModal({
   const [lessonType, setLessonType] = useState<LessonType | null>(null);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [singleLessonPrice, setSingleLessonPrice] = useState<number | null>(null);
+  const [singleLessonPriceInputValue, setSingleLessonPriceInputValue] = useState<string>("");
   
   // Session conflict state
   const [showSessionConflictDialog, setShowSessionConflictDialog] = useState(false);
@@ -406,7 +407,9 @@ export function EventEditorModal({
     setLessonType(null);
     setSelectedPackageId(null);
     setSingleLessonPrice(null);
+    setSingleLessonPriceInputValue("");
   }, [formData.clientId]);
+
 
   // Reset package selection when recurrence changes (coverage or expiration may change)
   useEffect(() => {
@@ -427,6 +430,14 @@ export function EventEditorModal({
   const defaultSinglePrice = useMemo(() => {
     return packageSettings?.sessions_1_price ?? 5000; // 50€ default
   }, [packageSettings]);
+
+  // Sync single lesson price input value when lessonType or price changes
+  useEffect(() => {
+    if (lessonType === "single") {
+      const priceInEuros = (singleLessonPrice ?? defaultSinglePrice) / 100;
+      setSingleLessonPriceInputValue(priceInEuros.toString());
+    }
+  }, [lessonType, defaultSinglePrice]);
 
   // Validation - ora include la scelta del tipo di lezione e scadenza pacchetto
   const isValid = useMemo(() => {
@@ -1458,8 +1469,19 @@ export function EventEditorModal({
                             <div className="flex items-center gap-2">
                               <Input
                                 type="number"
-                                value={(singleLessonPrice ?? defaultSinglePrice) / 100}
-                                onChange={(e) => setSingleLessonPrice(Math.round(parseFloat(e.target.value) * 100) || defaultSinglePrice)}
+                                value={singleLessonPriceInputValue}
+                                onChange={(e) => setSingleLessonPriceInputValue(e.target.value)}
+                                onBlur={() => {
+                                  const trimmed = singleLessonPriceInputValue.trim();
+                                  if (trimmed === "" || isNaN(parseFloat(trimmed))) {
+                                    setSingleLessonPrice(null);
+                                    setSingleLessonPriceInputValue((defaultSinglePrice / 100).toString());
+                                  } else {
+                                    const cents = Math.max(0, Math.round(parseFloat(trimmed) * 100));
+                                    setSingleLessonPrice(cents);
+                                    setSingleLessonPriceInputValue((cents / 100).toString());
+                                  }
+                                }}
                                 className="w-24"
                                 min="0"
                                 step="0.01"
