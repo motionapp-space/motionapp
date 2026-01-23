@@ -260,12 +260,6 @@ export function RecurrenceSection({ config, onChange, startDate, maxOccurrences,
               </div>
             )}
 
-            <Alert variant="default" className="mt-3 py-2">
-              <Info className="h-3.5 w-3.5" />
-              <AlertDescription className="text-xs">
-                Se uno slot non è disponibile, verrà saltato.
-              </AlertDescription>
-            </Alert>
           </div>
         )}
     </div>
