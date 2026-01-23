@@ -1,4 +1,5 @@
 import { ClientUserMenu } from "./ClientUserMenu";
+import { ClientNotificationBell } from "@/features/client-notifications/components/ClientNotificationBell";
 
 const ClientTopbar = () => {
   return (
@@ -8,7 +9,10 @@ const ClientTopbar = () => {
           <span className="text-base font-semibold text-foreground">Motion</span>
           <span className="text-xs text-muted-foreground">Area Cliente</span>
         </div>
-        <ClientUserMenu />
+        <div className="flex items-center gap-1">
+          <ClientNotificationBell />
+          <ClientUserMenu />
+        </div>
       </div>
     </header>
   );

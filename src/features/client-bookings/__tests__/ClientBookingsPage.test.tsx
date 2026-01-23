@@ -16,10 +16,6 @@ vi.mock('../hooks/useClientAppointmentsView', () => ({
   useClientAppointmentsView: vi.fn()
 }));
 
-vi.mock('../hooks/useClientRecentActivity', () => ({
-  useClientRecentActivity: vi.fn()
-}));
-
 vi.mock('../hooks/useRespondToCounterProposal', () => ({
   useRespondToCounterProposal: vi.fn()
 }));
@@ -27,7 +23,6 @@ vi.mock('../hooks/useRespondToCounterProposal', () => ({
 // Import mocks
 import { useClientBookingSettings } from '../hooks/useClientBookingSettings';
 import { useClientAppointmentsView } from '../hooks/useClientAppointmentsView';
-import { useClientRecentActivity } from '../hooks/useClientRecentActivity';
 import { useRespondToCounterProposal } from '../hooks/useRespondToCounterProposal';
 
 // Fixtures
@@ -105,7 +100,6 @@ function renderWithProviders(ui: React.ReactElement) {
 function setupMocks(options: {
   settings?: Partial<ClientBookingSettings>;
   appointments?: ClientAppointmentView[];
-  recentActivity?: any[];
   counterProposalHooks?: { accept?: () => void; reject?: () => void };
 } = {}) {
   const defaultSettings: ClientBookingSettings = {
@@ -125,11 +119,6 @@ function setupMocks(options: {
 
   (useClientAppointmentsView as any).mockReturnValue({
     data: options.appointments ?? [],
-    isLoading: false,
-  });
-
-  (useClientRecentActivity as any).mockReturnValue({
-    data: options.recentActivity ?? [],
     isLoading: false,
   });
 
@@ -279,32 +268,6 @@ describe('ClientBookingsPage', () => {
       
       // The word "Confermato" should NOT appear anywhere
       expect(screen.queryByText('Confermato')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('Recent Activity Section', () => {
-    it('renders collapsed when there are declined/cancelled items', () => {
-      const recentItems = [
-        {
-          id: 'act-1',
-          activityType: 'declined_request' as const,
-          date: new Date().toISOString(),
-          originalDate: new Date().toISOString(),
-          title: 'Richiesta rifiutata'
-        }
-      ];
-      
-      setupMocks({ recentActivity: recentItems });
-      renderWithProviders(<ClientBookingsPage />);
-      
-      expect(screen.getByText(/attività recenti/i)).toBeInTheDocument();
-    });
-
-    it('does NOT render section when no recent activity', () => {
-      setupMocks({ recentActivity: [] });
-      renderWithProviders(<ClientBookingsPage />);
-      
-      expect(screen.queryByText(/attività recenti/i)).not.toBeInTheDocument();
     });
   });
 
