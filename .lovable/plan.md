@@ -1,76 +1,91 @@
 
-Obiettivo: risolvere sul campo “prezzo lezione singola” lo stesso problema di UX visto sul campo “numero occorrenze” (impossibile cancellare e riscrivere liberamente).
+# Fix: Toast Trasparenti - Allineamento alla Brand ID
 
-## Perché succede
-Nel wizard “Nuovo appuntamento” (coach), il prezzo “Lezione singola” è un input controllato con:
-- `value={(singleLessonPrice ?? defaultSinglePrice) / 100}`
-- `onChange={() => setSingleLessonPrice(Math.round(parseFloat(e.target.value) * 100) || defaultSinglePrice)}`
+## Problema Identificato
 
-Quando l’utente cancella il contenuto del campo:
-- `e.target.value === ""`
-- `parseFloat("")` produce `NaN`
-- il codice fa fallback a `defaultSinglePrice`
-- React ri-renderizza subito e rimette il valore nel campo
-Risultato: non si riesce a svuotare e riscrivere il numero “a mano”.
+I toast di conferma/errore (Sonner) appaiono trasparenti perché usano sfondi con opacità 5%:
+- `success`: `bg-accent/5` (verde al 5% → invisibile)
+- `error`: `bg-destructive/5` (rosso al 5% → invisibile)  
+- `info`: `bg-primary/5` (blu al 5% → invisibile)
 
-## Strategia di fix
-Replicare la soluzione già adottata per “occurrenceCount”:
-- mantenere **uno stato locale stringa** per l’input (che può essere anche vuoto)
-- fare parsing/validazione **solo su onBlur**
-- se il campo è vuoto su blur: tornare al default (senza forzare mentre l’utente digita)
+Con uno sfondo quasi bianco (`--background: 0 0% 99%`), queste opacità creano un toast "fantasma".
 
-## Modifiche previste
+---
 
-### 1) EventEditorModal: aggiungere stato locale per il valore digitato
-File: `src/features/events/components/EventEditorModal.tsx`
+## Soluzione
 
-Aggiungere uno state, ad es.:
-- `const [singleLessonPriceInputValue, setSingleLessonPriceInputValue] = useState<string>("");`
+Aumentare l'opacità dello sfondo mantenendo uno stile leggero e coerente con la Brand ID:
+- Sfondo: da 5% a 10-15% (visibile ma non invadente)
+- Border-left: manteniamo come accento colorato
+- Shadow: usiamo `shadow-lg` per più presenza
+- Padding e spacing coerenti con il design system
 
-### 2) Sincronizzare lo state locale quando cambia il contesto
-Sempre in `EventEditorModal.tsx`, aggiungere una `useEffect` che:
-- quando `lessonType !== "single"` resetta `singleLessonPriceInputValue` (opzionale ma evita valori “stale”)
-- quando `lessonType === "single"` imposta l’input con il valore corrente:
-  - `(singleLessonPrice ?? defaultSinglePrice) / 100` come stringa
-- dipendenze tipiche: `[lessonType, singleLessonPrice, defaultSinglePrice]`
+### Stili proposti (Sonner)
 
-Nota: formatter semplice “compatibile con input type=number” (quindi col punto decimale, senza separatori) per evitare valori come “50.00” se non desiderato.
+| Variante | Prima | Dopo |
+|----------|-------|------|
+| Base toast | `bg-card border-border shadow-md` | `bg-card border-border shadow-lg` |
+| Success | `bg-accent/5` | `bg-accent/10` |
+| Error | `bg-destructive/5` | `bg-destructive/10` |
+| Info | `bg-primary/5` | `bg-primary/10` |
+| Warning | `bg-amber-50` | `bg-amber-50` (OK) |
 
-### 3) Aggiornare l’Input per usare state locale + onBlur validation
-Sostituire l’Input attuale (righe ~1459-1466) con:
-- `value={singleLessonPriceInputValue}`
-- `onChange={(e) => setSingleLessonPriceInputValue(e.target.value)}`
-- `onBlur={() => { ... }}` dove:
-  - se `singleLessonPriceInputValue.trim() === ""`:
-    - `setSingleLessonPrice(null)` (così torna a usare `defaultSinglePrice`)
-    - rimettere nel campo la stringa del default (così la UI resta coerente)
-  - altrimenti:
-    - `const parsed = parseFloat(singleLessonPriceInputValue)`
-    - se `isNaN(parsed)` -> comportamento come campo vuoto (fallback al default)
-    - altrimenti:
-      - `const cents = Math.max(0, Math.round(parsed * 100))`
-      - `setSingleLessonPrice(cents)`
-      - `setSingleLessonPriceInputValue((cents/100).toString() o formatter)`
+---
 
-Si mantiene:
-- `type="number"`, `min="0"`, `step="0.01"`, className invariata
+## File da Modificare
 
-### 4) Verifiche rapide in UI
-Scenario di test:
-1. Seleziona “Lezione singola”
-2. Click nel campo prezzo, seleziona tutto, Canc
-   - deve restare vuoto mentre digiti
-3. Digita “40”
-   - deve restare “40” senza reset
-4. Esci dal campo (blur)
-   - deve salvare `4000` centesimi
-5. Cancella tutto e blur
-   - deve tornare al default (es. 50€) senza bloccare l’editing
+### 1. src/components/ui/sonner.tsx
 
-## Impatto su logica e backend
-Nessuna modifica alla logica di creazione: `priceToUse = singleLessonPrice ?? defaultSinglePrice` continua a funzionare identica.
-Cambiamo solo UX/input handling.
+Aggiornare le classi CSS nel `toastOptions.classNames`:
 
-## File coinvolti
-- `src/features/events/components/EventEditorModal.tsx` (unico file)
+```typescript
+toastOptions={{
+  classNames: {
+    toast:
+      "group toast group-[.toaster]:font-sans group-[.toaster]:bg-card group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg group-[.toaster]:rounded-md",
+    description: "group-[.toast]:text-muted-foreground group-[.toast]:text-sm",
+    actionButton:
+      "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:rounded-sm group-[.toast]:font-medium",
+    cancelButton:
+      "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground group-[.toast]:rounded-sm",
+    success:
+      "group-[.toaster]:border-l-4 group-[.toaster]:border-l-accent group-[.toaster]:bg-accent/10",
+    error:
+      "group-[.toaster]:border-l-4 group-[.toaster]:border-l-destructive group-[.toaster]:bg-destructive/10",
+    info:
+      "group-[.toaster]:border-l-4 group-[.toaster]:border-l-primary group-[.toaster]:bg-primary/10",
+    warning:
+      "group-[.toaster]:border-l-4 group-[.toaster]:border-l-amber-500 group-[.toaster]:bg-amber-50 dark:group-[.toaster]:bg-amber-950/20",
+  },
+}}
+```
 
+### 2. src/components/ui/toast.tsx (Radix Toast)
+
+Verificare e allineare gli stili delle varianti per coerenza:
+- Aggiungere `shadow-lg` per consistenza con Sonner
+- Verificare che `bg-background` sia sufficiente (è solido, quindi OK)
+
+---
+
+## Risultato Atteso
+
+| Stato | Prima | Dopo |
+|-------|-------|------|
+| Toast success | Quasi invisibile (5% opacità) | Sfondo verde leggero ma visibile (10%) |
+| Toast error | Quasi invisibile | Sfondo rosso leggero ma visibile |
+| Toast info | Quasi invisibile | Sfondo blu leggero ma visibile |
+| Shadow | `shadow-md` (debole) | `shadow-lg` (più presente) |
+
+Il toast rimarrà leggero e coerente con la Brand ID (minimalista), ma sarà chiaramente visibile.
+
+---
+
+## Note Tecniche
+
+- Il progetto usa **due sistemi toast**:
+  - **Sonner**: per `toast.success()`, `toast.info()`, `toast.error()` - usato nella creazione eventi
+  - **Radix Toast**: per `toast({ title, description })` da `use-toast` - usato negli update
+
+- Entrambi sono renderizzati in `App.tsx` (righe 119-120)
+- La modifica principale è su Sonner, Radix Toast usa già sfondi solidi
