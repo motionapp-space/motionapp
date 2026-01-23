@@ -30,6 +30,20 @@ export function countGroupsFromPhases(phases: any[]): number {
 }
 
 /**
+ * Finds exercise name from new snapshot format (with phases at root level)
+ */
+export function findExerciseNameFromPhases(phases: any[], exerciseId: string): string | null {
+  if (!Array.isArray(phases)) return null;
+  for (const phase of phases) {
+    for (const group of phase?.groups || []) {
+      const found = group?.exercises?.find((e: any) => e.id === exerciseId);
+      if (found?.name) return found.name;
+    }
+  }
+  return null;
+}
+
+/**
  * Finds an exercise name from a day_structure snapshot by exerciseId.
  * Returns null if not found.
  */

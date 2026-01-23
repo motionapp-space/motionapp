@@ -14,7 +14,7 @@ import { useClientSessionDetail } from "../hooks/useClientSessionDetail";
 import type { ClientSession, PlanDaySnapshot } from "../api/client-sessions.api";
 import type { ClientActivePlan } from "../api/client-plans.api";
 import type { ExerciseActual } from "@/features/sessions/types";
-import { findExerciseNameFromDayStructure } from "../utils/countExercisesFromDayStructure";
+import { findExerciseNameFromDayStructure, findExerciseNameFromPhases } from "../utils/countExercisesFromDayStructure";
 import { useDiscardClientSession } from "@/features/session-tracking/hooks/useClientSessionTracking";
 
 interface ClientSessionDetailSheetProps {
@@ -32,9 +32,10 @@ interface GroupedActuals {
 
 /**
  * Groups actuals by exercise and resolves exercise names using snapshot-first approach:
- * 1. Try snapshot.day_structure (immutable)
- * 2. Fallback to active plan
- * 3. Fallback to generic name
+ * 1. Try snapshot.phases (new format from buildPlanDaySnapshot)
+ * 2. Try snapshot.day_structure (legacy format)
+ * 3. Fallback to active plan
+ * 4. Fallback to generic name
  */
 function groupActualsByExercise(
   actuals: ExerciseActual[],
@@ -45,10 +46,17 @@ function groupActualsByExercise(
 
   for (const actual of actuals) {
     if (!groups[actual.exercise_id]) {
-      // Snapshot-first: try to find exercise name from snapshot
-      let exerciseName = snapshot?.day_structure 
-        ? findExerciseNameFromDayStructure(snapshot.day_structure, actual.exercise_id)
-        : null;
+      let exerciseName: string | null = null;
+      
+      // 1. NEW FORMAT: snapshot.phases (from buildPlanDaySnapshot)
+      if (snapshot?.phases) {
+        exerciseName = findExerciseNameFromPhases(snapshot.phases, actual.exercise_id);
+      }
+      
+      // 2. LEGACY FORMAT: snapshot.day_structure.phases
+      if (!exerciseName && snapshot?.day_structure) {
+        exerciseName = findExerciseNameFromDayStructure(snapshot.day_structure, actual.exercise_id);
+      }
       
       // Fallback to active plan if not found in snapshot
       if (!exerciseName && plan?.data?.days) {
