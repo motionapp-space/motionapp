@@ -100,18 +100,18 @@ export function ProductCatalogSettings() {
         <CardContent className="space-y-6">
           {/* SEZIONE 1: Lezione singola */}
           <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <CreditCard className="h-5 w-5 text-muted-foreground mt-1 shrink-0" />
-              <div className="space-y-1">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-muted-foreground shrink-0" />
                 <h4 className="text-lg font-semibold">Lezione singola</h4>
-                <p className="text-sm text-muted-foreground">
-                  Imposta il prezzo di default di una lezione singola.
-                  <br />
-                  Questo valore verrà proposto automaticamente in fase di creazione e usato come base per il calcolo dello sconto nei pacchetti.
-                </p>
               </div>
+              <p className="text-sm text-muted-foreground pl-7">
+                Imposta il prezzo di default di una lezione singola.
+                <br />
+                Questo valore verrà proposto automaticamente in fase di creazione e usato come base per il calcolo dello sconto nei pacchetti.
+              </p>
             </div>
-            <div className="flex items-center gap-2 pl-8">
+            <div className="flex items-center gap-2 pl-7">
               <div className="flex-1">
                 <PriceInput
                   value={localPrice}
@@ -130,14 +130,14 @@ export function ProductCatalogSettings() {
           {/* SEZIONE 2: Pacchetti */}
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <Package className="h-5 w-5 text-muted-foreground mt-1 shrink-0" />
-                <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-muted-foreground shrink-0" />
                   <h4 className="text-lg font-semibold">Pacchetti di lezioni</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Definisci i pacchetti predefiniti che potrai assegnare ai clienti.
-                  </p>
                 </div>
+                <p className="text-sm text-muted-foreground pl-7">
+                  Definisci i pacchetti predefiniti che potrai assegnare ai clienti.
+                </p>
               </div>
               <Button onClick={handleCreateProduct} size="sm" variant="outline">
                 <Plus className="h-4 w-4 mr-1" />
