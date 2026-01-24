@@ -72,13 +72,6 @@ export function ProductCatalogSettings() {
     }
   };
 
-  const handleRestorePrice = () => {
-    if (singleSession) {
-      setLocalPrice(singleSession.price_cents);
-    }
-  };
-
-  const hasLocalChanges = singleSession && localPrice !== singleSession.price_cents;
 
   const handleCreateProduct = () => {
     setEditingProduct(null);
@@ -162,19 +155,9 @@ export function ProductCatalogSettings() {
                   </span>
                 )}
               </div>
-              {/* Helper + Ripristina */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Influisce sullo sconto mostrato nei pacchetti · Salvataggio automatico</span>
-                {hasLocalChanges && !updateProduct.isPending && (
-                  <button
-                    type="button"
-                    onClick={handleRestorePrice}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Ripristina
-                  </button>
-                )}
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Influisce sullo sconto mostrato nei pacchetti · Salvataggio automatico
+              </p>
             </div>
           </div>
 
