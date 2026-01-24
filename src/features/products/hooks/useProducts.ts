@@ -58,8 +58,6 @@ export function useUpdateProduct() {
       updateProduct(productId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      // Invalidate legacy package-settings cache for backward compatibility
-      queryClient.invalidateQueries({ queryKey: ["package-settings"] });
     },
     onError: (error: Error) => {
       toast.error("Errore", {
