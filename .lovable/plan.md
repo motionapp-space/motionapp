@@ -1,56 +1,120 @@
 
-# Fix: Sincronizzazione Prezzo Lezione Singola
+# Piano: Semplificazione UI Sezione Lezione Singola
 
-## Problema Identificato
-La logica di sincronizzazione alle righe 47-49 causa una race condition:
-- Viene eseguita ad ogni render
-- Sovrascrive `localPrice` con il valore DB **prima** che React Query aggiorni la cache
-- Risultato: il valore salvato viene immediatamente sovrascritto con quello vecchio
-
-## Soluzione
-Usare `useEffect` con dipendenza sul valore DB, così la sincronizzazione avviene **solo quando il valore dal server cambia effettivamente**, non ad ogni render.
+## Panoramica
+Rimuovere il pulsante "Ripristina", eliminare il toast di successo, e verificare/rimuovere la linea grigia laterale per un'interfaccia più pulita.
 
 ---
 
-## Modifica: `ProductCatalogSettings.tsx`
+## Modifiche
 
-### Rimuovere il check inline (righe 47-49)
-```typescript
-// RIMUOVERE QUESTO:
-if (singleSession && localPrice !== singleSession.price_cents && !updateProduct.isPending) {
-  setLocalPrice(singleSession.price_cents);
-}
-```
+### File 1: `ProductCatalogSettings.tsx`
 
-### Sostituire con useEffect corretto
+#### 1.1 — Rimuovere la funzione `handleRestorePrice` (righe 75-79)
 ```typescript
-// Sync local price ONLY when DB value actually changes
-useEffect(() => {
-  if (singleSession && !updateProduct.isPending) {
+// RIMUOVERE:
+const handleRestorePrice = () => {
+  if (singleSession) {
     setLocalPrice(singleSession.price_cents);
   }
-}, [singleSession?.price_cents]);
+};
 ```
 
-### Perché funziona
-- `useEffect` si attiva **solo** quando `singleSession.price_cents` cambia
-- Durante la mutation (`isPending = true`), non sincronizza
-- Quando il refetch porta il **nuovo** valore dal server, allora aggiorna `localPrice`
+#### 1.2 — Rimuovere la variabile `hasLocalChanges` (riga 81)
+```typescript
+// RIMUOVERE:
+const hasLocalChanges = singleSession && localPrice !== singleSession.price_cents;
+```
+
+#### 1.3 — Semplificare il blocco helper (righe 165-177)
+Da:
+```tsx
+{/* Helper + Ripristina */}
+<div className="flex items-center gap-2 text-xs text-muted-foreground">
+  <span>Influisce sullo sconto mostrato nei pacchetti · Salvataggio automatico</span>
+  {hasLocalChanges && !updateProduct.isPending && (
+    <button
+      type="button"
+      onClick={handleRestorePrice}
+      className="text-xs text-primary hover:underline"
+    >
+      Ripristina
+    </button>
+  )}
+</div>
+```
+
+A:
+```tsx
+<p className="text-xs text-muted-foreground">
+  Influisce sullo sconto mostrato nei pacchetti · Salvataggio automatico
+</p>
+```
 
 ---
 
-## Dettaglio Tecnico
+### File 2: `useProducts.ts`
 
-| Prima (bug) | Dopo (fix) |
-|-------------|------------|
-| Check inline ad ogni render | `useEffect` con dipendenza |
-| Sovrascrive prima del refetch | Aspetta il nuovo valore |
-| Race condition | Sincronizzazione pulita |
+#### 2.1 — Rimuovere il toast di successo da `useUpdateProduct` (riga 61)
+Da:
+```typescript
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ["products"] });
+  toast.success("Prodotto aggiornato");
+},
+```
+
+A:
+```typescript
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ["products"] });
+  // Feedback visivo gestito inline nel componente (no toast)
+},
+```
 
 ---
 
-## Riepilogo Modifiche
+### File 3: `PriceInput.tsx` (linea grigia)
+
+#### Analisi
+La "linea grigia a sinistra" visibile nello screenshot appare essere il bordo standard dell'input (`border-input`). Durante il salvataggio non c'è nessuna logica che modifica lo styling dell'input.
+
+#### Possibili cause
+1. **Stato di focus residuo**: Il ring di focus potrebbe persistere brevemente
+2. **Contrasto del bordo**: Il colore `border-input` potrebbe apparire più evidente in certe condizioni
+
+#### Soluzione proposta
+Dato che l'input usa i componenti standard shadcn, la linea grigia è semplicemente il bordo normale. Per confermare, posso:
+
+1. Aggiungere temporaneamente un'ombra interna trasparente durante l'aggiornamento
+2. Oppure verificare se compare solo in un browser specifico
+
+**Domanda**: Puoi confermare se la linea grigia compare sempre durante il salvataggio o solo in determinate condizioni? Potrebbe essere utile vedere se persiste dopo il refresh o se è solo momentanea.
+
+---
+
+## Riepilogo
 
 | File | Modifica |
 |------|----------|
-| `ProductCatalogSettings.tsx` | Rimuovere righe 47-49, aggiungere `useEffect` per sync |
+| `ProductCatalogSettings.tsx` | Rimuovere `handleRestorePrice`, `hasLocalChanges`, e il pulsante Ripristina |
+| `useProducts.ts` | Rimuovere `toast.success("Prodotto aggiornato")` da `useUpdateProduct` |
+| `PriceInput.tsx` | Nessuna modifica necessaria (il bordo è lo stile standard dell'input) |
+
+---
+
+## Risultato Finale
+
+```text
+┌─────────────────────────────────────────────────────┐
+│ 💳 Lezione singola                                  │
+│    Imposta il prezzo di default di una lezione.    │
+│                                                     │
+│    [  80,00  €          ]   ✓ Salvato              │
+│    Influisce sullo sconto nei pacchetti · Auto-save│
+└─────────────────────────────────────────────────────┘
+```
+
+- Nessun pulsante "Ripristina"
+- Nessun toast popup
+- Solo feedback inline "Salvataggio…" / "Salvato ✓"
