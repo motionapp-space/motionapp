@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Plus, Loader2, Package } from "lucide-react";
+import { Plus, Loader2, Package, CreditCard } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { PriceInput } from "@/components/ui/price-input";
 import { PackageProductCard } from "./PackageProductCard";
 import { ProductFormDialog } from "./ProductFormDialog";
@@ -96,18 +97,21 @@ export function ProductCatalogSettings() {
           Configura i valori di default per lezioni singole e pacchetti
         </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-6">
           {/* SEZIONE 1: Lezione singola */}
           <div className="space-y-4">
-            <div className="space-y-1">
-              <h4 className="text-lg font-semibold">Lezione singola</h4>
-              <p className="text-sm text-muted-foreground">
-                Imposta il prezzo di default di una lezione singola.
-                <br />
-                Questo valore verrà proposto automaticamente in fase di creazione e usato come base per il calcolo dello sconto nei pacchetti.
-              </p>
+            <div className="flex items-start gap-3">
+              <CreditCard className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <h4 className="text-lg font-semibold">Lezione singola</h4>
+                <p className="text-sm text-muted-foreground">
+                  Imposta il prezzo di default di una lezione singola.
+                  <br />
+                  Questo valore verrà proposto automaticamente in fase di creazione e usato come base per il calcolo dello sconto nei pacchetti.
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pl-8">
               <div className="flex-1">
                 <PriceInput
                   value={localPrice}
@@ -121,14 +125,19 @@ export function ProductCatalogSettings() {
             </div>
           </div>
 
+          <Separator />
+
           {/* SEZIONE 2: Pacchetti */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h4 className="text-lg font-semibold">Pacchetti di lezioni</h4>
-                <p className="text-sm text-muted-foreground">
-                  Definisci i pacchetti predefiniti che potrai assegnare ai clienti.
-                </p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <Package className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <h4 className="text-lg font-semibold">Pacchetti di lezioni</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Definisci i pacchetti predefiniti che potrai assegnare ai clienti.
+                  </p>
+                </div>
               </div>
               <Button onClick={handleCreateProduct} size="sm" variant="outline">
                 <Plus className="h-4 w-4 mr-1" />
