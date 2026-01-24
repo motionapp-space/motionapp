@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, ChevronRight, Eye, Plus, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -245,19 +245,6 @@ export function CalendarSubHeader({
             </SelectContent>
           </Select>
 
-          {showClientViewToggle && (
-            <Button
-              variant={isClientView ? "secondary" : "ghost"}
-              size="icon"
-              onClick={onToggleClientView}
-              className={cn(
-                "h-9 w-9",
-                isClientView && "bg-primary/10 border border-primary text-primary"
-              )}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-          )}
         </div>
       </div>
     </div>
