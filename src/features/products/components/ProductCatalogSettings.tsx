@@ -1,42 +1,14 @@
-import { useState, useCallback } from "react";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { useState } from "react";
 import { Plus, Loader2, Package } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { SingleSessionPriceCard } from "./SingleSessionPriceCard";
+import { PriceInput } from "@/components/ui/price-input";
 import { PackageProductCard } from "./PackageProductCard";
 import { ProductFormDialog } from "./ProductFormDialog";
 import {
   useProducts,
   useCreateProduct,
   useUpdateProduct,
-  useDeleteProduct,
-  useReorderProducts,
 } from "../hooks/useProducts";
 import type { Product, CreateProductInput, UpdateProductInput } from "../types";
 
@@ -44,41 +16,38 @@ export function ProductCatalogSettings() {
   const { data: products, isLoading } = useProducts();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
-  const deleteProduct = useDeleteProduct();
-  const reorderProducts = useReorderProducts();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   // Separate single session from packages
   const singleSession = products?.find(p => p.type === "single_session");
   const packages = products?.filter(p => p.type === "session_pack") || [];
   const singleSessionPrice = singleSession?.price_cents || 5000;
 
-  // DnD sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  // Sort packages by credits_amount ascending
+  const sortedPackages = [...packages].sort((a, b) => a.credits_amount - b.credits_amount);
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
+  // Single session price state
+  const [localPrice, setLocalPrice] = useState<number>(singleSessionPrice);
 
-    if (over && active.id !== over.id) {
-      const oldIndex = packages.findIndex(p => p.id === active.id);
-      const newIndex = packages.findIndex(p => p.id === over.id);
-      const newOrder = arrayMove(packages, oldIndex, newIndex);
-      reorderProducts.mutate(newOrder.map(p => p.id));
+  // Sync local price when product changes
+  if (singleSession && localPrice !== singleSession.price_cents && !updateProduct.isPending) {
+    setLocalPrice(singleSession.price_cents);
+  }
+
+  const handlePriceChange = (cents: number) => {
+    setLocalPrice(cents);
+  };
+
+  const handlePriceBlur = () => {
+    if (singleSession && localPrice !== singleSession.price_cents) {
+      updateProduct.mutate({
+        productId: singleSession.id,
+        input: { price_cents: localPrice },
+      });
     }
-  }, [packages, reorderProducts]);
+  };
 
   const handleCreateProduct = () => {
     setEditingProduct(null);
@@ -90,49 +59,21 @@ export function ProductCatalogSettings() {
     setDialogOpen(true);
   };
 
-  const handleDuplicateProduct = (product: Product) => {
-    const duplicateData: CreateProductInput = {
-      name: `${product.name} (copia)`,
-      type: "session_pack",
-      credits_amount: product.credits_amount,
-      price_cents: product.price_cents,
-      duration_months: product.duration_months,
-      description: product.description,
-      is_active: true,
-      is_visible: product.is_visible,
-      sort_order: (packages.length + 1) * 10,
-    };
-    createProduct.mutate(duplicateData);
-  };
-
-  const handleToggleVisibility = (product: Product) => {
-    updateProduct.mutate({
-      productId: product.id,
-      input: { is_visible: !product.is_visible },
-    });
-  };
-
-  const handleDeleteClick = (product: Product) => {
-    setProductToDelete(product);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (productToDelete) {
-      deleteProduct.mutate(productToDelete.id);
-      setDeleteDialogOpen(false);
-      setProductToDelete(null);
-    }
-  };
-
   const handleFormSubmit = (data: CreateProductInput | UpdateProductInput) => {
+    // Force is_active and is_visible to true for all packages
+    const payload = {
+      ...data,
+      is_active: true,
+      is_visible: true,
+    };
+
     if (editingProduct) {
       updateProduct.mutate(
-        { productId: editingProduct.id, input: data },
+        { productId: editingProduct.id, input: payload },
         { onSuccess: () => setDialogOpen(false) }
       );
     } else {
-      createProduct.mutate(data as CreateProductInput, {
+      createProduct.mutate(payload as CreateProductInput, {
         onSuccess: () => setDialogOpen(false),
       });
     }
@@ -147,63 +88,73 @@ export function ProductCatalogSettings() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Single Session Price */}
-      <SingleSessionPriceCard product={singleSession} isLoading={isLoading} />
-
-      {/* Packages Catalog */}
+    <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                I tuoi pacchetti
-              </CardTitle>
-              <CardDescription>
-                Trascina per riordinare. I pacchetti in cima appariranno per primi.
-              </CardDescription>
-            </div>
-            <Button onClick={handleCreateProduct} size="sm">
-              <Plus className="h-4 w-4 mr-1" />
-              Nuovo
-            </Button>
-          </div>
+          <CardTitle>Lezioni e pacchetti</CardTitle>
+          <CardDescription>
+            Definisci i valori di default per lezioni singole e pacchetti
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          {packages.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Nessun pacchetto creato</p>
-              <p className="text-sm">Crea il tuo primo pacchetto sessioni</p>
+        <CardContent className="space-y-8">
+          {/* SEZIONE 1: Lezione singola */}
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <h4 className="text-lg font-semibold">Lezione singola</h4>
+              <p className="text-sm text-muted-foreground">
+                Imposta il prezzo di default di una lezione singola. 
+                Questo valore verrà proposto automaticamente in fase di creazione 
+                e usato come base per il calcolo dello sconto nei pacchetti.
+              </p>
             </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              modifiers={[restrictToVerticalAxis]}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={packages.map(p => p.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-2">
-                  {packages.map(product => (
-                    <PackageProductCard
-                      key={product.id}
-                      product={product}
-                      singleSessionPrice={singleSessionPrice}
-                      onEdit={handleEditProduct}
-                      onDuplicate={handleDuplicateProduct}
-                      onToggleVisibility={handleToggleVisibility}
-                      onDelete={handleDeleteClick}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          )}
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <PriceInput
+                  value={localPrice}
+                  onChange={handlePriceChange}
+                  onBlur={handlePriceBlur}
+                />
+              </div>
+              {updateProduct.isPending && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+            </div>
+          </div>
+
+          {/* SEZIONE 2: Pacchetti */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h4 className="text-lg font-semibold">Pacchetti di lezioni</h4>
+                <p className="text-sm text-muted-foreground">
+                  Definisci i pacchetti predefiniti che potrai assegnare ai clienti.
+                </p>
+              </div>
+              <Button onClick={handleCreateProduct} size="sm" variant="outline">
+                <Plus className="h-4 w-4 mr-1" />
+                Nuovo pacchetto
+              </Button>
+            </div>
+
+            {sortedPackages.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
+                <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>Nessun pacchetto creato</p>
+                <p className="text-sm">Crea il tuo primo pacchetto di sessioni</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {sortedPackages.map(product => (
+                  <PackageProductCard
+                    key={product.id}
+                    product={product}
+                    singleSessionPrice={singleSessionPrice}
+                    onEdit={handleEditProduct}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -216,28 +167,6 @@ export function ProductCatalogSettings() {
         onSubmit={handleFormSubmit}
         isLoading={createProduct.isPending || updateProduct.isPending}
       />
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Eliminare il pacchetto?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {productToDelete?.name} verrà eliminato. Se ci sono ordini associati, 
-              il pacchetto verrà disattivato invece che eliminato.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Elimina
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+    </>
   );
 }
