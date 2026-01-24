@@ -71,26 +71,6 @@ export interface Payment {
   created_at: string;
 }
 
-export interface PackageSettings {
-  settings_id: string;
-  coach_id: string;
-  sessions_1_price: number;
-  sessions_1_duration: number;  // kept for beta compatibility
-  sessions_3_price: number;
-  sessions_3_duration: number;
-  sessions_5_price: number;
-  sessions_5_duration: number;
-  sessions_10_price: number;
-  sessions_10_duration: number;
-  sessions_15_price: number;
-  sessions_15_duration: number;
-  sessions_20_price: number;
-  sessions_20_duration: number;
-  currency_code: string;
-  lock_window_hours: number;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface CreatePackageInput {
   coach_client_id: string;

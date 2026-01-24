@@ -8,10 +8,8 @@ import type {
   PackageWithClient, 
   CreatePackageInput, 
   UpdatePackageInput,
-  PackageFilters,
-  PackageSettings 
+  PackageFilters
 } from "../types";
-import type { CoachSettings } from "@/features/products/types";
 
 /**
  * Get all packages for a specific client
@@ -196,119 +194,6 @@ export async function togglePackageSuspension(packageId: string): Promise<Packag
   return updatePackage(packageId, { usage_status: newStatus });
 }
 
-
-/**
- * @deprecated Use getCoachSettings from @/features/products instead
- * Get or create package settings for the authenticated coach
- * This now uses the products catalog + coach_settings for backward compatibility
- */
-export async function getPackageSettings(): Promise<PackageSettings> {
-  const { data: session } = await supabase.auth.getSession();
-  if (!session.session) throw new Error("Non autenticato");
-
-  // Get coach settings
-  const coachSettings = await getCoachSettings();
-  
-  // Get products to build legacy PackageSettings structure
-  const { data: products, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("coach_id", session.session.user.id)
-    .eq("is_active", true)
-    .order("credits_amount", { ascending: true });
-
-  if (error) throw error;
-
-  // Build legacy settings from products
-  const buildSettings = (): PackageSettings => {
-    const base: PackageSettings = {
-      settings_id: coachSettings.coach_id, // using coach_id as ID
-      coach_id: coachSettings.coach_id,
-      sessions_1_price: 5000,
-      sessions_1_duration: 1,
-      sessions_3_price: 13500,
-      sessions_3_duration: 2,
-      sessions_5_price: 22500,
-      sessions_5_duration: 3,
-      sessions_10_price: 45000,
-      sessions_10_duration: 6,
-      sessions_15_price: 67500,
-      sessions_15_duration: 9,
-      sessions_20_price: 90000,
-      sessions_20_duration: 12,
-      currency_code: coachSettings.currency_code,
-      lock_window_hours: coachSettings.lock_window_hours,
-      created_at: coachSettings.created_at,
-      updated_at: coachSettings.updated_at,
-    };
-
-    // Override with actual product values
-    for (const product of products || []) {
-      const key = `sessions_${product.credits_amount}` as const;
-      if (key === 'sessions_1' || key === 'sessions_3' || key === 'sessions_5' || 
-          key === 'sessions_10' || key === 'sessions_15' || key === 'sessions_20') {
-        (base as any)[`${key}_price`] = product.price_cents;
-        (base as any)[`${key}_duration`] = product.duration_months;
-      }
-    }
-
-    return base;
-  };
-
-  return buildSettings();
-}
-
-/**
- * @deprecated Use updateProduct from @/features/products and updateCoachSettings instead
- * Update package settings - now updates products catalog
- */
-export async function updatePackageSettings(
-  settings: Partial<Omit<PackageSettings, 'settings_id' | 'coach_id' | 'created_at' | 'updated_at'>>
-): Promise<PackageSettings> {
-  const { data: session } = await supabase.auth.getSession();
-  if (!session.session) throw new Error("Non autenticato");
-
-  // Update coach_settings if lock_window_hours or currency_code changed
-  if (settings.lock_window_hours !== undefined || settings.currency_code !== undefined) {
-    const { updateCoachSettings } = await import("@/features/products/api/coach-settings.api");
-    await updateCoachSettings({
-      lock_window_hours: settings.lock_window_hours,
-      currency_code: settings.currency_code,
-    });
-  }
-
-  // Update products for each session type
-  const sessionTypes = [1, 3, 5, 10, 15, 20] as const;
-  
-  for (const sessions of sessionTypes) {
-    const priceKey = `sessions_${sessions}_price` as keyof typeof settings;
-    const durationKey = `sessions_${sessions}_duration` as keyof typeof settings;
-    
-    if (settings[priceKey] !== undefined || settings[durationKey] !== undefined) {
-      // Find the product
-      const { data: product } = await supabase
-        .from("products")
-        .select("id")
-        .eq("coach_id", session.session.user.id)
-        .eq("credits_amount", sessions)
-        .single();
-
-      if (product) {
-        const updates: Record<string, number> = {};
-        if (settings[priceKey] !== undefined) updates.price_cents = settings[priceKey] as number;
-        if (settings[durationKey] !== undefined) updates.duration_months = settings[durationKey] as number;
-
-        await supabase
-          .from("products")
-          .update(updates)
-          .eq("id", product.id);
-      }
-    }
-  }
-
-  // Return updated settings
-  return getPackageSettings();
-}
 
 /**
  * List all packages for the authenticated coach (across all clients)

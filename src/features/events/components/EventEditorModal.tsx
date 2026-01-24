@@ -9,7 +9,7 @@ import { useUpdateEvent } from "../hooks/useUpdateEvent";
 import { useClientsQuery } from "@/features/clients/hooks/useClientsQuery";
 import { useClientPackages } from "@/features/packages/hooks/useClientPackages";
 import { useEventsQuery } from "../hooks/useEventsQuery";
-import { usePackageSettings } from "@/features/packages/hooks/usePackageSettings";
+import { useActiveProducts } from "@/features/products/hooks/useProducts";
 import { calculatePackageKPI } from "@/features/packages/utils/kpi";
 import { generateRecurrenceOccurrences } from "../utils/recurrence";
 import { RecurrenceSection, type RecurrenceConfig } from "./RecurrenceSection";
@@ -208,7 +208,7 @@ export function EventEditorModal({
   const { data: clientsData } = useClientsQuery({ q: "", page: 1, limit: 100 });
   const clients = clientsData?.items || [];
   const { data: clientPackages } = useClientPackages(formData.clientId);
-  const { data: packageSettings } = usePackageSettings();
+  const { data: activeProducts } = useActiveProducts();
   const { data: existingEvents } = useEventsQuery({ 
     start_date: format(formData.date, 'yyyy-MM-dd'),
     end_date: format(addMinutes(formData.date, 1440), 'yyyy-MM-dd')
@@ -426,10 +426,11 @@ export function EventEditorModal({
     }
   }, [recurrence.enabled, occurrences.length, selectedPackageCredits, lessonType, selectedPackageId, selectedPackageExpiresBeforeSeries]);
 
-  // Default single lesson price from settings
+  // Default single lesson price from products catalog
   const defaultSinglePrice = useMemo(() => {
-    return packageSettings?.sessions_1_price ?? 5000; // 50€ default
-  }, [packageSettings]);
+    const singleProduct = activeProducts?.find(p => p.type === 'single_session');
+    return singleProduct?.price_cents ?? 5000; // 50€ default
+  }, [activeProducts]);
 
   // Sync single lesson price input value when lessonType or price changes
   useEffect(() => {
