@@ -92,7 +92,7 @@ export function PriceInput({
         onChange={handleChange}
         onBlur={handleBlur}
         onFocus={handleFocus}
-        className={cn("pr-8", className)}
+        className={cn("pr-8 focus-visible:ring-offset-0", className)}
       />
       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
         {currencySymbol}

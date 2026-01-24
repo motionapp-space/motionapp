@@ -65,7 +65,7 @@ export function ProductCatalogSettings() {
         setShowSaved(true);
         savedTimeoutRef.current = window.setTimeout(() => {
           setShowSaved(false);
-        }, 2000);
+        }, 3500);
       } catch {
         // Errore già gestito dal hook (toast)
       }
