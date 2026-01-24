@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Product } from "../types";
 import { formatCurrency } from "@/features/packages/utils/kpi";
+import { cn } from "@/lib/utils";
 
 interface PackageProductCardProps {
   product: Product;
@@ -31,17 +32,26 @@ export function PackageProductCard({
         <div className="flex items-center justify-between gap-4">
           {/* Info pacchetto */}
           <div className="flex-1 min-w-0">
-            <h4 className="font-medium">{product.name}</h4>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-              <span>{product.credits_amount} sessioni</span>
-              <span>·</span>
-              <span>{durationLabel}</span>
+            <h4 className="text-base font-semibold leading-snug">{product.name}</h4>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {product.credits_amount} sessioni · {durationLabel}
             </div>
-            <div className="text-sm mt-1">
-              <div className="font-medium">{formatCurrency(product.price_cents)}</div>
-              <div className="text-muted-foreground text-xs">
-                {formatCurrency(pricePerSession)}/sessione
-                {discountPercent > 0 && ` · -${discountPercent}%`}
+            <div className="mt-2">
+              <div className="text-sm font-medium">{formatCurrency(product.price_cents)}</div>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {formatCurrency(pricePerSession)}/sessione
+                </span>
+                {discountPercent !== 0 && (
+                  <span className={cn(
+                    "text-xs font-medium px-2 py-0.5 rounded-full border",
+                    discountPercent > 0
+                      ? "text-emerald-600 bg-emerald-50 border-emerald-100"
+                      : "text-rose-600 bg-rose-50 border-rose-100"
+                  )}>
+                    {discountPercent > 0 ? `-${discountPercent}%` : `+${Math.abs(discountPercent)}%`}
+                  </span>
+                )}
               </div>
             </div>
           </div>
