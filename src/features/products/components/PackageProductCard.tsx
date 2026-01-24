@@ -8,12 +8,14 @@ import { cn } from "@/lib/utils";
 interface PackageProductCardProps {
   product: Product;
   singleSessionPrice: number;
+  isBasePriceUpdating?: boolean;
   onEdit: (product: Product) => void;
 }
 
 export function PackageProductCard({
   product,
   singleSessionPrice,
+  isBasePriceUpdating,
   onEdit,
 }: PackageProductCardProps) {
   const pricePerSession = product.price_cents / product.credits_amount;
@@ -44,10 +46,11 @@ export function PackageProductCard({
                 </span>
                 {discountPercent !== 0 && (
                   <span className={cn(
-                    "text-xs font-medium px-2 py-0.5 rounded-full border",
+                    "text-xs font-medium px-2 py-0.5 rounded-full border transition-opacity",
                     discountPercent > 0
                       ? "text-emerald-600 bg-emerald-50 border-emerald-100"
-                      : "text-rose-600 bg-rose-50 border-rose-100"
+                      : "text-rose-600 bg-rose-50 border-rose-100",
+                    isBasePriceUpdating && "opacity-70"
                   )}>
                     {discountPercent > 0 ? `-${discountPercent}%` : `+${Math.abs(discountPercent)}%`}
                   </span>

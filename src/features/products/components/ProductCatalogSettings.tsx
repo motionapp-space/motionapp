@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Loader2, Package, CreditCard } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Plus, Loader2, Package, CreditCard, Check } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -20,6 +20,17 @@ export function ProductCatalogSettings() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showSaved, setShowSaved] = useState(false);
+  const savedTimeoutRef = useRef<number | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (savedTimeoutRef.current) {
+        clearTimeout(savedTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Separate single session from packages
   const singleSession = products?.find(p => p.type === "single_session");
@@ -41,14 +52,31 @@ export function ProductCatalogSettings() {
     setLocalPrice(cents);
   };
 
-  const handlePriceBlur = () => {
+  const handlePriceBlur = async () => {
     if (singleSession && localPrice !== singleSession.price_cents) {
-      updateProduct.mutate({
-        productId: singleSession.id,
-        input: { price_cents: localPrice },
-      });
+      try {
+        await updateProduct.mutateAsync({
+          productId: singleSession.id,
+          input: { price_cents: localPrice },
+        });
+        // Mostra "Salvato" per 2s
+        setShowSaved(true);
+        savedTimeoutRef.current = window.setTimeout(() => {
+          setShowSaved(false);
+        }, 2000);
+      } catch {
+        // Errore già gestito dal hook (toast)
+      }
     }
   };
+
+  const handleRestorePrice = () => {
+    if (singleSession) {
+      setLocalPrice(singleSession.price_cents);
+    }
+  };
+
+  const hasLocalChanges = singleSession && localPrice !== singleSession.price_cents;
 
   const handleCreateProduct = () => {
     setEditingProduct(null);
@@ -107,21 +135,44 @@ export function ProductCatalogSettings() {
               </div>
               <p className="text-sm text-muted-foreground pl-7">
                 Imposta il prezzo di default di una lezione singola.
-                <br />
-                Questo valore verrà proposto automaticamente in fase di creazione e usato come base per il calcolo dello sconto nei pacchetti.
               </p>
             </div>
-            <div className="flex items-center gap-2 pl-7">
-              <div className="flex-1">
-                <PriceInput
-                  value={localPrice}
-                  onChange={handlePriceChange}
-                  onBlur={handlePriceBlur}
-                />
+            <div className="space-y-2 pl-7">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 max-w-sm">
+                  <PriceInput
+                    value={localPrice}
+                    onChange={handlePriceChange}
+                    onBlur={handlePriceBlur}
+                  />
+                </div>
+                {/* Stato salvataggio */}
+                {updateProduct.isPending && (
+                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Salvataggio…
+                  </span>
+                )}
+                {showSaved && !updateProduct.isPending && (
+                  <span className="flex items-center gap-1.5 text-sm text-emerald-600">
+                    <Check className="h-4 w-4" />
+                    Salvato
+                  </span>
+                )}
               </div>
-              {updateProduct.isPending && (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              )}
+              {/* Helper + Ripristina */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Influisce sullo sconto mostrato nei pacchetti · Salvataggio automatico</span>
+                {hasLocalChanges && !updateProduct.isPending && (
+                  <button
+                    type="button"
+                    onClick={handleRestorePrice}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Ripristina
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -157,7 +208,8 @@ export function ProductCatalogSettings() {
                   <PackageProductCard
                     key={product.id}
                     product={product}
-                    singleSessionPrice={singleSessionPrice}
+                    singleSessionPrice={localPrice}
+                    isBasePriceUpdating={updateProduct.isPending}
                     onEdit={handleEditProduct}
                   />
                 ))}
