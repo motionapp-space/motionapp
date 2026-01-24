@@ -139,7 +139,7 @@ export function ProductCatalogSettings() {
                   Definisci i pacchetti predefiniti che potrai assegnare ai clienti.
                 </p>
               </div>
-              <Button onClick={handleCreateProduct} size="sm" variant="outline">
+              <Button onClick={handleCreateProduct} size="sm">
                 <Plus className="h-4 w-4 mr-1" />
                 Nuovo pacchetto
               </Button>
