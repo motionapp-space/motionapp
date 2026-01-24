@@ -1,95 +1,50 @@
 
-# Piano: Semplificazione UI Sezione Lezione Singola
+# Piano: Rimuovere Linea Grigia e Estendere Tempo "Salvato"
 
-## Panoramica
-Rimuovere il pulsante "Ripristina", eliminare il toast di successo, e verificare/rimuovere la linea grigia laterale per un'interfaccia più pulita.
-
----
+## Problema Identificato
+La "linea grigia" che appare quando compare "Salvato" è probabilmente il **focus ring** residuo dell'input o il ring-offset che persiste brevemente. Questo può essere risolto rimuovendo il `ring-offset` quando l'input perde il focus.
 
 ## Modifiche
 
 ### File 1: `ProductCatalogSettings.tsx`
 
-#### 1.1 — Rimuovere la funzione `handleRestorePrice` (righe 75-79)
-```typescript
-// RIMUOVERE:
-const handleRestorePrice = () => {
-  if (singleSession) {
-    setLocalPrice(singleSession.price_cents);
-  }
-};
-```
+#### 1.1 — Estendere il timeout da 2000ms a 3500ms (riga 66-68)
 
-#### 1.2 — Rimuovere la variabile `hasLocalChanges` (riga 81)
-```typescript
-// RIMUOVERE:
-const hasLocalChanges = singleSession && localPrice !== singleSession.price_cents;
-```
-
-#### 1.3 — Semplificare il blocco helper (righe 165-177)
-Da:
-```tsx
-{/* Helper + Ripristina */}
-<div className="flex items-center gap-2 text-xs text-muted-foreground">
-  <span>Influisce sullo sconto mostrato nei pacchetti · Salvataggio automatico</span>
-  {hasLocalChanges && !updateProduct.isPending && (
-    <button
-      type="button"
-      onClick={handleRestorePrice}
-      className="text-xs text-primary hover:underline"
-    >
-      Ripristina
-    </button>
-  )}
-</div>
-```
-
-A:
-```tsx
-<p className="text-xs text-muted-foreground">
-  Influisce sullo sconto mostrato nei pacchetti · Salvataggio automatico
-</p>
-```
-
----
-
-### File 2: `useProducts.ts`
-
-#### 2.1 — Rimuovere il toast di successo da `useUpdateProduct` (riga 61)
 Da:
 ```typescript
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ["products"] });
-  toast.success("Prodotto aggiornato");
-},
+savedTimeoutRef.current = window.setTimeout(() => {
+  setShowSaved(false);
+}, 2000);
 ```
 
 A:
 ```typescript
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ["products"] });
-  // Feedback visivo gestito inline nel componente (no toast)
-},
+savedTimeoutRef.current = window.setTimeout(() => {
+  setShowSaved(false);
+}, 3500);
 ```
 
 ---
 
-### File 3: `PriceInput.tsx` (linea grigia)
+### File 2: `PriceInput.tsx`
 
-#### Analisi
-La "linea grigia a sinistra" visibile nello screenshot appare essere il bordo standard dell'input (`border-input`). Durante il salvataggio non c'è nessuna logica che modifica lo styling dell'input.
+#### 2.1 — Rimuovere il ring-offset dall'input per evitare la linea grigia residua
 
-#### Possibili cause
-1. **Stato di focus residuo**: Il ring di focus potrebbe persistere brevemente
-2. **Contrasto del bordo**: Il colore `border-input` potrebbe apparire più evidente in certe condizioni
+Il problema è che `ring-offset-2` crea uno spazio tra il bordo e il ring che può apparire come una linea grigia residua. Possiamo sovrascrivere questo comportamento passando una classe che rimuove il ring-offset.
 
-#### Soluzione proposta
-Dato che l'input usa i componenti standard shadcn, la linea grigia è semplicemente il bordo normale. Per confermare, posso:
+Modifica alla riga 95:
 
-1. Aggiungere temporaneamente un'ombra interna trasparente durante l'aggiornamento
-2. Oppure verificare se compare solo in un browser specifico
+Da:
+```tsx
+className={cn("pr-8", className)}
+```
 
-**Domanda**: Puoi confermare se la linea grigia compare sempre durante il salvataggio o solo in determinate condizioni? Potrebbe essere utile vedere se persiste dopo il refresh o se è solo momentanea.
+A:
+```tsx
+className={cn("pr-8 focus-visible:ring-offset-0", className)}
+```
+
+Questo rimuove l'offset del focus ring, eliminando la "linea grigia" che appare tra il bordo dell'input e il ring di focus.
 
 ---
 
@@ -97,24 +52,12 @@ Dato che l'input usa i componenti standard shadcn, la linea grigia è sempliceme
 
 | File | Modifica |
 |------|----------|
-| `ProductCatalogSettings.tsx` | Rimuovere `handleRestorePrice`, `hasLocalChanges`, e il pulsante Ripristina |
-| `useProducts.ts` | Rimuovere `toast.success("Prodotto aggiornato")` da `useUpdateProduct` |
-| `PriceInput.tsx` | Nessuna modifica necessaria (il bordo è lo stile standard dell'input) |
+| `ProductCatalogSettings.tsx` | Timeout "Salvato" da 2000ms → 3500ms |
+| `PriceInput.tsx` | Aggiungere `focus-visible:ring-offset-0` per rimuovere la linea grigia |
 
 ---
 
 ## Risultato Finale
 
-```text
-┌─────────────────────────────────────────────────────┐
-│ 💳 Lezione singola                                  │
-│    Imposta il prezzo di default di una lezione.    │
-│                                                     │
-│    [  80,00  €          ]   ✓ Salvato              │
-│    Influisce sullo sconto nei pacchetti · Auto-save│
-└─────────────────────────────────────────────────────┘
-```
-
-- Nessun pulsante "Ripristina"
-- Nessun toast popup
-- Solo feedback inline "Salvataggio…" / "Salvato ✓"
+- Lo stato "Salvato" rimane visibile per 3,5 secondi (1,5s in più)
+- Nessuna linea grigia residua quando appare/scompare il feedback
