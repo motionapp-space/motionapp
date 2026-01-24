@@ -1,4 +1,4 @@
-import { Pencil } from "lucide-react";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Product } from "../types";
@@ -27,7 +27,7 @@ export function PackageProductCard({
 
   return (
     <Card>
-      <CardContent className="p-4">
+      <CardContent className="p-3">
         <div className="flex items-center justify-between gap-4">
           {/* Info pacchetto */}
           <div className="flex-1 min-w-0">
@@ -37,18 +37,17 @@ export function PackageProductCard({
               <span>·</span>
               <span>{durationLabel}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm mt-1">
-              <span className="font-medium">{formatCurrency(product.price_cents)}</span>
-              <span className="text-muted-foreground">
-                ({formatCurrency(pricePerSession)}/sessione
-                {discountPercent > 0 && ` · -${discountPercent}%`})
-              </span>
+            <div className="text-sm mt-1">
+              <div className="font-medium">{formatCurrency(product.price_cents)}</div>
+              <div className="text-muted-foreground text-xs">
+                {formatCurrency(pricePerSession)}/sessione
+                {discountPercent > 0 && ` · -${discountPercent}%`}
+              </div>
             </div>
           </div>
 
           {/* Singola azione */}
           <Button variant="outline" size="sm" onClick={() => onEdit(product)}>
-            <Pencil className="h-4 w-4 mr-1" />
             Modifica
           </Button>
         </div>

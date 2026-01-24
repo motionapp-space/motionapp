@@ -92,9 +92,9 @@ export function ProductCatalogSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Lezioni e pacchetti</CardTitle>
-          <CardDescription>
-            Definisci i valori di default per lezioni singole e pacchetti
-          </CardDescription>
+        <CardDescription>
+          Configura i valori di default per lezioni singole e pacchetti
+        </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
           {/* SEZIONE 1: Lezione singola */}
@@ -102,9 +102,9 @@ export function ProductCatalogSettings() {
             <div className="space-y-1">
               <h4 className="text-lg font-semibold">Lezione singola</h4>
               <p className="text-sm text-muted-foreground">
-                Imposta il prezzo di default di una lezione singola. 
-                Questo valore verrà proposto automaticamente in fase di creazione 
-                e usato come base per il calcolo dello sconto nei pacchetti.
+                Imposta il prezzo di default di una lezione singola.
+                <br />
+                Questo valore verrà proposto automaticamente in fase di creazione e usato come base per il calcolo dello sconto nei pacchetti.
               </p>
             </div>
             <div className="flex items-center gap-2">
