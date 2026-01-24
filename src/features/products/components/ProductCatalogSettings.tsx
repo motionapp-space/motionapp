@@ -133,7 +133,7 @@ export function ProductCatalogSettings() {
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <Package className="h-5 w-5 text-muted-foreground shrink-0" />
-                  <h4 className="text-lg font-semibold">Pacchetti di lezioni</h4>
+                  <h4 className="text-lg font-semibold">Pacchetti</h4>
                 </div>
                 <p className="text-sm text-muted-foreground pl-7">
                   Definisci i pacchetti predefiniti che potrai assegnare ai clienti.
