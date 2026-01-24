@@ -1,50 +1,51 @@
 
-# Piano: Rimuovere Linea Grigia e Estendere Tempo "Salvato"
+# Fix: Sincronizzazione Prezzo Lezione Singola in EventEditorModal
 
 ## Problema Identificato
-La "linea grigia" che appare quando compare "Salvato" è probabilmente il **focus ring** residuo dell'input o il ring-offset che persiste brevemente. Questo può essere risolto rimuovendo il `ring-offset` quando l'input perde il focus.
+Quando aggiorni il prezzo della lezione singola nelle impostazioni (es. da 50€ a 100€), il database viene aggiornato correttamente, **ma la cache di React Query non viene invalidata** per l'hook `usePackageSettings()` usato da `EventEditorModal`.
 
-## Modifiche
+### Flusso del bug:
+1. Utente aggiorna prezzo a 100€ in Settings
+2. `useUpdateProduct` salva nel DB e invalida `["products"]` ✅
+3. `EventEditorModal` usa `usePackageSettings()` con query key `["package-settings"]` ❌
+4. Cache `["package-settings"]` non viene invalidata → mostra 50€ vecchio
 
-### File 1: `ProductCatalogSettings.tsx`
+---
 
-#### 1.1 — Estendere il timeout da 2000ms a 3500ms (riga 66-68)
+## Soluzione
+
+### File 1: `src/features/products/hooks/useProducts.ts`
+
+Invalidare anche la query `["package-settings"]` quando un prodotto viene aggiornato, per mantenere la sincronizzazione con i componenti che usano ancora l'hook legacy.
+
+**Modifica** alla funzione `useUpdateProduct` (riga 59-61):
 
 Da:
 ```typescript
-savedTimeoutRef.current = window.setTimeout(() => {
-  setShowSaved(false);
-}, 2000);
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ["products"] });
+},
 ```
 
 A:
 ```typescript
-savedTimeoutRef.current = window.setTimeout(() => {
-  setShowSaved(false);
-}, 3500);
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ["products"] });
+  // Invalidate legacy package-settings cache for backward compatibility
+  queryClient.invalidateQueries({ queryKey: ["package-settings"] });
+},
 ```
 
 ---
 
-### File 2: `PriceInput.tsx`
+## Perché questa soluzione
 
-#### 2.1 — Rimuovere il ring-offset dall'input per evitare la linea grigia residua
+| Approccio | Pro | Contro |
+|-----------|-----|--------|
+| **Invalidare package-settings** (scelto) | Fix immediato, non rompe nulla, minimo codice | Mantiene dipendenza da hook deprecato |
+| Migrare EventEditorModal a useProducts | Elimina tech debt | Richiede refactoring più ampio |
 
-Il problema è che `ring-offset-2` crea uno spazio tra il bordo e il ring che può apparire come una linea grigia residua. Possiamo sovrascrivere questo comportamento passando una classe che rimuove il ring-offset.
-
-Modifica alla riga 95:
-
-Da:
-```tsx
-className={cn("pr-8", className)}
-```
-
-A:
-```tsx
-className={cn("pr-8 focus-visible:ring-offset-0", className)}
-```
-
-Questo rimuove l'offset del focus ring, eliminando la "linea grigia" che appare tra il bordo dell'input e il ring di focus.
+La prima opzione è la più sicura e veloce. La migrazione completa può essere fatta in un secondo momento.
 
 ---
 
@@ -52,12 +53,12 @@ Questo rimuove l'offset del focus ring, eliminando la "linea grigia" che appare 
 
 | File | Modifica |
 |------|----------|
-| `ProductCatalogSettings.tsx` | Timeout "Salvato" da 2000ms → 3500ms |
-| `PriceInput.tsx` | Aggiungere `focus-visible:ring-offset-0` per rimuovere la linea grigia |
+| `useProducts.ts` | Aggiungere invalidazione di `["package-settings"]` in `useUpdateProduct` |
 
 ---
 
-## Risultato Finale
-
-- Lo stato "Salvato" rimane visibile per 3,5 secondi (1,5s in più)
-- Nessuna linea grigia residua quando appare/scompare il feedback
+## Risultato Atteso
+Dopo la modifica:
+1. Utente salva prezzo a 100€ nelle impostazioni
+2. Cache `["products"]` E `["package-settings"]` vengono invalidate
+3. Aprendo EventEditorModal, il prezzo mostrato sarà 100€ ✓
