@@ -43,10 +43,12 @@ export function ProductCatalogSettings() {
   // Single session price state
   const [localPrice, setLocalPrice] = useState<number>(singleSessionPrice);
 
-  // Sync local price when product changes
-  if (singleSession && localPrice !== singleSession.price_cents && !updateProduct.isPending) {
-    setLocalPrice(singleSession.price_cents);
-  }
+  // Sync local price ONLY when DB value actually changes (not on every render)
+  useEffect(() => {
+    if (singleSession && !updateProduct.isPending) {
+      setLocalPrice(singleSession.price_cents);
+    }
+  }, [singleSession?.price_cents]);
 
   const handlePriceChange = (cents: number) => {
     setLocalPrice(cents);
