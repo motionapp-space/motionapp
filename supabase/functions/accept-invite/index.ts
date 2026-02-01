@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { queueEmail } from "../_shared/email-outbox.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -254,26 +253,6 @@ serve(async (req) => {
     }
 
     console.log(`Invite ${invite.id} marked as accepted`);
-
-    // Queue confirmation email via Email Outbox Pattern
-    const appUrl = Deno.env.get('APP_URL') || 'https://qadgzwsmiadxwwvsrauz.lovable.app';
-    
-    try {
-      await queueEmail(supabaseAdmin, {
-        type: 'client_invite', // Stesso template, variante "account attivato"
-        toEmail: invite.email,
-        recipientUserId: authUserId,
-        senderUserId: null, // Sistema
-        templateData: {
-          client_first_name: client.first_name,
-          is_activation_confirmation: true, // Flag per template
-          login_url: `${appUrl}/client/auth`,
-        },
-      });
-      console.log(`Confirmation email queued for: ${invite.email}`);
-    } catch (emailError) {
-      console.warn('Failed to queue confirmation email (non-fatal):', emailError);
-    }
 
     return new Response(
       JSON.stringify({
