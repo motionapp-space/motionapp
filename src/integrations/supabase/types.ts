@@ -1005,6 +1005,7 @@ export type Database = {
       events: {
         Row: {
           aligned_to_slot: boolean | null
+          canceled_by: string | null
           client_request_id: string | null
           coach_client_id: string
           color: string | null
@@ -1035,6 +1036,7 @@ export type Database = {
         }
         Insert: {
           aligned_to_slot?: boolean | null
+          canceled_by?: string | null
           client_request_id?: string | null
           coach_client_id: string
           color?: string | null
@@ -1065,6 +1067,7 @@ export type Database = {
         }
         Update: {
           aligned_to_slot?: boolean | null
+          canceled_by?: string | null
           client_request_id?: string | null
           coach_client_id?: string
           color?: string | null
