@@ -1,137 +1,192 @@
 
-# Piano: Eliminazione Completa del Sistema Legacy `usePackageSettings`
+# Piano: Edge Function `email-worker`
 
-## Problema
-Il sistema legacy `usePackageSettings` doveva essere rimosso ma è ancora attivo, causando:
-- **Bug del prezzo**: prodotti con `credits_amount: 1` multipli (legacy) sovrascrivono il prezzo corretto
-- **Cache non sincronizzata**: query key `["package-settings"]` separata da `["products"]`
-- **Codice duplicato**: funzioni deprecate ancora in uso
+## Obiettivo
+Creare una Edge Function che processa la coda `email_messages` e invia email tramite Resend, utilizzando l'infrastruttura di template/rendering già esistente.
 
-## Modifiche Proposte
+## Componenti Esistenti Riutilizzati
 
-### File 1: `src/features/events/components/EventEditorModal.tsx`
+| Componente | Percorso | Utilizzo |
+|------------|----------|----------|
+| Renderer | `_shared/emails/renderer.ts` | `renderEmail()` per HTML + subject |
+| Template Registry | `_shared/emails/index.ts` | Mapping type → template React |
+| Supabase Client | Standard Deno import | Query e update `email_messages` |
 
-#### 1.1 — Sostituire import (riga 12)
+## Struttura DB `email_messages`
 
-Da:
-```typescript
-import { usePackageSettings } from "@/features/packages/hooks/usePackageSettings";
+```text
+id                  uuid (PK)
+type                email_type (enum)
+to_email            text
+status              email_status ('pending' | 'sent' | 'failed')
+template_data       jsonb
+attempt_count       integer (default 0)
+scheduled_at        timestamptz
+sent_at             timestamptz (nullable)
+failed_at           timestamptz (nullable)
+provider_message_id text (nullable)
+last_error          text (nullable)
+created_at          timestamptz
+updated_at          timestamptz
 ```
 
-A:
-```typescript
-import { useActiveProducts } from "@/features/products/hooks/useProducts";
-```
-
-#### 1.2 — Sostituire hook usage (riga 211)
-
-Da:
-```typescript
-const { data: packageSettings } = usePackageSettings();
-```
-
-A:
-```typescript
-const { data: activeProducts } = useActiveProducts();
-```
-
-#### 1.3 — Aggiornare `defaultSinglePrice` (righe 429-432)
-
-Da:
-```typescript
-const defaultSinglePrice = useMemo(() => {
-  return packageSettings?.sessions_1_price ?? 5000; // 50€ default
-}, [packageSettings]);
-```
-
-A:
-```typescript
-const defaultSinglePrice = useMemo(() => {
-  const singleProduct = activeProducts?.find(p => p.type === 'single_session');
-  return singleProduct?.price_cents ?? 5000; // 50€ default
-}, [activeProducts]);
-```
-
----
-
-### File 2: `src/features/packages/hooks/usePackageSettings.ts`
-
-**Eliminare completamente il file** — non è più usato da nessun componente dopo la modifica a EventEditorModal.
-
----
-
-### File 3: `src/features/packages/components/PackageSettingsForm.tsx`
-
-**Eliminare completamente il file** — sostituito da `ProductCatalogSettings` in Settings.tsx.
-
----
-
-### File 4: `src/features/packages/api/packages.api.ts`
-
-#### 4.1 — Rimuovere `getPackageSettings()` (righe 205-259)
-
-Eliminare l'intera funzione deprecata.
-
-#### 4.2 — Rimuovere `updatePackageSettings()` (righe 265-311)
-
-Eliminare l'intera funzione deprecata.
-
----
-
-### File 5: `src/features/packages/types.ts`
-
-Rimuovere l'interfaccia `PackageSettings` se presente (verificare che non sia usata altrove).
-
----
-
-### File 6: `src/features/products/hooks/useProducts.ts`
-
-#### 6.1 — Rimuovere l'invalidazione legacy (righe 60-61)
-
-Da:
-```typescript
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ["products"] });
-  // Invalidate legacy package-settings cache for backward compatibility
-  queryClient.invalidateQueries({ queryKey: ["package-settings"] });
-},
-```
-
-A:
-```typescript
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ["products"] });
-},
-```
-
----
-
-## Riepilogo Modifiche
+## File da Creare/Modificare
 
 | File | Azione |
 |------|--------|
-| `EventEditorModal.tsx` | Migrare a `useActiveProducts()` |
-| `usePackageSettings.ts` | **Eliminare** |
-| `PackageSettingsForm.tsx` | **Eliminare** |
-| `packages.api.ts` | Rimuovere `getPackageSettings` e `updatePackageSettings` |
-| `types.ts` | Rimuovere `PackageSettings` interface |
-| `useProducts.ts` | Rimuovere invalidazione cache legacy |
+| `supabase/functions/email-worker/index.ts` | Nuovo |
+| `supabase/config.toml` | Modifica (aggiunta config) |
 
 ---
 
-## Vantaggi
+## Dettagli Tecnici
 
-1. **Fix immediato del bug**: il prezzo viene letto correttamente filtrando per `type: 'single_session'`
-2. **Una sola fonte di verità**: solo `["products"]` query key
-3. **Codice più pulito**: rimozione di ~200 righe di codice deprecato
-4. **Nessun rischio di regressione futura**: eliminata la dipendenza legacy
+### 1. Edge Function `email-worker/index.ts`
+
+**Flusso principale:**
+
+```text
+1. Verifica header x-worker-secret
+      │
+      ├── Mancante/errato → 401 Unauthorized
+      │
+      ▼
+2. Query email pending (max 10)
+      │
+      ▼
+3. Per ogni email:
+   ├── renderEmail(type, template_data) → {subject, html}
+   ├── Resend.send({from, to, subject, html})
+   │     │
+   │     ├── OK → UPDATE status='sent', sent_at, provider_message_id
+   │     │
+   │     └── Errore → UPDATE attempt_count++, last_error
+   │           │
+   │           └── attempt_count >= 3 → status='failed', failed_at
+   │
+4. Response JSON: {processed, sent, failed}
+```
+
+**Dipendenze:**
+```typescript
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "npm:resend@4.0.0";
+import { renderEmail } from "../_shared/emails/renderer.ts";
+```
+
+**Autenticazione worker:**
+- Header richiesto: `x-worker-secret`
+- Env var: `WORKER_SECRET`
+- Se mancante o errato: risposta 401
+
+**Query email pending:**
+```sql
+SELECT *
+FROM email_messages
+WHERE status = 'pending'
+  AND scheduled_at <= now()
+ORDER BY created_at
+LIMIT 10
+```
+
+Nota: `FOR UPDATE SKIP LOCKED` non è supportato dal client Supabase, ma in ambiente DEV con invocazioni manuali il rischio di race condition è minimo.
+
+**Configurazione Resend:**
+```typescript
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+// Sender configurabile via env, fallback a valore fisso
+const FROM_EMAIL = Deno.env.get("EMAIL_FROM") || "Motion <noreply@motion.app>";
+```
+
+**Update successo:**
+```typescript
+await supabase
+  .from('email_messages')
+  .update({
+    status: 'sent',
+    sent_at: new Date().toISOString(),
+    provider_message_id: resendResponse.id,
+    updated_at: new Date().toISOString()
+  })
+  .eq('id', email.id);
+```
+
+**Update errore:**
+```typescript
+const newAttemptCount = email.attempt_count + 1;
+const updateData = {
+  attempt_count: newAttemptCount,
+  last_error: error.message,
+  updated_at: new Date().toISOString(),
+  ...(newAttemptCount >= 3 ? {
+    status: 'failed',
+    failed_at: new Date().toISOString()
+  } : {})
+};
+```
+
+### 2. Aggiornamento `config.toml`
+
+```toml
+[functions.email-worker]
+verify_jwt = false
+```
 
 ---
 
-## Note Tecniche
+## Secrets Necessari
 
-La migrazione è sicura perché:
-- `useActiveProducts()` già esiste e funziona
-- Filtra automaticamente per `is_active: true` e `is_visible: true`
-- L'ordine è per `sort_order`, quindi il prodotto `single_session` sarà sempre presente
-- Il fallback `?? 5000` garantisce un valore default se non esiste il prodotto
+| Nome | Descrizione | Dove Configurare |
+|------|-------------|------------------|
+| `RESEND_API_KEY` | API key Resend (già aggiunta) | Supabase Dashboard |
+| `WORKER_SECRET` | Secret per autenticare chiamate al worker | Supabase Dashboard |
+| `EMAIL_FROM` | Indirizzo mittente (opzionale) | Supabase Dashboard |
+
+Per `WORKER_SECRET`: generare un valore random (es. `openssl rand -hex 32`) e configurarlo in Supabase Edge Function Secrets.
+
+---
+
+## Response Format
+
+**Successo (200):**
+```json
+{
+  "processed": 5,
+  "sent": 4,
+  "failed": 1,
+  "details": [
+    {"id": "uuid-1", "status": "sent", "to": "user@example.com"},
+    {"id": "uuid-2", "status": "failed", "error": "Invalid email"}
+  ]
+}
+```
+
+**Errore autenticazione (401):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+---
+
+## Invocazione Manuale (DEV)
+
+```bash
+curl -X POST \
+  https://qadgzwsmiadxwwvsrauz.supabase.co/functions/v1/email-worker \
+  -H "Content-Type: application/json" \
+  -H "x-worker-secret: YOUR_WORKER_SECRET"
+```
+
+---
+
+## Esclusioni (come richiesto)
+
+- Nessun trigger automatico/cron
+- Nessun exponential backoff
+- Nessuna modifica schema DB
+- Nessuna logica di dominio
+- Nessun accesso a tabelle diverse da `email_messages`
