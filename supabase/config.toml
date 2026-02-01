@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.email-preview]
 verify_jwt = false
+
+[functions.email-worker]
+verify_jwt = false
