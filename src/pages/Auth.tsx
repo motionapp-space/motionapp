@@ -233,17 +233,6 @@ const Auth = () => {
           </Alert>
         )}
 
-        {/* Tab Toggle - Only show login tab when no valid invite */}
-        {!showInviteLoading && !showInviteError && !showRegistration && (
-          <div className="bg-[hsl(220,15%,92%)] rounded-full p-1.5 flex gap-1">
-            <button
-              type="button"
-              className="flex-1 py-3 px-6 rounded-full text-sm font-medium bg-card text-foreground shadow-sm"
-            >
-              Accedi
-            </button>
-          </div>
-        )}
 
         {/* Forms Container */}
         {!showInviteLoading && !showInviteError && (
