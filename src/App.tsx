@@ -31,6 +31,7 @@ import NotFound from "./pages/NotFound";
 import Notifications from "./pages/Notifications";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminInvites from "./pages/admin/AdminInvites";
 import ClientAuth from "./pages/client/ClientAuth";
 import ClientAcceptInvite from "./pages/client/ClientAcceptInvite";
 import ClientHome from "./pages/client/ClientHome";
@@ -153,6 +154,7 @@ const App = () => {
             {/* Admin area routes - require admin role */}
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/invites" element={<AdminInvites />} />
             </Route>
 
             {/* Coach area routes - require authentication */}

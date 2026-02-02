@@ -836,6 +836,39 @@ export type Database = {
           },
         ]
       }
+      coach_invites: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          email: string | null
+          expires_at: string
+          id: string
+          max_uses: number
+          used_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          expires_at: string
+          id?: string
+          max_uses?: number
+          used_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          expires_at?: string
+          id?: string
+          max_uses?: number
+          used_count?: number
+        }
+        Relationships: []
+      }
       coach_notifications: {
         Row: {
           coach_id: string
