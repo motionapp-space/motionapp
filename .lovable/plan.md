@@ -1,94 +1,64 @@
 
-# Piano: Fix Typo nel Trigger `notify_client_counter_proposal`
 
-## Problema Identificato
+# Piano: Aggiornare Nome App da "Studio AI" a "Motion" nei Template Email
 
-Il trigger `trg_notify_client_counter_proposal` si attiva su **ogni UPDATE** della tabella `booking_requests`. All'interno della funzione, PostgreSQL tenta di confrontare:
+## Problema
 
-```sql
-IF NEW.status = 'COUNTER_PROPOSAL' AND ...
-```
-
-**Il problema**: PostgreSQL deve convertire la stringa `'COUNTER_PROPOSAL'` al tipo enum `booking_request_status` per poterla confrontare con `NEW.status`. Ma questo valore non esiste nell'enum!
-
-### Valori dell'enum `booking_request_status`:
-| Valore | ✓/✗ |
-|--------|-----|
-| PENDING | ✓ |
-| APPROVED | ✓ |
-| DECLINED | ✓ |
-| **COUNTER_PROPOSED** | ✓ (con la D) |
-| CANCELED_BY_CLIENT | ✓ |
-| COUNTER_PROPOSAL | ✗ (non esiste) |
-
-### Perché l'errore avviene durante l'approvazione?
-
-1. Coach clicca "Approva"
-2. `finalize_booking_request` viene chiamata
-3. La funzione esegue `UPDATE booking_requests SET status = 'APPROVED'`
-4. Il trigger `trg_notify_client_counter_proposal` si attiva (su AFTER UPDATE)
-5. PostgreSQL valuta la condizione IF → tenta di castare `'COUNTER_PROPOSAL'` all'enum → **ERRORE**
-
-L'errore si verifica **prima** ancora che PostgreSQL possa verificare se la condizione è vera o falsa.
+Tutti i template email usano ancora il vecchio nome "Studio AI" invece del nuovo nome dell'applicazione "Motion".
 
 ---
 
-## Soluzione
+## File da Modificare
 
-Correggere il typo nella funzione trigger: `COUNTER_PROPOSAL` → `COUNTER_PROPOSED`
+### 1. `supabase/functions/_shared/emails/shared/layout.tsx`
+Aggiornare 3 occorrenze:
+- **Riga 40**: Alt dell'immagine logo → `alt="Motion"`
+- **Riga 58**: Testo footer → `"Questa email è stata inviata da Motion."`
+- **Riga 61**: Copyright footer → `"© {anno} Motion. Tutti i diritti riservati."`
+
+### 2. `supabase/functions/_shared/emails/shared/styles.ts`
+Aggiornare 1 occorrenza:
+- **Riga 7**: Commento → `// Motion blue` (opzionale, solo commento)
+
+### 3. `supabase/functions/_shared/emails/client-invite.tsx`
+Aggiornare 4 occorrenze:
+- **Preview**: `"Sei stato invitato a Motion"`
+- **Heading**: `"Benvenuto su Motion"`
+- **Body**: `"Sei stato invitato a unirti a Motion per gestire..."`
+- **Subject**: `"sei stato invitato a Motion"`
+
+### 4. `supabase/functions/_shared/emails/appointment/accepted-client.tsx`
+Aggiornare 1 occorrenza:
+- **Body**: `"...accedi a Motion."`
+
+### 5. `supabase/functions/_shared/emails/appointment/cancelled-client.tsx`
+Aggiornare 1 occorrenza:
+- **Body**: `"...oppure prenota un nuovo slot su Motion."`
+
+### 6. `supabase/functions/_shared/emails/appointment/counter-proposed-client.tsx`
+Aggiornare 1 occorrenza:
+- **Body**: `"Accedi a Motion per accettare o rifiutare questa proposta."`
+
+### 7. `supabase/functions/_shared/emails/appointment/request-created-coach.tsx`
+Aggiornare 1 occorrenza:
+- **Body**: `"Accedi a Motion per approvare, modificare o rifiutare la richiesta."`
 
 ---
 
-## Migration SQL
-
-```sql
--- Fix typo: COUNTER_PROPOSAL → COUNTER_PROPOSED
-CREATE OR REPLACE FUNCTION public.notify_client_counter_proposal()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.status = 'COUNTER_PROPOSED' AND (OLD.status IS NULL OR OLD.status IS DISTINCT FROM 'COUNTER_PROPOSED') THEN
-    INSERT INTO public.client_notifications (client_id, type, title, message, related_id, related_type)
-    SELECT 
-      cc.client_id,
-      'counter_proposal_received',
-      'Proposta nuovo orario',
-      'Il coach propone: ' || to_char(NEW.counter_proposal_start_at AT TIME ZONE 'Europe/Rome', 'DD/MM "alle" HH24:MI'),
-      NEW.id,
-      'booking_request'
-    FROM public.coach_clients cc WHERE cc.id = NEW.coach_client_id;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-```
-
----
-
-## Cosa cambia
+## Riepilogo Modifiche
 
 | Prima | Dopo |
 |-------|------|
-| `'COUNTER_PROPOSAL'` (2 occorrenze) | `'COUNTER_PROPOSED'` (2 occorrenze) |
+| Studio AI | Motion |
+
+**Totale occorrenze da aggiornare**: 12 (11 visibili + 1 commento)
 
 ---
 
-## Verifiche Post-Implementazione
+## Impatto
 
-- [ ] Coach può approvare richieste di appuntamento
-- [ ] Coach può inviare controproposte
-- [ ] Coach può rifiutare richieste
-- [ ] Cliente riceve notifiche corrette
+- Tutte le email inviate mostreranno il nome corretto "Motion"
+- Footer aggiornato con copyright "Motion"
+- Nessun impatto sulla logica dei template
+- Necessario re-deploy dell'edge function `email-worker` per applicare le modifiche
 
----
-
-## Sezione Tecnica
-
-### Causa root
-Il trigger è stato creato con un typo nel migration file `20260123120554_c2cc8855-76c8-45da-9339-0d56ead2c936.sql` (linea 78).
-
-### File impattati
-Solo migration SQL per correggere la funzione trigger. Nessuna modifica al frontend.
-
-### Impatto
-- Nessun impatto sui dati esistenti
-- Fix immediato di tutte le operazioni UPDATE su `booking_requests`
