@@ -29,6 +29,8 @@ import Settings from "./pages/Settings";
 import SharedPlan from "./pages/SharedPlan";
 import NotFound from "./pages/NotFound";
 import Notifications from "./pages/Notifications";
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import ClientAuth from "./pages/client/ClientAuth";
 import ClientAcceptInvite from "./pages/client/ClientAcceptInvite";
 import ClientHome from "./pages/client/ClientHome";
@@ -147,6 +149,11 @@ const App = () => {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/share/:token" element={<SharedPlan />} />
             <Route path="/booking/:coachId" element={<ClientBooking />} />
+
+            {/* Admin area routes - require admin role */}
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+            </Route>
 
             {/* Coach area routes - require authentication */}
             <Route element={<CoachLayout isAuthenticated={!!user} />}>
