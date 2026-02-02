@@ -224,10 +224,10 @@ const Auth = () => {
 
         {/* Valid Invite Banner */}
         {showRegistration && (
-          <Alert className="border-[hsl(220,70%,90%)] bg-[hsl(220,70%,95%)] rounded-2xl">
+          <Alert className="border-border bg-muted/50 rounded-xl py-3">
             <Mail className="h-4 w-4 text-primary" />
-            <AlertTitle className="text-foreground">Registrazione su invito</AlertTitle>
-            <AlertDescription className="text-muted-foreground">
+            <AlertTitle className="text-sm font-medium text-foreground">Registrazione su invito</AlertTitle>
+            <AlertDescription className="text-xs text-muted-foreground">
               Compila il form per creare il tuo account coach.
             </AlertDescription>
           </Alert>
