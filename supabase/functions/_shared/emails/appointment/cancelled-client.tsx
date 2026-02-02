@@ -34,7 +34,7 @@ function CancelledClientEmail(data: AppointmentCancelledTemplateData) {
       </InfoBox>
       <Text>
         Contatta il tuo coach per riprogrammare l'appuntamento, 
-        oppure prenota un nuovo slot su Studio AI.
+        oppure prenota un nuovo slot su Motion.
       </Text>
     </Layout>
   );

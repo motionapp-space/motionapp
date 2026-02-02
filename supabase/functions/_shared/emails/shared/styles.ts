@@ -4,7 +4,7 @@
  */
 
 export const colors = {
-  primary: '#2264d1',       // Studio AI blue
+  primary: '#2264d1',       // Motion blue
   primaryDark: '#1a4fa8',   // Hover state
   text: '#333333',
   textMuted: '#666666',
