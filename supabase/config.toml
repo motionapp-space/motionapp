@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.email-worker]
 verify_jwt = false
+
+[functions.validate-coach-invite]
+verify_jwt = false

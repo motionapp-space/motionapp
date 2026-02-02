@@ -10,6 +10,7 @@ interface SignupCoachRequest {
   password: string;
   first_name: string;
   last_name: string | null;
+  invite_code: string;
 }
 
 Deno.serve(async (req) => {
@@ -31,12 +32,20 @@ Deno.serve(async (req) => {
     );
 
     // Parse request body
-    const { email, password, first_name, last_name }: SignupCoachRequest = await req.json();
+    const { email, password, first_name, last_name, invite_code }: SignupCoachRequest = await req.json();
 
     // Validate required fields
     if (!email || !password || !first_name) {
       return new Response(
         JSON.stringify({ error: "Email, password e nome sono obbligatori" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate invite code is present
+    if (!invite_code || typeof invite_code !== "string" || invite_code.trim() === "") {
+      return new Response(
+        JSON.stringify({ error: "Codice invito obbligatorio per la registrazione" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -49,7 +58,45 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[signup-coach] Creating coach account for: ${email}`);
+    const normalizedCode = invite_code.trim().toUpperCase();
+    console.log(`[signup-coach] Validating invite code: ${normalizedCode}`);
+
+    // Step 0: Validate invite code
+    const { data: invite, error: inviteError } = await supabaseAdmin
+      .from("coach_invites")
+      .select("*")
+      .eq("code", normalizedCode)
+      .single();
+
+    if (inviteError || !invite) {
+      console.log(`[signup-coach] Invite not found: ${normalizedCode}`);
+      return new Response(
+        JSON.stringify({ error: "Codice invito non valido. Contatta l'amministratore." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if expired
+    const now = new Date();
+    const expiresAt = new Date(invite.expires_at);
+    if (expiresAt <= now) {
+      console.log(`[signup-coach] Invite expired: ${normalizedCode}`);
+      return new Response(
+        JSON.stringify({ error: "Questo invito è scaduto. Contatta l'amministratore per un nuovo invito." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if already used
+    if (invite.used_count >= invite.max_uses) {
+      console.log(`[signup-coach] Invite already used: ${normalizedCode}`);
+      return new Response(
+        JSON.stringify({ error: "Questo invito è già stato utilizzato." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`[signup-coach] Invite valid, creating coach account for: ${email}`);
 
     // Step 1: Create auth user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -59,7 +106,7 @@ Deno.serve(async (req) => {
       user_metadata: {
         first_name,
         last_name,
-        is_coach: true, // Flag to identify coach signup if needed
+        is_coach: true,
       },
     });
 
@@ -118,6 +165,20 @@ Deno.serve(async (req) => {
     }
 
     console.log(`[signup-coach] Coach role assigned for: ${userId}`);
+
+    // Step 4: Increment used_count (only after everything succeeded)
+    const { error: updateError } = await supabaseAdmin
+      .from("coach_invites")
+      .update({ used_count: invite.used_count + 1 })
+      .eq("id", invite.id);
+
+    if (updateError) {
+      console.error("[signup-coach] Failed to increment invite used_count:", updateError);
+      // Don't fail the signup - coach is already created
+      // Just log the error for monitoring
+    } else {
+      console.log(`[signup-coach] Invite ${normalizedCode} used_count incremented`);
+    }
 
     // Success response
     return new Response(

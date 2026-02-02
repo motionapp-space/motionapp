@@ -1,4 +1,5 @@
 import { Shield, Users, Mail, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import SectionShell from "@/components/layout/SectionShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -26,22 +27,24 @@ export default function AdminDashboard() {
         </CardHeader>
       </Card>
 
-      {/* Placeholder cards for future features */}
+      {/* Feature cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="opacity-60">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-base">Inviti</CardTitle>
-            </div>
-            <CardDescription className="text-sm">
-              Gestione inviti coach
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Coming soon</p>
-          </CardContent>
-        </Card>
+        <Link to="/admin/invites">
+          <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-primary" />
+                <CardTitle className="text-base">Inviti</CardTitle>
+              </div>
+              <CardDescription className="text-sm">
+                Gestione inviti coach
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-primary font-medium">Gestisci →</p>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Card className="opacity-60">
           <CardHeader>
