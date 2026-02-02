@@ -1,64 +1,123 @@
 
+# Piano: Sezione Admin Protetta (MVP)
 
-# Piano: Aggiornare Nome App da "Studio AI" a "Motion" nei Template Email
+## Panoramica
 
-## Problema
+Implementazione di una sezione `/admin` accessibile esclusivamente agli utenti con ruolo `admin`, con dashboard minimal e architettura estendibile.
 
-Tutti i template email usano ancora il vecchio nome "Studio AI" invece del nuovo nome dell'applicazione "Motion".
+---
+
+## File da Creare
+
+### 1. `src/features/auth/api/roles.api.ts`
+API per recuperare tutti i ruoli dell'utente corrente:
+
+```typescript
+import { supabase } from "@/integrations/supabase/client";
+import type { AppRole } from "@/types/user";
+
+export async function getCurrentUserRoles(): Promise<AppRole[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error fetching user roles:', error);
+    return [];
+  }
+  
+  return data?.map(r => r.role as AppRole) || [];
+}
+```
+
+### 2. `src/features/auth/hooks/useUserRoles.ts`
+Hook con `roles`, `isAdmin`, `isLoading`:
+
+```typescript
+import { useQuery } from "@tanstack/react-query";
+import { getCurrentUserRoles } from "../api/roles.api";
+
+export function useUserRoles() {
+  const query = useQuery({
+    queryKey: ["userRoles"],
+    queryFn: getCurrentUserRoles,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  
+  const roles = query.data || [];
+  
+  return {
+    roles,
+    isAdmin: roles.includes('admin'),
+    isCoach: roles.includes('coach'),
+    isClient: roles.includes('client'),
+    isLoading: query.isLoading,
+  };
+}
+```
+
+### 3. `src/components/admin/AdminLayout.tsx`
+Layout protetto che:
+- Verifica autenticazione Supabase
+- Verifica ruolo admin tramite `useUserRoles`
+- Mostra loading durante verifica
+- Redirect a `/` se non admin
+- Renderizza `<Outlet />` se autorizzato
+
+### 4. `src/pages/admin/AdminDashboard.tsx`
+Dashboard v0 minimal con:
+- Titolo "Admin Dashboard"
+- Card con icona Shield e descrizione
+- 3 placeholder card per future funzionalita (Inviti, Utenti, Sistema)
+- Usa `SectionShell` per consistenza layout
 
 ---
 
 ## File da Modificare
 
-### 1. `supabase/functions/_shared/emails/shared/layout.tsx`
-Aggiornare 3 occorrenze:
-- **Riga 40**: Alt dell'immagine logo → `alt="Motion"`
-- **Riga 58**: Testo footer → `"Questa email è stata inviata da Motion."`
-- **Riga 61**: Copyright footer → `"© {anno} Motion. Tutti i diritti riservati."`
+### `src/App.tsx`
+Aggiungere import e route admin PRIMA delle route coach (riga 151):
 
-### 2. `supabase/functions/_shared/emails/shared/styles.ts`
-Aggiornare 1 occorrenza:
-- **Riga 7**: Commento → `// Motion blue` (opzionale, solo commento)
+```typescript
+// Nuovi import
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
-### 3. `supabase/functions/_shared/emails/client-invite.tsx`
-Aggiornare 4 occorrenze:
-- **Preview**: `"Sei stato invitato a Motion"`
-- **Heading**: `"Benvenuto su Motion"`
-- **Body**: `"Sei stato invitato a unirti a Motion per gestire..."`
-- **Subject**: `"sei stato invitato a Motion"`
-
-### 4. `supabase/functions/_shared/emails/appointment/accepted-client.tsx`
-Aggiornare 1 occorrenza:
-- **Body**: `"...accedi a Motion."`
-
-### 5. `supabase/functions/_shared/emails/appointment/cancelled-client.tsx`
-Aggiornare 1 occorrenza:
-- **Body**: `"...oppure prenota un nuovo slot su Motion."`
-
-### 6. `supabase/functions/_shared/emails/appointment/counter-proposed-client.tsx`
-Aggiornare 1 occorrenza:
-- **Body**: `"Accedi a Motion per accettare o rifiutare questa proposta."`
-
-### 7. `supabase/functions/_shared/emails/appointment/request-created-coach.tsx`
-Aggiornare 1 occorrenza:
-- **Body**: `"Accedi a Motion per approvare, modificare o rifiutare la richiesta."`
+// Nuove route (PRIMA di CoachLayout)
+<Route element={<AdminLayout />}>
+  <Route path="/admin" element={<AdminDashboard />} />
+</Route>
+```
 
 ---
 
-## Riepilogo Modifiche
+## Sicurezza
 
-| Prima | Dopo |
-|-------|------|
-| Studio AI | Motion |
-
-**Totale occorrenze da aggiornare**: 12 (11 visibili + 1 commento)
+| Livello | Implementazione |
+|---------|-----------------|
+| Frontend | `AdminLayout` verifica `isAdmin` prima di renderizzare |
+| Backend | RLS policies con `has_role(auth.uid(), 'admin')` (gia esistente) |
 
 ---
 
-## Impatto
+## Setup Manuale Admin
 
-- Tutte le email inviate mostreranno il nome corretto "Motion"
-- Footer aggiornato con copyright "Motion"
-- Nessun impatto sulla logica dei template
-- Necessario re-deploy dell'edge function `email-worker` per applicare le modifiche
+Dopo l'implementazione, eseguire via SQL:
 
+```sql
+INSERT INTO user_roles (user_id, role)
+VALUES ('YOUR_USER_ID', 'admin');
+```
+
+---
+
+## Risultato Atteso
+
+- `/admin` con utente admin: visualizza dashboard
+- `/admin` senza ruolo admin: redirect automatico a `/`
+- Codice pulito e pronto per estensioni future
