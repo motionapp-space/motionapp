@@ -7,6 +7,7 @@ import { StickySessionBar } from "@/components/StickySessionBar";
 import { MobileNav } from "@/components/MobileNav";
 import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
+import { useUserRoles } from "@/features/auth/hooks/useUserRoles";
 import { cn } from "@/lib/utils";
 
 interface CoachLayoutProps {
@@ -16,6 +17,7 @@ interface CoachLayoutProps {
 const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
   const location = useLocation();
   const { isDesktopLarge, isDesktopSmall, isTablet, isMobile } = useResponsiveLayout();
+  const { isCoach, isClient, isLoading: rolesLoading } = useUserRoles();
   
   // Off-canvas state for tablet/mobile only
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -28,7 +30,30 @@ const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
+  // Not authenticated - redirect to auth
   if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Loading roles - show spinner
+  if (rolesLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
+          <p className="text-muted-foreground">Verifica autorizzazioni...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not a coach - redirect appropriately
+  if (!isCoach) {
+    // If they're a client, send to client app
+    if (isClient) {
+      return <Navigate to="/client/app" replace />;
+    }
+    // Otherwise to auth
     return <Navigate to="/auth" replace />;
   }
 
