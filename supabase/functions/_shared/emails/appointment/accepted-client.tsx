@@ -34,7 +34,7 @@ function AcceptedClientEmail(data: AppointmentAcceptedTemplateData) {
       </InfoBox>
       <Text>
         Ti aspettiamo! Se hai bisogno di modificare o cancellare l'appuntamento, 
-        accedi a Studio AI.
+        accedi a Motion.
       </Text>
     </Layout>
   );

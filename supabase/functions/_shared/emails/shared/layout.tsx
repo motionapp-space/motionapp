@@ -37,7 +37,7 @@ export function Layout({ preview, children }: LayoutProps) {
               <td style={headerStyle}>
                 <img
                   src="https://qadgzwsmiadxwwvsrauz.supabase.co/storage/v1/object/public/assets/logo.png"
-                  alt="Studio AI"
+                  alt="Motion"
                   width="120"
                   style={{ display: 'block', margin: '0 auto' }}
                 />
@@ -55,10 +55,10 @@ export function Layout({ preview, children }: LayoutProps) {
             <tr>
               <td style={footerStyle}>
                 <p style={footerTextStyle}>
-                  Questa email è stata inviata da Studio AI.
+                  Questa email è stata inviata da Motion.
                 </p>
                 <p style={footerTextStyle}>
-                  © {new Date().getFullYear()} Studio AI. Tutti i diritti riservati.
+                  © {new Date().getFullYear()} Motion. Tutti i diritti riservati.
                 </p>
               </td>
             </tr>

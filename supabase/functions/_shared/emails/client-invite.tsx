@@ -16,13 +16,13 @@ function ClientInviteEmail(data: ClientInviteTemplateData) {
     : data.client_first_name;
 
   return (
-    <Layout preview={`Sei stato invitato a Studio AI`}>
-      <Heading>Benvenuto su Studio AI</Heading>
+    <Layout preview={`Sei stato invitato a Motion`}>
+      <Heading>Benvenuto su Motion</Heading>
       <Text>
         Ciao {data.client_first_name},
       </Text>
       <Text>
-        Sei stato invitato a unirti a Studio AI per gestire i tuoi 
+        Sei stato invitato a unirti a Motion per gestire i tuoi 
         allenamenti e appuntamenti con il tuo coach.
       </Text>
       <Text>
@@ -41,7 +41,7 @@ function ClientInviteEmail(data: ClientInviteTemplateData) {
 }
 
 function subject(data: ClientInviteTemplateData): string {
-  return `${data.client_first_name}, sei stato invitato a Studio AI`;
+  return `${data.client_first_name}, sei stato invitato a Motion`;
 }
 
 export const clientInviteTemplate: EmailTemplate<ClientInviteTemplateData> = {

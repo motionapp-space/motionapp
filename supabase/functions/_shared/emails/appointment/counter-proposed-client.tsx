@@ -45,7 +45,7 @@ function CounterProposedClientEmail(data: AppointmentCounterProposedTemplateData
         </>
       )}
       <Text>
-        Accedi a Studio AI per accettare o rifiutare questa proposta.
+        Accedi a Motion per accettare o rifiutare questa proposta.
       </Text>
     </Layout>
   );

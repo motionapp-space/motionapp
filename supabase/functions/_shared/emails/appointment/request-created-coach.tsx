@@ -38,7 +38,7 @@ function RequestCreatedCoachEmail(data: AppointmentRequestCreatedTemplateData) {
         </>
       )}
       <Text>
-        Accedi a Studio AI per approvare, modificare o rifiutare la richiesta.
+        Accedi a Motion per approvare, modificare o rifiutare la richiesta.
       </Text>
     </Layout>
   );
