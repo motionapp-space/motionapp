@@ -224,40 +224,25 @@ const Auth = () => {
 
         {/* Valid Invite Banner */}
         {showRegistration && (
-          <Alert className="border-green-200 bg-green-50">
-            <Mail className="h-4 w-4 text-green-600" />
-            <AlertTitle className="text-green-800">Registrazione su invito</AlertTitle>
-            <AlertDescription className="text-green-700">
+          <Alert className="border-[hsl(220,70%,90%)] bg-[hsl(220,70%,95%)] rounded-2xl">
+            <Mail className="h-4 w-4 text-primary" />
+            <AlertTitle className="text-foreground">Registrazione su invito</AlertTitle>
+            <AlertDescription className="text-muted-foreground">
               Compila il form per creare il tuo account coach.
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Tab Toggle - Only show if no invite or invite is valid */}
-        {!showInviteLoading && !showInviteError && (
-          <>
-            {!showRegistration ? (
-              // No invite: show only login
-              <div className="bg-[hsl(220,15%,92%)] rounded-full p-1.5 flex gap-1">
-                <button
-                  type="button"
-                  className="flex-1 py-3 px-6 rounded-full text-sm font-medium bg-card text-foreground shadow-sm"
-                >
-                  Accedi
-                </button>
-              </div>
-            ) : (
-              // Valid invite: show only registration
-              <div className="bg-[hsl(220,15%,92%)] rounded-full p-1.5 flex gap-1">
-                <button
-                  type="button"
-                  className="flex-1 py-3 px-6 rounded-full text-sm font-medium bg-card text-foreground shadow-sm"
-                >
-                  Registrati
-                </button>
-              </div>
-            )}
-          </>
+        {/* Tab Toggle - Only show login tab when no valid invite */}
+        {!showInviteLoading && !showInviteError && !showRegistration && (
+          <div className="bg-[hsl(220,15%,92%)] rounded-full p-1.5 flex gap-1">
+            <button
+              type="button"
+              className="flex-1 py-3 px-6 rounded-full text-sm font-medium bg-card text-foreground shadow-sm"
+            >
+              Accedi
+            </button>
+          </div>
         )}
 
         {/* Forms Container */}
