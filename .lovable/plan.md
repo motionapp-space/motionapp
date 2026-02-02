@@ -1,81 +1,57 @@
 
-# Piano: Fix Constraint Legacy per Eventi Single Paid
 
-## Problema Identificato
+# Piano: Rimozione Constraint Legacy `payment_kind_check`
 
-Quando il coach approva o riprogramma una richiesta di appuntamento, si verifica l'errore:
+## Problema
 
-> `new row for relation "events" violates check constraint "chk_events_economic_refs"`
+Il constraint `payment_kind_check` sulla tabella `orders` accetta solo i valori legacy:
+- `charge`, `refund`, `deposit`
 
-**Causa**: Il constraint `chk_events_economic_refs` richiede che per eventi con `economic_type = 'single_paid'`, la colonna `order_payment_id` sia NOT NULL. Ma:
+Ma la funzione `finalize_booking_request` inserisce correttamente `kind = 'single_lesson'` secondo la nuova architettura.
 
-1. La tabella `order_payments` è stata sostituita da `orders`
-2. La nuova architettura usa una FK inversa: `orders.event_id` → `events.id`
-3. La funzione `finalize_booking_request` inserisce in `orders` ma non popola `events.order_payment_id`
+## Constraint attuali sulla tabella `orders`
 
----
+| Constraint | Valori ammessi | Stato |
+|------------|----------------|-------|
+| `payment_kind_check` | `charge`, `refund`, `deposit` | **Legacy - da rimuovere** |
+| `chk_order_kind` | `single_lesson`, `package_purchase` | Nuovo - corretto |
+| `chk_order_kind_refs` | Tutti + coerenza FK | Nuovo - corretto |
 
 ## Soluzione
 
-Aggiornare il constraint per riflettere il nuovo design dove `single_paid` non richiede più `order_payment_id` come campo obbligatorio (la relazione è gestita da `orders.event_id`).
+Rimuovere il constraint legacy `payment_kind_check` che blocca i nuovi valori.
 
----
-
-## Modifiche
+## Modifica
 
 ### Migration SQL
 
 ```sql
--- 1. Rimuove il constraint legacy
-ALTER TABLE events DROP CONSTRAINT IF EXISTS chk_events_economic_refs;
-
--- 2. Ricrea con la nuova logica (order_payment_id non più richiesto)
-ALTER TABLE events ADD CONSTRAINT chk_events_economic_refs CHECK (
-  (economic_type = 'package' AND package_id IS NOT NULL AND order_payment_id IS NULL)
-  OR (economic_type = 'single_paid' AND package_id IS NULL)
-  OR (economic_type IN ('none', 'free') AND package_id IS NULL AND order_payment_id IS NULL)
-);
+-- Rimuove il constraint legacy che blocca 'single_lesson'
+ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS payment_kind_check;
 ```
 
-### Cosa cambia
+## Cosa cambia
 
-| Tipo | Prima | Dopo |
-|------|-------|------|
-| `package` | `package_id NOT NULL, order_payment_id NULL` | Invariato |
-| `single_paid` | ~~`order_payment_id NOT NULL`~~ | `package_id NULL` (nessun requisito su order_payment_id) |
-| `none/free` | Entrambi NULL | Invariato |
-
----
+- `finalize_booking_request` potrà inserire `kind = 'single_lesson'` senza errori
+- I constraint `chk_order_kind` e `chk_order_kind_refs` continuano a validare i dati correttamente
+- Nessun impatto su dati esistenti
 
 ## Verifiche Post-Implementazione
 
-- [ ] Coach può approvare richieste con `single_paid`
-- [ ] Coach può inviare controproposte
-- [ ] Ordine viene creato in tabella `orders` con `event_id` corretto
-
----
+- Coach può approvare richieste di appuntamento `single_paid`
+- Coach può inviare controproposte
+- Ordine viene creato con `kind = 'single_lesson'` e `event_id` valorizzato
 
 ## Sezione Tecnica
 
-### Architettura Attuale
+### Architettura `orders.kind`
 
-```text
-PRIMA (legacy):
-events.order_payment_id ──► order_payments.id
-                             (tabella deprecata)
+| Valore | Uso | FK richiesta |
+|--------|-----|--------------|
+| `single_lesson` | Lezione singola a pagamento | `event_id` NOT NULL |
+| `package_purchase` | Acquisto pacchetto | `package_id` NOT NULL |
 
-DOPO (nuovo):
-orders.event_id ──────────► events.id
-                             (FK inversa)
-```
+### File impattati
 
-### Impatto
+Solo migration SQL - nessuna modifica al codice frontend o alle funzioni RPC.
 
-- **Nessuna modifica a codice frontend**
-- **Nessuna modifica a funzioni RPC** (già usano correttamente `orders`)
-- La colonna `order_payment_id` rimane per retrocompatibilità ma non è più obbligatoria
-
-### Retrocompatibilità
-
-- Eventi esistenti: nessun impatto (0 righe usano `order_payment_id`)
-- Nuovi eventi `single_paid`: funzioneranno senza richiedere `order_payment_id`
