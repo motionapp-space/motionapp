@@ -1,16 +1,20 @@
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { Calendar, Clock, Check, MoreHorizontal, X, RefreshCw } from "lucide-react";
+import { Check, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { ClientColorDot } from "@/components/calendar/ClientColorDot";
 import type { BookingRequestWithClient } from "../types";
 
@@ -35,89 +39,102 @@ export function PendingRequestCard({
   const endDate = new Date(request.requested_end_at);
   const durationMinutes = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
 
-  const formattedDate = format(startDate, "EEEE d MMMM yyyy", { locale: it });
-  const formattedTime = `${format(startDate, "HH:mm")} – ${format(endDate, "HH:mm")}`;
+  const formattedDateCompact = format(startDate, "EEE d MMM", { locale: it });
+  const formattedTimeRange = `${format(startDate, "HH:mm")} – ${format(endDate, "HH:mm")}`;
 
   const isLoading = isApproving || isDeclining;
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        {/* Header with status badge */}
-        <div className="bg-blue-50 dark:bg-blue-950/30 px-4 py-2 border-b border-blue-100 dark:border-blue-900/50">
-          <div className="flex items-center justify-between">
-            <Badge className="bg-blue-600 hover:bg-blue-600 text-white font-medium">
-              DA APPROVARE
+    <Card>
+      <CardContent className="p-4 space-y-4">
+        {/* Info Block */}
+        <div className="space-y-1">
+          {/* Row 1: Badge + Date/Time */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge className="bg-primary/10 text-primary text-xs font-medium px-2 py-1 pointer-events-none">
+              Da approvare
             </Badge>
-            <span className="text-xs text-blue-600 dark:text-blue-400">
-              Azione richiesta
+            <span className="text-sm text-muted-foreground">
+              {formattedDateCompact}
+            </span>
+            <span className="text-sm font-semibold text-foreground">
+              {formattedTimeRange}
             </span>
           </div>
-        </div>
 
-        {/* Content */}
-        <div className="p-4 space-y-3">
-          {/* Client info */}
+          {/* Row 2: Client with ColorDot */}
           <div className="flex items-center gap-2">
             <ClientColorDot clientId={request.coach_client_id} />
-            <span className="font-semibold text-foreground">
+            <span className="text-sm font-medium text-foreground truncate">
               {request.client_name}
             </span>
           </div>
 
-          {/* Date and time */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span className="capitalize">{formattedDate}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-foreground">{formattedTime}</span>
-              <span className="text-muted-foreground">({durationMinutes} min)</span>
-            </div>
-          </div>
+          {/* Row 3: Metadata */}
+          <p className="text-xs text-muted-foreground">
+            Lezione singola · {durationMinutes} min
+          </p>
 
-          {/* Notes if present */}
+          {/* Row 4: Notes (optional) */}
           {request.notes && (
-            <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded-md line-clamp-2">
+            <p className="text-xs italic text-muted-foreground line-clamp-1">
               "{request.notes}"
-            </div>
+            </p>
           )}
+        </div>
 
-          {/* Actions - 1 primary + dropdown for secondary */}
-          <div className="flex items-center gap-2 pt-2">
-            <Button
-              onClick={() => onApprove(request.id)}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              <Check className="h-4 w-4 mr-1.5" />
-              Approva
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" disabled={isLoading}>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onCounterPropose(request)}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Proponi altro orario
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
+        {/* Actions Block */}
+        <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t">
+          {/* Approve Button - Primary */}
+          <Button
+            onClick={() => onApprove(request.id)}
+            disabled={isLoading}
+            className="flex-1 sm:flex-none"
+          >
+            <Check className="h-4 w-4" />
+            Approva
+          </Button>
+
+          {/* Counter-propose Button - Outline */}
+          <Button
+            variant="outline"
+            onClick={() => onCounterPropose(request)}
+            disabled={isLoading}
+            className="flex-1 sm:flex-none"
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+            Controproponi
+          </Button>
+
+          {/* Decline Button - Ghost Destructive with AlertDialog */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-1 sm:flex-none"
+                disabled={isLoading}
+              >
+                Rifiuta
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Rifiutare la richiesta?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Questa azione non può essere annullata. Il cliente verrà notificato del rifiuto.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   onClick={() => onDecline(request.id)}
-                  className="text-destructive focus:text-destructive"
                 >
-                  <X className="h-4 w-4 mr-2" />
-                  Rifiuta richiesta
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                  Rifiuta
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </CardContent>
     </Card>
