@@ -1,92 +1,97 @@
 
-# Fix: Dropdown Categorie che si Chiude Immediatamente
 
-## Problema Identificato
+# Fix: Rimozione PopoverTrigger per Evitare Conflitto
 
-Il dropdown delle categorie si apre e si richiude immediatamente a causa di un **conflitto tra due sistemi di gestione dello stato**:
+## Problema Root Cause
 
-1. **Gestione manuale**: `handleContainerClick()` chiama `setIsOpen(true)`
-2. **Gestione Radix**: `PopoverTrigger` ha il proprio handler di click che fa toggle dello stato
+Il `PopoverTrigger asChild` applica i propri event handler direttamente sul div figlio. Quindi quando clicchi:
 
-Quando clicchi sul container:
-1. `handleContainerClick` → `setIsOpen(true)` → popover si apre
-2. Radix `PopoverTrigger` intercetta lo stesso click → toggled back → `setIsOpen(false)`
+1. Il tuo `onClick` → `setIsOpen(true)`
+2. Il handler di Radix (iniettato da `PopoverTrigger`) → toggled → `setIsOpen(false)`
+
+`stopPropagation()` non funziona perché entrambi gli handler sono sullo **stesso elemento**, non su elementi annidati.
 
 ## Soluzione
 
-Rimuovere il `PopoverTrigger` con `asChild` e gestire manualmente l'apertura del popover, evitando il conflitto. In alternativa, aggiungere `onInteractOutside` e `onPointerDownOutside` per prevenire la chiusura quando si interagisce con elementi interni.
+Rimuovere `PopoverTrigger` completamente. Usiamo solo:
+- `Popover open={isOpen}` (controllato)
+- `onOpenChange={setIsOpen}` per gestire la chiusura
+- `onPointerDownOutside` per chiudere quando si clicca fuori
 
 ---
 
-## Modifiche da Implementare
+## Modifiche
 
 ### File: `src/components/plan-editor/CategoryMultiSelect.tsx`
 
-**Approccio**: Usare `onInteractOutside` e `onPointerDownOutside` sul `PopoverContent` per controllare quando il popover deve chiudersi, e fermare la propagazione dell'evento nel container.
+**1. Rimuovere PopoverTrigger dall'import (riga 14)**
 
 ```tsx
-// 1. Modificare handleContainerClick per fermare propagazione
-const handleContainerClick = (e: React.MouseEvent) => {
-  e.stopPropagation();  // Impedisce al click di risalire
-  if (isInteractive) {
-    inputRef.current?.focus();
-    setIsOpen(true);
-  }
-};
+import {
+  Popover,
+  PopoverContent,
+  // PopoverTrigger rimosso
+} from "@/components/ui/popover";
+```
 
-// 2. Aggiungere handler per PopoverContent
+**2. Rimuovere il wrapper PopoverTrigger (righe 89-90 e 150)**
+
+Prima:
+```tsx
+<Popover open={isOpen && isInteractive} onOpenChange={setIsOpen}>
+  <PopoverTrigger asChild>
+    <div ref={containerRef} ...>
+      ...
+    </div>
+  </PopoverTrigger>
+  <PopoverContent ...>
+```
+
+Dopo:
+```tsx
+<Popover open={isOpen && isInteractive} onOpenChange={setIsOpen}>
+  <div ref={containerRef} onClick={handleContainerClick} ...>
+    ...
+  </div>
+  <PopoverContent ...>
+```
+
+**3. Aggiungere PopoverAnchor per posizionamento (opzionale ma raccomandato)**
+
+Per mantenere il posizionamento corretto del dropdown rispetto al container, usiamo `PopoverAnchor`:
+
+```tsx
+import {
+  Popover,
+  PopoverContent,
+  PopoverAnchor,
+} from "@/components/ui/popover";
+
+// Nel JSX:
+<Popover open={isOpen && isInteractive} onOpenChange={setIsOpen}>
+  <PopoverAnchor asChild>
+    <div ref={containerRef} onClick={handleContainerClick} ...>
+      ...
+    </div>
+  </PopoverAnchor>
+  <PopoverContent ...>
+```
+
+**4. Aggiungere onPointerDownOutside al PopoverContent**
+
+```tsx
 <PopoverContent
   className="w-[var(--radix-popover-trigger-width)] p-0"
   align="start"
   sideOffset={4}
   onOpenAutoFocus={(e) => e.preventDefault()}
-  onInteractOutside={(e) => {
-    // Chiudi solo se il click e veramente fuori dal container
+  onPointerDownOutside={(e) => {
+    // Non chiudere se il click e sul container
     if (containerRef.current?.contains(e.target as Node)) {
       e.preventDefault();
     }
   }}
->
-```
-
----
-
-## Dettaglio Implementazione
-
-### Modifica 1: Handler `handleContainerClick`
-
-Aggiungere `e.stopPropagation()` per impedire che l'evento risalga e venga interpretato come un click "outside" da Radix:
-
-```tsx
-const handleContainerClick = (e: React.MouseEvent) => {
-  e.stopPropagation();
-  if (isInteractive) {
-    inputRef.current?.focus();
-    setIsOpen(true);
-  }
-};
-```
-
-### Modifica 2: Aggiornare la firma del div onClick
-
-```tsx
-<div
-  ref={containerRef}
-  onClick={handleContainerClick}  // Ora accetta MouseEvent
-  ...
->
-```
-
-### Modifica 3: Aggiungere `onInteractOutside` al PopoverContent
-
-```tsx
-<PopoverContent
-  className="w-[var(--radix-popover-trigger-width)] p-0"
-  align="start"
-  sideOffset={4}
-  onOpenAutoFocus={(e) => e.preventDefault()}
   onInteractOutside={(e) => {
-    // Non chiudere se il click e dentro il container (trigger)
     if (containerRef.current?.contains(e.target as Node)) {
       e.preventDefault();
     }
@@ -98,21 +103,20 @@ const handleContainerClick = (e: React.MouseEvent) => {
 
 ## Riepilogo Modifiche
 
-| Linea | Prima | Dopo |
-|-------|-------|------|
-| 72 | `const handleContainerClick = () => {` | `const handleContainerClick = (e: React.MouseEvent) => {` |
-| 73 | (nessun stopPropagation) | `e.stopPropagation();` |
-| 155 | solo `onOpenAutoFocus` | + `onInteractOutside` handler |
+| Linea | Modifica |
+|-------|----------|
+| 11-15 | Cambia import: rimuovi `PopoverTrigger`, aggiungi `PopoverAnchor` |
+| 89 | Rimuovi `<PopoverTrigger asChild>` |
+| 90 | Cambia in `<PopoverAnchor asChild>` |
+| 150 | Rimuovi `</PopoverTrigger>`, cambia in `</PopoverAnchor>` |
+| 157-161 | Aggiungi `onPointerDownOutside` oltre a `onInteractOutside` |
 
 ---
 
 ## Perche Funziona
 
-1. **`e.stopPropagation()`**: Impedisce al click di risalire l'albero DOM e attivare il comportamento di toggle del `PopoverTrigger`
+1. **Nessun conflitto**: Senza `PopoverTrigger`, nessun handler di toggle viene iniettato
+2. **Controllo totale**: Il tuo `onClick` e l'unico che gestisce l'apertura
+3. **PopoverAnchor**: Fornisce solo il punto di ancoraggio per il posizionamento, senza logica di click
+4. **onPointerDownOutside**: Cattura i click fuori prima che Radix chiuda automaticamente
 
-2. **`onInteractOutside`**: Quando Radix rileva un'interazione fuori dal popover, controlliamo se e dentro il container (input area). Se si, preveniamo la chiusura.
-
-Questo permette di:
-- Aprire il dropdown cliccando sul container
-- Mantenerlo aperto mentre si digita
-- Chiuderlo solo con click veramente esterni o premendo Escape
