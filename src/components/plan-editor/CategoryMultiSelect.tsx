@@ -69,7 +69,8 @@ export function CategoryMultiSelect({
     }
   };
 
-  const handleContainerClick = () => {
+  const handleContainerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (isInteractive) {
       inputRef.current?.focus();
       setIsOpen(true);
@@ -153,6 +154,11 @@ export function CategoryMultiSelect({
         align="start"
         sideOffset={4}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          if (containerRef.current?.contains(e.target as Node)) {
+            e.preventDefault();
+          }
+        }}
       >
         <div className="max-h-48 overflow-y-auto">
           {filteredSuggestions.length > 0 ? (
