@@ -1,122 +1,212 @@
 
 
-# Fix: Rimozione PopoverTrigger per Evitare Conflitto
+# Allineamento UI `PendingRequestCard`
 
-## Problema Root Cause
-
-Il `PopoverTrigger asChild` applica i propri event handler direttamente sul div figlio. Quindi quando clicchi:
-
-1. Il tuo `onClick` → `setIsOpen(true)`
-2. Il handler di Radix (iniettato da `PopoverTrigger`) → toggled → `setIsOpen(false)`
-
-`stopPropagation()` non funziona perché entrambi gli handler sono sullo **stesso elemento**, non su elementi annidati.
-
-## Soluzione
-
-Rimuovere `PopoverTrigger` completamente. Usiamo solo:
-- `Popover open={isOpen}` (controllato)
-- `onOpenChange={setIsOpen}` per gestire la chiusura
-- `onPointerDownOutside` per chiudere quando si clicca fuori
-
----
-
-## Modifiche
-
-### File: `src/components/plan-editor/CategoryMultiSelect.tsx`
-
-**1. Rimuovere PopoverTrigger dall'import (riga 14)**
-
-```tsx
-import {
-  Popover,
-  PopoverContent,
-  // PopoverTrigger rimosso
-} from "@/components/ui/popover";
-```
-
-**2. Rimuovere il wrapper PopoverTrigger (righe 89-90 e 150)**
-
-Prima:
-```tsx
-<Popover open={isOpen && isInteractive} onOpenChange={setIsOpen}>
-  <PopoverTrigger asChild>
-    <div ref={containerRef} ...>
-      ...
-    </div>
-  </PopoverTrigger>
-  <PopoverContent ...>
-```
-
-Dopo:
-```tsx
-<Popover open={isOpen && isInteractive} onOpenChange={setIsOpen}>
-  <div ref={containerRef} onClick={handleContainerClick} ...>
-    ...
-  </div>
-  <PopoverContent ...>
-```
-
-**3. Aggiungere PopoverAnchor per posizionamento (opzionale ma raccomandato)**
-
-Per mantenere il posizionamento corretto del dropdown rispetto al container, usiamo `PopoverAnchor`:
-
-```tsx
-import {
-  Popover,
-  PopoverContent,
-  PopoverAnchor,
-} from "@/components/ui/popover";
-
-// Nel JSX:
-<Popover open={isOpen && isInteractive} onOpenChange={setIsOpen}>
-  <PopoverAnchor asChild>
-    <div ref={containerRef} onClick={handleContainerClick} ...>
-      ...
-    </div>
-  </PopoverAnchor>
-  <PopoverContent ...>
-```
-
-**4. Aggiungere onPointerDownOutside al PopoverContent**
-
-```tsx
-<PopoverContent
-  className="w-[var(--radix-popover-trigger-width)] p-0"
-  align="start"
-  sideOffset={4}
-  onOpenAutoFocus={(e) => e.preventDefault()}
-  onPointerDownOutside={(e) => {
-    // Non chiudere se il click e sul container
-    if (containerRef.current?.contains(e.target as Node)) {
-      e.preventDefault();
-    }
-  }}
-  onInteractOutside={(e) => {
-    if (containerRef.current?.contains(e.target as Node)) {
-      e.preventDefault();
-    }
-  }}
->
-```
+Ristrutturazione completa della card per aderire alle specifiche del design system Motion, mantenendo la coerenza con la Brand Identity (colori primary, accent, destructive).
 
 ---
 
 ## Riepilogo Modifiche
 
-| Linea | Modifica |
-|-------|----------|
-| 11-15 | Cambia import: rimuovi `PopoverTrigger`, aggiungi `PopoverAnchor` |
-| 89 | Rimuovi `<PopoverTrigger asChild>` |
-| 90 | Cambia in `<PopoverAnchor asChild>` |
-| 150 | Rimuovi `</PopoverTrigger>`, cambia in `</PopoverAnchor>` |
-| 157-161 | Aggiungi `onPointerDownOutside` oltre a `onInteractOutside` |
+### Struttura Attuale vs Nuova
+
+```text
+ATTUALE:
+┌─────────────────────────────────────┐
+│ [Header blu con badge]              │
+├─────────────────────────────────────┤
+│ 🟣 Nome Cliente                     │
+│ 📅 giovedì 6 febbraio 2025          │
+│ ⏰ 10:00 – 11:00 (60 min)           │
+│ "Note..."                           │
+│ [Approva] [...]                     │
+└─────────────────────────────────────┘
+
+NUOVA (da specifica):
+┌─────────────────────────────────────┐
+│ p-4 space-y-4                       │
+│ ┌─────────────────────────────────┐ │
+│ │ [Da approvare] lun 3 feb · 10:00│ │  ← Riga 1
+│ │ 🟣 Mario Rossi                  │ │  ← Riga 2
+│ │ Lezione singola · 60 min        │ │  ← Riga 3
+│ │ "Note opzionali..."             │ │  ← Riga 4 (opz)
+│ └─────────────────────────────────┘ │
+│ ┌─────────────────────────────────┐ │
+│ │ [Approva] [Controproponi] [Rif] │ │  ← Azioni
+│ └─────────────────────────────────┘ │
+└─────────────────────────────────────┘
+```
 
 ---
 
-## Perche Funziona
+## Dettaglio Implementazione
 
-1. **Nessun conflitto**: Senza `PopoverTrigger`, nessun handler di toggle viene iniettato
-2. **Controllo totale**: Il tuo `onClick` e l'unico che gestisce l'apertura
-3. **PopoverAnchor**: Fornisce solo il punto di ancoraggio per il posizionamento, senza logica di click
-4. **onPointerDownOutside**: Cattura i click fuori prima che Radix chiuda automaticamente
+### 1. Rimozione Header Colorato
+
+Eliminare il blocco header blu:
+```tsx
+// RIMUOVERE QUESTO:
+<div className="bg-blue-50 dark:bg-blue-950/30 px-4 py-2 border-b ...">
+  <Badge className="bg-blue-600 ...">DA APPROVARE</Badge>
+</div>
+```
+
+### 2. Nuovo Layout Info (space-y-1)
+
+**Riga 1: Badge + Data/Ora inline**
+```tsx
+<div className="flex items-center gap-2 flex-wrap">
+  <Badge className="bg-primary/10 text-primary text-xs font-medium px-2 py-1 pointer-events-none">
+    Da approvare
+  </Badge>
+  <span className="text-sm text-muted-foreground">
+    {formattedDateCompact}
+  </span>
+  <span className="text-sm font-semibold text-foreground">
+    {formattedTimeRange}
+  </span>
+</div>
+```
+
+**Formato data compatto:**
+```tsx
+const formattedDateCompact = format(startDate, "EEE d MMM", { locale: it });
+// Risultato: "lun 3 feb"
+
+const formattedTimeRange = `${format(startDate, "HH:mm")} – ${format(endDate, "HH:mm")}`;
+// Risultato: "10:00 – 11:00"
+```
+
+**Riga 2: Cliente con ColorDot**
+```tsx
+<div className="flex items-center gap-2">
+  <ClientColorDot clientId={request.coach_client_id} />
+  <span className="text-sm font-medium text-foreground truncate">
+    {request.client_name}
+  </span>
+</div>
+```
+
+**Riga 3: Metadati**
+```tsx
+<p className="text-xs text-muted-foreground">
+  Lezione singola · {durationMinutes} min
+</p>
+```
+
+**Riga 4: Note (opzionale)**
+```tsx
+{request.notes && (
+  <p className="text-xs italic text-muted-foreground line-clamp-1">
+    "{request.notes}"
+  </p>
+)}
+```
+
+### 3. Nuovo Blocco Azioni (3 bottoni espliciti)
+
+Sostituire DropdownMenu con bottoni espliciti + AlertDialog:
+
+```tsx
+<div className="flex flex-col sm:flex-row gap-2 pt-2 border-t">
+  {/* Bottone Approva - Primary */}
+  <Button
+    onClick={() => onApprove(request.id)}
+    disabled={isLoading}
+    className="flex-1 sm:flex-none"
+  >
+    <Check className="h-4 w-4" />
+    Approva
+  </Button>
+
+  {/* Bottone Controproponi - Outline */}
+  <Button
+    variant="outline"
+    onClick={() => onCounterPropose(request)}
+    disabled={isLoading}
+    className="flex-1 sm:flex-none"
+  >
+    <ArrowLeftRight className="h-4 w-4" />
+    Controproponi
+  </Button>
+
+  {/* Bottone Rifiuta - Ghost Destructive con AlertDialog */}
+  <AlertDialog>
+    <AlertDialogTrigger asChild>
+      <Button
+        variant="ghost"
+        className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-1 sm:flex-none"
+        disabled={isLoading}
+      >
+        Rifiuta
+      </Button>
+    </AlertDialogTrigger>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Rifiutare la richiesta?</AlertDialogTitle>
+        <AlertDialogDescription>
+          Questa azione non può essere annullata. Il cliente verrà notificato del rifiuto.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Annulla</AlertDialogCancel>
+        <AlertDialogAction
+          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          onClick={() => onDecline(request.id)}
+        >
+          Rifiuta
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+</div>
+```
+
+### 4. Aggiornamento Import
+
+Aggiungere:
+```tsx
+import { ArrowLeftRight } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+```
+
+Rimuovere:
+```tsx
+import { Calendar, Clock, MoreHorizontal, RefreshCw, X } from "lucide-react";
+import { DropdownMenu, ... } from "@/components/ui/dropdown-menu";
+```
+
+---
+
+## Confronto Visivo Finale
+
+| Elemento | Prima | Dopo |
+|----------|-------|------|
+| **Badge** | Blu pieno `bg-blue-600` | Brand `bg-primary/10 text-primary` |
+| **Header** | Box colorato separato | Inline con contenuto |
+| **Data** | "giovedì 6 febbraio 2025" | "lun 3 feb" (compatto) |
+| **Icone info** | Calendar + Clock | Nessuna icona |
+| **Metadati** | Solo durata tra parentesi | "Lezione singola · 60 min" |
+| **Note** | `line-clamp-2` con background | `line-clamp-1` italic senza bg |
+| **Azioni** | 1 button + dropdown | 3 bottoni espliciti |
+| **Rifiuta** | Nel dropdown | AlertDialog di conferma |
+| **Responsive** | Non adattivo | Mobile: stack, Desktop: row |
+
+---
+
+## File Modificati
+
+| File | Modifica |
+|------|----------|
+| `src/features/bookings/components/PendingRequestCard.tsx` | Ristrutturazione completa |
 
