@@ -2311,6 +2311,7 @@ export type Database = {
           start_at: string
         }[]
       }
+      get_coach_onboarding_data: { Args: { p_coach_id: string }; Returns: Json }
       get_my_client_id: { Args: never; Returns: string }
       get_shared_plan: {
         Args: { share_token: string }

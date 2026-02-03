@@ -63,7 +63,7 @@ const Clients = () => {
 
   // Nuova logica visibilità filtri (indipendente dagli stati di onboarding)
   const showArchivedToggle = onboarding.hasArchivedClients; // >= 1 clienti archiviati
-  const showFilters = onboarding.clientsCount > 1;          // > 1 clienti non archiviati
+  const showFilters = onboarding.hasActiveClients;          // almeno 1 cliente attivo
 
   const highlight = sp.get("highlight");
   const from = sp.get("from");
