@@ -1,323 +1,298 @@
 
 
-# Implementazione Completa `CounterProposeDialog` — Dual Path UX
+# Allineamento UI `CounterProposeDialog` — Design System Motion
 
-Allineamento del componente alle specifiche con **Fast Path** (slot suggeriti) + **Power Path** (Calendar + TimePicker + Live Validation).
+Ristrutturazione completa della modale per aderire alle specifiche UI/UX mantenendo coerenza con la palette colori Motion.
 
 ---
 
-## Riepilogo Architettura Target
+## Riepilogo Modifiche Strutturali
+
+### Layout Attuale vs Target
 
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                      CounterProposeDialog                           │
-├─────────────────────────────────────────────────────────────────────┤
-│  Header: "Proponi nuovo orario" + Badge richiesta originale         │
-├─────────────────────────────────────────────────────────────────────┤
-│  FAST PATH: 4 slot suggeriti (findNearestSlots)                     │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐               │
-│  │lun 3 feb │ │mar 4 feb │ │mer 5 feb │ │gio 6 feb │               │
-│  │10:00-11:00│ │11:00-12:00│ │14:00-15:00│ │09:00-10:00│               │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘               │
-├─────────────────────────────────────────────────────────────────────┤
-│  POWER PATH: Selezione manuale                                      │
-│  ┌─────────────────────────────────────────────────────────────────┐│
-│  │  [Calendar]              [TimePicker 15min]                     ││
-│  │                                                                  ││
-│  │  [Live Validation Status]                                        ││
-│  │  ✅ Slot disponibile / ❌ Conflitto + 3 alternative              ││
-│  └─────────────────────────────────────────────────────────────────┘│
-├─────────────────────────────────────────────────────────────────────┤
-│  Footer: [Proponi · lun 3 feb · 10:00-11:00] (activeProposal)      │
-└─────────────────────────────────────────────────────────────────────┘
+ATTUALE (max-w-md):
+┌─────────────────────────────────────┐
+│ Header bg-muted/50                  │
+├─────────────────────────────────────┤
+│ Fast Path: bg-primary/5             │
+├─────────────────────────────────────┤
+│ Power Path: grid-cols-2             │
+├─────────────────────────────────────┤
+│ Footer                              │
+└─────────────────────────────────────┘
+
+TARGET (max-w-[720px], responsive):
+┌─────────────────────────────────────────────────────────────┐
+│ HEADER px-6 py-4 (titolo + sottotitolo | badge)            │
+├─────────────────────────────────────────────────────────────┤
+│ FAST PATH: grid 1→2 cols, rounded-xl, CheckCircle2 icon   │
+├─────────────────────────────────────────────────────────────┤
+│ DIVIDER (border-b)                                          │
+├─────────────────────────────────────────────────────────────┤
+│ POWER PATH: rounded-xl bg-muted/20                          │
+│  ┌──────────────┬─────────────────────────────────────────┐ │
+│  │  Calendar    │  TimePicker + Quick Chips               │ │
+│  │              │  + Availability Status (min-h-[72px])   │ │
+│  └──────────────┴─────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│ FOOTER: proposta preview + CTA h-11                         │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Modifiche da Implementare
+## 1. DialogContent — Container Principale
 
-### 1. Nuovo State Management
-
-**Aggiungere stati per Dual Path + Validation:**
-
-```typescript
-// SELECTION MODE (mutua esclusività)
-const [selectionMode, setSelectionMode] = useState<'suggested' | 'manual' | null>(null);
-
-// FAST PATH
-const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
-
-// POWER PATH
-const [manualDate, setManualDate] = useState<Date | undefined>(undefined);
-const [manualTime, setManualTime] = useState<string>(""); // "HH:mm"
-
-// LIVE VALIDATION
-const [availabilityStatus, setAvailabilityStatus] = useState<
-  'idle' | 'loading' | 'available' | 'conflict'
->('idle');
-const [conflictEvent, setConflictEvent] = useState<{
-  title: string;
-  start: string;
-  end: string;
-} | null>(null);
-const [alternativeSlots, setAlternativeSlots] = useState<AvailableSlot[]>([]);
-```
-
-### 2. Logica Mutua Esclusività
-
-**Quando l'utente seleziona uno slot suggerito:**
-```typescript
-const handleSuggestedSlotClick = (slot: AvailableSlot) => {
-  setSelectionMode('suggested');
-  setSelectedSlot(slot);
-  // Reset power path
-  setManualDate(undefined);
-  setManualTime("");
-  setAvailabilityStatus('idle');
-};
-```
-
-**Quando l'utente modifica data/ora manuale:**
-```typescript
-const handleManualDateChange = (date: Date | undefined) => {
-  setSelectionMode('manual');
-  setManualDate(date);
-  // Reset fast path
-  setSelectedSlot(null);
-};
-
-const handleManualTimeChange = (time: string) => {
-  setSelectionMode('manual');
-  setManualTime(time);
-  // Reset fast path
-  setSelectedSlot(null);
-};
-```
-
-### 3. TimePicker con Intervalli 15 Minuti
-
-**Creare variante o prop per 15min:**
-
-```typescript
-// Opzione A: Prop interval
-interface TimePickerProps {
-  value: string;
-  onChange: (value: string) => void;
-  interval?: 5 | 15; // default 5
-  startHour?: number; // default 6
-  endHour?: number;   // default 22
-}
-
-// Generazione dinamica
-const generateTimeOptions = (interval: number, startHour: number, endHour: number) => {
-  const times: string[] = [];
-  for (let h = startHour; h < endHour; h++) {
-    for (let m = 0; m < 60; m += interval) {
-      times.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
-    }
-  }
-  return times;
-};
-```
-
-**Auto-scroll all'apertura:**
-```typescript
-const scrollRef = React.useRef<HTMLDivElement>(null);
-
-React.useEffect(() => {
-  if (open && scrollRef.current && displayValue) {
-    const selectedIndex = TIME_OPTIONS.indexOf(displayValue);
-    const scrollPosition = Math.max(0, selectedIndex * 40 - 120); // Center
-    scrollRef.current.scrollTop = scrollPosition;
-  }
-}, [open, displayValue]);
-```
-
-### 4. Live Validation con Debounce
-
-**Import e setup:**
-```typescript
-import { useDebounce } from "@/hooks/use-debounce";
-
-const debouncedManualDate = useDebounce(manualDate, 300);
-const debouncedManualTime = useDebounce(manualTime, 300);
-```
-
-**Effect di validazione:**
-```typescript
-useEffect(() => {
-  // Skip se non siamo in manual mode o dati incompleti
-  if (selectionMode !== 'manual' || !debouncedManualDate || !debouncedManualTime) {
-    setAvailabilityStatus('idle');
-    setConflictEvent(null);
-    setAlternativeSlots([]);
-    return;
-  }
-
-  setAvailabilityStatus('loading');
-
-  // Parse time
-  const [hours, minutes] = debouncedManualTime.split(':').map(Number);
-  const proposedStart = setMinutes(setHours(debouncedManualDate, hours), minutes);
-  const proposedEnd = addMinutes(proposedStart, slotDuration);
-
-  // Cerca conflitti (ignora eventi cancellati)
-  const conflicting = events.find(event => {
-    if (event.session_status === 'canceled') return false;
-    const eventStart = parseISO(event.start_at);
-    const eventEnd = parseISO(event.end_at);
-    return proposedStart < eventEnd && proposedEnd > eventStart;
-  });
-
-  if (conflicting) {
-    setAvailabilityStatus('conflict');
-    setConflictEvent({
-      title: conflicting.title || 'Evento',
-      start: conflicting.start_at,
-      end: conflicting.end_at,
-    });
-    // Trova 3 alternative più vicine
-    setAlternativeSlots(findNearestSlots(proposedStart, allSlotsFor14Days).slice(0, 3));
-  } else {
-    setAvailabilityStatus('available');
-    setConflictEvent(null);
-    setAlternativeSlots([]);
-  }
-}, [debouncedManualDate, debouncedManualTime, selectionMode, events, slotDuration, allSlotsFor14Days]);
-```
-
-### 5. `activeProposal` useMemo
-
-**Unifica entrambi i path per il CTA:**
-```typescript
-const activeProposal = useMemo((): AvailableSlot | null => {
-  // FAST PATH
-  if (selectionMode === 'suggested' && selectedSlot) {
-    return selectedSlot;
-  }
-
-  // POWER PATH (solo se disponibile)
-  if (selectionMode === 'manual' && manualDate && manualTime && 
-      availabilityStatus === 'available') {
-    const [hours, minutes] = manualTime.split(':').map(Number);
-    const start = setMinutes(setHours(manualDate, hours), minutes);
-    const end = addMinutes(start, slotDuration);
-    return { 
-      start: start.toISOString(), 
-      end: end.toISOString() 
-    };
-  }
-
-  return null;
-}, [selectionMode, selectedSlot, manualDate, manualTime, availabilityStatus, slotDuration]);
-```
-
-### 6. Aggiornamento `handleSubmit`
-
-```typescript
-const handleSubmit = () => {
-  if (!activeProposal || !request) return;
-  onSubmit(request.id, activeProposal.start, activeProposal.end);
-};
-```
-
-### 7. Nuovo UI Power Path
-
-**Sostituire la sezione Time Slots con:**
-
+**Attuale:**
 ```tsx
-{/* POWER PATH: Selezione Manuale */}
-<div className="px-4 py-3 border-t">
-  <div className="flex items-center gap-2 text-sm font-medium mb-3">
-    <Calendar className="h-4 w-4 text-muted-foreground" />
-    Oppure scegli manualmente
-  </div>
-  
-  <div className="grid grid-cols-2 gap-3">
-    {/* Calendar Picker */}
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full justify-start">
-          <Calendar className="mr-2 h-4 w-4" />
-          {manualDate ? format(manualDate, "d MMM", { locale: it }) : "Data"}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <CalendarComponent
-          mode="single"
-          selected={manualDate}
-          onSelect={handleManualDateChange}
-          disabled={(date) => 
-            date < startOfDay(new Date()) || 
-            date > rangeEnd
-          }
-          locale={it}
-        />
-      </PopoverContent>
-    </Popover>
-    
-    {/* Time Picker 15min */}
-    <TimePicker
-      value={manualTime}
-      onChange={handleManualTimeChange}
-      interval={15}
-      startHour={6}
-      endHour={22}
-      placeholder="Orario"
-    />
-  </div>
-  
-  {/* Live Validation Status */}
-  {selectionMode === 'manual' && (
-    <div className="mt-3">
-      {availabilityStatus === 'loading' && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Verifica disponibilità...
-        </div>
-      )}
-      
-      {availabilityStatus === 'available' && (
-        <div className="flex items-center gap-2 text-sm text-green-600">
-          <Check className="h-4 w-4" />
-          Slot disponibile
-        </div>
-      )}
-      
-      {availabilityStatus === 'conflict' && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-destructive">
-            <X className="h-4 w-4" />
-            Conflitto: {conflictEvent?.title}
-          </div>
-          
-          {alternativeSlots.length > 0 && (
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Orari alternativi:</p>
-              <div className="flex flex-wrap gap-1">
-                {alternativeSlots.map((slot, idx) => (
-                  <Button
-                    key={idx}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => handleSuggestedSlotClick(slot)}
-                  >
-                    {formatSlotDate(slot)} · {formatSlotTime(slot)}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )}
+className="max-w-md max-h-[90vh] p-0 gap-0 grid grid-rows-[auto_1fr_auto] overflow-hidden"
+```
+
+**Target:**
+```tsx
+className="max-w-[720px] w-[calc(100vw-32px)] max-h-[85vh] p-0 gap-0 
+           grid grid-rows-[auto_1fr_auto] overflow-hidden"
+```
+
+| Proprietà | Valore | Scopo |
+|-----------|--------|-------|
+| `max-w-[720px]` | 720px | Larghezza massima desktop |
+| `w-[calc(100vw-32px)]` | viewport - 32px | Margini 16px su mobile |
+| `max-h-[85vh]` | 85% viewport | Evita overflow verticale |
+
+---
+
+## 2. Header — Layout Flex con Badge
+
+**Attuale:**
+```tsx
+<div className="bg-muted/50 border-b px-4 py-3">
+  <DialogHeader className="space-y-1">
+    <DialogTitle>Proponi nuovo orario</DialogTitle>
+    <div>Richiesta originale: <Badge>...</Badge></div>
+  </DialogHeader>
 </div>
 ```
 
-### 8. Footer Aggiornato
+**Target:**
+```tsx
+<div className="shrink-0 border-b bg-background px-6 py-4">
+  <div className="flex items-end justify-between gap-4">
+    {/* Left: Titolo + Sottotitolo */}
+    <div className="space-y-1">
+      <DialogTitle className="text-lg font-semibold">
+        Proponi un nuovo orario
+      </DialogTitle>
+      <p className="text-sm text-muted-foreground">
+        Il cliente potrà accettare o rifiutare la proposta.
+      </p>
+    </div>
+    {/* Right: Badge originale */}
+    <Badge variant="outline" className="px-3 py-1 rounded-full text-sm font-normal whitespace-nowrap shrink-0">
+      {format(originalStart, "EEE d MMM", { locale: it })} · {format(originalStart, "HH:mm")}–{format(originalEnd, "HH:mm")}
+    </Badge>
+  </div>
+</div>
+```
 
+---
+
+## 3. Fast Path — Slot Suggeriti
+
+**Modifiche chiave:**
+
+| Elemento | Attuale | Target |
+|----------|---------|--------|
+| Container | `px-4 py-3 border-b bg-primary/5` | `px-6 py-5` (no background colorato) |
+| Titolo | `Sparkles icon + text-primary` | Semplice testo `text-sm font-medium` |
+| Sottotitolo | Assente | `text-xs text-muted-foreground` |
+| Grid | `grid-cols-2 gap-2` | `grid-cols-1 sm:grid-cols-2 gap-3` |
+| Slot button | `rounded-lg p-2` | `rounded-xl px-4 py-3` |
+| Check icon | `Check h-3 w-3` inline | `CheckCircle2 h-4 w-4 absolute top-2 right-2` |
+
+**Target JSX:**
+```tsx
+<div className="px-6 py-5">
+  <div className="mb-3">
+    <h3 className="text-sm font-medium text-foreground">Orari suggeriti</h3>
+    <p className="text-xs text-muted-foreground">
+      Suggeriti in base alla tua agenda e alla richiesta del cliente.
+    </p>
+  </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    {suggestedSlots.map((slot, idx) => (
+      <button
+        key={idx}
+        onClick={() => handleSuggestedSlotClick(slot)}
+        className={cn(
+          "relative rounded-xl border bg-background px-4 py-3 text-left transition-all",
+          "hover:bg-muted/40",
+          isSlotSelected(slot)
+            ? "border-primary bg-primary/5"
+            : "border-border"
+        )}
+      >
+        <span className="text-sm text-muted-foreground capitalize">
+          {formatSlotDate(slot)}
+        </span>
+        <span className="block text-base font-semibold text-foreground">
+          {formatSlotTime(slot)}
+        </span>
+        {isSlotSelected(slot) && (
+          <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />
+        )}
+      </button>
+    ))}
+  </div>
+</div>
+```
+
+---
+
+## 4. Divider
+
+Aggiungere separatore tra Fast e Power path:
+
+```tsx
+<div className="border-b" />
+```
+
+---
+
+## 5. Power Path — Selezione Manuale
+
+### 5.1 Container
+
+**Attuale:** `px-4 py-3`
+**Target:**
+```tsx
+<div className="px-6 py-5">
+  <div className="mb-3">
+    <h3 className="text-sm font-medium text-foreground">Scegli data e ora</h3>
+    <p className="text-xs text-muted-foreground">
+      Seleziona manualmente una data e un orario.
+    </p>
+  </div>
+  <div className="rounded-xl border bg-muted/20 p-4">
+    {/* Calendar + Time section */}
+  </div>
+</div>
+```
+
+### 5.2 Layout Responsive Calendar + Time
+
+**Target:**
+```tsx
+<div className="flex flex-col sm:flex-row gap-6">
+  {/* Calendar - inline, non in popover */}
+  <div className="shrink-0">
+    <CalendarComponent
+      mode="single"
+      selected={manualDate}
+      onSelect={handleManualDateChange}
+      disabled={(date) => date < startOfDay(new Date())}
+      className="rounded-md border bg-background"
+      locale={it}
+    />
+  </div>
+  
+  {/* Right side: TimePicker + Quick chips + Status */}
+  <div className="flex-1 space-y-4">
+    {/* TimePicker */}
+    <TimePicker ... />
+    
+    {/* Quick Time Chips */}
+    <div className="flex flex-wrap gap-2">
+      {["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"].map((time) => (
+        <button
+          key={time}
+          onClick={() => handleManualTimeChange(time)}
+          className={cn(
+            "px-3 py-1.5 rounded-full border text-sm font-medium transition-all",
+            manualTime === time
+              ? "border-primary bg-primary/5"
+              : "border-border bg-background hover:bg-muted"
+          )}
+        >
+          {time}
+        </button>
+      ))}
+    </div>
+    
+    {/* Availability Status - Fixed Height */}
+    <div className="min-h-[72px]">
+      {/* Status content */}
+    </div>
+  </div>
+</div>
+```
+
+### 5.3 Availability Status — Colori Semantici
+
+**Loading:**
+```tsx
+<div className="flex items-center gap-2 text-sm text-muted-foreground">
+  <Loader2 className="h-4 w-4 animate-spin" />
+  Verifico disponibilità...
+</div>
+```
+
+**Available (emerald per success):**
+```tsx
+<div className="flex items-center gap-2 text-sm text-emerald-600">
+  <CheckCircle2 className="h-4 w-4" />
+  Disponibile
+</div>
+```
+
+**Conflict (rose per warning):**
+```tsx
+<div className="space-y-3">
+  <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50/50 p-3">
+    <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+    <div className="text-sm text-rose-700">
+      In conflitto con "{conflictEvent?.title}" ({formatEventTime})
+    </div>
+  </div>
+  {/* Alternative chips */}
+  <div className="flex flex-wrap gap-2">
+    {alternativeSlots.map((slot, idx) => (
+      <button
+        key={idx}
+        onClick={() => handleSuggestedSlotClick(slot)}
+        className="px-3 py-1.5 rounded-full border border-border bg-background 
+                   text-sm font-medium hover:bg-muted transition-all"
+      >
+        {formatSlotDate(slot)} · {formatSlotTime(slot)}
+      </button>
+    ))}
+  </div>
+</div>
+```
+
+---
+
+## 6. TimePicker — Aggiornamenti Styling
+
+**Attuale:**
+```tsx
+className="w-[180px] p-0"
+// Option selected: "bg-accent"
+```
+
+**Target:**
+```tsx
+className="w-[160px] p-0 z-[100]"
+// Option selected: "bg-primary text-primary-foreground hover:bg-primary/90"
+// Option default: "hover:bg-muted text-foreground"
+```
+
+---
+
+## 7. Footer — Preview + CTA
+
+**Attuale:**
 ```tsx
 <div className="border-t bg-background p-4">
   {activeProposal ? (
@@ -326,12 +301,7 @@ const handleSubmit = () => {
         <Check className="h-4 w-4 text-green-600" />
         Proposta pronta per l'invio
       </div>
-      <Button 
-        onClick={handleSubmit} 
-        disabled={isSubmitting}
-        className="w-full"
-        size="lg"
-      >
+      <Button onClick={handleSubmit} className="w-full" size="lg">
         Proponi · {formatSlotDate(activeProposal)} · {formatSlotTime(activeProposal)}
       </Button>
     </div>
@@ -343,50 +313,75 @@ const handleSubmit = () => {
 </div>
 ```
 
+**Target:**
+```tsx
+<div className="shrink-0 border-t bg-background px-6 py-4 space-y-3">
+  {activeProposal ? (
+    <>
+      {/* Preview proposta */}
+      <div className="flex items-center justify-center gap-2 text-sm">
+        <span className="text-muted-foreground">Nuova proposta:</span>
+        <Badge variant="outline" className="px-2 py-0.5 rounded-full font-medium capitalize">
+          {formatSlotDate(activeProposal)} · {formatSlotTime(activeProposal)}
+        </Badge>
+      </div>
+      {/* CTA */}
+      <Button 
+        onClick={handleSubmit} 
+        disabled={isSubmitting}
+        className="w-full h-11"
+      >
+        {isSubmitting ? (
+          <><Loader2 className="h-4 w-4 animate-spin mr-2" />Invio in corso...</>
+        ) : (
+          "Invia controproposta"
+        )}
+      </Button>
+    </>
+  ) : (
+    <>
+      <Button disabled className="w-full h-11">
+        Invia controproposta
+      </Button>
+      <p className="text-xs text-center text-muted-foreground">
+        Seleziona un orario suggerito oppure scegli data e ora.
+      </p>
+    </>
+  )}
+</div>
+```
+
+---
+
+## 8. Import Aggiuntivi
+
+```tsx
+import { CheckCircle2, AlertCircle } from "lucide-react";
+```
+
+Rimuovere `Sparkles` (non più usato).
+
+---
+
+## Riepilogo Token Colori Brand
+
+| Elemento | Token CSS | Uso |
+|----------|-----------|-----|
+| Background modale | `bg-background` | `hsl(0 0% 99%)` |
+| Testo primario | `text-foreground` | `hsl(220 15% 20%)` |
+| Testo secondario | `text-muted-foreground` | `hsl(220 9% 46%)` |
+| Bordi | `border-border` | `hsl(220 15% 90%)` |
+| Primary (selezione) | `border-primary bg-primary/5` | `hsl(220 70% 45%)` |
+| CTA | `bg-primary text-primary-foreground` | Brand blu + bianco |
+| Success | `text-emerald-600` | Semantico |
+| Conflict | `border-rose-200 bg-rose-50/50 text-rose-700` | Semantico |
+
 ---
 
 ## File da Modificare
 
 | File | Modifica |
 |------|----------|
-| `src/components/ui/time-picker.tsx` | Aggiungere prop `interval`, `startHour`, `endHour` + auto-scroll |
-| `src/features/bookings/components/CounterProposeDialog.tsx` | Ristrutturazione completa con Dual Path UX |
-
----
-
-## Import Aggiuntivi per CounterProposeDialog
-
-```typescript
-import { useDebounce } from "@/hooks/use-debounce";
-import { TimePicker } from "@/components/ui/time-picker";
-import { Loader2, X } from "lucide-react";
-import { setHours, setMinutes, addMinutes } from "date-fns";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-```
-
----
-
-## Riepilogo Flusso UX
-
-```text
-1. Dialog aperto
-   ├─▶ Fast Path: 4 slot suggeriti visibili
-   │   └─▶ Click slot → selectionMode='suggested' → activeProposal set
-   │
-   └─▶ Power Path: Calendar + TimePicker
-       ├─▶ Seleziona data → selectionMode='manual'
-       ├─▶ Seleziona ora → debounce 300ms
-       └─▶ useEffect validation
-           ├─▶ 'available' → activeProposal set
-           └─▶ 'conflict' → mostra evento + 3 alternative
-               └─▶ Click alternativa → torna a Fast Path
-
-2. Footer
-   └─▶ activeProposal !== null → Bottone attivo "Proponi · ..."
-       └─▶ Click → handleSubmit → onSubmit(id, start, end)
-```
+| `src/features/bookings/components/CounterProposeDialog.tsx` | Ristrutturazione completa UI |
+| `src/components/ui/time-picker.tsx` | Styling opzioni (bg-primary per selected) |
 
