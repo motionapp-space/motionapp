@@ -1,222 +1,118 @@
 
-# Piano Implementazione: Salvataggio Prezzo Lezione Singola
+# Fix: Dropdown Categorie che si Chiude Immediatamente
 
-## Obiettivo
-Garantire che il prezzo della lezione singola venga sempre salvato correttamente, anche per coach senza un prodotto `single_session` esistente, prevenendo duplicati a livello database.
+## Problema Identificato
+
+Il dropdown delle categorie si apre e si richiude immediatamente a causa di un **conflitto tra due sistemi di gestione dello stato**:
+
+1. **Gestione manuale**: `handleContainerClick()` chiama `setIsOpen(true)`
+2. **Gestione Radix**: `PopoverTrigger` ha il proprio handler di click che fa toggle dello stato
+
+Quando clicchi sul container:
+1. `handleContainerClick` → `setIsOpen(true)` → popover si apre
+2. Radix `PopoverTrigger` intercetta lo stesso click → toggled back → `setIsOpen(false)`
+
+## Soluzione
+
+Rimuovere il `PopoverTrigger` con `asChild` e gestire manualmente l'apertura del popover, evitando il conflitto. In alternativa, aggiungere `onInteractOutside` e `onPointerDownOutside` per prevenire la chiusura quando si interagisce con elementi interni.
 
 ---
 
 ## Modifiche da Implementare
 
-### 1. Migrazione Database: Indice UNIQUE Parziale
+### File: `src/components/plan-editor/CategoryMultiSelect.tsx`
 
-Creare un indice univoco parziale che garantisce **un solo prodotto `single_session` per coach**, senza bloccare i pacchetti multipli.
+**Approccio**: Usare `onInteractOutside` e `onPointerDownOutside` sul `PopoverContent` per controllare quando il popover deve chiudersi, e fermare la propagazione dell'evento nel container.
 
-```sql
-CREATE UNIQUE INDEX IF NOT EXISTS idx_products_coach_single_session 
-ON products (coach_id) 
-WHERE type = 'single_session';
-```
-
----
-
-### 2. Backend: Upsert in `signup-coach`
-
-Aggiungere Step 4 dopo l'assegnazione del ruolo coach per creare il prodotto di default.
-
-**File:** `supabase/functions/signup-coach/index.ts`
-
-Dopo la riga 167 (dopo `console.log` del ruolo), aggiungere:
-
-```typescript
-// Step 4: Create default single_session product
-const { error: productError } = await supabaseAdmin
-  .from("products")
-  .insert({
-    coach_id: userId,
-    name: "Lezione singola",
-    type: "single_session",
-    credits_amount: 1,
-    price_cents: 5000, // Default 50€
-    duration_months: 12,
-    is_active: true,
-    is_visible: true,
-    sort_order: 0,
-  });
-
-if (productError) {
-  // Log ma non bloccare - indice UNIQUE impedisce duplicati
-  // Frontend gestira creazione se necessario
-  console.warn("[signup-coach] Default product creation failed:", productError.message);
-} else {
-  console.log(`[signup-coach] Default single_session product created for: ${userId}`);
-}
-```
-
----
-
-### 3. Frontend: `ProductCatalogSettings.tsx`
-
-Modificare `handlePriceBlur` per gestire tre scenari:
-1. Prodotto esiste → UPDATE
-2. Prodotto non esiste → CREATE
-3. Conflict durante CREATE → Refetch + UPDATE (fallback)
-
-**Modifiche:**
-
-**a) Aggiungere import `useQueryClient`:**
-```typescript
-import { useQueryClient } from "@tanstack/react-query";
-```
-
-**b) Aggiungere `refetch` dal hook e `queryClient`:**
-```typescript
-const { data: products, isLoading, refetch } = useProducts();
-const queryClient = useQueryClient();
-```
-
-**c) Aggiungere helper per feedback:**
-```typescript
-const showSavedFeedback = () => {
-  setShowSaved(true);
-  if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current);
-  savedTimeoutRef.current = window.setTimeout(() => {
-    setShowSaved(false);
-  }, 3500);
-};
-```
-
-**d) Riscrivere `handlePriceBlur`:**
-```typescript
-const handlePriceBlur = async () => {
-  // Skip se il prezzo non e cambiato e il prodotto esiste
-  if (singleSession && localPrice === singleSession.price_cents) {
-    return;
+```tsx
+// 1. Modificare handleContainerClick per fermare propagazione
+const handleContainerClick = (e: React.MouseEvent) => {
+  e.stopPropagation();  // Impedisce al click di risalire
+  if (isInteractive) {
+    inputRef.current?.focus();
+    setIsOpen(true);
   }
+};
 
-  try {
-    if (singleSession) {
-      // Caso 1: Prodotto esiste → UPDATE
-      await updateProduct.mutateAsync({
-        productId: singleSession.id,
-        input: { price_cents: localPrice },
-      });
-      showSavedFeedback();
-    } else {
-      // Caso 2: Prodotto NON esiste → CREATE
-      try {
-        await createProduct.mutateAsync({
-          name: "Lezione singola",
-          type: "single_session",
-          credits_amount: 1,
-          price_cents: localPrice,
-          duration_months: 12,
-          is_active: true,
-          is_visible: true,
-          sort_order: 0,
-        });
-        showSavedFeedback();
-      } catch (createError: unknown) {
-        // Caso 3: Conflict (duplicate key) → Refetch + UPDATE
-        const errorMessage = createError instanceof Error 
-          ? createError.message 
-          : String(createError);
-          
-        if (errorMessage.includes("duplicate") || errorMessage.includes("unique") || errorMessage.includes("23505")) {
-          // Race condition: prodotto creato da altro processo
-          await queryClient.invalidateQueries({ queryKey: ["products"] });
-          
-          const refreshedProducts = await refetch();
-          const refreshedSingle = refreshedProducts.data?.find(
-            p => p.type === "single_session"
-          );
-          
-          if (refreshedSingle) {
-            await updateProduct.mutateAsync({
-              productId: refreshedSingle.id,
-              input: { price_cents: localPrice },
-            });
-            showSavedFeedback();
-          }
-        } else {
-          throw createError;
-        }
-      }
+// 2. Aggiungere handler per PopoverContent
+<PopoverContent
+  className="w-[var(--radix-popover-trigger-width)] p-0"
+  align="start"
+  sideOffset={4}
+  onOpenAutoFocus={(e) => e.preventDefault()}
+  onInteractOutside={(e) => {
+    // Chiudi solo se il click e veramente fuori dal container
+    if (containerRef.current?.contains(e.target as Node)) {
+      e.preventDefault();
     }
-  } catch {
-    // Errore gia gestito dal hook (toast)
+  }}
+>
+```
+
+---
+
+## Dettaglio Implementazione
+
+### Modifica 1: Handler `handleContainerClick`
+
+Aggiungere `e.stopPropagation()` per impedire che l'evento risalga e venga interpretato come un click "outside" da Radix:
+
+```tsx
+const handleContainerClick = (e: React.MouseEvent) => {
+  e.stopPropagation();
+  if (isInteractive) {
+    inputRef.current?.focus();
+    setIsOpen(true);
   }
 };
 ```
 
-**e) Aggiornare indicatore di loading per includere createProduct:**
-```typescript
-{(updateProduct.isPending || createProduct.isPending) && (
-  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-    <Loader2 className="h-4 w-4 animate-spin" />
-    Salvataggio…
-  </span>
-)}
-{showSaved && !updateProduct.isPending && !createProduct.isPending && (
-  // ...
-)}
+### Modifica 2: Aggiornare la firma del div onClick
+
+```tsx
+<div
+  ref={containerRef}
+  onClick={handleContainerClick}  // Ora accetta MouseEvent
+  ...
+>
+```
+
+### Modifica 3: Aggiungere `onInteractOutside` al PopoverContent
+
+```tsx
+<PopoverContent
+  className="w-[var(--radix-popover-trigger-width)] p-0"
+  align="start"
+  sideOffset={4}
+  onOpenAutoFocus={(e) => e.preventDefault()}
+  onInteractOutside={(e) => {
+    // Non chiudere se il click e dentro il container (trigger)
+    if (containerRef.current?.contains(e.target as Node)) {
+      e.preventDefault();
+    }
+  }}
+>
 ```
 
 ---
 
-## Riepilogo File
+## Riepilogo Modifiche
 
-| File | Azione |
-|------|--------|
-| Nuova migrazione SQL | Indice UNIQUE parziale su `(coach_id) WHERE type = 'single_session'` |
-| `supabase/functions/signup-coach/index.ts` | Step 4: INSERT prodotto default dopo ruolo |
-| `src/features/products/components/ProductCatalogSettings.tsx` | handlePriceBlur con CREATE + fallback conflict |
-
----
-
-## Flusso Risultante
-
-```text
-Coach apre Settings → Tab "Lezioni e pacchetti"
-         |
-         v
-   useProducts() carica prodotti
-         |
-         ├─ singleSession trovato
-         |         |
-         |         v
-         |   Modifica prezzo → onBlur
-         |         |
-         |         v
-         |   updateProduct() → "Salvato" ✓
-         |
-         └─ singleSession === undefined
-                   |
-                   v
-             Modifica prezzo → onBlur
-                   |
-                   v
-             createProduct()
-                   |
-                   ├─ OK → "Salvato" ✓
-                   |
-                   └─ Conflict (duplicate)
-                             |
-                             v
-                       refetch() → trova prodotto
-                             |
-                             v
-                       updateProduct() → "Salvato" ✓
-```
+| Linea | Prima | Dopo |
+|-------|-------|------|
+| 72 | `const handleContainerClick = () => {` | `const handleContainerClick = (e: React.MouseEvent) => {` |
+| 73 | (nessun stopPropagation) | `e.stopPropagation();` |
+| 155 | solo `onOpenAutoFocus` | + `onInteractOutside` handler |
 
 ---
 
-## Vantaggi
+## Perche Funziona
 
-| Aspetto | Prima | Dopo |
-|---------|-------|------|
-| Integrita DB | Duplicati possibili | Impossibili (indice UNIQUE) |
-| Race conditions | Non gestite | Fallback automatico |
-| Nuovi coach | Nessun prodotto | Prodotto default creato alla registrazione |
-| Coach esistenti senza prodotto | Salvataggio fallisce silenziosamente | CREATE automatico al primo salvataggio |
-| UX | Nessun feedback visibile | "Salvato" sempre mostrato |
+1. **`e.stopPropagation()`**: Impedisce al click di risalire l'albero DOM e attivare il comportamento di toggle del `PopoverTrigger`
+
+2. **`onInteractOutside`**: Quando Radix rileva un'interazione fuori dal popover, controlliamo se e dentro il container (input area). Se si, preveniamo la chiusura.
+
+Questo permette di:
+- Aprire il dropdown cliccando sul container
+- Mantenerlo aperto mentre si digita
+- Chiuderlo solo con click veramente esterni o premendo Escape
