@@ -7,7 +7,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "@/lib/queryClient";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { TopbarProvider } from "@/contexts/TopbarContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -122,61 +122,63 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <ScrollToTop />
-          {/* Initialize session bridge for coaches - outside Routes */}
-          {isCoach && user && <CoachSessionInitializer userId={user.id} />}
-          <Routes>
-            {/* Client area routes - always accessible, no coach auth required */}
-            <Route path="/client/auth" element={<ClientAuth />} />
-            <Route path="/client/accept-invite" element={<ClientAcceptInvite />} />
-            
-            {/* Live session - immersive layout (BEFORE /client/app for correct matching) */}
-            <Route path="/client/app/session" element={<ClientSessionLayout />}>
-              <Route index element={<ClientLiveSession />} />
-            </Route>
-            
-            {/* Client app - standard layout */}
-            <Route path="/client/app" element={<ClientAppLayout />}>
-              <Route index element={<Navigate to="workouts" replace />} />
-            <Route path="workouts" element={<ClientWorkouts />} />
-              <Route path="appointments" element={<ClientAppointments />} />
-              <Route path="appointments/all" element={<ClientAllAppointments />} />
-              <Route path="notifications" element={<ClientNotifications />} />
-            </Route>
+          <AuthProvider user={user} isLoading={loading}>
+            <ScrollToTop />
+            {/* Initialize session bridge for coaches - outside Routes */}
+            {isCoach && user && <CoachSessionInitializer userId={user.id} />}
+            <Routes>
+              {/* Client area routes - always accessible, no coach auth required */}
+              <Route path="/client/auth" element={<ClientAuth />} />
+              <Route path="/client/accept-invite" element={<ClientAcceptInvite />} />
+              
+              {/* Live session - immersive layout (BEFORE /client/app for correct matching) */}
+              <Route path="/client/app/session" element={<ClientSessionLayout />}>
+                <Route index element={<ClientLiveSession />} />
+              </Route>
+              
+              {/* Client app - standard layout */}
+              <Route path="/client/app" element={<ClientAppLayout />}>
+                <Route index element={<Navigate to="workouts" replace />} />
+              <Route path="workouts" element={<ClientWorkouts />} />
+                <Route path="appointments" element={<ClientAppointments />} />
+                <Route path="appointments/all" element={<ClientAllAppointments />} />
+                <Route path="notifications" element={<ClientNotifications />} />
+              </Route>
 
-            {/* Public routes - accessible without authentication */}
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/share/:token" element={<SharedPlan />} />
-            <Route path="/booking/:coachId" element={<ClientBooking />} />
+              {/* Public routes - accessible without authentication */}
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/share/:token" element={<SharedPlan />} />
+              <Route path="/booking/:coachId" element={<ClientBooking />} />
 
-            {/* Admin area routes - require admin role */}
-            <Route element={<AdminLayout />}>
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/invites" element={<AdminInvites />} />
-            </Route>
+              {/* Admin area routes - require admin role */}
+              <Route element={<AdminLayout />}>
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/invites" element={<AdminInvites />} />
+              </Route>
 
-            {/* Coach area routes - require authentication */}
-            <Route element={<CoachLayout isAuthenticated={!!user} />}>
-              <Route path="/" element={<Clients />} />
-              <Route path="/library" element={<Library />} />
-              <Route path="/templates" element={<Navigate to="/library?tab=templates" replace />} />
-              <Route path="/templates/new" element={<TemplateEditor />} />
-              <Route path="/templates/:id" element={<TemplateDetail />} />
-              <Route path="/templates/:id/edit" element={<TemplateEditor />} />
-              <Route path="/templates/:id/missing" element={<TemplateMissing />} />
-              <Route path="/client-plans/new" element={<ClientPlanEditor />} />
-              <Route path="/client-plans/:id/edit" element={<ClientPlanEditor />} />
-              <Route path="/clients/:id" element={<ClientDetail />} />
-              <Route path="/calendar" element={<Calendar />} />
-              <Route path="/calendar/manage" element={<BookingManagement />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/session/live" element={<LiveSession />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
+              {/* Coach area routes - require authentication */}
+              <Route element={<CoachLayout isAuthenticated={!!user} />}>
+                <Route path="/" element={<Clients />} />
+                <Route path="/library" element={<Library />} />
+                <Route path="/templates" element={<Navigate to="/library?tab=templates" replace />} />
+                <Route path="/templates/new" element={<TemplateEditor />} />
+                <Route path="/templates/:id" element={<TemplateDetail />} />
+                <Route path="/templates/:id/edit" element={<TemplateEditor />} />
+                <Route path="/templates/:id/missing" element={<TemplateMissing />} />
+                <Route path="/client-plans/new" element={<ClientPlanEditor />} />
+                <Route path="/client-plans/:id/edit" element={<ClientPlanEditor />} />
+                <Route path="/clients/:id" element={<ClientDetail />} />
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/calendar/manage" element={<BookingManagement />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/session/live" element={<LiveSession />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
       {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}

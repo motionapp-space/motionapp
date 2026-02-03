@@ -1,33 +1,21 @@
-import { useEffect, useState } from "react";
 import { Outlet, Navigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useUserRoles } from "@/features/auth/hooks/useUserRoles";
 
 /**
  * Protected layout for admin routes
- * - Verifies Supabase authentication
+ * Uses centralized auth context - no redundant getSession() calls
+ * - Verifies authentication via context
  * - Verifies admin role via useUserRoles
  * - Shows loading during verification
  * - Redirects to / if not admin
  */
 export default function AdminLayout() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const { userId, isLoading: authLoading } = useAuth();
   const { isAdmin, isLoading: rolesLoading } = useUserRoles();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setIsAuthenticated(!!session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Still checking auth status
-  if (isAuthenticated === null || rolesLoading) {
+  // Still checking auth status or roles
+  if (authLoading || rolesLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -39,7 +27,7 @@ export default function AdminLayout() {
   }
 
   // Not authenticated - redirect to auth
-  if (!isAuthenticated) {
+  if (!userId) {
     return <Navigate to="/auth" replace />;
   }
 

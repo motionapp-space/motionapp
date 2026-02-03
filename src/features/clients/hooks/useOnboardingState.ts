@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 export type OnboardingStateType = 'ZERO_CLIENTS' | 'FIRST_CLIENT_NO_CONTENT' | 'ACTIVE_USER';
@@ -20,24 +20,12 @@ export interface OnboardingState {
   isLoading: boolean;
 }
 
+/**
+ * Hook to fetch coach onboarding state
+ * Uses centralized auth context - no redundant getSession() calls
+ */
 export function useOnboardingState(): OnboardingState {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  // Get user ID from session (runs once)
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user?.id ?? null);
-      setAuthLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserId(session?.user?.id ?? null);
-      setAuthLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { userId, isLoading: authLoading } = useAuth();
 
   // Single RPC query for all onboarding data
   const onboardingQuery = useQuery({
@@ -53,9 +41,8 @@ export function useOnboardingState(): OnboardingState {
     staleTime: 30_000,
   });
 
-  // Loading state: includes auth pending + query loading
-  const isPending = authLoading || !userId;
-  const isLoading = isPending || onboardingQuery.isLoading;
+  // Coordinated loading state
+  const isLoading = authLoading || onboardingQuery.isLoading;
 
   // Safe defaults
   const hasActiveClients = onboardingQuery.data?.has_active_clients ?? false;
