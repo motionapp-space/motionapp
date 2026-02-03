@@ -35,16 +35,10 @@ const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Loading roles - show spinner
+  // Roles are pre-loaded in App.tsx, so rolesLoading should be false immediately
+  // Keep as fallback only for edge cases (direct navigation, etc.)
   if (rolesLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
-          <p className="text-muted-foreground">Verifica autorizzazioni...</p>
-        </div>
-      </div>
-    );
+    return null; // Return nothing - App.tsx spinner handles this
   }
 
   // Not a coach - redirect appropriately
