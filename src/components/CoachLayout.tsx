@@ -8,7 +8,6 @@ import { MobileNav } from "@/components/MobileNav";
 import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { useResponsiveLayout } from "@/hooks/use-responsive-layout";
 import { useUserRoles } from "@/features/auth/hooks/useUserRoles";
-import { FullScreenLoader, FullScreenError } from "@/components/common/FullScreenLoader";
 import { cn } from "@/lib/utils";
 
 interface CoachLayoutProps {
@@ -18,7 +17,7 @@ interface CoachLayoutProps {
 const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
   const location = useLocation();
   const { isDesktopLarge, isDesktopSmall, isTablet, isMobile } = useResponsiveLayout();
-  const { isCoach, isClient, isLoading: rolesLoading, isError: rolesError, refetch } = useUserRoles();
+  const { isCoach, isClient, isLoading: rolesLoading } = useUserRoles();
   
   // Off-canvas state for tablet/mobile only
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -36,19 +35,15 @@ const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Loading roles - show spinner instead of blank page
+  // Loading roles - show spinner
   if (rolesLoading) {
-    return <FullScreenLoader message="Verifica permessi..." />;
-  }
-
-  // Error fetching roles - show retry option instead of redirecting
-  if (rolesError) {
     return (
-      <FullScreenError
-        title="Impossibile verificare i permessi"
-        message="Si è verificato un errore durante la verifica dei permessi. Controlla la connessione e riprova."
-        onRetry={() => refetch()}
-      />
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
+          <p className="text-muted-foreground">Verifica autorizzazioni...</p>
+        </div>
+      </div>
     );
   }
 

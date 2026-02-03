@@ -1,7 +1,6 @@
 import { Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRoles } from "@/features/auth/hooks/useUserRoles";
-import { FullScreenLoader, FullScreenError } from "@/components/common/FullScreenLoader";
 
 /**
  * Protected layout for admin routes
@@ -9,32 +8,27 @@ import { FullScreenLoader, FullScreenError } from "@/components/common/FullScree
  * - Verifies authentication via context
  * - Verifies admin role via useUserRoles
  * - Shows loading during verification
- * - Shows error with retry on failure
  * - Redirects to / if not admin
  */
 export default function AdminLayout() {
   const { userId, isLoading: authLoading } = useAuth();
-  const { isAdmin, isLoading: rolesLoading, isError: rolesError, refetch } = useUserRoles();
+  const { isAdmin, isLoading: rolesLoading } = useUserRoles();
 
-  // Loading state - show spinner
+  // Still checking auth status or roles
   if (authLoading || rolesLoading) {
-    return <FullScreenLoader message="Verifica permessi..." />;
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
+          <p className="text-muted-foreground">Verifica autorizzazioni...</p>
+        </div>
+      </div>
+    );
   }
 
   // Not authenticated - redirect to auth
   if (!userId) {
     return <Navigate to="/auth" replace />;
-  }
-
-  // Error fetching roles - show retry option
-  if (rolesError) {
-    return (
-      <FullScreenError
-        title="Impossibile verificare i permessi"
-        message="Si è verificato un errore durante la verifica dei permessi. Controlla la connessione e riprova."
-        onRetry={() => refetch()}
-      />
-    );
   }
 
   // Not admin - redirect to home

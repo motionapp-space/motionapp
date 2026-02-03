@@ -18,15 +18,11 @@ export interface OnboardingState {
   hasAnyPlan: boolean;
   hasAnyAppointment: boolean;
   isLoading: boolean;
-  isError: boolean;
-  error: Error | null;
-  refetch: () => void;
 }
 
 /**
  * Hook to fetch coach onboarding state
  * Uses centralized auth context - no redundant getSession() calls
- * Now exposes isError and refetch for error handling
  */
 export function useOnboardingState(): OnboardingState {
   const { userId, isLoading: authLoading } = useAuth();
@@ -43,8 +39,6 @@ export function useOnboardingState(): OnboardingState {
     },
     enabled: !!userId,
     staleTime: 30_000,
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
   });
 
   // Coordinated loading state
@@ -73,8 +67,5 @@ export function useOnboardingState(): OnboardingState {
     hasAnyPlan,
     hasAnyAppointment,
     isLoading,
-    isError: onboardingQuery.isError,
-    error: onboardingQuery.error,
-    refetch: onboardingQuery.refetch,
   };
 }
