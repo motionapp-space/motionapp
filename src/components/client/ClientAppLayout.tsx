@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useCurrentClientWithAuth } from "@/features/client/hooks/useCurrentClientWithAuth";
 import { ClientAuthProvider } from "@/contexts/ClientAuthContext";
+import { useUserRoles } from "@/features/auth/hooks/useUserRoles";
 import ClientTopbar from "./ClientTopbar";
 import ClientBottomNav from "./ClientBottomNav";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,9 +57,10 @@ const ClientAppLayout = () => {
  */
 function AuthenticatedClientLayout({ userId }: { userId: string }) {
   const { data: client, isLoading: clientLoading } = useCurrentClientWithAuth(userId);
+  const { isClient, isLoading: rolesLoading } = useUserRoles();
 
-  // Loading client data
-  if (clientLoading) {
+  // Loading client data or roles
+  if (clientLoading || rolesLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
@@ -67,6 +69,11 @@ function AuthenticatedClientLayout({ userId }: { userId: string }) {
         </div>
       </div>
     );
+  }
+
+  // Not a client - redirect to client auth
+  if (!isClient) {
+    return <Navigate to="/client/auth" replace />;
   }
 
   // Authenticated but no linked client profile

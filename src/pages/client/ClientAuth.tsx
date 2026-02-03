@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
+import { fetchUserRoles } from "@/features/auth/utils/fetchUserRoles";
 
 const ClientAuth = () => {
   const navigate = useNavigate();
@@ -15,9 +16,18 @@ const ClientAuth = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        navigate("/client/app/workouts", { replace: true });
+        // Verify the user has client role
+        const roles = await fetchUserRoles(session.user.id);
+        
+        if (roles.includes('client')) {
+          navigate("/client/app/workouts", { replace: true });
+        } else {
+          // User is not a client - sign out and show error
+          await supabase.auth.signOut();
+          toast.error("Questa area è riservata ai clienti");
+        }
       }
     });
   }, [navigate]);
@@ -27,14 +37,23 @@ const ClientAuth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
-      navigate("/client/app/workouts", { replace: true });
+      // Verify the user has client role
+      const roles = await fetchUserRoles(data.user.id);
+      
+      if (roles.includes('client')) {
+        navigate("/client/app/workouts", { replace: true });
+      } else {
+        // User is not a client - sign out and show error
+        await supabase.auth.signOut();
+        toast.error("Questa area è riservata ai clienti");
+      }
     } catch (error: any) {
       toast.error(error.message || "Errore durante l'accesso");
     } finally {

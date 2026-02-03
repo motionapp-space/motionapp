@@ -10,6 +10,7 @@ import { Dumbbell, Eye, EyeOff, Check, X, AlertCircle, Mail } from "lucide-react
 import { validatePassword, isPasswordValid } from "@/utils/passwordValidator";
 import { PasswordValidationChecklist } from "@/components/auth/PasswordValidationChecklist";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { fetchUserRoles } from "@/features/auth/utils/fetchUserRoles";
 
 interface InviteValidation {
   status: "idle" | "loading" | "valid" | "invalid";
@@ -69,12 +70,28 @@ const Auth = () => {
     validateInvite();
   }, [inviteCode]);
 
-  // Check existing session
+  // Check existing session and redirect based on role
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         const next = searchParams.get("next");
-        navigate(next || "/", { replace: true });
+        if (next) {
+          navigate(next, { replace: true });
+          return;
+        }
+        
+        // Fetch roles and redirect appropriately
+        const roles = await fetchUserRoles(session.user.id);
+        
+        if (roles.includes('coach')) {
+          navigate("/", { replace: true });
+        } else if (roles.includes('admin')) {
+          navigate("/admin", { replace: true });
+        } else {
+          // User has no coach/admin role - sign out and show error
+          await supabase.auth.signOut();
+          toast.error("Account non abilitato all'accesso coach");
+        }
       }
     });
   }, [navigate, searchParams]);
@@ -159,14 +176,31 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
+      
       const next = searchParams.get("next");
-      navigate(next || "/", { replace: true });
+      if (next) {
+        navigate(next, { replace: true });
+        return;
+      }
+      
+      // Fetch roles and redirect appropriately
+      const roles = await fetchUserRoles(data.user.id);
+      
+      if (roles.includes('coach')) {
+        navigate("/", { replace: true });
+      } else if (roles.includes('admin')) {
+        navigate("/admin", { replace: true });
+      } else {
+        // User has no coach/admin role - sign out and show error
+        await supabase.auth.signOut();
+        toast.error("Account non abilitato all'accesso coach");
+      }
     } catch (error: any) {
       toast.error(error.message || "Errore durante l'accesso");
     } finally {
