@@ -1,112 +1,220 @@
 
-# Piano: Redirect Post-Login Intelligente per Dominio
 
-## Contesto
+# Piano: Ottimizzazione Caricamento Homepage Coach
 
-L'app ha due entry point di autenticazione distinti:
-- `/auth` → coach e admin
-- `/client/auth` → client
+## Problema Identificato
 
-Attualmente entrambe le pagine fanno redirect generici che causano doppi redirect e flash UI. Ogni auth page deve gestire solo i ruoli di sua competenza.
+L'hook `useOnboardingState` esegue **6 query separate** e alcune sono sequenziali:
+
+| Query | Tabelle coinvolte | Dipendenze |
+|-------|-------------------|------------|
+| `nonArchivedCountQuery` | `coach_clients` + `clients` | - |
+| `clientsQuery` | `coach_clients` + `clients` + **edge function** | - |
+| `coachClientsQuery` | `coach_clients` | - |
+| `plansQuery` | `client_plans` | Aspetta `coachClientsQuery` |
+| `eventsQuery` | `events` | Aspetta `coachClientsQuery` |
+| `archivedQuery` | `coach_clients` + `clients` | - |
+
+Inoltre:
+- Ogni query verifica sessione separatamente (`supabase.auth.getSession()`)
+- `clientsQuery` invoca l'edge function `compute-client-data` (latenza extra ~300-500ms)
+- Lo stato `isAuthenticated === null` causa flash della pagina "Benvenuto"
+
+**Tempo totale stimato: 800-1400ms**
 
 ---
 
-## Modifiche Tecniche
+## Soluzione
 
-### 1. Nuovo Utility: `src/features/auth/utils/fetchUserRoles.ts`
+### 1. Nuova RPC Function: `get_coach_onboarding_data`
 
-Creare una funzione riutilizzabile per recuperare i ruoli dato un `userId`:
+Creare una funzione PostgreSQL che ritorna tutti i dati di onboarding in una singola chiamata.
 
-```text
-fetchUserRoles(userId: string): Promise<AppRole[]>
+**File migration:** `supabase/migrations/[timestamp]_coach_onboarding_rpc.sql`
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_coach_onboarding_data(p_coach_id uuid)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+  v_result json;
+BEGIN
+  -- Auth check: solo il coach puo chiamare per se stesso
+  IF p_coach_id IS DISTINCT FROM auth.uid() THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+
+  WITH coach_client_ids AS (
+    SELECT id AS coach_client_id, client_id
+    FROM coach_clients
+    WHERE coach_id = p_coach_id
+      AND status = 'active'
+  ),
+  has_active AS (
+    SELECT EXISTS (
+      SELECT 1
+      FROM clients c
+      INNER JOIN coach_client_ids cc ON c.id = cc.client_id
+      WHERE c.archived_at IS NULL
+    ) AS val
+  ),
+  has_archived AS (
+    SELECT EXISTS (
+      SELECT 1
+      FROM clients c
+      INNER JOIN coach_client_ids cc ON c.id = cc.client_id
+      WHERE c.archived_at IS NOT NULL
+    ) AS val
+  ),
+  has_plan AS (
+    SELECT EXISTS (
+      SELECT 1
+      FROM client_plans cp
+      INNER JOIN coach_client_ids cc ON cp.coach_client_id = cc.coach_client_id
+      WHERE cp.status = 'IN_CORSO'
+        AND cp.deleted_at IS NULL
+    ) AS val
+  ),
+  has_event AS (
+    SELECT EXISTS (
+      SELECT 1
+      FROM events e
+      INNER JOIN coach_client_ids cc ON e.coach_client_id = cc.coach_client_id
+    ) AS val
+  )
+  SELECT json_build_object(
+    'has_active_clients', (SELECT val FROM has_active),
+    'has_archived_clients', (SELECT val FROM has_archived),
+    'has_any_plan', (SELECT val FROM has_plan),
+    'has_any_appointment', (SELECT val FROM has_event)
+  ) INTO v_result;
+
+  RETURN v_result;
+END;
+$$;
 ```
 
-Questa funzione:
-- Interroga `user_roles` filtrando per `user_id`
-- Ritorna array di ruoli o array vuoto in caso di errore
-- Gestisce errori con console log ma non blocca il flusso
+**Caratteristiche:**
+- `SECURITY DEFINER` per accesso ai dati via RLS
+- Check `p_coach_id = auth.uid()` per sicurezza
+- `EXISTS` invece di `COUNT` per performance (si ferma al primo match)
+- Tutte le query usano la stessa CTE `coach_client_ids` (nessun join ripetuto)
 
 ---
 
-### 2. Modifica: `src/pages/Auth.tsx` (Coach/Admin)
+### 2. Refactor `useOnboardingState.ts`
 
-**Logica redirect post-login:**
+**File:** `src/features/clients/hooks/useOnboardingState.ts`
 
-| Condizione | Redirect |
-|------------|----------|
-| `next` presente | `next` |
-| Ha ruolo `coach` | `/` |
-| Ha ruolo `admin` | `/admin` |
-| Nessun ruolo valido | Resta su `/auth` + toast errore |
+Sostituire le 6 query separate con una singola chiamata RPC.
 
-**Modifiche specifiche:**
+**Interfaccia risposta:**
 
-a) **useEffect sessione esistente (righe 72-80):**
-   - Dopo aver rilevato una sessione esistente
-   - Recuperare i ruoli con `fetchUserRoles(session.user.id)`
-   - Applicare logica redirect sopra descritta
-
-b) **handleSignIn (righe 157-175):**
-   - Dopo login riuscito, recuperare `data.user.id`
-   - Recuperare i ruoli
-   - Se ha `coach` o `admin` → redirect appropriato
-   - Altrimenti → mostrare toast "Account non abilitato all'accesso coach" e non navigare
-
-c) **Stato UI per errore accesso:**
-   - Aggiungere stato `accessError` per mostrare messaggio inline se l'utente non ha ruoli coach/admin
-
----
-
-### 3. Modifica: `src/pages/client/ClientAuth.tsx` (Client)
-
-**Logica redirect post-login:**
-
-| Condizione | Redirect |
-|------------|----------|
-| Ha ruolo `client` | `/client/app` |
-| Non ha ruolo `client` | Resta su `/client/auth` + toast errore |
-
-**Modifiche specifiche:**
-
-a) **useEffect sessione esistente (righe 17-23):**
-   - Dopo aver rilevato una sessione
-   - Recuperare i ruoli
-   - Se ha `client` → redirect a `/client/app`
-   - Altrimenti → logout automatico + toast "Questa area e riservata ai clienti"
-
-b) **handleSignIn (righe 25-43):**
-   - Dopo login riuscito
-   - Verificare ruolo `client`
-   - Se non client → toast errore + logout
-
----
-
-### 4. Modifica: `src/components/client/ClientAppLayout.tsx`
-
-Aggiungere verifica ruolo `client` per coerenza con `CoachLayout`:
-
-- Importare `useUserRoles`
-- Dopo auth check, verificare `isClient`
-- Se non client → redirect a `/client/auth`
-
-Questo serve come guardrail di sicurezza, ma il redirect principale avviene gia nella auth page.
-
----
-
-## Flusso Risultante
-
-**Login da /auth (coach):**
-```text
-Login → fetch ruoli → isCoach? → /
-                   → isAdmin? → /admin
-                   → else → toast errore, resta
+```typescript
+interface CoachOnboardingData {
+  has_active_clients: boolean;
+  has_archived_clients: boolean;
+  has_any_plan: boolean;
+  has_any_appointment: boolean;
+}
 ```
 
-**Login da /client/auth (client):**
-```text
-Login → fetch ruoli → isClient? → /client/app
-                   → else → logout + toast errore
+**Nuova implementazione:**
+
+```typescript
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/features/auth/hooks/useAuth"; // o hook esistente
+
+export type OnboardingStateType = 'ZERO_CLIENTS' | 'FIRST_CLIENT_NO_CONTENT' | 'ACTIVE_USER';
+
+export interface OnboardingState {
+  state: OnboardingStateType;
+  hasActiveClients: boolean;
+  hasArchivedClients: boolean;
+  hasAnyPlan: boolean;
+  hasAnyAppointment: boolean;
+  isLoading: boolean;
+}
+
+export function useOnboardingState(): OnboardingState {
+  // Usare userId dalla sessione gia disponibile in App/Layout
+  // Per ora recupero qui, ma idealmente passato come prop
+  const { session, isLoading: authLoading } = useAuth();
+  const userId = session?.user?.id;
+
+  const onboardingQuery = useQuery({
+    queryKey: ['coach-onboarding', userId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_coach_onboarding_data', {
+        p_coach_id: userId
+      });
+      if (error) throw error;
+      return data as CoachOnboardingData;
+    },
+    enabled: !!userId,
+    staleTime: 30_000,
+  });
+
+  // Stato di loading: include auth pending + query loading
+  const isPending = authLoading || !userId;
+  const isLoading = isPending || onboardingQuery.isLoading;
+
+  // Valori sicuri (defaults)
+  const hasActiveClients = onboardingQuery.data?.has_active_clients ?? false;
+  const hasArchivedClients = onboardingQuery.data?.has_archived_clients ?? false;
+  const hasAnyPlan = onboardingQuery.data?.has_any_plan ?? false;
+  const hasAnyAppointment = onboardingQuery.data?.has_any_appointment ?? false;
+
+  // Determina stato onboarding
+  let state: OnboardingStateType;
+  if (!hasActiveClients) {
+    state = 'ZERO_CLIENTS';
+  } else if (!hasAnyPlan && !hasAnyAppointment) {
+    state = 'FIRST_CLIENT_NO_CONTENT';
+  } else {
+    state = 'ACTIVE_USER';
+  }
+
+  return {
+    state,
+    hasActiveClients,
+    hasArchivedClients,
+    hasAnyPlan,
+    hasAnyAppointment,
+    isLoading,
+  };
+}
 ```
+
+**Cambiamenti chiave:**
+- Da 6 `useQuery` a 1 `useQuery`
+- Nessuna chiamata `supabase.auth.getUser()` dentro `queryFn`
+- `isPending` gestisce il flash iniziale
+- Rinominato `clientsCount` in `hasActiveClients` (boolean, non count)
+
+---
+
+### 3. Aggiornare `Clients.tsx`
+
+**File:** `src/pages/Clients.tsx`
+
+Adattare l'uso dell'hook ai nuovi nomi dei campi:
+
+```typescript
+// Prima
+const showArchivedToggle = onboarding.hasArchivedClients;
+const showFilters = onboarding.clientsCount > 1;
+
+// Dopo
+const showArchivedToggle = onboarding.hasArchivedClients;
+const showFilters = onboarding.hasActiveClients; // Almeno 1 cliente attivo
+```
+
+**Nota:** Se serve il count esatto per la logica `> 1`, si puo aggiungere un campo `active_clients_count` all'RPC. Ma per ora `hasActiveClients` boolean e sufficiente.
 
 ---
 
@@ -114,16 +222,43 @@ Login → fetch ruoli → isClient? → /client/app
 
 | File | Azione |
 |------|--------|
-| `src/features/auth/utils/fetchUserRoles.ts` | Nuovo |
-| `src/pages/Auth.tsx` | Modifica |
-| `src/pages/client/ClientAuth.tsx` | Modifica |
-| `src/components/client/ClientAppLayout.tsx` | Modifica |
+| `supabase/migrations/[timestamp]_coach_onboarding_rpc.sql` | Nuovo |
+| `src/features/clients/hooks/useOnboardingState.ts` | Refactor completo |
+| `src/pages/Clients.tsx` | Adattare campi rinominati |
 
 ---
 
-## Note di Sicurezza
+## Impatto Performance
 
-- La logica frontend e solo UX/routing
-- La vera protezione resta nelle RLS del database (`has_role`)
-- I layout (`CoachLayout`, `AdminLayout`, `ClientAppLayout`) restano guardrail di backup
-- Non si mescolano mai i domini delle due auth page
+| Metrica | Prima | Dopo |
+|---------|-------|------|
+| Query al database | 6+ | 1 |
+| Roundtrip network | 8-12 | 1 |
+| Edge function calls | 1 | 0 |
+| Tempo stimato | 800-1400ms | **50-100ms** |
+
+---
+
+## Gestione Edge Cases
+
+1. **Errore RPC**: Il `queryFn` lancia errore, TanStack Query gestisce il retry
+2. **Utente non autenticato**: `enabled: !!userId` previene chiamate inutili
+3. **Auth in corso**: `isPending` mantiene lo spinner fino a dati pronti
+
+---
+
+## Nota su `clientsCount`
+
+Il piano proposto usa `has_active_clients` (boolean). Se la UI ha bisogno del count esatto (es. mostrare "Hai 5 clienti"), si puo estendere l'RPC:
+
+```sql
+active_clients_count AS (
+  SELECT COUNT(*) as cnt
+  FROM clients c
+  INNER JOIN coach_client_ids cc ON c.id = cc.client_id
+  WHERE c.archived_at IS NULL
+)
+```
+
+Ma per l'onboarding, i boolean sono sufficienti e piu performanti.
+
