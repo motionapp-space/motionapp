@@ -2,22 +2,16 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, UserWithRole, AppRole } from "@/types/user";
 
 /**
- * Fetches the current authenticated user with their role
- * Returns null if not authenticated or no user record found
+ * Fetches user profile with role for a specific user ID
+ * Returns null if no user record found or on error
  */
-export async function getCurrentUserWithRole(): Promise<UserWithRole | null> {
+export async function fetchUserProfileWithRole(userId: string): Promise<UserWithRole | null> {
   try {
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !authUser) {
-      return null;
-    }
-
     // Fetch user profile from users table
     const { data: profile, error: profileError } = await supabase
       .from('users')
       .select('*')
-      .eq('id', authUser.id)
+      .eq('id', userId)
       .maybeSingle();
 
     if (profileError) {
@@ -27,7 +21,7 @@ export async function getCurrentUserWithRole(): Promise<UserWithRole | null> {
 
     // If no profile exists yet (edge case), return null
     if (!profile) {
-      console.warn('No user profile found for auth user:', authUser.id);
+      console.warn('No user profile found for user:', userId);
       return null;
     }
 
@@ -35,7 +29,7 @@ export async function getCurrentUserWithRole(): Promise<UserWithRole | null> {
     const { data: rolesData, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', authUser.id);
+      .eq('user_id', userId);
 
     if (roleError) {
       console.error('Error fetching user roles:', roleError);
@@ -58,6 +52,26 @@ export async function getCurrentUserWithRole(): Promise<UserWithRole | null> {
       created_at: profile.created_at,
       role,
     };
+  } catch (error) {
+    console.error('Unexpected error in fetchUserProfileWithRole:', error);
+    return null;
+  }
+}
+
+/**
+ * @deprecated Use fetchUserProfileWithRole with userId from context instead
+ * Fetches the current authenticated user with their role
+ * Returns null if not authenticated or no user record found
+ */
+export async function getCurrentUserWithRole(): Promise<UserWithRole | null> {
+  try {
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser) {
+      return null;
+    }
+
+    return fetchUserProfileWithRole(authUser.id);
   } catch (error) {
     console.error('Unexpected error in getCurrentUserWithRole:', error);
     return null;

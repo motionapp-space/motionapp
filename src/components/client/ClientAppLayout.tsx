@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
 import { Outlet, Navigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentClientWithAuth } from "@/features/client/hooks/useCurrentClientWithAuth";
 import { ClientAuthProvider } from "@/contexts/ClientAuthContext";
 import { useUserRoles } from "@/features/auth/hooks/useUserRoles";
@@ -10,25 +8,12 @@ import ClientBottomNav from "./ClientBottomNav";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
+/**
+ * Protected layout for client app routes
+ * Uses centralized auth context - no redundant getSession() calls
+ */
 const ClientAppLayout = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  // Auth check - runs before any data fetching
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { user, userId, isLoading: authLoading } = useAuth();
 
   // Loading state - show spinner while checking auth
   if (authLoading) {
@@ -43,12 +28,12 @@ const ClientAppLayout = () => {
   }
 
   // Not authenticated - redirect immediately (render-time protection)
-  if (!user) {
+  if (!userId) {
     return <Navigate to="/client/auth" replace />;
   }
 
   // Authenticated - render the protected content
-  return <AuthenticatedClientLayout userId={user.id} />;
+  return <AuthenticatedClientLayout userId={userId} />;
 };
 
 /**
