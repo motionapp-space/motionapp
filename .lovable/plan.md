@@ -1,150 +1,205 @@
 
 
-# Piano: Ottimizzazione Caricamento Homepage Coach
+# Piano: Auth State Centralizzato
 
 ## Problema Identificato
 
-L'hook `useOnboardingState` esegue **6 query separate** e alcune sono sequenziali:
+Dopo il login, 5+ componenti chiamano `supabase.auth.getSession()` / `getUser()` indipendentemente:
 
-| Query | Tabelle coinvolte | Dipendenze |
-|-------|-------------------|------------|
-| `nonArchivedCountQuery` | `coach_clients` + `clients` | - |
-| `clientsQuery` | `coach_clients` + `clients` + **edge function** | - |
-| `coachClientsQuery` | `coach_clients` | - |
-| `plansQuery` | `client_plans` | Aspetta `coachClientsQuery` |
-| `eventsQuery` | `events` | Aspetta `coachClientsQuery` |
-| `archivedQuery` | `coach_clients` + `clients` | - |
+| Componente | Chiamata Auth | Problema |
+|------------|---------------|----------|
+| `App.tsx` | `getSession()` | OK - fonte principale |
+| `CoachLayout` | via `useUserRoles()` → `getUser()` | Duplicata |
+| `AdminLayout` | `getSession()` | Duplicata |
+| `ClientAppLayout` | `getSession()` | Duplicata |
+| `useOnboardingState` | `getSession()` | Duplicata |
+| `useUserRoles` → `roles.api.ts` | `getUser()` | Duplicata |
+| `useCurrentUser` → `users.api.ts` | `getUser()` | Duplicata |
 
-Inoltre:
-- Ogni query verifica sessione separatamente (`supabase.auth.getSession()`)
-- `clientsQuery` invoca l'edge function `compute-client-data` (latenza extra ~300-500ms)
-- Lo stato `isAuthenticated === null` causa flash della pagina "Benvenuto"
-
-**Tempo totale stimato: 800-1400ms**
+Ogni chiamata crea uno stato loading indipendente, causando rendering frammentati (topbar incompleta, spinner tardivi, avatar vuoto).
 
 ---
 
 ## Soluzione
 
-### 1. Nuova RPC Function: `get_coach_onboarding_data`
-
-Creare una funzione PostgreSQL che ritorna tutti i dati di onboarding in una singola chiamata.
-
-**File migration:** `supabase/migrations/[timestamp]_coach_onboarding_rpc.sql`
-
-```sql
-CREATE OR REPLACE FUNCTION public.get_coach_onboarding_data(p_coach_id uuid)
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-DECLARE
-  v_result json;
-BEGIN
-  -- Auth check: solo il coach puo chiamare per se stesso
-  IF p_coach_id IS DISTINCT FROM auth.uid() THEN
-    RAISE EXCEPTION 'unauthorized';
-  END IF;
-
-  WITH coach_client_ids AS (
-    SELECT id AS coach_client_id, client_id
-    FROM coach_clients
-    WHERE coach_id = p_coach_id
-      AND status = 'active'
-  ),
-  has_active AS (
-    SELECT EXISTS (
-      SELECT 1
-      FROM clients c
-      INNER JOIN coach_client_ids cc ON c.id = cc.client_id
-      WHERE c.archived_at IS NULL
-    ) AS val
-  ),
-  has_archived AS (
-    SELECT EXISTS (
-      SELECT 1
-      FROM clients c
-      INNER JOIN coach_client_ids cc ON c.id = cc.client_id
-      WHERE c.archived_at IS NOT NULL
-    ) AS val
-  ),
-  has_plan AS (
-    SELECT EXISTS (
-      SELECT 1
-      FROM client_plans cp
-      INNER JOIN coach_client_ids cc ON cp.coach_client_id = cc.coach_client_id
-      WHERE cp.status = 'IN_CORSO'
-        AND cp.deleted_at IS NULL
-    ) AS val
-  ),
-  has_event AS (
-    SELECT EXISTS (
-      SELECT 1
-      FROM events e
-      INNER JOIN coach_client_ids cc ON e.coach_client_id = cc.coach_client_id
-    ) AS val
-  )
-  SELECT json_build_object(
-    'has_active_clients', (SELECT val FROM has_active),
-    'has_archived_clients', (SELECT val FROM has_archived),
-    'has_any_plan', (SELECT val FROM has_plan),
-    'has_any_appointment', (SELECT val FROM has_event)
-  ) INTO v_result;
-
-  RETURN v_result;
-END;
-$$;
-```
-
-**Caratteristiche:**
-- `SECURITY DEFINER` per accesso ai dati via RLS
-- Check `p_coach_id = auth.uid()` per sicurezza
-- `EXISTS` invece di `COUNT` per performance (si ferma al primo match)
-- Tutte le query usano la stessa CTE `coach_client_ids` (nessun join ripetuto)
+Centralizzare lo stato auth in un `AuthContext` minimalista e propagare `userId` a tutti gli hook che lo necessitano.
 
 ---
 
-### 2. Refactor `useOnboardingState.ts`
+## Modifiche Tecniche
 
-**File:** `src/features/clients/hooks/useOnboardingState.ts`
+### 1. Creare AuthContext
 
-Sostituire le 6 query separate con una singola chiamata RPC.
-
-**Interfaccia risposta:**
+**File:** `src/contexts/AuthContext.tsx`
 
 ```typescript
-interface CoachOnboardingData {
-  has_active_clients: boolean;
-  has_archived_clients: boolean;
-  has_any_plan: boolean;
-  has_any_appointment: boolean;
-}
-```
+import { createContext, useContext, ReactNode } from "react";
+import { User } from "@supabase/supabase-js";
 
-**Nuova implementazione:**
-
-```typescript
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/features/auth/hooks/useAuth"; // o hook esistente
-
-export type OnboardingStateType = 'ZERO_CLIENTS' | 'FIRST_CLIENT_NO_CONTENT' | 'ACTIVE_USER';
-
-export interface OnboardingState {
-  state: OnboardingStateType;
-  hasActiveClients: boolean;
-  hasArchivedClients: boolean;
-  hasAnyPlan: boolean;
-  hasAnyAppointment: boolean;
+interface AuthContextValue {
+  user: User | null;
+  userId: string | null;
   isLoading: boolean;
 }
 
-export function useOnboardingState(): OnboardingState {
-  // Usare userId dalla sessione gia disponibile in App/Layout
-  // Per ora recupero qui, ma idealmente passato come prop
-  const { session, isLoading: authLoading } = useAuth();
-  const userId = session?.user?.id;
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ 
+  user, 
+  isLoading, 
+  children 
+}: { 
+  user: User | null;
+  isLoading: boolean;
+  children: ReactNode; 
+}) {
+  return (
+    <AuthContext.Provider value={{ 
+      user, 
+      userId: user?.id ?? null, 
+      isLoading 
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+  return context;
+}
+```
+
+**Caratteristiche:**
+- Espone SOLO `user`, `userId`, `isLoading`
+- Nessuna logica business o ruoli
+- Pattern identico a `ClientAuthContext` esistente
+
+---
+
+### 2. Aggiornare App.tsx
+
+**Modifiche:**
+- Wrappare le Routes con `<AuthProvider />`
+- Passare lo stato auth gia calcolato
+- Mantenere logica check ruoli coach per `CoachSessionInitializer`
+
+```typescript
+// Prima (Routes senza context)
+<Routes>
+  ...
+</Routes>
+
+// Dopo (Routes con AuthProvider)
+<AuthProvider user={user} isLoading={loading}>
+  <Routes>
+    ...
+  </Routes>
+</AuthProvider>
+```
+
+---
+
+### 3. Refactor useUserRoles
+
+**File:** `src/features/auth/hooks/useUserRoles.ts`
+
+```typescript
+// Prima
+export function useUserRoles() {
+  const query = useQuery({
+    queryKey: ["userRoles"],
+    queryFn: getCurrentUserRoles, // chiama getUser() internamente
+    ...
+  });
+}
+
+// Dopo
+export function useUserRoles() {
+  const { userId, isLoading: authLoading } = useAuth();
+  
+  const query = useQuery({
+    queryKey: ["userRoles", userId],
+    queryFn: () => fetchRolesForUser(userId!),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  return {
+    roles: query.data || [],
+    isAdmin: query.data?.includes('admin') ?? false,
+    isCoach: query.data?.includes('coach') ?? false,
+    isClient: query.data?.includes('client') ?? false,
+    isLoading: authLoading || query.isLoading,
+  };
+}
+```
+
+**Nota:** `isLoading` include `authLoading` per evitare flash quando auth e ancora pending.
+
+---
+
+### 4. Refactor roles.api.ts
+
+**File:** `src/features/auth/api/roles.api.ts`
+
+```typescript
+// Prima
+export async function getCurrentUserRoles(): Promise<AppRole[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  // ...
+}
+
+// Dopo
+export async function fetchRolesForUser(userId: string): Promise<AppRole[]> {
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error fetching user roles:', error);
+    return [];
+  }
+  
+  return data?.map(r => r.role as AppRole) || [];
+}
+
+// Manteniamo la vecchia funzione per retrocompatibilita (altri file la usano)
+export async function getCurrentUserRoles(): Promise<AppRole[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  return fetchRolesForUser(user.id);
+}
+```
+
+---
+
+### 5. Refactor useOnboardingState
+
+**File:** `src/features/clients/hooks/useOnboardingState.ts`
+
+```typescript
+// Prima
+export function useOnboardingState() {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(...); // DUPLICATA
+    supabase.auth.onAuthStateChange(...);  // DUPLICATA
+  }, []);
+  // ...
+}
+
+// Dopo
+export function useOnboardingState() {
+  const { userId, isLoading: authLoading } = useAuth();
 
   const onboardingQuery = useQuery({
     queryKey: ['coach-onboarding', userId],
@@ -153,68 +208,159 @@ export function useOnboardingState(): OnboardingState {
         p_coach_id: userId
       });
       if (error) throw error;
-      return data as CoachOnboardingData;
+      return data as unknown as CoachOnboardingData;
     },
     enabled: !!userId,
     staleTime: 30_000,
   });
 
-  // Stato di loading: include auth pending + query loading
-  const isPending = authLoading || !userId;
-  const isLoading = isPending || onboardingQuery.isLoading;
+  const isLoading = authLoading || onboardingQuery.isLoading;
+  // ...
+}
+```
 
-  // Valori sicuri (defaults)
-  const hasActiveClients = onboardingQuery.data?.has_active_clients ?? false;
-  const hasArchivedClients = onboardingQuery.data?.has_archived_clients ?? false;
-  const hasAnyPlan = onboardingQuery.data?.has_any_plan ?? false;
-  const hasAnyAppointment = onboardingQuery.data?.has_any_appointment ?? false;
+**Rimozione:** Tutto il `useEffect` con `getSession()` viene eliminato.
 
-  // Determina stato onboarding
-  let state: OnboardingStateType;
-  if (!hasActiveClients) {
-    state = 'ZERO_CLIENTS';
-  } else if (!hasAnyPlan && !hasAnyAppointment) {
-    state = 'FIRST_CLIENT_NO_CONTENT';
-  } else {
-    state = 'ACTIVE_USER';
-  }
+---
+
+### 6. Refactor useCurrentUser
+
+**File:** `src/features/auth/hooks/useCurrentUser.ts`
+
+```typescript
+// Prima
+export function useCurrentUser() {
+  return useQuery<UserWithRole | null>({
+    queryKey: ["currentUser"],
+    queryFn: getCurrentUserWithRole, // chiama getUser() internamente
+    ...
+  });
+}
+
+// Dopo
+export function useCurrentUser() {
+  const { userId, isLoading: authLoading } = useAuth();
+  
+  const query = useQuery<UserWithRole | null>({
+    queryKey: ["currentUser", userId],
+    queryFn: () => fetchUserProfileWithRole(userId!),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
 
   return {
-    state,
-    hasActiveClients,
-    hasArchivedClients,
-    hasAnyPlan,
-    hasAnyAppointment,
-    isLoading,
+    ...query,
+    isLoading: authLoading || query.isLoading,
   };
 }
 ```
 
-**Cambiamenti chiave:**
-- Da 6 `useQuery` a 1 `useQuery`
-- Nessuna chiamata `supabase.auth.getUser()` dentro `queryFn`
-- `isPending` gestisce il flash iniziale
-- Rinominato `clientsCount` in `hasActiveClients` (boolean, non count)
+---
+
+### 7. Refactor users.api.ts
+
+**File:** `src/features/auth/api/users.api.ts`
+
+```typescript
+// Nuova funzione parametrica
+export async function fetchUserProfileWithRole(userId: string): Promise<UserWithRole | null> {
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (profileError || !profile) {
+      return null;
+    }
+
+    const { data: rolesData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
+
+    const roles = rolesData?.map(r => r.role as AppRole) || [];
+    const role: AppRole = roles.includes('coach') 
+      ? 'coach' 
+      : roles.includes('client') 
+        ? 'client' 
+        : 'client';
+
+    return {
+      id: profile.id,
+      email: profile.email,
+      first_name: profile.first_name,
+      last_name: profile.last_name,
+      avatar_url: profile.avatar_url,
+      created_at: profile.created_at,
+      role,
+    };
+  } catch (error) {
+    console.error('Unexpected error in fetchUserProfileWithRole:', error);
+    return null;
+  }
+}
+
+// Manteniamo la vecchia per retrocompatibilita
+export async function getCurrentUserWithRole(): Promise<UserWithRole | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  return fetchUserProfileWithRole(user.id);
+}
+```
 
 ---
 
-### 3. Aggiornare `Clients.tsx`
+### 8. Aggiornare Layout (CoachLayout, AdminLayout, ClientAppLayout)
 
-**File:** `src/pages/Clients.tsx`
+I layout possono ora rimuovere le chiamate auth duplicate perche ricevono lo stato dal context:
 
-Adattare l'uso dell'hook ai nuovi nomi dei campi:
+**CoachLayout:**
+- `isAuthenticated` prop gia ricevuta da App.tsx - OK
+- `useUserRoles()` ora usa context internamente - OK automatico
 
+**AdminLayout:**
 ```typescript
 // Prima
-const showArchivedToggle = onboarding.hasArchivedClients;
-const showFilters = onboarding.clientsCount > 1;
+const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+useEffect(() => {
+  supabase.auth.getSession().then(...); // RIMUOVERE
+}, []);
 
 // Dopo
-const showArchivedToggle = onboarding.hasArchivedClients;
-const showFilters = onboarding.hasActiveClients; // Almeno 1 cliente attivo
+const { userId, isLoading: authLoading } = useAuth();
+const { isAdmin, isLoading: rolesLoading } = useUserRoles();
+
+if (authLoading || rolesLoading) {
+  return <Spinner message="Verifica autorizzazioni..." />;
+}
+
+if (!userId) {
+  return <Navigate to="/auth" replace />;
+}
 ```
 
-**Nota:** Se serve il count esatto per la logica `> 1`, si puo aggiungere un campo `active_clients_count` all'RPC. Ma per ora `hasActiveClients` boolean e sufficiente.
+**ClientAppLayout:**
+```typescript
+// Prima
+const [user, setUser] = useState<User | null>(null);
+useEffect(() => {
+  supabase.auth.getSession().then(...); // RIMUOVERE
+}, []);
+
+// Dopo
+const { user, userId, isLoading: authLoading } = useAuth();
+
+if (authLoading) {
+  return <Spinner />;
+}
+
+if (!userId) {
+  return <Navigate to="/client/auth" replace />;
+}
+```
 
 ---
 
@@ -222,43 +368,78 @@ const showFilters = onboarding.hasActiveClients; // Almeno 1 cliente attivo
 
 | File | Azione |
 |------|--------|
-| `supabase/migrations/[timestamp]_coach_onboarding_rpc.sql` | Nuovo |
-| `src/features/clients/hooks/useOnboardingState.ts` | Refactor completo |
-| `src/pages/Clients.tsx` | Adattare campi rinominati |
+| `src/contexts/AuthContext.tsx` | **Nuovo** |
+| `src/App.tsx` | Modifica (aggiungere AuthProvider) |
+| `src/features/auth/hooks/useUserRoles.ts` | Modifica (usare context) |
+| `src/features/auth/api/roles.api.ts` | Modifica (aggiungere fetchRolesForUser) |
+| `src/features/clients/hooks/useOnboardingState.ts` | Modifica (usare context) |
+| `src/features/auth/hooks/useCurrentUser.ts` | Modifica (usare context) |
+| `src/features/auth/api/users.api.ts` | Modifica (aggiungere fetchUserProfileWithRole) |
+| `src/components/admin/AdminLayout.tsx` | Modifica (usare context) |
+| `src/components/client/ClientAppLayout.tsx` | Modifica (usare context) |
 
 ---
 
-## Impatto Performance
+## Flusso Risultante
+
+```text
+App.tsx mount
+    |
+    v
+supabase.auth.getSession() ← UNICA chiamata auth
+    |
+    v
+[loading = true] → Spinner globale
+    |
+    v
+Sessione ricevuta → [loading = false]
+    |
+    v
+<AuthProvider user={user} isLoading={false}>
+    |
+    ├─→ CoachLayout
+    │       └─ useUserRoles() → query ruoli (enabled: !!userId)
+    │       └─ isLoading coordina con authLoading
+    │
+    ├─→ AdminLayout
+    │       └─ useAuth() per userId
+    │       └─ useUserRoles() per isAdmin
+    │
+    └─→ ClientAppLayout
+            └─ useAuth() per userId
+            └─ useUserRoles() per isClient
+```
+
+---
+
+## Retrocompatibilita
+
+Le funzioni originali (`getCurrentUserRoles`, `getCurrentUserWithRole`) rimangono per evitare di rompere gli altri 51 file che le usano. Queste funzioni ora delegano alle nuove versioni parametriche.
+
+---
+
+## Checklist Regressioni
+
+**Tecnica:**
+- Nessuna chiamata `getSession()`/`getUser()` duplicata nei layout/hook principali
+- Query key include `userId` per cache isolation
+- `enabled: !!userId` previene query con userId null
+
+**Funzionale:**
+- Login coach → spinner unico → home completa
+- Login admin → spinner unico → dashboard
+- Login client → spinner unico → client app
+- Refresh pagina → stato preservato via session listener in App.tsx
+- Logout → `queryClient.clear()` gia implementato in App.tsx
+
+---
+
+## Impatto Atteso
 
 | Metrica | Prima | Dopo |
 |---------|-------|------|
-| Query al database | 6+ | 1 |
-| Roundtrip network | 8-12 | 1 |
-| Edge function calls | 1 | 0 |
-| Tempo stimato | 800-1400ms | **50-100ms** |
-
----
-
-## Gestione Edge Cases
-
-1. **Errore RPC**: Il `queryFn` lancia errore, TanStack Query gestisce il retry
-2. **Utente non autenticato**: `enabled: !!userId` previene chiamate inutili
-3. **Auth in corso**: `isPending` mantiene lo spinner fino a dati pronti
-
----
-
-## Nota su `clientsCount`
-
-Il piano proposto usa `has_active_clients` (boolean). Se la UI ha bisogno del count esatto (es. mostrare "Hai 5 clienti"), si puo estendere l'RPC:
-
-```sql
-active_clients_count AS (
-  SELECT COUNT(*) as cnt
-  FROM clients c
-  INNER JOIN coach_client_ids cc ON c.id = cc.client_id
-  WHERE c.archived_at IS NULL
-)
-```
-
-Ma per l'onboarding, i boolean sono sufficienti e piu performanti.
+| Chiamate auth parallele | 4-5 | 1 |
+| Stati loading indipendenti | 5+ | 1 (context) + N (queries) |
+| Flash UI visibili | 3-4 | 0 |
+| Transizioni | Frammentate | Fluida |
 
