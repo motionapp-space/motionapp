@@ -62,30 +62,36 @@ const App = () => {
   // Pre-fetches roles to populate cache before unlocking UI
   useEffect(() => {
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const currentUser = session?.user ?? null;
-      
-      setUser(currentUser);
-      previousUserIdRef.current = currentUser?.id ?? null;
-      
-      if (currentUser) {
-        // Pre-fetch roles and populate React Query cache
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", currentUser.id);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const currentUser = session?.user ?? null;
         
-        const roleStrings = roles?.map(r => r.role) || [];
+        setUser(currentUser);
+        previousUserIdRef.current = currentUser?.id ?? null;
         
-        // Populate cache so useUserRoles() finds data immediately
-        queryClient.setQueryData(["userRoles", currentUser.id], roleStrings);
-        
-        // Set coach flag for session bridge
-        const hasCoachRole = roleStrings.includes('coach');
-        setIsCoach(hasCoachRole);
+        if (currentUser) {
+          // Pre-fetch roles and populate React Query cache
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", currentUser.id);
+          
+          const roleStrings = roles?.map(r => r.role) || [];
+          
+          // Populate cache so useUserRoles() finds data immediately
+          queryClient.setQueryData(["userRoles", currentUser.id], roleStrings);
+          
+          // Set coach flag for session bridge
+          const hasCoachRole = roleStrings.includes('coach');
+          setIsCoach(hasCoachRole);
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        setUser(null);
+        setIsCoach(false);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
     
     initAuth();
