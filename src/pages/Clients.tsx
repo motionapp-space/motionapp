@@ -302,6 +302,27 @@ const Clients = () => {
     );
   }
 
+  // Error state - mostra errore con opzione retry
+  if (onboarding.isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="text-center max-w-md">
+          <div className="rounded-full bg-destructive/10 p-3 w-fit mx-auto mb-4">
+            <X className="h-8 w-8 text-destructive" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Errore di caricamento</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Impossibile caricare i dati. Verifica la connessione e riprova.
+          </p>
+          <Button onClick={() => onboarding.refetch()} variant="outline" className="gap-2">
+            <Loader2 className="h-4 w-4" />
+            Riprova
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // STATO 1: ZERO_CLIENTS - Nessun cliente, mostra solo empty state
   if (onboarding.state === 'ZERO_CLIENTS') {
     return (
