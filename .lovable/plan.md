@@ -1,366 +1,137 @@
 
-
-# Piano: Auth State Centralizzato
+# Piano: Spinner Unico Unificato
 
 ## Problema Identificato
 
-Dopo il login, 5+ componenti chiamano `supabase.auth.getSession()` / `getUser()` indipendentemente:
+Attualmente l'utente vede fino a **3-4 spinner in sequenza** durante il caricamento:
 
-| Componente | Chiamata Auth | Problema |
-|------------|---------------|----------|
-| `App.tsx` | `getSession()` | OK - fonte principale |
-| `CoachLayout` | via `useUserRoles()` → `getUser()` | Duplicata |
-| `AdminLayout` | `getSession()` | Duplicata |
-| `ClientAppLayout` | `getSession()` | Duplicata |
-| `useOnboardingState` | `getSession()` | Duplicata |
-| `useUserRoles` → `roles.api.ts` | `getUser()` | Duplicata |
-| `useCurrentUser` → `users.api.ts` | `getUser()` | Duplicata |
+| Step | File | Testo | Durata |
+|------|------|-------|--------|
+| 1 | `App.tsx` | "Caricamento..." | ~100-200ms |
+| 2 | `CoachLayout.tsx` | "Verifica autorizzazioni..." | ~50-150ms |
+| 3 | `Clients.tsx` | Loader2 icon | ~50-100ms |
+| 4 | (Client) `ClientAppLayout.tsx` | "Caricamento profilo..." | ~100-150ms |
 
-Ogni chiamata crea uno stato loading indipendente, causando rendering frammentati (topbar incompleta, spinner tardivi, avatar vuoto).
+Questo accade perché:
+1. `App.tsx` aspetta solo `getSession()`, poi sblocca
+2. `CoachLayout` aspetta `useUserRoles()` (query separata)
+3. `Clients.tsx` aspetta `useOnboardingState()` (RPC separata)
+4. Ogni step mostra il proprio spinner separatamente
 
 ---
 
 ## Soluzione
 
-Centralizzare lo stato auth in un `AuthContext` minimalista e propagare `userId` a tutti gli hook che lo necessitano.
+### Strategia: Pre-caricare i ruoli in App.tsx
+
+Modificare `App.tsx` per:
+1. Dopo `getSession()`, se c'è un utente, fetchare **anche i ruoli** prima di sbloccare
+2. Mantenere lo spinner "Caricamento..." fino a che **sia auth che ruoli** sono pronti
+3. I layout non mostreranno più spinner perché i dati sono già disponibili
+
+### Flusso Risultante
+
+```text
+App.tsx mount
+    |
+    v
+[loading = true] → Spinner "Caricamento..."
+    |
+    v
+supabase.auth.getSession()
+    |
+    ├─ No session → loading = false → /auth
+    │
+    └─ Session presente
+            |
+            v
+        Fetch user_roles (in parallelo o sequenza veloce)
+            |
+            v
+        [loading = false] → Render CoachLayout/AdminLayout
+            |
+            v
+        UI finale (onboarding query parte, ma layout già visibile)
+```
 
 ---
 
 ## Modifiche Tecniche
 
-### 1. Creare AuthContext
-
-**File:** `src/contexts/AuthContext.tsx`
+### 1. App.tsx - Pre-caricare ruoli prima di sbloccare
 
 ```typescript
-import { createContext, useContext, ReactNode } from "react";
-import { User } from "@supabase/supabase-js";
+// PRIMA (sblocca subito dopo getSession)
+supabase.auth.getSession().then(({ data: { session } }) => {
+  setUser(session?.user ?? null);
+  setLoading(false); // ← sblocca subito
+});
 
-interface AuthContextValue {
-  user: User | null;
-  userId: string | null;
-  isLoading: boolean;
-}
+// DOPO (sblocca solo quando ruoli sono pronti)
+supabase.auth.getSession().then(async ({ data: { session } }) => {
+  const currentUser = session?.user ?? null;
+  setUser(currentUser);
+  
+  if (currentUser) {
+    // Pre-fetch ruoli prima di sbloccare
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", currentUser.id);
+    
+    // Popola React Query cache per useUserRoles
+    queryClient.setQueryData(
+      ["userRoles", currentUser.id], 
+      roles?.map(r => r.role) || []
+    );
+    
+    // Imposta isCoach (per CoachSessionInitializer)
+    const hasCoachRole = roles?.some(r => r.role === 'coach') ?? false;
+    setIsCoach(hasCoachRole);
+  }
+  
+  setLoading(false); // ← sblocca DOPO ruoli pronti
+});
+```
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+**Nota chiave:** Popolare `queryClient.setQueryData(["userRoles", userId], ...)` fa sì che `useUserRoles()` nei layout trovi i dati già in cache, rendendo `query.isLoading = false` immediatamente.
 
-export function AuthProvider({ 
-  user, 
-  isLoading, 
-  children 
-}: { 
-  user: User | null;
-  isLoading: boolean;
-  children: ReactNode; 
-}) {
+### 2. CoachLayout - Rimuovere spinner separato
+
+Poiché i ruoli sono già in cache quando il layout monta, `rolesLoading` sarà `false` fin dall'inizio.
+
+```typescript
+// PRIMA
+if (rolesLoading) {
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      userId: user?.id ?? null, 
-      isLoading 
-    }}>
-      {children}
-    </AuthContext.Provider>
+    <div className="...">
+      <Spinner />
+      <p>Verifica autorizzazioni...</p>
+    </div>
   );
 }
 
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return context;
-}
+// DOPO
+// Rimuovere questo blocco - i ruoli sono già pronti
+// oppure mantenerlo come fallback (non verrà mai mostrato)
 ```
 
-**Caratteristiche:**
-- Espone SOLO `user`, `userId`, `isLoading`
-- Nessuna logica business o ruoli
-- Pattern identico a `ClientAuthContext` esistente
+### 3. AdminLayout - Stesso trattamento
 
----
+Rimuovere o semplificare il blocco `authLoading || rolesLoading`.
 
-### 2. Aggiornare App.tsx
+### 4. ClientAppLayout - Rimuovere spinner auth
 
-**Modifiche:**
-- Wrappare le Routes con `<AuthProvider />`
-- Passare lo stato auth gia calcolato
-- Mantenere logica check ruoli coach per `CoachSessionInitializer`
+Lo spinner `authLoading` non serve più perché App.tsx lo gestisce. Mantenere solo lo spinner per `clientLoading` (dati specifici client).
 
-```typescript
-// Prima (Routes senza context)
-<Routes>
-  ...
-</Routes>
+### 5. Clients.tsx - Onboarding spinner accettabile
 
-// Dopo (Routes con AuthProvider)
-<AuthProvider user={user} isLoading={loading}>
-  <Routes>
-    ...
-  </Routes>
-</AuthProvider>
-```
+Lo spinner `onboarding.isLoading` in `Clients.tsx` è accettabile perché:
+- Appare **dopo** che la UI principale (topbar, sidebar) è già visibile
+- È un loading locale del contenuto, non un blocco globale
+- Dura ~50ms (RPC ottimizzata)
 
----
-
-### 3. Refactor useUserRoles
-
-**File:** `src/features/auth/hooks/useUserRoles.ts`
-
-```typescript
-// Prima
-export function useUserRoles() {
-  const query = useQuery({
-    queryKey: ["userRoles"],
-    queryFn: getCurrentUserRoles, // chiama getUser() internamente
-    ...
-  });
-}
-
-// Dopo
-export function useUserRoles() {
-  const { userId, isLoading: authLoading } = useAuth();
-  
-  const query = useQuery({
-    queryKey: ["userRoles", userId],
-    queryFn: () => fetchRolesForUser(userId!),
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-
-  return {
-    roles: query.data || [],
-    isAdmin: query.data?.includes('admin') ?? false,
-    isCoach: query.data?.includes('coach') ?? false,
-    isClient: query.data?.includes('client') ?? false,
-    isLoading: authLoading || query.isLoading,
-  };
-}
-```
-
-**Nota:** `isLoading` include `authLoading` per evitare flash quando auth e ancora pending.
-
----
-
-### 4. Refactor roles.api.ts
-
-**File:** `src/features/auth/api/roles.api.ts`
-
-```typescript
-// Prima
-export async function getCurrentUserRoles(): Promise<AppRole[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-  // ...
-}
-
-// Dopo
-export async function fetchRolesForUser(userId: string): Promise<AppRole[]> {
-  const { data, error } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', userId);
-
-  if (error) {
-    console.error('Error fetching user roles:', error);
-    return [];
-  }
-  
-  return data?.map(r => r.role as AppRole) || [];
-}
-
-// Manteniamo la vecchia funzione per retrocompatibilita (altri file la usano)
-export async function getCurrentUserRoles(): Promise<AppRole[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-  return fetchRolesForUser(user.id);
-}
-```
-
----
-
-### 5. Refactor useOnboardingState
-
-**File:** `src/features/clients/hooks/useOnboardingState.ts`
-
-```typescript
-// Prima
-export function useOnboardingState() {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(...); // DUPLICATA
-    supabase.auth.onAuthStateChange(...);  // DUPLICATA
-  }, []);
-  // ...
-}
-
-// Dopo
-export function useOnboardingState() {
-  const { userId, isLoading: authLoading } = useAuth();
-
-  const onboardingQuery = useQuery({
-    queryKey: ['coach-onboarding', userId],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_coach_onboarding_data', {
-        p_coach_id: userId
-      });
-      if (error) throw error;
-      return data as unknown as CoachOnboardingData;
-    },
-    enabled: !!userId,
-    staleTime: 30_000,
-  });
-
-  const isLoading = authLoading || onboardingQuery.isLoading;
-  // ...
-}
-```
-
-**Rimozione:** Tutto il `useEffect` con `getSession()` viene eliminato.
-
----
-
-### 6. Refactor useCurrentUser
-
-**File:** `src/features/auth/hooks/useCurrentUser.ts`
-
-```typescript
-// Prima
-export function useCurrentUser() {
-  return useQuery<UserWithRole | null>({
-    queryKey: ["currentUser"],
-    queryFn: getCurrentUserWithRole, // chiama getUser() internamente
-    ...
-  });
-}
-
-// Dopo
-export function useCurrentUser() {
-  const { userId, isLoading: authLoading } = useAuth();
-  
-  const query = useQuery<UserWithRole | null>({
-    queryKey: ["currentUser", userId],
-    queryFn: () => fetchUserProfileWithRole(userId!),
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-
-  return {
-    ...query,
-    isLoading: authLoading || query.isLoading,
-  };
-}
-```
-
----
-
-### 7. Refactor users.api.ts
-
-**File:** `src/features/auth/api/users.api.ts`
-
-```typescript
-// Nuova funzione parametrica
-export async function fetchUserProfileWithRole(userId: string): Promise<UserWithRole | null> {
-  try {
-    const { data: profile, error: profileError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (profileError || !profile) {
-      return null;
-    }
-
-    const { data: rolesData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
-
-    const roles = rolesData?.map(r => r.role as AppRole) || [];
-    const role: AppRole = roles.includes('coach') 
-      ? 'coach' 
-      : roles.includes('client') 
-        ? 'client' 
-        : 'client';
-
-    return {
-      id: profile.id,
-      email: profile.email,
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-      avatar_url: profile.avatar_url,
-      created_at: profile.created_at,
-      role,
-    };
-  } catch (error) {
-    console.error('Unexpected error in fetchUserProfileWithRole:', error);
-    return null;
-  }
-}
-
-// Manteniamo la vecchia per retrocompatibilita
-export async function getCurrentUserWithRole(): Promise<UserWithRole | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  return fetchUserProfileWithRole(user.id);
-}
-```
-
----
-
-### 8. Aggiornare Layout (CoachLayout, AdminLayout, ClientAppLayout)
-
-I layout possono ora rimuovere le chiamate auth duplicate perche ricevono lo stato dal context:
-
-**CoachLayout:**
-- `isAuthenticated` prop gia ricevuta da App.tsx - OK
-- `useUserRoles()` ora usa context internamente - OK automatico
-
-**AdminLayout:**
-```typescript
-// Prima
-const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-useEffect(() => {
-  supabase.auth.getSession().then(...); // RIMUOVERE
-}, []);
-
-// Dopo
-const { userId, isLoading: authLoading } = useAuth();
-const { isAdmin, isLoading: rolesLoading } = useUserRoles();
-
-if (authLoading || rolesLoading) {
-  return <Spinner message="Verifica autorizzazioni..." />;
-}
-
-if (!userId) {
-  return <Navigate to="/auth" replace />;
-}
-```
-
-**ClientAppLayout:**
-```typescript
-// Prima
-const [user, setUser] = useState<User | null>(null);
-useEffect(() => {
-  supabase.auth.getSession().then(...); // RIMUOVERE
-}, []);
-
-// Dopo
-const { user, userId, isLoading: authLoading } = useAuth();
-
-if (authLoading) {
-  return <Spinner />;
-}
-
-if (!userId) {
-  return <Navigate to="/client/auth" replace />;
-}
-```
+Può essere mantenuto così com'è o nascosto mostrando direttamente il contenuto quando disponibile.
 
 ---
 
@@ -368,78 +139,105 @@ if (!userId) {
 
 | File | Azione |
 |------|--------|
-| `src/contexts/AuthContext.tsx` | **Nuovo** |
-| `src/App.tsx` | Modifica (aggiungere AuthProvider) |
-| `src/features/auth/hooks/useUserRoles.ts` | Modifica (usare context) |
-| `src/features/auth/api/roles.api.ts` | Modifica (aggiungere fetchRolesForUser) |
-| `src/features/clients/hooks/useOnboardingState.ts` | Modifica (usare context) |
-| `src/features/auth/hooks/useCurrentUser.ts` | Modifica (usare context) |
-| `src/features/auth/api/users.api.ts` | Modifica (aggiungere fetchUserProfileWithRole) |
-| `src/components/admin/AdminLayout.tsx` | Modifica (usare context) |
-| `src/components/client/ClientAppLayout.tsx` | Modifica (usare context) |
+| `src/App.tsx` | Modifica: pre-fetch ruoli + popola cache |
+| `src/components/CoachLayout.tsx` | Modifica: rimuovere spinner separato |
+| `src/components/admin/AdminLayout.tsx` | Modifica: semplificare loading check |
+| `src/components/client/ClientAppLayout.tsx` | Modifica: rimuovere spinner auth |
 
 ---
 
-## Flusso Risultante
+## Vantaggi
 
-```text
-App.tsx mount
-    |
-    v
-supabase.auth.getSession() ← UNICA chiamata auth
-    |
-    v
-[loading = true] → Spinner globale
-    |
-    v
-Sessione ricevuta → [loading = false]
-    |
-    v
-<AuthProvider user={user} isLoading={false}>
-    |
-    ├─→ CoachLayout
-    │       └─ useUserRoles() → query ruoli (enabled: !!userId)
-    │       └─ isLoading coordina con authLoading
-    │
-    ├─→ AdminLayout
-    │       └─ useAuth() per userId
-    │       └─ useUserRoles() per isAdmin
-    │
-    └─→ ClientAppLayout
-            └─ useAuth() per userId
-            └─ useUserRoles() per isClient
+| Metrica | Prima | Dopo |
+|---------|-------|------|
+| Spinner visibili | 3-4 | 1 |
+| Transizioni UI | 3-4 | 1 |
+| Flash bianchi | Possibili | Eliminati |
+| Tempo percepito | Lungo (multi-step) | Breve (single-step) |
+
+---
+
+## Dettaglio Implementazione App.tsx
+
+```typescript
+// Auth state initialization - runs ONCE on mount
+useEffect(() => {
+  const initAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUser = session?.user ?? null;
+    
+    setUser(currentUser);
+    previousUserIdRef.current = currentUser?.id ?? null;
+    
+    if (currentUser) {
+      // Pre-fetch ruoli e popola cache
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", currentUser.id);
+      
+      const roleStrings = roles?.map(r => r.role) || [];
+      
+      // Popola React Query cache → useUserRoles troverà dati già pronti
+      queryClient.setQueryData(["userRoles", currentUser.id], roleStrings);
+      
+      // Imposta flag coach per session bridge
+      const hasCoachRole = roleStrings.includes('coach');
+      setIsCoach(hasCoachRole);
+    }
+    
+    setLoading(false);
+  };
+  
+  initAuth();
+  
+  // Subscription per cambi auth (logout, token refresh, etc.)
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    async (event, session) => {
+      const newUser = session?.user ?? null;
+      
+      if (previousUserIdRef.current !== (newUser?.id ?? null)) {
+        queryClient.clear();
+        previousUserIdRef.current = newUser?.id ?? null;
+        
+        if (newUser) {
+          // Re-fetch ruoli per nuovo utente
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", newUser.id);
+          
+          const roleStrings = roles?.map(r => r.role) || [];
+          queryClient.setQueryData(["userRoles", newUser.id], roleStrings);
+          
+          setIsCoach(roleStrings.includes('coach'));
+        } else {
+          setIsCoach(false);
+        }
+      }
+      
+      setUser(newUser);
+    }
+  );
+
+  return () => subscription.unsubscribe();
+}, []);
 ```
 
 ---
 
-## Retrocompatibilita
+## Considerazioni Edge Case
 
-Le funzioni originali (`getCurrentUserRoles`, `getCurrentUserWithRole`) rimangono per evitare di rompere gli altri 51 file che le usano. Queste funzioni ora delegano alle nuove versioni parametriche.
-
----
-
-## Checklist Regressioni
-
-**Tecnica:**
-- Nessuna chiamata `getSession()`/`getUser()` duplicata nei layout/hook principali
-- Query key include `userId` per cache isolation
-- `enabled: !!userId` previene query con userId null
-
-**Funzionale:**
-- Login coach → spinner unico → home completa
-- Login admin → spinner unico → dashboard
-- Login client → spinner unico → client app
-- Refresh pagina → stato preservato via session listener in App.tsx
-- Logout → `queryClient.clear()` gia implementato in App.tsx
+1. **Errore fetch ruoli**: Se la query ruoli fallisce, si sblocca comunque con ruoli vuoti (fallback sicuro)
+2. **Token scaduto**: Il listener `onAuthStateChange` gestisce il refresh e ri-popola i ruoli
+3. **Logout**: `queryClient.clear()` pulisce la cache, inclusi i ruoli
 
 ---
 
-## Impatto Atteso
+## Risultato UX
 
-| Metrica | Prima | Dopo |
-|---------|-------|------|
-| Chiamate auth parallele | 4-5 | 1 |
-| Stati loading indipendenti | 5+ | 1 (context) + N (queries) |
-| Flash UI visibili | 3-4 | 0 |
-| Transizioni | Frammentate | Fluida |
+L'utente vedrà:
+1. **Spinner "Caricamento..."** (unico, ~200-300ms totali)
+2. **UI completa** (sidebar + topbar + contenuto)
 
+Nessun flash intermedio, nessuna transizione frammentata.
