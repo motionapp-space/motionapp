@@ -40,7 +40,6 @@ export function useCreateProduct() {
     mutationFn: (input: CreateProductInput) => createProduct(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Prodotto creato");
     },
     onError: (error: Error) => {
       toast.error("Errore", {
