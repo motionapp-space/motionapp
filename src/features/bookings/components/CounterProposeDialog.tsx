@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
-import { format, startOfDay, addDays, parseISO } from "date-fns";
+import { useState, useMemo, useEffect } from "react";
+import { format, startOfDay, addDays, parseISO, setHours, setMinutes, addMinutes } from "date-fns";
 import { it } from "date-fns/locale";
-import { Calendar, Clock, ChevronDown, ChevronUp, Check, Sparkles } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Check, Sparkles, Loader2, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,14 +10,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/use-debounce";
 import { useBookingSettingsQuery } from "../hooks/useBookingSettingsQuery";
 import { useAvailabilityWindowsQuery } from "../hooks/useAvailabilityWindowsQuery";
 import { useOutOfOfficeBlocksQuery } from "../hooks/useOutOfOfficeBlocksQuery";
@@ -40,11 +41,26 @@ export function CounterProposeDialog({
   onSubmit,
   isSubmitting,
 }: CounterProposeDialogProps) {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    request ? new Date(request.requested_start_at) : undefined
-  );
+  // SELECTION MODE (mutua esclusività)
+  const [selectionMode, setSelectionMode] = useState<'suggested' | 'manual' | null>(null);
+  
+  // FAST PATH
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
-  const [showAllSlots, setShowAllSlots] = useState(false);
+  
+  // POWER PATH
+  const [manualDate, setManualDate] = useState<Date | undefined>(undefined);
+  const [manualTime, setManualTime] = useState<string>("");
+  
+  // LIVE VALIDATION
+  const [availabilityStatus, setAvailabilityStatus] = useState<
+    'idle' | 'loading' | 'available' | 'conflict'
+  >('idle');
+  const [conflictEvent, setConflictEvent] = useState<{
+    title: string;
+    start: string;
+    end: string;
+  } | null>(null);
+  const [alternativeSlots, setAlternativeSlots] = useState<AvailableSlot[]>([]);
 
   // Fetch settings and availability data
   const { data: settings } = useBookingSettingsQuery();
@@ -66,20 +82,22 @@ export function CounterProposeDialog({
   const originalStart = request ? new Date(request.requested_start_at) : null;
   const originalEnd = request ? new Date(request.requested_end_at) : null;
 
-  // Generate available slots for selected date
-  const availableSlots = useMemo(() => {
-    if (!selectedDate || !settings) return [];
-    
-    return generateAvailableSlots({
-      date: selectedDate,
-      slotDurationMinutes: slotDuration,
-      bufferBetweenMinutes: bufferBetween,
-      minAdvanceNoticeHours: minAdvanceNotice,
-      availabilityWindows: windows,
-      outOfOfficeBlocks: oooBlocks.map(b => ({ start_at: b.start_at, end_at: b.end_at })),
-      existingEvents: events.map(e => ({ start_at: e.start_at, end_at: e.end_at })),
-    });
-  }, [selectedDate, windows, oooBlocks, events, slotDuration, bufferBetween, minAdvanceNotice, settings]);
+  // Debounced manual inputs for live validation
+  const debouncedManualDate = useDebounce(manualDate, 300);
+  const debouncedManualTime = useDebounce(manualTime, 300);
+
+  // Reset state when dialog opens/closes or request changes
+  useEffect(() => {
+    if (open && request) {
+      setSelectionMode(null);
+      setSelectedSlot(null);
+      setManualDate(undefined);
+      setManualTime("");
+      setAvailabilityStatus('idle');
+      setConflictEvent(null);
+      setAlternativeSlots([]);
+    }
+  }, [open, request?.id]);
 
   // Get all available slots for the next 14 days to find suggestions
   const allSlotsFor14Days = useMemo(() => {
@@ -117,33 +135,98 @@ export function CounterProposeDialog({
     ).slice(0, 4);
   }, [originalStart, allSlotsFor14Days, request?.requested_start_at]);
 
-  // Slots to show based on whether we're showing all or just for selected date
-  const displaySlots = useMemo(() => {
-    if (showAllSlots) {
-      return availableSlots;
+  // LIVE VALIDATION: Check manual selection for conflicts
+  useEffect(() => {
+    // Skip if not in manual mode or data incomplete
+    if (selectionMode !== 'manual' || !debouncedManualDate || !debouncedManualTime) {
+      setAvailabilityStatus('idle');
+      setConflictEvent(null);
+      setAlternativeSlots([]);
+      return;
     }
-    return availableSlots.slice(0, 6);
-  }, [availableSlots, showAllSlots]);
 
-  const hasMoreSlots = availableSlots.length > 6;
+    setAvailabilityStatus('loading');
 
-  // Check if a date has available slots
-  const dateHasSlots = (date: Date) => {
-    const slots = generateAvailableSlots({
-      date,
-      slotDurationMinutes: slotDuration,
-      bufferBetweenMinutes: bufferBetween,
-      minAdvanceNoticeHours: minAdvanceNotice,
-      availabilityWindows: windows,
-      outOfOfficeBlocks: oooBlocks.map(b => ({ start_at: b.start_at, end_at: b.end_at })),
-      existingEvents: events.map(e => ({ start_at: e.start_at, end_at: e.end_at })),
+    // Parse time
+    const [hours, minutes] = debouncedManualTime.split(':').map(Number);
+    const proposedStart = setMinutes(setHours(debouncedManualDate, hours), minutes);
+    const proposedEnd = addMinutes(proposedStart, slotDuration);
+
+    // Find conflicts (ignore canceled events)
+    const conflicting = events.find(event => {
+      if (event.session_status === 'canceled') return false;
+      const eventStart = parseISO(event.start_at);
+      const eventEnd = parseISO(event.end_at);
+      return proposedStart < eventEnd && proposedEnd > eventStart;
     });
-    return slots.length > 0;
+
+    if (conflicting) {
+      setAvailabilityStatus('conflict');
+      setConflictEvent({
+        title: conflicting.title || 'Evento',
+        start: conflicting.start_at,
+        end: conflicting.end_at,
+      });
+      // Find 3 nearest alternatives
+      setAlternativeSlots(findNearestSlots(proposedStart, allSlotsFor14Days).slice(0, 3));
+    } else {
+      setAvailabilityStatus('available');
+      setConflictEvent(null);
+      setAlternativeSlots([]);
+    }
+  }, [debouncedManualDate, debouncedManualTime, selectionMode, events, slotDuration, allSlotsFor14Days]);
+
+  // HANDLERS: Mutual exclusivity between paths
+  const handleSuggestedSlotClick = (slot: AvailableSlot) => {
+    setSelectionMode('suggested');
+    setSelectedSlot(slot);
+    // Reset power path
+    setManualDate(undefined);
+    setManualTime("");
+    setAvailabilityStatus('idle');
+    setConflictEvent(null);
+    setAlternativeSlots([]);
   };
 
+  const handleManualDateChange = (date: Date | undefined) => {
+    setSelectionMode('manual');
+    setManualDate(date);
+    // Reset fast path
+    setSelectedSlot(null);
+  };
+
+  const handleManualTimeChange = (time: string) => {
+    setSelectionMode('manual');
+    setManualTime(time);
+    // Reset fast path
+    setSelectedSlot(null);
+  };
+
+  // COMPUTED: Active proposal for CTA
+  const activeProposal = useMemo((): AvailableSlot | null => {
+    // FAST PATH
+    if (selectionMode === 'suggested' && selectedSlot) {
+      return selectedSlot;
+    }
+
+    // POWER PATH (only if available)
+    if (selectionMode === 'manual' && manualDate && manualTime && 
+        availabilityStatus === 'available') {
+      const [hours, minutes] = manualTime.split(':').map(Number);
+      const start = setMinutes(setHours(manualDate, hours), minutes);
+      const end = addMinutes(start, slotDuration);
+      return { 
+        start: start.toISOString(), 
+        end: end.toISOString() 
+      };
+    }
+
+    return null;
+  }, [selectionMode, selectedSlot, manualDate, manualTime, availabilityStatus, slotDuration]);
+
   const handleSubmit = () => {
-    if (!selectedSlot || !request) return;
-    onSubmit(request.id, selectedSlot.start, selectedSlot.end);
+    if (!activeProposal || !request) return;
+    onSubmit(request.id, activeProposal.start, activeProposal.end);
   };
 
   const isSlotSelected = (slot: AvailableSlot) => {
@@ -185,7 +268,7 @@ export function CounterProposeDialog({
         </div>
 
         <div className="min-h-0 overflow-y-auto">
-          {/* Suggested Slots Section */}
+          {/* FAST PATH: Suggested Slots Section */}
           {suggestedSlots.length > 0 && (
             <div className="px-4 py-3 border-b bg-primary/5">
               <div className="flex items-center gap-2 text-sm font-medium text-primary mb-2">
@@ -196,10 +279,7 @@ export function CounterProposeDialog({
                 {suggestedSlots.map((slot, idx) => (
                   <button
                     key={idx}
-                    onClick={() => {
-                      setSelectedSlot(slot);
-                      setSelectedDate(parseISO(slot.start));
-                    }}
+                    onClick={() => handleSuggestedSlotClick(slot)}
                     className={cn(
                       "flex flex-col items-start p-2 rounded-lg border text-left transition-all",
                       "hover:border-primary hover:bg-primary/5",
@@ -223,133 +303,106 @@ export function CounterProposeDialog({
             </div>
           )}
 
-          {/* Calendar Section */}
-          <div className="px-4 py-3 border-b">
-            <div className="flex items-center gap-2 text-sm font-medium mb-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              Scegli un giorno alternativo
+          {/* POWER PATH: Manual Selection */}
+          <div className="px-4 py-3">
+            <div className="flex items-center gap-2 text-sm font-medium mb-3">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              Oppure scegli manualmente
             </div>
-            <CalendarComponent
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => {
-                setSelectedDate(date);
-                setSelectedSlot(null);
-                setShowAllSlots(false);
-              }}
-              disabled={(date) => 
-                date < startOfDay(new Date()) || 
-                date > rangeEnd ||
-                !dateHasSlots(date)
-              }
-              modifiers={{
-                original: originalStart ? [originalStart] : [],
-              }}
-              modifiersClassNames={{
-                original: "ring-2 ring-primary/30 ring-offset-1",
-              }}
-              className="rounded-md border mx-auto pointer-events-auto"
-              locale={it}
-            />
-          </div>
-
-          {/* Time Slots Section */}
-          {selectedDate && (
-            <div className="px-4 py-3">
-              <div className="flex items-center gap-2 text-sm font-medium mb-3">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="capitalize">
-                  {format(selectedDate, "EEEE d MMMM", { locale: it })}
-                </span>
-              </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {/* Calendar Picker */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !manualDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {manualDate ? format(manualDate, "d MMM", { locale: it }) : "Data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={manualDate}
+                    onSelect={handleManualDateChange}
+                    disabled={(date) => 
+                      date < startOfDay(new Date()) || 
+                      date > rangeEnd
+                    }
+                    locale={it}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
               
-              <div className="space-y-3">
-                  {displaySlots.length > 0 ? (
-                    <>
-                      <div className="grid grid-cols-3 gap-2">
-                        {displaySlots.map((slot, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setSelectedSlot(slot)}
-                            className={cn(
-                              "p-2 rounded-lg border text-sm font-medium transition-all",
-                              "hover:border-primary hover:bg-primary/5",
-                              isSlotSelected(slot)
-                                ? "border-primary bg-primary/10 ring-1 ring-primary"
-                                : "border-border bg-background"
-                            )}
-                          >
-                            <span className="flex items-center justify-center gap-1">
-                              {format(parseISO(slot.start), "HH:mm")}
-                              {isSlotSelected(slot) && (
-                                <Check className="h-3 w-3 text-primary" />
-                              )}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-
-                      {hasMoreSlots && (
-                        <Collapsible open={showAllSlots} onOpenChange={setShowAllSlots}>
-                          <CollapsibleTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="w-full text-muted-foreground"
-                            >
-                              {showAllSlots ? (
-                                <>
-                                  <ChevronUp className="h-4 w-4 mr-1" />
-                                  Mostra meno
-                                </>
-                              ) : (
-                                <>
-                                  <ChevronDown className="h-4 w-4 mr-1" />
-                                  Altri {availableSlots.length - 6} orari
-                                </>
-                              )}
-                            </Button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="grid grid-cols-3 gap-2 mt-2">
-                              {availableSlots.slice(6).map((slot, idx) => (
-                                <button
-                                  key={idx}
-                                  onClick={() => setSelectedSlot(slot)}
-                                  className={cn(
-                                    "p-2 rounded-lg border text-sm font-medium transition-all",
-                                    "hover:border-primary hover:bg-primary/5",
-                                    isSlotSelected(slot)
-                                      ? "border-primary bg-primary/10 ring-1 ring-primary"
-                                      : "border-border bg-background"
-                                  )}
-                                >
-                                  <span className="flex items-center justify-center gap-1">
-                                    {format(parseISO(slot.start), "HH:mm")}
-                                    {isSlotSelected(slot) && (
-                                      <Check className="h-3 w-3 text-primary" />
-                                    )}
-                                  </span>
-                                </button>
-                              ))}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Nessuno slot disponibile per questa data
-                    </p>
-                  )}
-              </div>
+              {/* Time Picker 15min intervals */}
+              <TimePicker
+                value={manualTime}
+                onChange={handleManualTimeChange}
+                interval={15}
+                startHour={6}
+                endHour={22}
+                placeholder="Orario"
+              />
             </div>
-          )}
+            
+            {/* Live Validation Status */}
+            {selectionMode === 'manual' && manualDate && manualTime && (
+              <div className="mt-3">
+                {availabilityStatus === 'loading' && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Verifica disponibilità...
+                  </div>
+                )}
+                
+                {availabilityStatus === 'available' && (
+                  <div className="flex items-center gap-2 text-sm text-green-600">
+                    <Check className="h-4 w-4" />
+                    Slot disponibile
+                  </div>
+                )}
+                
+                {availabilityStatus === 'conflict' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-destructive">
+                      <X className="h-4 w-4" />
+                      Conflitto: {conflictEvent?.title}
+                    </div>
+                    
+                    {alternativeSlots.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Orari alternativi:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {alternativeSlots.map((slot, idx) => (
+                            <Button
+                              key={idx}
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => handleSuggestedSlotClick(slot)}
+                            >
+                              {formatSlotDate(slot)} · {formatSlotTime(slot)}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer - Dynamic CTA */}
         <div className="border-t bg-background p-4">
-          {selectedSlot ? (
+          {activeProposal ? (
             <div className="space-y-2">
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Check className="h-4 w-4 text-green-600" />
@@ -361,7 +414,7 @@ export function CounterProposeDialog({
                 className="w-full"
                 size="lg"
               >
-                Proponi · {formatSlotDate(selectedSlot)} · {formatSlotTime(selectedSlot)}
+                Proponi · {formatSlotDate(activeProposal)} · {formatSlotTime(activeProposal)}
               </Button>
             </div>
           ) : (

@@ -9,11 +9,15 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-// Generate time options in 5-minute intervals
-const generateTimeOptions = (): string[] => {
+// Generate time options with configurable interval and range
+const generateTimeOptions = (
+  interval: number = 5,
+  startHour: number = 0,
+  endHour: number = 24
+): string[] => {
   const times: string[] = [];
-  for (let h = 0; h < 24; h++) {
-    for (let m = 0; m < 60; m += 5) {
+  for (let h = startHour; h < endHour; h++) {
+    for (let m = 0; m < 60; m += interval) {
       const hour = h.toString().padStart(2, "0");
       const minute = m.toString().padStart(2, "0");
       times.push(`${hour}:${minute}`);
@@ -22,13 +26,14 @@ const generateTimeOptions = (): string[] => {
   return times;
 };
 
-const TIME_OPTIONS = generateTimeOptions();
-
 interface TimePickerProps {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  interval?: 5 | 15 | 30; // Interval in minutes
+  startHour?: number; // Start hour (0-23)
+  endHour?: number; // End hour (1-24)
 }
 
 export function TimePicker({
@@ -36,8 +41,18 @@ export function TimePicker({
   onChange,
   disabled,
   placeholder = "Seleziona orario",
+  interval = 5,
+  startHour = 0,
+  endHour = 24,
 }: TimePickerProps) {
   const [open, setOpen] = React.useState(false);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Generate time options based on props
+  const TIME_OPTIONS = React.useMemo(
+    () => generateTimeOptions(interval, startHour, endHour),
+    [interval, startHour, endHour]
+  );
 
   const handleTimeSelect = (time: string) => {
     onChange(time);
@@ -46,6 +61,26 @@ export function TimePicker({
 
   // Format value to display (remove seconds if present)
   const displayValue = value ? value.substring(0, 5) : "";
+
+  // Auto-scroll to selected time when popover opens
+  React.useEffect(() => {
+    if (open && scrollRef.current && displayValue) {
+      const selectedIndex = TIME_OPTIONS.indexOf(displayValue);
+      if (selectedIndex >= 0) {
+        // Each button is approximately 36px (h-9) + 4px gap
+        const itemHeight = 40;
+        // Center the selected item in the scroll area (280px height)
+        const scrollPosition = Math.max(0, selectedIndex * itemHeight - 120);
+        
+        // Use setTimeout to ensure DOM is ready
+        setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollPosition;
+          }
+        }, 0);
+      }
+    }
+  }, [open, displayValue, TIME_OPTIONS]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -64,7 +99,7 @@ export function TimePicker({
       </PopoverTrigger>
       <PopoverContent className="w-[180px] p-0" align="start" sideOffset={4}>
         <ScrollArea className="h-[280px]">
-          <div className="p-2">
+          <div className="p-2" ref={scrollRef}>
             {TIME_OPTIONS.map((time) => (
               <Button
                 key={time}
