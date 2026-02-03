@@ -1,98 +1,129 @@
 
+# Piano: Redirect Post-Login Intelligente per Dominio
 
-# Piano: Proteggere le Route Coach con Verifica del Ruolo
+## Contesto
 
-## Problema Identificato
+L'app ha due entry point di autenticazione distinti:
+- `/auth` → coach e admin
+- `/client/auth` → client
 
-L'utente `matteo.devel@gmail.com` ha i ruoli `client` e `admin`, ma **non** ha il ruolo `coach`. Nonostante questo, riesce ad accedere all'area coach.
-
-La causa: il `CoachLayout` attualmente controlla solo se l'utente e autenticato (`isAuthenticated`), ma non verifica se ha il ruolo `coach`.
-
-## Soluzione
-
-Modificare `CoachLayout` per verificare anche il ruolo `coach`, seguendo lo stesso pattern usato da `AdminLayout`.
+Attualmente entrambe le pagine fanno redirect generici che causano doppi redirect e flash UI. Ogni auth page deve gestire solo i ruoli di sua competenza.
 
 ---
 
 ## Modifiche Tecniche
 
-### File: `src/components/CoachLayout.tsx`
+### 1. Nuovo Utility: `src/features/auth/utils/fetchUserRoles.ts`
 
-1. **Importare** il hook `useUserRoles` da `@/features/auth/hooks/useUserRoles`
+Creare una funzione riutilizzabile per recuperare i ruoli dato un `userId`:
 
-2. **Usare il hook** per ottenere `isCoach` e `isLoading`
-
-3. **Aggiungere stato di loading** mentre verifica i ruoli
-
-4. **Redirect** a una pagina appropriata se l'utente non e coach:
-   - Se e solo `client` → redirect a `/client/app`
-   - Altrimenti → redirect a `/auth`
-
-### Logica di Redirect
-
+```text
+fetchUserRoles(userId: string): Promise<AppRole[]>
 ```
-Se non autenticato → /auth
-Se autenticato ma non coach:
-  - Se ha ruolo client → /client/app
-  - Altrimenti → /auth
-Se autenticato e coach → mostra contenuto
+
+Questa funzione:
+- Interroga `user_roles` filtrando per `user_id`
+- Ritorna array di ruoli o array vuoto in caso di errore
+- Gestisce errori con console log ma non blocca il flusso
+
+---
+
+### 2. Modifica: `src/pages/Auth.tsx` (Coach/Admin)
+
+**Logica redirect post-login:**
+
+| Condizione | Redirect |
+|------------|----------|
+| `next` presente | `next` |
+| Ha ruolo `coach` | `/` |
+| Ha ruolo `admin` | `/admin` |
+| Nessun ruolo valido | Resta su `/auth` + toast errore |
+
+**Modifiche specifiche:**
+
+a) **useEffect sessione esistente (righe 72-80):**
+   - Dopo aver rilevato una sessione esistente
+   - Recuperare i ruoli con `fetchUserRoles(session.user.id)`
+   - Applicare logica redirect sopra descritta
+
+b) **handleSignIn (righe 157-175):**
+   - Dopo login riuscito, recuperare `data.user.id`
+   - Recuperare i ruoli
+   - Se ha `coach` o `admin` → redirect appropriato
+   - Altrimenti → mostrare toast "Account non abilitato all'accesso coach" e non navigare
+
+c) **Stato UI per errore accesso:**
+   - Aggiungere stato `accessError` per mostrare messaggio inline se l'utente non ha ruoli coach/admin
+
+---
+
+### 3. Modifica: `src/pages/client/ClientAuth.tsx` (Client)
+
+**Logica redirect post-login:**
+
+| Condizione | Redirect |
+|------------|----------|
+| Ha ruolo `client` | `/client/app` |
+| Non ha ruolo `client` | Resta su `/client/auth` + toast errore |
+
+**Modifiche specifiche:**
+
+a) **useEffect sessione esistente (righe 17-23):**
+   - Dopo aver rilevato una sessione
+   - Recuperare i ruoli
+   - Se ha `client` → redirect a `/client/app`
+   - Altrimenti → logout automatico + toast "Questa area e riservata ai clienti"
+
+b) **handleSignIn (righe 25-43):**
+   - Dopo login riuscito
+   - Verificare ruolo `client`
+   - Se non client → toast errore + logout
+
+---
+
+### 4. Modifica: `src/components/client/ClientAppLayout.tsx`
+
+Aggiungere verifica ruolo `client` per coerenza con `CoachLayout`:
+
+- Importare `useUserRoles`
+- Dopo auth check, verificare `isClient`
+- Se non client → redirect a `/client/auth`
+
+Questo serve come guardrail di sicurezza, ma il redirect principale avviene gia nella auth page.
+
+---
+
+## Flusso Risultante
+
+**Login da /auth (coach):**
+```text
+Login → fetch ruoli → isCoach? → /
+                   → isAdmin? → /admin
+                   → else → toast errore, resta
+```
+
+**Login da /client/auth (client):**
+```text
+Login → fetch ruoli → isClient? → /client/app
+                   → else → logout + toast errore
 ```
 
 ---
 
-## Codice Previsto
+## File Coinvolti
 
-```tsx
-// src/components/CoachLayout.tsx
-import { useUserRoles } from "@/features/auth/hooks/useUserRoles";
-
-const CoachLayout = ({ isAuthenticated }: CoachLayoutProps) => {
-  const { isCoach, isClient, isLoading: rolesLoading } = useUserRoles();
-  
-  // ... existing state ...
-
-  // Not authenticated
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  // Loading roles
-  if (rolesLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
-          <p className="text-muted-foreground">Verifica autorizzazioni...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Not a coach - redirect appropriately
-  if (!isCoach) {
-    // If they're a client, send to client app
-    if (isClient) {
-      return <Navigate to="/client/app" replace />;
-    }
-    // Otherwise to auth
-    return <Navigate to="/auth" replace />;
-  }
-
-  // ... rest of the component ...
-};
-```
+| File | Azione |
+|------|--------|
+| `src/features/auth/utils/fetchUserRoles.ts` | Nuovo |
+| `src/pages/Auth.tsx` | Modifica |
+| `src/pages/client/ClientAuth.tsx` | Modifica |
+| `src/components/client/ClientAppLayout.tsx` | Modifica |
 
 ---
 
-## Pulizia Opzionale in App.tsx
+## Note di Sicurezza
 
-Dopo questa modifica, il controllo `isCoach` in `App.tsx` (righe 87-106) diventa ridondante per la protezione delle route. Tuttavia puo essere mantenuto per il `CoachSessionInitializer`.
-
----
-
-## Risultato
-
-- Gli utenti senza ruolo `coach` non potranno accedere all'area coach
-- I client verranno reindirizzati alla loro app dedicata
-- Il comportamento e coerente con `AdminLayout`
-
+- La logica frontend e solo UX/routing
+- La vera protezione resta nelle RLS del database (`has_role`)
+- I layout (`CoachLayout`, `AdminLayout`, `ClientAppLayout`) restano guardrail di backup
+- Non si mescolano mai i domini delle due auth page
