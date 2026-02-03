@@ -11,7 +11,7 @@ import {
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
+  PopoverAnchor,
 } from "@/components/ui/popover";
 
 interface CategoryMultiSelectProps {
@@ -86,7 +86,7 @@ export function CategoryMultiSelect({
 
   return (
     <Popover open={isOpen && isInteractive} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
+      <PopoverAnchor asChild>
         <div
           ref={containerRef}
           onClick={handleContainerClick}
@@ -147,13 +147,18 @@ export function CategoryMultiSelect({
             <span className="text-muted-foreground">{placeholder}</span>
           )}
         </div>
-      </PopoverTrigger>
+      </PopoverAnchor>
 
       <PopoverContent
         className="w-[var(--radix-popover-trigger-width)] p-0"
         align="start"
         sideOffset={4}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => {
+          if (containerRef.current?.contains(e.target as Node)) {
+            e.preventDefault();
+          }
+        }}
         onInteractOutside={(e) => {
           if (containerRef.current?.contains(e.target as Node)) {
             e.preventDefault();
