@@ -59,23 +59,61 @@ const App = () => {
   const [isCoach, setIsCoach] = useState(false);
 
   // Auth state initialization - runs ONCE on mount
+  // Pre-fetches roles to populate cache before unlocking UI
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       const currentUser = session?.user ?? null;
+      
       setUser(currentUser);
       previousUserIdRef.current = currentUser?.id ?? null;
+      
+      if (currentUser) {
+        // Pre-fetch roles and populate React Query cache
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", currentUser.id);
+        
+        const roleStrings = roles?.map(r => r.role) || [];
+        
+        // Populate cache so useUserRoles() finds data immediately
+        queryClient.setQueryData(["userRoles", currentUser.id], roleStrings);
+        
+        // Set coach flag for session bridge
+        const hasCoachRole = roleStrings.includes('coach');
+        setIsCoach(hasCoachRole);
+      }
+      
       setLoading(false);
-    });
+    };
+    
+    initAuth();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       const newUser = session?.user ?? null;
       
       // Clear React Query cache only when user actually changes
       if (previousUserIdRef.current !== (newUser?.id ?? null)) {
         queryClient.clear();
         previousUserIdRef.current = newUser?.id ?? null;
+        
+        if (newUser) {
+          // Re-fetch roles for new user
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", newUser.id);
+          
+          const roleStrings = roles?.map(r => r.role) || [];
+          queryClient.setQueryData(["userRoles", newUser.id], roleStrings);
+          
+          setIsCoach(roleStrings.includes('coach'));
+        } else {
+          setIsCoach(false);
+        }
       }
       
       setUser(newUser);

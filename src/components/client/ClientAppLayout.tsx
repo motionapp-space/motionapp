@@ -15,16 +15,10 @@ import { AlertCircle } from "lucide-react";
 const ClientAppLayout = () => {
   const { user, userId, isLoading: authLoading } = useAuth();
 
-  // Loading state - show spinner while checking auth
+  // Auth is pre-loaded in App.tsx, so authLoading should be false immediately
+  // Keep as fallback only for edge cases
   if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Caricamento...</p>
-        </div>
-      </div>
-    );
+    return null; // Return nothing - App.tsx spinner handles this
   }
 
   // Not authenticated - redirect immediately (render-time protection)
