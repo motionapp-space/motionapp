@@ -166,7 +166,30 @@ Deno.serve(async (req) => {
 
     console.log(`[signup-coach] Coach role assigned for: ${userId}`);
 
-    // Step 4: Increment used_count (only after everything succeeded)
+    // Step 4: Create default single_session product
+    const { error: productError } = await supabaseAdmin
+      .from("products")
+      .insert({
+        coach_id: userId,
+        name: "Lezione singola",
+        type: "single_session",
+        credits_amount: 1,
+        price_cents: 5000, // Default 50€
+        duration_months: 12,
+        is_active: true,
+        is_visible: true,
+        sort_order: 0,
+      });
+
+    if (productError) {
+      // Log ma non bloccare - indice UNIQUE impedisce duplicati
+      // Frontend gestira creazione se necessario
+      console.warn("[signup-coach] Default product creation failed:", productError.message);
+    } else {
+      console.log(`[signup-coach] Default single_session product created for: ${userId}`);
+    }
+
+    // Step 5: Increment used_count (only after everything succeeded)
     const { error: updateError } = await supabaseAdmin
       .from("coach_invites")
       .update({ used_count: invite.used_count + 1 })

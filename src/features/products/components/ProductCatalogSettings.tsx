@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Plus, Loader2, Package, CreditCard, Check } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -14,7 +15,8 @@ import {
 import type { Product, CreateProductInput, UpdateProductInput } from "../types";
 
 export function ProductCatalogSettings() {
-  const { data: products, isLoading } = useProducts();
+  const queryClient = useQueryClient();
+  const { data: products, isLoading, refetch } = useProducts();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
 
@@ -54,21 +56,71 @@ export function ProductCatalogSettings() {
     setLocalPrice(cents);
   };
 
+  const showSavedFeedback = () => {
+    setShowSaved(true);
+    if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current);
+    savedTimeoutRef.current = window.setTimeout(() => {
+      setShowSaved(false);
+    }, 3500);
+  };
+
   const handlePriceBlur = async () => {
-    if (singleSession && localPrice !== singleSession.price_cents) {
-      try {
+    // Skip se il prezzo non è cambiato e il prodotto esiste
+    if (singleSession && localPrice === singleSession.price_cents) {
+      return;
+    }
+
+    try {
+      if (singleSession) {
+        // Caso 1: Prodotto esiste → UPDATE
         await updateProduct.mutateAsync({
           productId: singleSession.id,
           input: { price_cents: localPrice },
         });
-        // Mostra "Salvato" per 2s
-        setShowSaved(true);
-        savedTimeoutRef.current = window.setTimeout(() => {
-          setShowSaved(false);
-        }, 3500);
-      } catch {
-        // Errore già gestito dal hook (toast)
+        showSavedFeedback();
+      } else {
+        // Caso 2: Prodotto NON esiste → CREATE
+        try {
+          await createProduct.mutateAsync({
+            name: "Lezione singola",
+            type: "single_session",
+            credits_amount: 1,
+            price_cents: localPrice,
+            duration_months: 12,
+            is_active: true,
+            is_visible: true,
+            sort_order: 0,
+          });
+          showSavedFeedback();
+        } catch (createError: unknown) {
+          // Caso 3: Conflict (duplicate key) → Refetch + UPDATE
+          const errorMessage = createError instanceof Error 
+            ? createError.message 
+            : String(createError);
+            
+          if (errorMessage.includes("duplicate") || errorMessage.includes("unique") || errorMessage.includes("23505")) {
+            // Race condition: prodotto creato da altro processo
+            await queryClient.invalidateQueries({ queryKey: ["products"] });
+            
+            const refreshedProducts = await refetch();
+            const refreshedSingle = refreshedProducts.data?.find(
+              p => p.type === "single_session"
+            );
+            
+            if (refreshedSingle) {
+              await updateProduct.mutateAsync({
+                productId: refreshedSingle.id,
+                input: { price_cents: localPrice },
+              });
+              showSavedFeedback();
+            }
+          } else {
+            throw createError;
+          }
+        }
       }
+    } catch {
+      // Errore già gestito dal hook (toast)
     }
   };
 
@@ -142,13 +194,13 @@ export function ProductCatalogSettings() {
                   />
                 </div>
                 {/* Stato salvataggio */}
-                {updateProduct.isPending && (
+                {(updateProduct.isPending || createProduct.isPending) && (
                   <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Salvataggio…
                   </span>
                 )}
-                {showSaved && !updateProduct.isPending && (
+                {showSaved && !updateProduct.isPending && !createProduct.isPending && (
                   <span className="flex items-center gap-1.5 text-sm text-emerald-600">
                     <Check className="h-4 w-4" />
                     Salvato
