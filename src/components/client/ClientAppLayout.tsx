@@ -7,6 +7,7 @@ import ClientTopbar from "./ClientTopbar";
 import ClientBottomNav from "./ClientBottomNav";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
+import { FullScreenLoader, FullScreenError } from "@/components/common/FullScreenLoader";
 
 /**
  * Protected layout for client app routes
@@ -15,10 +16,9 @@ import { AlertCircle } from "lucide-react";
 const ClientAppLayout = () => {
   const { user, userId, isLoading: authLoading } = useAuth();
 
-  // Auth is pre-loaded in App.tsx, so authLoading should be false immediately
-  // Keep as fallback only for edge cases
+  // Loading auth
   if (authLoading) {
-    return null; // Return nothing - App.tsx spinner handles this
+    return <FullScreenLoader message="Caricamento..." />;
   }
 
   // Not authenticated - redirect immediately (render-time protection)
@@ -35,18 +35,33 @@ const ClientAppLayout = () => {
  * This ensures no data queries run before authentication is confirmed.
  */
 function AuthenticatedClientLayout({ userId }: { userId: string }) {
-  const { data: client, isLoading: clientLoading } = useCurrentClientWithAuth(userId);
-  const { isClient, isLoading: rolesLoading } = useUserRoles();
+  const { data: client, isLoading: clientLoading, isError: clientError, refetch: refetchClient } = useCurrentClientWithAuth(userId);
+  const { isClient, isLoading: rolesLoading, isError: rolesError, refetch: refetchRoles } = useUserRoles();
 
   // Loading client data or roles
   if (clientLoading || rolesLoading) {
+    return <FullScreenLoader message="Caricamento profilo..." />;
+  }
+
+  // Error fetching roles - show retry
+  if (rolesError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Caricamento profilo...</p>
-        </div>
-      </div>
+      <FullScreenError
+        title="Impossibile verificare i permessi"
+        message="Si è verificato un errore durante la verifica dei permessi. Controlla la connessione e riprova."
+        onRetry={() => refetchRoles()}
+      />
+    );
+  }
+
+  // Error fetching client - show retry
+  if (clientError) {
+    return (
+      <FullScreenError
+        title="Impossibile caricare il profilo"
+        message="Si è verificato un errore durante il caricamento del profilo. Controlla la connessione e riprova."
+        onRetry={() => refetchClient()}
+      />
     );
   }
 

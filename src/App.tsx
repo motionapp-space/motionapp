@@ -9,6 +9,8 @@ import { queryClient } from "@/lib/queryClient";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { withTimeout, TimeoutError } from "@/lib/withTimeout";
+import { toast } from "sonner";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -46,6 +48,9 @@ import CoachLayout from "./components/CoachLayout";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { useSessionBridge } from "@/hooks/useSessionBridge";
 
+// Soft timeout for role prefetch (ms) - we wait this long before unlocking UI
+const ROLE_PREFETCH_TIMEOUT_MS = 2000;
+
 // Componente separato per inizializzare il bridge sessioni per i coach
 function CoachSessionInitializer({ userId }: { userId: string }) {
   useSessionBridge(userId);
@@ -58,8 +63,25 @@ const App = () => {
   const previousUserIdRef = useRef<string | null>(null);
   const [isCoach, setIsCoach] = useState(false);
 
+  // Global error handler for unhandled promise rejections
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled promise rejection:", event.reason);
+      
+      // Show toast for network/timeout errors
+      if (event.reason instanceof TimeoutError) {
+        toast.error("Connessione lenta", {
+          description: "La richiesta ha impiegato troppo tempo. Riprova.",
+        });
+      }
+    };
+
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    return () => window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+  }, []);
+
   // Auth state initialization - runs ONCE on mount
-  // Pre-fetches roles to populate cache before unlocking UI
+  // Pre-fetches roles to populate cache before unlocking UI (with soft timeout)
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -70,26 +92,38 @@ const App = () => {
         previousUserIdRef.current = currentUser?.id ?? null;
         
         if (currentUser) {
-          // Pre-fetch roles and populate React Query cache
-          const { data: roles } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", currentUser.id);
-          
-          const roleStrings = roles?.map(r => r.role) || [];
-          
-          // Populate cache so useUserRoles() finds data immediately
-          queryClient.setQueryData(["userRoles", currentUser.id], roleStrings);
-          
-          // Set coach flag for session bridge
-          const hasCoachRole = roleStrings.includes('coach');
-          setIsCoach(hasCoachRole);
+          // Pre-fetch roles with soft timeout - don't block UI forever
+          try {
+            const fetchRoles = async () => {
+              const { data, error } = await supabase
+                .from("user_roles")
+                .select("role")
+                .eq("user_id", currentUser.id);
+              if (error) throw error;
+              return data;
+            };
+            
+            const roles = await withTimeout(fetchRoles(), ROLE_PREFETCH_TIMEOUT_MS);
+            const roleStrings = roles?.map(r => r.role) || [];
+            
+            // Populate cache so useUserRoles() finds data immediately
+            queryClient.setQueryData(["userRoles", currentUser.id], roleStrings);
+            
+            // Set coach flag for session bridge
+            const hasCoachRole = roleStrings.includes('coach');
+            setIsCoach(hasCoachRole);
+          } catch (roleError) {
+            // Timeout or error fetching roles - let useUserRoles handle it later
+            console.warn("Role prefetch failed/timed out, will retry in layout:", roleError);
+            // Don't block - layouts will fetch roles via useUserRoles
+          }
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
         setUser(null);
         setIsCoach(false);
       } finally {
+        // ALWAYS unlock loading, even on error
         setLoading(false);
       }
     };
@@ -107,16 +141,21 @@ const App = () => {
         previousUserIdRef.current = newUser?.id ?? null;
         
         if (newUser) {
-          // Re-fetch roles for new user
-          const { data: roles } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", newUser.id);
-          
-          const roleStrings = roles?.map(r => r.role) || [];
-          queryClient.setQueryData(["userRoles", newUser.id], roleStrings);
-          
-          setIsCoach(roleStrings.includes('coach'));
+          // Re-fetch roles for new user (with try/catch to avoid unhandled rejections)
+          try {
+            const { data: roles } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", newUser.id);
+            
+            const roleStrings = roles?.map(r => r.role) || [];
+            queryClient.setQueryData(["userRoles", newUser.id], roleStrings);
+            
+            setIsCoach(roleStrings.includes('coach'));
+          } catch (error) {
+            console.warn("Role fetch failed in onAuthStateChange:", error);
+            setIsCoach(false);
+          }
         } else {
           setIsCoach(false);
         }
@@ -136,14 +175,18 @@ const App = () => {
     }
 
     const checkRole = async () => {
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
+      try {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
 
-      // User is coach if they have the 'coach' role (handles multiple roles)
-      const hasCoachRole = roles?.some(r => r.role === 'coach') ?? false;
-      setIsCoach(hasCoachRole);
+        // User is coach if they have the 'coach' role (handles multiple roles)
+        const hasCoachRole = roles?.some(r => r.role === 'coach') ?? false;
+        setIsCoach(hasCoachRole);
+      } catch (error) {
+        console.warn("Role check failed:", error);
+      }
     };
 
     checkRole();
