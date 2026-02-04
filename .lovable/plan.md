@@ -1,387 +1,795 @@
 
+# Piano Refactor: Stati Cliente / Invito / Piani — Beta Minimal, Relazione-centrica
 
-# Allineamento UI `CounterProposeDialog` — Design System Motion
+## Riepilogo Esecutivo
 
-Ristrutturazione completa della modale per aderire alle specifiche UI/UX mantenendo coerenza con la palette colori Motion.
-
----
-
-## Riepilogo Modifiche Strutturali
-
-### Layout Attuale vs Target
+Questo refactor sposta l'unica fonte di verità per lo stato del cliente dalla tabella `clients` alla relazione `coach_clients`, eliminando completamente `clients.status` e `clients.archived_at`, e rimuovendo il valore `invited` da `coach_clients.status`.
 
 ```text
-ATTUALE (max-w-md):
-┌─────────────────────────────────────┐
-│ Header bg-muted/50                  │
-├─────────────────────────────────────┤
-│ Fast Path: bg-primary/5             │
-├─────────────────────────────────────┤
-│ Power Path: grid-cols-2             │
-├─────────────────────────────────────┤
-│ Footer                              │
-└─────────────────────────────────────┘
-
-TARGET (max-w-[720px], responsive):
-┌─────────────────────────────────────────────────────────────┐
-│ HEADER px-6 py-4 (titolo + sottotitolo | badge)            │
-├─────────────────────────────────────────────────────────────┤
-│ FAST PATH: grid 1→2 cols, rounded-xl, CheckCircle2 icon   │
-├─────────────────────────────────────────────────────────────┤
-│ DIVIDER (border-b)                                          │
-├─────────────────────────────────────────────────────────────┤
-│ POWER PATH: rounded-xl bg-muted/20                          │
-│  ┌──────────────┬─────────────────────────────────────────┐ │
-│  │  Calendar    │  TimePicker + Quick Chips               │ │
-│  │              │  + Availability Status (min-h-[72px])   │ │
-│  └──────────────┴─────────────────────────────────────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│ FOOTER: proposta preview + CTA h-11                         │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│                         MODELLO FINALE                                     │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│   clients                                                                  │
+│   └── NESSUNO STATO (solo dati anagrafici + user_id + last_access_at)     │
+│                                                                            │
+│   coach_clients.status                                                     │
+│   └── 'active' | 'blocked' | 'archived'   ← UNICA FONTE DI VERITÀ         │
+│                                                                            │
+│   client_invites.status                                                    │
+│   └── 'pending' | 'accepted' | 'expired' | 'revoked'   ← SEPARATO         │
+│                                                                            │
+│   client_plans.status                                                      │
+│   └── 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO'   ← DOMINIO PIANI           │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 1. DialogContent — Container Principale
+## Parte A — Database (Migrazioni Obbligatorie)
 
-**Attuale:**
-```tsx
-className="max-w-md max-h-[90vh] p-0 gap-0 grid grid-rows-[auto_1fr_auto] overflow-hidden"
+### A1) Backfill: Spostare archivio da clients a coach_clients
+
+Prima di eliminare le colonne, migriamo i dati di archiviazione sulla relazione.
+
+```sql
+-- Step 1: Backfill coach_clients.status = 'archived' per clienti con archived_at
+UPDATE coach_clients cc
+SET status = 'archived'
+FROM clients c
+WHERE cc.client_id = c.id
+  AND c.archived_at IS NOT NULL
+  AND cc.status != 'archived';
 ```
 
-**Target:**
-```tsx
-className="max-w-[720px] w-[calc(100vw-32px)] max-h-[85vh] p-0 gap-0 
-           grid grid-rows-[auto_1fr_auto] overflow-hidden"
+### A2) Normalizzare coach_clients.status: Eliminare 'invited'
+
+Tutti i record con `status = 'invited'` vengono portati ad `active`. L'invito è tracciato esclusivamente in `client_invites`.
+
+```sql
+-- Step 2: Converti 'invited' → 'active'
+UPDATE coach_clients
+SET status = 'active'
+WHERE status = 'invited';
+
+-- Step 3: Rimuovi constraint esistente
+ALTER TABLE coach_clients 
+DROP CONSTRAINT IF EXISTS coach_clients_status_check;
+
+-- Step 4: Nuovo constraint con soli 3 valori
+ALTER TABLE coach_clients
+ADD CONSTRAINT coach_clients_status_check
+CHECK (status IN ('active', 'blocked', 'archived'));
 ```
 
-| Proprietà | Valore | Scopo |
-|-----------|--------|-------|
-| `max-w-[720px]` | 720px | Larghezza massima desktop |
-| `w-[calc(100vw-32px)]` | viewport - 32px | Margini 16px su mobile |
-| `max-h-[85vh]` | 85% viewport | Evita overflow verticale |
+### A3) Eliminare colonne obsolete da clients
+
+```sql
+-- Step 5: Elimina archived_at
+ALTER TABLE clients DROP COLUMN IF EXISTS archived_at;
+
+-- Step 6: Elimina status (e l'ENUM associato)
+ALTER TABLE clients DROP COLUMN IF EXISTS status;
+
+-- Step 7: Elimina ENUM client_status (se non usato altrove)
+DROP TYPE IF EXISTS client_status;
+```
+
+### A4) Indici ottimizzati
+
+```sql
+-- Indice per lista clienti attivi (default query)
+CREATE INDEX IF NOT EXISTS idx_coach_clients_active
+ON coach_clients (coach_id)
+WHERE status IN ('active', 'blocked');
+
+-- Indice per toggle archiviati (pochi record)
+CREATE INDEX IF NOT EXISTS idx_coach_clients_archived
+ON coach_clients (coach_id)
+WHERE status = 'archived';
+```
+
+### A5) Aggiornare RPC `create_client_with_coach_link`
+
+La RPC deve:
+- NON scrivere `clients.status` (colonna eliminata)
+- Impostare sempre `coach_clients.status = 'active'`
+- L'invito viene gestito separatamente in `client_invites`
+
+```sql
+CREATE OR REPLACE FUNCTION public.create_client_with_coach_link(
+  p_first_name TEXT,
+  p_last_name TEXT,
+  p_email TEXT DEFAULT NULL,
+  p_phone TEXT DEFAULT NULL,
+  p_birth_date DATE DEFAULT NULL,
+  p_sex sex DEFAULT NULL,
+  p_notes TEXT DEFAULT NULL,
+  p_fiscal_code TEXT DEFAULT NULL,
+  p_with_invite BOOLEAN DEFAULT false  -- parametro mantenuto per compatibilità API
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_client_id UUID;
+  v_coach_id UUID := auth.uid();
+BEGIN
+  -- Crea il cliente SENZA status (colonna eliminata)
+  INSERT INTO clients (
+    first_name,
+    last_name,
+    email,
+    phone,
+    birth_date,
+    sex,
+    notes,
+    fiscal_code
+  )
+  VALUES (
+    p_first_name,
+    p_last_name,
+    p_email,
+    p_phone,
+    p_birth_date,
+    p_sex,
+    p_notes,
+    p_fiscal_code
+  )
+  RETURNING id INTO v_client_id;
+
+  -- Crea la relazione coach-client SEMPRE con status='active'
+  -- L'invito è gestito separatamente in client_invites
+  INSERT INTO coach_clients (
+    coach_id,
+    client_id,
+    role,
+    status
+  )
+  VALUES (
+    v_coach_id,
+    v_client_id,
+    'primary',
+    'active'  -- SEMPRE active, mai invited
+  );
+
+  RETURN v_client_id;
+END;
+$$;
+```
+
+### A6) Aggiornare RPC `get_coach_onboarding_data`
+
+La RPC deve usare `coach_clients.status` invece di `clients.archived_at`.
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_coach_onboarding_data(p_coach_id uuid)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+  v_result json;
+BEGIN
+  IF p_coach_id IS DISTINCT FROM auth.uid() THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+
+  WITH coach_client_rel AS (
+    SELECT id AS coach_client_id, client_id, status
+    FROM coach_clients
+    WHERE coach_id = p_coach_id
+  ),
+  has_active AS (
+    SELECT EXISTS (
+      SELECT 1
+      FROM coach_client_rel
+      WHERE status IN ('active', 'blocked')
+    ) AS val
+  ),
+  has_archived AS (
+    SELECT EXISTS (
+      SELECT 1
+      FROM coach_client_rel
+      WHERE status = 'archived'
+    ) AS val
+  ),
+  has_plan AS (
+    SELECT EXISTS (
+      SELECT 1
+      FROM client_plans cp
+      INNER JOIN coach_client_rel cc ON cp.coach_client_id = cc.coach_client_id
+      WHERE cp.status = 'IN_CORSO'
+        AND cp.deleted_at IS NULL
+    ) AS val
+  ),
+  has_event AS (
+    SELECT EXISTS (
+      SELECT 1
+      FROM events e
+      INNER JOIN coach_client_rel cc ON e.coach_client_id = cc.coach_client_id
+    ) AS val
+  )
+  SELECT json_build_object(
+    'has_active_clients', (SELECT val FROM has_active),
+    'has_archived_clients', (SELECT val FROM has_archived),
+    'has_any_plan', (SELECT val FROM has_plan),
+    'has_any_appointment', (SELECT val FROM has_event)
+  ) INTO v_result;
+
+  RETURN v_result;
+END;
+$$;
+```
 
 ---
 
-## 2. Header — Layout Flex con Badge
+## Parte B — Backend / Edge Functions
 
-**Attuale:**
-```tsx
-<div className="bg-muted/50 border-b px-4 py-3">
-  <DialogHeader className="space-y-1">
-    <DialogTitle>Proponi nuovo orario</DialogTitle>
-    <div>Richiesta originale: <Badge>...</Badge></div>
-  </DialogHeader>
-</div>
-```
+### B1) Refactor `client-fsm` (supabase/functions/client-fsm/index.ts)
 
-**Target:**
-```tsx
-<div className="shrink-0 border-b bg-background px-6 py-4">
-  <div className="flex items-end justify-between gap-4">
-    {/* Left: Titolo + Sottotitolo */}
-    <div className="space-y-1">
-      <DialogTitle className="text-lg font-semibold">
-        Proponi un nuovo orario
-      </DialogTitle>
-      <p className="text-sm text-muted-foreground">
-        Il cliente potrà accettare o rifiutare la proposta.
-      </p>
-    </div>
-    {/* Right: Badge originale */}
-    <Badge variant="outline" className="px-3 py-1 rounded-full text-sm font-normal whitespace-nowrap shrink-0">
-      {format(originalStart, "EEE d MMM", { locale: it })} · {format(originalStart, "HH:mm")}–{format(originalEnd, "HH:mm")}
-    </Badge>
-  </div>
-</div>
-```
+**Cambiamenti fondamentali:**
+- Rimuovere tutti i riferimenti a `clients.status` e `clients.archived_at`
+- ARCHIVE/UNARCHIVE operano su `coach_clients.status`
+- Azioni piano NON toccano la relazione
 
----
+**Azioni consentite (modificano coach_clients):**
 
-## 3. Fast Path — Slot Suggeriti
+| Azione | Operazione |
+|--------|------------|
+| `ARCHIVE_CLIENT` | `coach_clients.status = 'archived'`, `clients.active_plan_id = null` |
+| `UNARCHIVE_CLIENT` | `coach_clients.status = 'active'`, `clients.active_plan_id = null` |
 
-**Modifiche chiave:**
+**Azioni che NON toccano coach_clients né clients.status:**
 
-| Elemento | Attuale | Target |
-|----------|---------|--------|
-| Container | `px-4 py-3 border-b bg-primary/5` | `px-6 py-5` (no background colorato) |
-| Titolo | `Sparkles icon + text-primary` | Semplice testo `text-sm font-medium` |
-| Sottotitolo | Assente | `text-xs text-muted-foreground` |
-| Grid | `grid-cols-2 gap-2` | `grid-cols-1 sm:grid-cols-2 gap-3` |
-| Slot button | `rounded-lg p-2` | `rounded-xl px-4 py-3` |
-| Check icon | `Check h-3 w-3` inline | `CheckCircle2 h-4 w-4 absolute top-2 right-2` |
+| Azione | Operazione |
+|--------|------------|
+| `ASSIGN_PLAN` | Solo `client_plans` + `clients.active_plan_id` |
+| `COMPLETE_PLAN` | Solo `client_plans` + `clients.active_plan_id = null` |
+| `DELETE_PLAN` | Solo `client_plans` + `clients.active_plan_id = null` |
+| `CLIENT_LOGS_IN` | Solo `clients.last_access_at` |
+| `NO_ACCESS_X_DAYS` | **ELIMINARE COMPLETAMENTE** |
 
-**Target JSX:**
-```tsx
-<div className="px-6 py-5">
-  <div className="mb-3">
-    <h3 className="text-sm font-medium text-foreground">Orari suggeriti</h3>
-    <p className="text-xs text-muted-foreground">
-      Suggeriti in base alla tua agenda e alla richiesta del cliente.
-    </p>
-  </div>
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-    {suggestedSlots.map((slot, idx) => (
-      <button
-        key={idx}
-        onClick={() => handleSuggestedSlotClick(slot)}
-        className={cn(
-          "relative rounded-xl border bg-background px-4 py-3 text-left transition-all",
-          "hover:bg-muted/40",
-          isSlotSelected(slot)
-            ? "border-primary bg-primary/5"
-            : "border-border"
-        )}
-      >
-        <span className="text-sm text-muted-foreground capitalize">
-          {formatSlotDate(slot)}
-        </span>
-        <span className="block text-base font-semibold text-foreground">
-          {formatSlotTime(slot)}
-        </span>
-        {isSlotSelected(slot) && (
-          <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />
-        )}
-      </button>
-    ))}
-  </div>
-</div>
-```
+**Codice modificato:**
 
----
+```typescript
+// Tipo ClientStatus - DA ELIMINARE
+// type ClientStatus = 'POTENZIALE' | 'ATTIVO' | 'INATTIVO' | 'ARCHIVIATO';
 
-## 4. Divider
-
-Aggiungere separatore tra Fast e Power path:
-
-```tsx
-<div className="border-b" />
-```
-
----
-
-## 5. Power Path — Selezione Manuale
-
-### 5.1 Container
-
-**Attuale:** `px-4 py-3`
-**Target:**
-```tsx
-<div className="px-6 py-5">
-  <div className="mb-3">
-    <h3 className="text-sm font-medium text-foreground">Scegli data e ora</h3>
-    <p className="text-xs text-muted-foreground">
-      Seleziona manualmente una data e un orario.
-    </p>
-  </div>
-  <div className="rounded-xl border bg-muted/20 p-4">
-    {/* Calendar + Time section */}
-  </div>
-</div>
-```
-
-### 5.2 Layout Responsive Calendar + Time
-
-**Target:**
-```tsx
-<div className="flex flex-col sm:flex-row gap-6">
-  {/* Calendar - inline, non in popover */}
-  <div className="shrink-0">
-    <CalendarComponent
-      mode="single"
-      selected={manualDate}
-      onSelect={handleManualDateChange}
-      disabled={(date) => date < startOfDay(new Date())}
-      className="rounded-md border bg-background"
-      locale={it}
-    />
-  </div>
+// archiveClient() - NUOVO
+async function archiveClient(supabase: any, client: any, userId: string) {
+  const coachClientId = client.coach_client_id;
   
-  {/* Right side: TimePicker + Quick chips + Status */}
-  <div className="flex-1 space-y-4">
-    {/* TimePicker */}
-    <TimePicker ... />
+  // Verifica se già archiviato
+  const { data: cc } = await supabase
+    .from('coach_clients')
+    .select('status')
+    .eq('id', coachClientId)
+    .single();
     
-    {/* Quick Time Chips */}
-    <div className="flex flex-wrap gap-2">
-      {["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"].map((time) => (
-        <button
-          key={time}
-          onClick={() => handleManualTimeChange(time)}
-          className={cn(
-            "px-3 py-1.5 rounded-full border text-sm font-medium transition-all",
-            manualTime === time
-              ? "border-primary bg-primary/5"
-              : "border-border bg-background hover:bg-muted"
-          )}
-        >
-          {time}
-        </button>
-      ))}
-    </div>
+  if (cc?.status === 'archived') {
+    return { success: true, message: 'Already archived' };
+  }
+
+  // Auto-complete piano attivo (se presente)
+  if (client.active_plan_id) {
+    const { data: activePlan } = await supabase
+      .from('client_plans')
+      .select('*')
+      .eq('id', client.active_plan_id)
+      .single();
+
+    if (activePlan && activePlan.status === 'IN_CORSO') {
+      await supabase
+        .from('client_plans')
+        .update({
+          status: 'COMPLETATO',
+          locked_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', activePlan.id);
+
+      await logPlanTransition(supabase, activePlan.id, client.id, 'IN_CORSO', 'COMPLETATO', 'AUTO_COMPLETE_ON_ARCHIVE', userId);
+    }
+  }
+
+  // Aggiorna SOLO coach_clients (non clients.status)
+  const { error: ccError } = await supabase
+    .from('coach_clients')
+    .update({ status: 'archived' })
+    .eq('id', coachClientId);
+
+  if (ccError) throw ccError;
+
+  // Pulisci active_plan_id su clients (ma NON status)
+  await supabase
+    .from('clients')
+    .update({ active_plan_id: null })
+    .eq('id', client.id);
+
+  return { success: true };
+}
+
+// unarchiveClient() - NUOVO
+async function unarchiveClient(supabase: any, client: any, userId: string) {
+  const coachClientId = client.coach_client_id;
+  
+  const { data: cc } = await supabase
+    .from('coach_clients')
+    .select('status')
+    .eq('id', coachClientId)
+    .single();
     
-    {/* Availability Status - Fixed Height */}
-    <div className="min-h-[72px]">
-      {/* Status content */}
-    </div>
-  </div>
-</div>
+  if (cc?.status !== 'archived') {
+    throw new Error('Client is not archived');
+  }
+
+  // Aggiorna SOLO coach_clients
+  const { error } = await supabase
+    .from('coach_clients')
+    .update({ status: 'active' })
+    .eq('id', coachClientId);
+
+  if (error) throw error;
+
+  // Pulisci active_plan_id
+  await supabase
+    .from('clients')
+    .update({ active_plan_id: null })
+    .eq('id', client.id);
+
+  return { success: true };
+}
+
+// assignPlan() - MODIFICATO (nessun side-effect su status)
+async function assignPlan(supabase: any, client: any, userId: string, metadata: any) {
+  const coachClientId = client.coach_client_id;
+  
+  // Verifica che non sia archiviato
+  const { data: cc } = await supabase
+    .from('coach_clients')
+    .select('status')
+    .eq('id', coachClientId)
+    .single();
+    
+  if (cc?.status === 'archived') {
+    throw new Error('Cannot assign plan to archived client');
+  }
+
+  // ... logica esistente per auto-complete piani ...
+  
+  // Crea nuovo piano
+  const { data: newPlan, error: planError } = await supabase
+    .from('client_plans')
+    .insert({
+      coach_client_id: coachClientId,
+      name: metadata?.name || 'New Plan',
+      description: metadata?.description,
+      data: metadata?.data || { days: [] },
+      status: 'IN_CORSO',
+      is_visible: true,
+    })
+    .select()
+    .single();
+
+  if (planError) throw planError;
+
+  // Aggiorna SOLO active_plan_id, NON status
+  await supabase
+    .from('clients')
+    .update({ active_plan_id: newPlan.id })
+    .eq('id', client.id);
+
+  return { success: true, plan: newPlan };
+}
+
+// deletePlan() / completePlan() - MODIFICATI
+// Aggiornano solo client_plans + clients.active_plan_id
+// NON toccano clients.status né coach_clients.status
+
+// markInactive() - ELIMINARE COMPLETAMENTE
+// clientLogsIn() - Solo update last_access_at
+async function clientLogsIn(supabase: any, client: any) {
+  await supabase
+    .from('clients')
+    .update({ last_access_at: new Date().toISOString() })
+    .eq('id', client.id);
+  return { success: true, message: 'Last access updated' };
+}
 ```
 
-### 5.3 Availability Status — Colori Semantici
+### B2) Refactor `accept-invite` (supabase/functions/accept-invite/index.ts)
 
-**Loading:**
-```tsx
-<div className="flex items-center gap-2 text-sm text-muted-foreground">
-  <Loader2 className="h-4 w-4 animate-spin" />
-  Verifico disponibilità...
-</div>
-```
+```typescript
+// PRIMA (linea 209-225):
+await supabaseAdmin.from('clients').update({
+  user_id: authUserId,
+  status: 'ATTIVO',                    // ← ELIMINARE
+  last_access_at: new Date().toISOString(),
+}).eq('id', invite.client_id);
 
-**Available (emerald per success):**
-```tsx
-<div className="flex items-center gap-2 text-sm text-emerald-600">
-  <CheckCircle2 className="h-4 w-4" />
-  Disponibile
-</div>
-```
+await supabaseAdmin.from('coach_clients')
+  .update({ status: 'active' })        // ← ELIMINARE (già active)
+  .eq('client_id', invite.client_id);
 
-**Conflict (rose per warning):**
-```tsx
-<div className="space-y-3">
-  <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50/50 p-3">
-    <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
-    <div className="text-sm text-rose-700">
-      In conflitto con "{conflictEvent?.title}" ({formatEventTime})
-    </div>
-  </div>
-  {/* Alternative chips */}
-  <div className="flex flex-wrap gap-2">
-    {alternativeSlots.map((slot, idx) => (
-      <button
-        key={idx}
-        onClick={() => handleSuggestedSlotClick(slot)}
-        className="px-3 py-1.5 rounded-full border border-border bg-background 
-                   text-sm font-medium hover:bg-muted transition-all"
-      >
-        {formatSlotDate(slot)} · {formatSlotTime(slot)}
-      </button>
-    ))}
-  </div>
-</div>
-```
+// DOPO:
+await supabaseAdmin.from('clients').update({
+  user_id: authUserId,
+  last_access_at: new Date().toISOString(),
+}).eq('id', invite.client_id);
 
----
-
-## 6. TimePicker — Aggiornamenti Styling
-
-**Attuale:**
-```tsx
-className="w-[180px] p-0"
-// Option selected: "bg-accent"
-```
-
-**Target:**
-```tsx
-className="w-[160px] p-0 z-[100]"
-// Option selected: "bg-primary text-primary-foreground hover:bg-primary/90"
-// Option default: "hover:bg-muted text-foreground"
-```
-
----
-
-## 7. Footer — Preview + CTA
-
-**Attuale:**
-```tsx
-<div className="border-t bg-background p-4">
-  {activeProposal ? (
-    <div className="space-y-2">
-      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-        <Check className="h-4 w-4 text-green-600" />
-        Proposta pronta per l'invio
-      </div>
-      <Button onClick={handleSubmit} className="w-full" size="lg">
-        Proponi · {formatSlotDate(activeProposal)} · {formatSlotTime(activeProposal)}
-      </Button>
-    </div>
-  ) : (
-    <Button disabled className="w-full" size="lg">
-      Seleziona un orario
-    </Button>
-  )}
-</div>
-```
-
-**Target:**
-```tsx
-<div className="shrink-0 border-t bg-background px-6 py-4 space-y-3">
-  {activeProposal ? (
-    <>
-      {/* Preview proposta */}
-      <div className="flex items-center justify-center gap-2 text-sm">
-        <span className="text-muted-foreground">Nuova proposta:</span>
-        <Badge variant="outline" className="px-2 py-0.5 rounded-full font-medium capitalize">
-          {formatSlotDate(activeProposal)} · {formatSlotTime(activeProposal)}
-        </Badge>
-      </div>
-      {/* CTA */}
-      <Button 
-        onClick={handleSubmit} 
-        disabled={isSubmitting}
-        className="w-full h-11"
-      >
-        {isSubmitting ? (
-          <><Loader2 className="h-4 w-4 animate-spin mr-2" />Invio in corso...</>
-        ) : (
-          "Invia controproposta"
-        )}
-      </Button>
-    </>
-  ) : (
-    <>
-      <Button disabled className="w-full h-11">
-        Invia controproposta
-      </Button>
-      <p className="text-xs text-center text-muted-foreground">
-        Seleziona un orario suggerito oppure scegli data e ora.
-      </p>
-    </>
-  )}
-</div>
+// Nessun update a coach_clients - già 'active' dalla creazione
 ```
 
 ---
 
-## 8. Import Aggiuntivi
+## Parte C — Frontend
 
-```tsx
-import { CheckCircle2, AlertCircle } from "lucide-react";
+### C1) Lista Clienti (src/features/clients/api/clients.api.ts)
+
+**Query principale:** Filtra per `coach_clients.status` invece di `clients.archived_at`.
+
+```typescript
+// PRIMA:
+const { data: coachClients, error: ccError } = await supabase
+  .from("coach_clients")
+  .select("client_id")
+  .eq("coach_id", user.id)
+  .in("status", ["active", "invited"]);  // ← 'invited' da rimuovere
+
+// Archive filter
+if (!includeArchived) {
+  query = query.is("archived_at", null);  // ← su clients
+}
+
+// DOPO:
+const statusFilter = includeArchived 
+  ? ["active", "blocked", "archived"]
+  : ["active", "blocked"];
+
+const { data: coachClients, error: ccError } = await supabase
+  .from("coach_clients")
+  .select("client_id, status")
+  .eq("coach_id", user.id)
+  .in("status", statusFilter);
+
+// Nessun filtro su clients.archived_at (colonna eliminata)
 ```
 
-Rimuovere `Sparkles` (non più usato).
+### C2) ClientsTable.tsx - Determinare archived da coach_clients
+
+Attualmente usa `client.archived_at !== null`. Deve usare un campo derivato dalla relazione.
+
+```typescript
+// Opzione 1: Aggiungere isArchived ai dati restituiti dalla query
+interface ClientWithDetails {
+  // ... campi esistenti ...
+  isArchived?: boolean;  // Derivato da coach_clients.status
+}
+
+// In listClients(), dopo il fetch:
+const clientIdsArchived = new Set(
+  coachClients?.filter(cc => cc.status === 'archived').map(cc => cc.client_id) || []
+);
+
+// Nel mapping:
+return {
+  ...client,
+  isArchived: clientIdsArchived.has(client.id),
+  // ...
+};
+
+// In ClientsTable.tsx:
+{client.isArchived ? (
+  <IconTooltipButton onClick={() => onUnarchive(...)}><RotateCcw /></IconTooltipButton>
+) : (
+  <IconTooltipButton onClick={() => onArchive(...)}><Archive /></IconTooltipButton>
+)}
+```
+
+### C3) Dashboard Stats (src/features/dashboard/hooks/useDashboardStats.ts)
+
+**Sostituire filtri basati su `clients.status`:**
+
+```typescript
+// PRIMA:
+const activeClients = clients.filter(c => c.status === "ATTIVO").length;
+const terminatedClients = clients.filter(c => c.status === "INATTIVO" || c.status === "ARCHIVIATO").length;
+
+// DOPO:
+// Query coach_clients per determinare stato archivio
+const { data: ccData } = await supabase
+  .from("coach_clients")
+  .select("client_id, status")
+  .eq("coach_id", user.id);
+
+const archivedClientIds = new Set(
+  ccData?.filter(cc => cc.status === 'archived').map(cc => cc.client_id) || []
+);
+
+const nonArchivedClients = clients.filter(c => !archivedClientIds.has(c.id)).length;
+const archivedClients = clients.filter(c => archivedClientIds.has(c.id)).length;
+
+// Ritorno con naming corretto:
+return {
+  nonArchivedClients,      // Rinominato da activeClients
+  nonArchivedClientsChange,
+  archivedClients,         // Rinominato da terminatedClients
+  archivedClientsChange,
+  // ...
+};
+```
+
+### C4) Types - Eliminare ClientStatus
+
+```typescript
+// src/types/client.ts e src/features/clients/types.ts
+
+// ELIMINARE COMPLETAMENTE:
+// export type ClientStatus = "INVITATO" | "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO";
+
+// ELIMINARE da interface Client:
+// status: ClientStatus;
+// archived_at?: string;
+
+// AGGIUNGERE a ClientWithDetails:
+export interface ClientWithDetails extends ClientWithTags {
+  // ... campi esistenti ...
+  isArchived?: boolean;  // Derivato da coach_clients.status
+}
+```
+
+### C5) Hook useOnboardingState (già corretto post-migrazione RPC)
+
+Dopo l'aggiornamento della RPC `get_coach_onboarding_data`, l'hook funziona senza modifiche.
 
 ---
 
-## Riepilogo Token Colori Brand
+## Parte D — RLS (Verifiche)
 
-| Elemento | Token CSS | Uso |
-|----------|-----------|-----|
-| Background modale | `bg-background` | `hsl(0 0% 99%)` |
-| Testo primario | `text-foreground` | `hsl(220 15% 20%)` |
-| Testo secondario | `text-muted-foreground` | `hsl(220 9% 46%)` |
-| Bordi | `border-border` | `hsl(220 15% 90%)` |
-| Primary (selezione) | `border-primary bg-primary/5` | `hsl(220 70% 45%)` |
-| CTA | `bg-primary text-primary-foreground` | Brand blu + bianco |
-| Success | `text-emerald-600` | Semantico |
-| Conflict | `border-rose-200 bg-rose-50/50 text-rose-700` | Semantico |
+### Principio
+
+Le policy RLS non devono riferirsi a `clients.status` o `clients.archived_at`.
+
+**Verifica policy esistenti:**
+
+```sql
+-- Controllare che nessuna policy usi clients.status
+SELECT policyname, tablename, qual, with_check 
+FROM pg_policies 
+WHERE qual LIKE '%clients.status%' 
+   OR with_check LIKE '%clients.status%'
+   OR qual LIKE '%archived_at%'
+   OR with_check LIKE '%archived_at%';
+```
+
+**Policy corrette (esempio):**
+
+```sql
+-- Coaches can view their own clients
+USING (
+  EXISTS (
+    SELECT 1
+    FROM coach_clients cc
+    WHERE cc.client_id = clients.id
+      AND cc.coach_id = auth.uid()
+  )
+)
+
+-- Per operazioni write su clienti non archiviati:
+USING (
+  EXISTS (
+    SELECT 1
+    FROM coach_clients cc
+    WHERE cc.client_id = clients.id
+      AND cc.coach_id = auth.uid()
+      AND cc.status IN ('active', 'blocked')
+  )
+)
+```
 
 ---
 
-## File da Modificare
+## Parte E — Test Automatici (Obbligatori)
 
-| File | Modifica |
-|------|----------|
-| `src/features/bookings/components/CounterProposeDialog.tsx` | Ristrutturazione completa UI |
-| `src/components/ui/time-picker.tsx` | Styling opzioni (bg-primary per selected) |
+### E1) Test E2E (Playwright)
 
+File: `e2e/clients-refactor.spec.ts`
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Client Status Refactor - Relazione-centrica', () => {
+  
+  test('E1: Cliente invitato visibile immediatamente in lista', async ({ page }) => {
+    // Login coach
+    // Crea cliente con invito
+    // Verifica cliente in lista (coach_clients.status = 'active')
+    // Verifica stato invito in client_invites = 'pending'
+  });
+
+  test('E2: Toggle archiviati basato su coach_clients.status', async ({ page }) => {
+    // Verifica toggle NON presente se nessun coach_clients.status = 'archived'
+    // Archivia cliente → coach_clients.status = 'archived'
+    // Toggle appare
+    // Default: cliente archiviato NON visibile
+    // Toggle ON: cliente archiviato visibile
+  });
+
+  test('E3: Piano NON modifica coach_clients.status', async ({ page }) => {
+    // Crea cliente
+    // Verifica coach_clients.status = 'active'
+    // Assegna piano
+    // Verifica coach_clients.status = 'active' (invariato)
+    // Completa piano
+    // Verifica coach_clients.status = 'active' (invariato)
+    // Elimina piano
+    // Verifica coach_clients.status = 'active' (invariato)
+  });
+
+  test('E4: Stato invito solo in Tab Profilo', async ({ page }) => {
+    // Crea cliente con invito
+    // Lista clienti: nessun badge invito
+    // Dettaglio → Profilo: badge invito presente
+    // Altre tab: nessun badge invito
+  });
+
+  test('E5: Archiviazione non altera client_invites', async ({ page }) => {
+    // Cliente con invito pending
+    // Archivia cliente
+    // client_invites.status resta 'pending'
+  });
+
+  test('E6: Cliente archiviato accessibile via URL diretto', async ({ page }) => {
+    // Archivia cliente
+    // Naviga a /clients/:id
+    // Pagina si apre (non 404)
+    // Banner "Cliente archiviato" presente
+  });
+
+  test('E7: Resend invite non cambia coach_clients.status', async ({ page }) => {
+    // Cliente con invito expired
+    // Resend invite
+    // coach_clients.status resta 'active'
+  });
+});
+```
+
+### E2) Test Integrazione (Vitest)
+
+File: `src/features/clients/__tests__/no-status-sideeffect.test.ts`
+
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+
+describe('No status side-effects', () => {
+  it('ASSIGN_PLAN should not update coach_clients.status', async () => {
+    // Mock/spy supabase
+    // Invoke ASSIGN_PLAN
+    // Assert: nessun update a coach_clients.status
+  });
+
+  it('COMPLETE_PLAN should not update coach_clients.status', async () => {
+    // Simile
+  });
+
+  it('DELETE_PLAN should not update coach_clients.status', async () => {
+    // Simile
+  });
+  
+  it('accept-invite should not update clients.status', async () => {
+    // Mock accept-invite flow
+    // Assert: nessun update a clients (solo user_id e last_access_at)
+  });
+});
+```
+
+### E3) Aggiornare test esistenti
+
+File: `src/features/clients/__tests__/client-fsm.test.ts`
+
+```typescript
+// RIMUOVERE tutti gli assert su clients.status:
+// expect(client.status).toBe('ATTIVO');      // ← ELIMINARE
+// expect(client.status).toBe('POTENZIALE');  // ← ELIMINARE
+
+// AGGIUNGERE assert su coach_clients.status:
+const { data: cc } = await supabase
+  .from('coach_clients')
+  .select('status')
+  .eq('client_id', clientId)
+  .single();
+expect(cc.status).toBe('archived');  // o 'active'
+```
+
+---
+
+## Parte F — Guardrail CI
+
+### Grep Check (blocca build)
+
+```bash
+#!/bin/bash
+# .github/workflows/lint-status.sh
+
+set -e
+
+echo "Checking for forbidden status references..."
+
+# Pattern vietati
+PATTERNS=(
+  "clients.status"
+  "clients.archived_at"
+  "coach_clients.status.*invited"
+  "status: 'ATTIVO'"
+  "status: 'POTENZIALE'"
+  "status: 'INATTIVO'"
+  "status: 'ARCHIVIATO'"
+  "status: 'INVITATO'"
+  "status: 'invited'"
+)
+
+for pattern in "${PATTERNS[@]}"; do
+  if grep -r "$pattern" \
+    --include="*.ts" --include="*.tsx" --include="*.sql" \
+    --exclude-dir="node_modules" \
+    --exclude-dir=".git" \
+    --exclude="*migration*" \
+    --exclude="*test*" \
+    src/ supabase/functions/; then
+    echo "ERROR: Found forbidden pattern: $pattern"
+    exit 1
+  fi
+done
+
+echo "All checks passed!"
+```
+
+---
+
+## Riepilogo File da Modificare
+
+| File | Azione |
+|------|--------|
+| **Migrazione SQL** | Backfill + constraint + drop colonne + indici |
+| **Migrazione SQL** | Aggiornare RPC `create_client_with_coach_link` |
+| **Migrazione SQL** | Aggiornare RPC `get_coach_onboarding_data` |
+| `supabase/functions/client-fsm/index.ts` | Refactor completo (coach_clients come target) |
+| `supabase/functions/accept-invite/index.ts` | Rimuovere update status |
+| `src/features/clients/api/clients.api.ts` | Filtri su coach_clients.status |
+| `src/features/dashboard/hooks/useDashboardStats.ts` | Logica basata su coach_clients |
+| `src/features/clients/components/ClientsTable.tsx` | Usare `isArchived` |
+| `src/types/client.ts` | Eliminare `ClientStatus`, `archived_at` |
+| `src/features/clients/types.ts` | Eliminare `ClientStatus`, aggiungere `isArchived` |
+| `src/features/clients/__tests__/client-fsm.test.ts` | Aggiornare assert |
+| **Nuovo**: `e2e/clients-refactor.spec.ts` | Test E2E |
+| **Nuovo**: `.github/workflows/lint-status.sh` | Guardrail CI |
+
+---
+
+## Ordine di Esecuzione
+
+1. **Migrazione DB Step 1**: Backfill `coach_clients.status = 'archived'` da `clients.archived_at`
+2. **Migrazione DB Step 2**: Convertire `invited` → `active` + nuovo constraint
+3. **Migrazione DB Step 3**: Aggiornare RPC `create_client_with_coach_link`
+4. **Migrazione DB Step 4**: Aggiornare RPC `get_coach_onboarding_data`
+5. **Edge Functions**: Deploy `client-fsm` refactored + `accept-invite`
+6. **Frontend**: Update API, hooks, components, types
+7. **Migrazione DB Step 5**: Drop `clients.archived_at` e `clients.status`
+8. **Test**: Aggiornare esistenti + creare E2E + guardrail CI
+9. **Verifica finale + Deploy**
+
+---
+
+## Non-Goals (Vietati)
+
+- ❌ Reintrodurre stati cliente su `clients` table
+- ❌ Collegare piani a stato cliente o relazione
+- ❌ Usare `invited` in `coach_clients`
+- ❌ Mostrare stato invito fuori da Tab Profilo
+- ❌ Cambiare UX toggle archiviati
+- ❌ Introdurre nuovi stati oltre `active | blocked | archived`
