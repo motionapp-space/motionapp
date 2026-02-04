@@ -330,8 +330,8 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
 }
 
 export async function updateClient(id: string, input: UpdateClientInput): Promise<Client> {
-  // CASO II: Strip out FSM-controlled fields to prevent manual status changes
-  const { status, active_plan_id, archived_at, ...profileData } = input as any;
+  // Strip out FSM-controlled fields (active_plan_id managed by edge functions)
+  const { active_plan_id, ...profileData } = input as any;
   
   const { data, error } = await supabase
     .from("clients")
