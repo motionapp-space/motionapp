@@ -1,4 +1,4 @@
-import type { ClientsFilters, ClientStatus } from "../types";
+import type { ClientsFilters } from "../types";
 
 export function getDefaultFilters(sp: URLSearchParams): ClientsFilters {
   const withActivePlan = sp.get("withActivePlan");

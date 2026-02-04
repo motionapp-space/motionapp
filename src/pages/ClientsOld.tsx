@@ -19,7 +19,7 @@ import { getDefaultFilters, filtersToSearchParams } from "@/features/clients/uti
 import { statusLabel, encodeStatus, decodeStatus } from "@/features/clients/utils/status-utils";
 import { ClientsTable } from "@/features/clients/components/ClientsTable";
 import { getClientById } from "@/features/clients/api/clients.api";
-import type { ClientStatus, ClientsFilters } from "@/features/clients/types";
+import type { ClientsFilters } from "@/features/clients/types";
 
 const Clients = () => {
   const [sp, setSp] = useSearchParams();

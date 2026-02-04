@@ -205,12 +205,11 @@ serve(async (req) => {
 
     console.log(`Role 'client' ensured for: ${authUserId}`);
 
-    // Update client record
+    // Update client record - NO status change (relation-centric model)
     const { error: clientUpdateError } = await supabaseAdmin
       .from('clients')
       .update({
         user_id: authUserId,
-        status: 'ATTIVO',
         last_access_at: new Date().toISOString(),
       })
       .eq('id', invite.client_id);
@@ -226,18 +225,8 @@ serve(async (req) => {
 
     console.log(`Client ${invite.client_id} updated with user_id`);
 
-    // Update coach_clients relationship
-    const { error: ccUpdateError } = await supabaseAdmin
-      .from('coach_clients')
-      .update({ status: 'active' })
-      .eq('client_id', invite.client_id)
-      .eq('coach_id', invite.coach_id);
-
-    if (ccUpdateError) {
-      console.warn('Error updating coach_clients (non-fatal):', ccUpdateError);
-    }
-
-    console.log(`Coach-client relationship updated to active`);
+    // Note: coach_clients.status is already 'active' from creation
+    // No update needed here - the relation-centric model ensures active by default
 
     // Mark invite as accepted
     const { error: inviteUpdateError } = await supabaseAdmin

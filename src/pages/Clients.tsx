@@ -40,7 +40,7 @@ import { InviteLinkDialog } from "@/features/clients/components/InviteLinkDialog
 import { getDefaultFilters, filtersToSearchParams } from "@/features/clients/utils/filters";
 import { ClientsTable } from "@/features/clients/components/ClientsTable";
 import { getClientById } from "@/features/clients/api/clients.api";
-import type { ClientStatus, ClientsFilters, CreateClientResult } from "@/features/clients/types";
+import type { ClientsFilters, CreateClientResult } from "@/features/clients/types";
 import { cn } from "@/lib/utils";
 
 // Schema di validazione Zod

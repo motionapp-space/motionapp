@@ -68,7 +68,7 @@ function ClientRow({
           >
             <Eye className="h-4 w-4" />
           </IconTooltipButton>
-          {client.archived_at !== null ? (
+          {client.isArchived ? (
             <IconTooltipButton
               label={`Ripristina cliente ${client.first_name} ${client.last_name}`}
               onClick={() => onUnarchive(client.id, `${client.first_name} ${client.last_name}`)}
