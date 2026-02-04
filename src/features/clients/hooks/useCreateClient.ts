@@ -45,11 +45,11 @@ export function useCreateClient() {
         `Cliente creato: ${client.first_name} ${client.last_name}`
       );
 
-      // Invalidate all client list queries
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      
-      // Note: Navigation and success message are handled by the calling component
-      // to allow showing InviteLinkDialog before navigation
+      // Delay cache invalidation to allow navigation to complete first
+      // This prevents re-render from interfering with navigate()
+      setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ["clients"] });
+      }, 100);
     },
     onError: (error) => {
       console.error("Create client error:", error);
