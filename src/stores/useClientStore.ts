@@ -266,15 +266,15 @@ export const useClientStore = create<ClientStore>((set, get) => ({
   archiveClient: async (id) => {
     set({ isSaving: true });
     try {
-      const { error } = await supabase
-        .from("clients")
-        .update({ status: "ARCHIVIATO" })
-        .eq("id", id);
+      // Use the FSM edge function for archiving (relation-centric model)
+      const { error } = await supabase.functions.invoke('client-fsm', {
+        body: {
+          action: 'ARCHIVE_CLIENT',
+          clientId: id,
+        },
+      });
 
       if (error) throw error;
-
-      // Log activity
-      await get().logActivity(id, "ARCHIVED", "Cliente archiviato");
 
       toast.success("Cliente archiviato");
       await get().loadClients();
