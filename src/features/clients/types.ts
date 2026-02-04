@@ -1,7 +1,7 @@
 export type Sex = "M" | "F" | "ALTRO";
-export type ClientStatus = "INVITATO" | "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO";
 export type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
 export type ActorType = "SYSTEM" | "PT";
+export type CoachClientStatus = "active" | "blocked" | "archived";
 
 export interface Client {
   id: string;
@@ -14,12 +14,10 @@ export interface Client {
   fiscal_code?: string;
   birth_date?: string;
   sex?: Sex;
-  status: ClientStatus;
   notes?: string;
   user_id?: string;
   active_plan_id?: string;
   last_access_at?: string;
-  archived_at?: string;
   version?: number;
 }
 
@@ -44,6 +42,7 @@ export interface ClientWithDetails extends ClientWithTags {
   appointment_status?: 'planned' | 'unplanned';
   activity_status?: 'active' | 'low' | 'inactive';
   next_appointment_date?: string | null;
+  isArchived?: boolean;  // Derived from coach_clients.status
 }
 
 export interface CreateClientInput {
@@ -75,7 +74,6 @@ export interface UpdateClientInput {
   phone?: string;
   birth_date?: string;
   sex?: Sex;
-  status?: ClientStatus;
   notes?: string;
 }
 
@@ -108,17 +106,6 @@ export interface ClientsPageResult {
   total: number;
   page: number;
   limit: number;
-}
-
-export interface ClientStateLog {
-  id: string;
-  client_id: string;
-  from_status: ClientStatus | null;
-  to_status: ClientStatus;
-  cause: string;
-  actor_type: ActorType;
-  actor_id: string;
-  created_at: string;
 }
 
 export interface PlanStateLog {

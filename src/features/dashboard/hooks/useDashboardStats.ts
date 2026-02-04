@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfMonth, startOfDay, subMonths, eachDayOfInterval, format } from "date-fns";
+import { startOfMonth, startOfDay, subMonths, eachDayOfInterval } from "date-fns";
 
 interface DashboardStats {
-  activeClients: number;
-  activeClientsChange: number;
+  nonArchivedClients: number;
+  nonArchivedClientsChange: number;
   newClients: number;
   newClientsChange: number;
-  terminatedClients: number;
-  terminatedClientsChange: number;
+  archivedClients: number;
+  archivedClientsChange: number;
   totalClients: number;
   totalClientsChange: number;
   trendData: { date: number; count: number }[];
@@ -23,23 +23,29 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
   const previousMonthStart = startOfMonth(subMonths(now, 1));
   const previousMonthEnd = startOfDay(currentMonthStart);
 
-  // Get client IDs from coach_clients
+  // Get coach_clients with status for this coach
   const { data: ccData, error: ccError } = await supabase
     .from("coach_clients")
-    .select("client_id")
-    .eq("coach_id", user.id)
-    .eq("status", "active");
+    .select("client_id, status")
+    .eq("coach_id", user.id);
 
   if (ccError) throw ccError;
+  
   const clientIds = ccData?.map(cc => cc.client_id) || [];
+  
+  // Build set of archived client IDs (relation-centric model)
+  const archivedClientIds = new Set(
+    ccData?.filter(cc => cc.status === 'archived').map(cc => cc.client_id) || []
+  );
+  
   if (clientIds.length === 0) {
     return {
-      activeClients: 0,
-      activeClientsChange: 0,
+      nonArchivedClients: 0,
+      nonArchivedClientsChange: 0,
       newClients: 0,
       newClientsChange: 0,
-      terminatedClients: 0,
-      terminatedClientsChange: 0,
+      archivedClients: 0,
+      archivedClientsChange: 0,
       totalClients: 0,
       totalClientsChange: 0,
       trendData: []
@@ -49,31 +55,32 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
   // Fetch all clients for this coach
   const { data: allClients, error: allError } = await supabase
     .from("clients")
-    .select("id, status, created_at")
+    .select("id, created_at")
     .in("id", clientIds);
 
   if (allError) throw allError;
 
   const clients = allClients || [];
 
-  // Current month stats
-  const activeClients = clients.filter(c => c.status === "ATTIVO").length;
-  const terminatedClients = clients.filter(c => c.status === "INATTIVO" || c.status === "ARCHIVIATO").length;
+  // Current stats using relation-centric model
+  const nonArchivedClients = clients.filter(c => !archivedClientIds.has(c.id)).length;
+  const archivedClients = clients.filter(c => archivedClientIds.has(c.id)).length;
   const totalClients = clients.length;
   const newClients = clients.filter(c => new Date(c.created_at) >= currentMonthStart).length;
 
-  // Previous month stats for comparison - use same client IDs (they were part of this coach at some point)
+  // Previous month stats for comparison
   const { data: prevMonthClients, error: prevError } = await supabase
     .from("clients")
-    .select("id, status, created_at")
+    .select("id, created_at")
     .in("id", clientIds)
     .lt("created_at", currentMonthStart.toISOString());
 
   if (prevError) throw prevError;
 
   const prevClients = prevMonthClients || [];
-  const prevActiveClients = prevClients.filter(c => c.status === "ATTIVO").length;
-  const prevTerminatedClients = prevClients.filter(c => c.status === "INATTIVO" || c.status === "ARCHIVIATO").length;
+  // For previous stats, we use current archived status as approximation
+  const prevNonArchivedClients = prevClients.filter(c => !archivedClientIds.has(c.id)).length;
+  const prevArchivedClients = prevClients.filter(c => archivedClientIds.has(c.id)).length;
   const prevTotalClients = prevClients.length;
   
   const prevNewClients = prevClients.filter(c => {
@@ -82,17 +89,17 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
   }).length;
 
   // Calculate percentage changes
-  const activeClientsChange = prevActiveClients > 0 
-    ? ((activeClients - prevActiveClients) / prevActiveClients) * 100 
-    : (activeClients > 0 ? 100 : 0);
+  const nonArchivedClientsChange = prevNonArchivedClients > 0 
+    ? ((nonArchivedClients - prevNonArchivedClients) / prevNonArchivedClients) * 100 
+    : (nonArchivedClients > 0 ? 100 : 0);
   
   const newClientsChange = prevNewClients > 0 
     ? ((newClients - prevNewClients) / prevNewClients) * 100 
     : (newClients > 0 ? 100 : 0);
   
-  const terminatedClientsChange = prevTerminatedClients > 0 
-    ? ((terminatedClients - prevTerminatedClients) / prevTerminatedClients) * 100 
-    : (terminatedClients > 0 ? 100 : 0);
+  const archivedClientsChange = prevArchivedClients > 0 
+    ? ((archivedClients - prevArchivedClients) / prevArchivedClients) * 100 
+    : (archivedClients > 0 ? 100 : 0);
   
   const totalClientsChange = prevTotalClients > 0 
     ? ((totalClients - prevTotalClients) / prevTotalClients) * 100 
@@ -108,7 +115,6 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
     
     const count = clients.filter(c => new Date(c.created_at) <= dayEnd).length;
     
-    // Store as UTC timestamp - use getFullYear/getMonth/getDate (not UTC versions) since day is in local time
     const ts = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59, 999).getTime();
     
     return {
@@ -118,12 +124,12 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
   });
 
   return {
-    activeClients,
-    activeClientsChange,
+    nonArchivedClients,
+    nonArchivedClientsChange,
     newClients,
     newClientsChange,
-    terminatedClients,
-    terminatedClientsChange,
+    archivedClients,
+    archivedClientsChange,
     totalClients,
     totalClientsChange,
     trendData

@@ -35,15 +35,25 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
   } = filters;
   
   // Get client IDs for this coach via coach_clients
+  // Filter by status on coach_clients (relation-centric model)
+  const statusFilter = includeArchived 
+    ? ["active", "blocked", "archived"]
+    : ["active", "blocked"];
+
   const { data: coachClients, error: ccError } = await supabase
     .from("coach_clients")
-    .select("client_id")
+    .select("client_id, status")
     .eq("coach_id", user.id)
-    .in("status", ["active", "invited"]);
+    .in("status", statusFilter);
 
   if (ccError) throw ccError;
   
   const clientIds = coachClients?.map(cc => cc.client_id) || [];
+  
+  // Build a map of client_id -> isArchived for later use
+  const archivedClientIds = new Set(
+    coachClients?.filter(cc => cc.status === 'archived').map(cc => cc.client_id) || []
+  );
   
   if (clientIds.length === 0) {
     return { items: [], total: 0, page, limit };
@@ -63,11 +73,6 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       )
     `, { count: "exact" })
     .in("id", clientIds);
-
-  // Archive filter (default excludes archived)
-  if (!includeArchived) {
-    query = query.is("archived_at", null);
-  }
 
   // Search filter
   if (q) {
@@ -161,6 +166,9 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
     )[0];
 
     const computed = computedDataMap[client.id];
+    
+    // Determine isArchived from coach_clients.status (relation-centric model)
+    const isArchived = archivedClientIds.has(client.id);
 
     return {
       ...client,
@@ -174,6 +182,7 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       appointment_status: computed?.appointment_status,
       activity_status: computed?.activity_status,
       next_appointment_date: computed?.next_appointment_date,
+      isArchived, // NEW: Derived from coach_clients.status
       coach_client: undefined, // Remove the nested object
       current_plan: undefined,
     };

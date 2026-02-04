@@ -1,5 +1,4 @@
 export type Sex = "M" | "F" | "ALTRO";
-export type ClientStatus = "INVITATO" | "POTENZIALE" | "ATTIVO" | "INATTIVO" | "ARCHIVIATO";
 export type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
 export type ActivityType = 
   | "CREATED" 
@@ -28,12 +27,10 @@ export interface Client {
   fiscal_code?: string;
   birth_date?: string;
   sex?: Sex;
-  status: ClientStatus;
   notes?: string;
   user_id?: string;
   active_plan_id?: string;
   last_access_at?: string;
-  archived_at?: string;
   version?: number;
 }
 
@@ -84,4 +81,5 @@ export interface ClientWithTags extends Client {
 export interface ClientWithDetails extends ClientWithTags {
   measurements?: Measurement[];
   activities?: ClientActivity[];
+  isArchived?: boolean;
 }

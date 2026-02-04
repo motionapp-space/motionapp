@@ -1,11 +1,10 @@
 import { create } from "zustand";
 import { supabase } from "@/integrations/supabase/client";
-import type { Client, ClientTag, ClientStatus, ClientWithTags, ClientWithDetails, PlanStatus, ActivityType } from "@/types/client";
+import type { Client, ClientTag, ClientWithTags, ClientWithDetails, PlanStatus, ActivityType } from "@/types/client";
 import { toast } from "sonner";
 
 interface ClientFilters {
   search: string;
-  status?: ClientStatus;
   tagId?: string;
   sortBy: "name_asc" | "name_desc" | "created_asc" | "created_desc" | "updated_asc" | "updated_desc";
 }
@@ -95,12 +94,8 @@ export const useClientStore = create<ClientStore>((set, get) => ({
         query = query.or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`);
       }
 
-      if (filters.status) {
-        query = query.eq("status", filters.status);
-      } else {
-        // Default: exclude archived
-        query = query.neq("status", "ARCHIVIATO");
-      }
+      // Note: Archive filtering is now handled via coach_clients.status (relation-centric model)
+      // This store is deprecated - use the new clients API instead
 
       // Apply sorting
       switch (filters.sortBy) {
@@ -213,14 +208,12 @@ export const useClientStore = create<ClientStore>((set, get) => ({
       const { data: newClient, error } = await supabase
         .from("clients")
         .insert([{
-          coach_id: user.id,
           first_name: data.first_name || "",
           last_name: data.last_name || "",
           email: data.email,
           phone: data.phone,
           birth_date: data.birth_date,
           sex: data.sex,
-          status: data.status || "POTENZIALE",
           notes: data.notes,
         }])
         .select()
