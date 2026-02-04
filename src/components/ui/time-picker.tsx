@@ -6,7 +6,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 // Generate time options with configurable interval and range
@@ -67,7 +66,7 @@ export function TimePicker({
     if (open && scrollRef.current && displayValue) {
       const selectedIndex = TIME_OPTIONS.indexOf(displayValue);
       if (selectedIndex >= 0) {
-        // Each button is approximately 36px (h-9) + 4px gap
+        // Each button is approximately 40px (py-2.5 + text)
         const itemHeight = 40;
         // Center the selected item in the scroll area (280px height)
         const scrollPosition = Math.max(0, selectedIndex * itemHeight - 120);
@@ -97,24 +96,28 @@ export function TimePicker({
           {displayValue || placeholder}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[180px] p-0" align="start" sideOffset={4}>
-        <ScrollArea className="h-[280px]">
-          <div className="p-2" ref={scrollRef}>
+      <PopoverContent className="w-[160px] p-0 z-[100]" align="start" sideOffset={4}>
+        <div 
+          ref={scrollRef}
+          className="h-[280px] overflow-y-scroll overscroll-contain"
+        >
+          <div className="p-1">
             {TIME_OPTIONS.map((time) => (
-              <Button
+              <button
                 key={time}
-                variant="ghost"
-                className={cn(
-                  "w-full justify-center font-mono text-sm px-2",
-                  time === displayValue && "bg-accent"
-                )}
                 onClick={() => handleTimeSelect(time)}
+                className={cn(
+                  "w-full py-2.5 px-3 rounded-md text-sm font-medium text-left transition-colors",
+                  time === displayValue
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "text-foreground hover:bg-muted"
+                )}
               >
                 {time}
-              </Button>
+              </button>
             ))}
           </div>
-        </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   );

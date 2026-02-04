@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { format, startOfDay, addDays, parseISO, setHours, setMinutes, addMinutes } from "date-fns";
 import { it } from "date-fns/locale";
-import { Calendar as CalendarIcon, Clock, Check, Sparkles, Loader2, X } from "lucide-react";
+import { Clock, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,11 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -33,6 +28,8 @@ interface CounterProposeDialogProps {
   onSubmit: (id: string, startAt: string, endAt: string) => void;
   isSubmitting?: boolean;
 }
+
+const QUICK_TIMES = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"];
 
 export function CounterProposeDialog({
   request,
@@ -245,87 +242,97 @@ export function CounterProposeDialog({
     return format(parseISO(slot.start), "EEE d MMM", { locale: it });
   };
 
+  const formatConflictTime = () => {
+    if (!conflictEvent) return "";
+    const start = parseISO(conflictEvent.start);
+    const end = parseISO(conflictEvent.end);
+    return `${format(start, "HH:mm")}–${format(end, "HH:mm")}`;
+  };
+
   if (!request) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] p-0 gap-0 grid grid-rows-[auto_1fr_auto] overflow-hidden">
-        {/* Header - Original Request Context */}
-        <div className="bg-muted/50 border-b px-4 py-3">
-          <DialogHeader className="space-y-1">
-            <DialogTitle className="text-base font-medium">
-              Proponi nuovo orario
-            </DialogTitle>
-            {originalStart && originalEnd && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Richiesta originale:</span>
-                <Badge variant="outline" className="font-normal">
+      <DialogContent className="max-w-[720px] w-[calc(100vw-32px)] max-h-[85vh] p-0 gap-0 grid grid-rows-[auto_1fr_auto] overflow-hidden">
+        {/* HEADER */}
+        <div className="shrink-0 border-b bg-background px-6 py-4">
+          <DialogHeader className="space-y-0">
+            <div className="flex items-end justify-between gap-4">
+              <div className="space-y-1">
+                <DialogTitle className="text-lg font-semibold">
+                  Proponi un nuovo orario
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Il cliente potrà accettare o rifiutare la proposta.
+                </p>
+              </div>
+              {originalStart && originalEnd && (
+                <Badge 
+                  variant="outline" 
+                  className="px-3 py-1 rounded-full text-sm font-normal whitespace-nowrap shrink-0 capitalize"
+                >
                   {format(originalStart, "EEE d MMM", { locale: it })} · {format(originalStart, "HH:mm")}–{format(originalEnd, "HH:mm")}
                 </Badge>
-              </div>
-            )}
+              )}
+            </div>
           </DialogHeader>
         </div>
 
+        {/* BODY - Scrollable */}
         <div className="min-h-0 overflow-y-auto">
-          {/* FAST PATH: Suggested Slots Section */}
+          {/* FAST PATH: Suggested Slots */}
           {suggestedSlots.length > 0 && (
-            <div className="px-4 py-3 border-b bg-primary/5">
-              <div className="flex items-center gap-2 text-sm font-medium text-primary mb-2">
-                <Sparkles className="h-4 w-4" />
-                Orari consigliati
+            <div className="px-6 py-5">
+              <div className="mb-3">
+                <h3 className="text-sm font-medium text-foreground">Orari suggeriti</h3>
+                <p className="text-xs text-muted-foreground">
+                  Suggeriti in base alla tua agenda e alla richiesta del cliente.
+                </p>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {suggestedSlots.map((slot, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSuggestedSlotClick(slot)}
                     className={cn(
-                      "flex flex-col items-start p-2 rounded-lg border text-left transition-all",
-                      "hover:border-primary hover:bg-primary/5",
+                      "relative rounded-xl border bg-background px-4 py-3 text-left transition-all",
+                      "hover:bg-muted/40",
                       isSlotSelected(slot)
-                        ? "border-primary bg-primary/10 ring-1 ring-primary"
-                        : "border-border bg-background"
+                        ? "border-primary bg-primary/5"
+                        : "border-border"
                     )}
                   >
-                    <span className="text-xs text-muted-foreground capitalize">
+                    <span className="text-sm text-muted-foreground capitalize">
                       {formatSlotDate(slot)}
                     </span>
-                    <span className="text-sm font-medium flex items-center gap-1">
+                    <span className="block text-base font-semibold text-foreground">
                       {formatSlotTime(slot)}
-                      {isSlotSelected(slot) && (
-                        <Check className="h-3 w-3 text-primary" />
-                      )}
                     </span>
+                    {isSlotSelected(slot) && (
+                      <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />
+                    )}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
+          {/* DIVIDER */}
+          <div className="border-b" />
+
           {/* POWER PATH: Manual Selection */}
-          <div className="px-4 py-3">
-            <div className="flex items-center gap-2 text-sm font-medium mb-3">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              Oppure scegli manualmente
+          <div className="px-6 py-5">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-foreground">Scegli data e ora</h3>
+              <p className="text-xs text-muted-foreground">
+                Seleziona manualmente una data e un orario.
+              </p>
             </div>
             
-            <div className="grid grid-cols-2 gap-3">
-              {/* Calendar Picker */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !manualDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {manualDate ? format(manualDate, "d MMM", { locale: it }) : "Data"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <div className="flex flex-col sm:flex-row gap-6">
+                {/* Calendar - inline */}
+                <div className="shrink-0">
                   <CalendarComponent
                     mode="single"
                     selected={manualDate}
@@ -335,92 +342,140 @@ export function CounterProposeDialog({
                       date > rangeEnd
                     }
                     locale={it}
-                    className="pointer-events-auto"
+                    className="rounded-md border bg-background pointer-events-auto"
                   />
-                </PopoverContent>
-              </Popover>
-              
-              {/* Time Picker 15min intervals */}
-              <TimePicker
-                value={manualTime}
-                onChange={handleManualTimeChange}
-                interval={15}
-                startHour={6}
-                endHour={22}
-                placeholder="Orario"
-              />
-            </div>
-            
-            {/* Live Validation Status */}
-            {selectionMode === 'manual' && manualDate && manualTime && (
-              <div className="mt-3">
-                {availabilityStatus === 'loading' && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Verifica disponibilità...
-                  </div>
-                )}
+                </div>
                 
-                {availabilityStatus === 'available' && (
-                  <div className="flex items-center gap-2 text-sm text-green-600">
-                    <Check className="h-4 w-4" />
-                    Slot disponibile
+                {/* Right side: TimePicker + Quick chips + Status */}
+                <div className="flex-1 space-y-4">
+                  {/* TimePicker */}
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      Orario
+                    </label>
+                    <TimePicker
+                      value={manualTime}
+                      onChange={handleManualTimeChange}
+                      interval={15}
+                      startHour={6}
+                      endHour={22}
+                      placeholder="Seleziona orario"
+                    />
                   </div>
-                )}
-                
-                {availabilityStatus === 'conflict' && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-destructive">
-                      <X className="h-4 w-4" />
-                      Conflitto: {conflictEvent?.title}
+                  
+                  {/* Quick Time Chips */}
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      Orari rapidi
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {QUICK_TIMES.map((time) => (
+                        <button
+                          key={time}
+                          onClick={() => handleManualTimeChange(time)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-full border text-sm font-medium transition-all",
+                            manualTime === time
+                              ? "border-primary bg-primary/5"
+                              : "border-border bg-background hover:bg-muted"
+                          )}
+                        >
+                          {time}
+                        </button>
+                      ))}
                     </div>
-                    
-                    {alternativeSlots.length > 0 && (
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Orari alternativi:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {alternativeSlots.map((slot, idx) => (
-                            <Button
-                              key={idx}
-                              variant="outline"
-                              size="sm"
-                              className="text-xs"
-                              onClick={() => handleSuggestedSlotClick(slot)}
-                            >
-                              {formatSlotDate(slot)} · {formatSlotTime(slot)}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
+                  </div>
+                  
+                  {/* Availability Status - Fixed Height */}
+                  <div className="min-h-[72px]">
+                    {selectionMode === 'manual' && manualDate && manualTime && (
+                      <>
+                        {availabilityStatus === 'loading' && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Verifico disponibilità...
+                          </div>
+                        )}
+                        
+                        {availabilityStatus === 'available' && (
+                          <div className="flex items-center gap-2 text-sm text-emerald-600">
+                            <CheckCircle2 className="h-4 w-4" />
+                            Disponibile
+                          </div>
+                        )}
+                        
+                        {availabilityStatus === 'conflict' && (
+                          <div className="space-y-3">
+                            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50/50 p-3">
+                              <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                              <div className="text-sm text-rose-700">
+                                In conflitto con "{conflictEvent?.title}" ({formatConflictTime()})
+                              </div>
+                            </div>
+                            
+                            {alternativeSlots.length > 0 && (
+                              <div className="space-y-1.5">
+                                <p className="text-xs text-muted-foreground">Orari alternativi:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {alternativeSlots.map((slot, idx) => (
+                                    <button
+                                      key={idx}
+                                      onClick={() => handleSuggestedSlotClick(slot)}
+                                      className="px-3 py-1.5 rounded-full border border-border bg-background text-sm font-medium hover:bg-muted transition-all capitalize"
+                                    >
+                                      {formatSlotDate(slot)} · {formatSlotTime(slot)}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
-                )}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
-        {/* Footer - Dynamic CTA */}
-        <div className="border-t bg-background p-4">
+        {/* FOOTER */}
+        <div className="shrink-0 border-t bg-background px-6 py-4 space-y-3">
           {activeProposal ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Check className="h-4 w-4 text-green-600" />
-                Proposta pronta per l'invio
+            <>
+              {/* Preview proposta */}
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <span className="text-muted-foreground">Nuova proposta:</span>
+                <Badge variant="outline" className="px-2 py-0.5 rounded-full font-medium capitalize">
+                  {formatSlotDate(activeProposal)} · {formatSlotTime(activeProposal)}
+                </Badge>
               </div>
+              {/* CTA */}
               <Button 
                 onClick={handleSubmit} 
                 disabled={isSubmitting}
-                className="w-full"
-                size="lg"
+                className="w-full h-11"
               >
-                Proponi · {formatSlotDate(activeProposal)} · {formatSlotTime(activeProposal)}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Invio in corso...
+                  </>
+                ) : (
+                  "Invia controproposta"
+                )}
               </Button>
-            </div>
+            </>
           ) : (
-            <Button disabled className="w-full" size="lg">
-              Seleziona un orario
-            </Button>
+            <>
+              <Button disabled className="w-full h-11">
+                Invia controproposta
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                Seleziona un orario suggerito oppure scegli data e ora.
+              </p>
+            </>
           )}
         </div>
       </DialogContent>
