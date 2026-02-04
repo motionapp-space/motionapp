@@ -700,7 +700,6 @@ export type Database = {
       clients: {
         Row: {
           active_plan_id: string | null
-          archived_at: string | null
           birth_date: string | null
           created_at: string
           email: string | null
@@ -712,14 +711,12 @@ export type Database = {
           notes: string | null
           phone: string | null
           sex: Database["public"]["Enums"]["sex"] | null
-          status: Database["public"]["Enums"]["client_status"]
           updated_at: string
           user_id: string | null
           version: number
         }
         Insert: {
           active_plan_id?: string | null
-          archived_at?: string | null
           birth_date?: string | null
           created_at?: string
           email?: string | null
@@ -731,14 +728,12 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           sex?: Database["public"]["Enums"]["sex"] | null
-          status?: Database["public"]["Enums"]["client_status"]
           updated_at?: string
           user_id?: string | null
           version?: number
         }
         Update: {
           active_plan_id?: string | null
-          archived_at?: string | null
           birth_date?: string | null
           created_at?: string
           email?: string | null
@@ -750,7 +745,6 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           sex?: Database["public"]["Enums"]["sex"] | null
-          status?: Database["public"]["Enums"]["client_status"]
           updated_at?: string
           user_id?: string | null
           version?: number
@@ -2124,7 +2118,6 @@ export type Database = {
       v_coach_client_details: {
         Row: {
           client_id: string | null
-          client_status: Database["public"]["Enums"]["client_status"] | null
           coach_client_id: string | null
           coach_id: string | null
           email: string | null
