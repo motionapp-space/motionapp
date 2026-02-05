@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { PanelHeader } from "@/components/ui/panel-header";
 import { toast } from "sonner";
 import { User, Lock, Shield, Calendar, Package } from "lucide-react";
 import { BookingSettingsForm } from "@/features/bookings/components/BookingSettingsForm";
@@ -144,13 +145,13 @@ const Settings = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile">
+        <TabsContent value="profile" className="space-y-6">
+          <PanelHeader 
+            title="Profilo" 
+            subtitle="Gestisci le informazioni del tuo profilo"
+          />
           <Card>
-            <CardHeader>
-              <CardTitle>Profilo</CardTitle>
-              <CardDescription>Gestisci le informazioni del tuo profilo</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-6 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
                 <Input
@@ -192,13 +193,13 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="credentials">
+        <TabsContent value="credentials" className="space-y-6">
+          <PanelHeader 
+            title="Credenziali" 
+            subtitle="Modifica la tua password"
+          />
           <Card>
-            <CardHeader>
-              <CardTitle>Credenziali</CardTitle>
-              <CardDescription>Modifica la tua password</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-6 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="new-password">Nuova Password</Label>
                 <Input
@@ -234,13 +235,13 @@ const Settings = () => {
           <ProductCatalogSettings />
         </TabsContent>
 
-        <TabsContent value="privacy">
+        <TabsContent value="privacy" className="space-y-6">
+          <PanelHeader 
+            title="Privacy" 
+            subtitle="Gestisci le tue preferenze sulla privacy"
+          />
           <Card>
-            <CardHeader>
-              <CardTitle>Privacy</CardTitle>
-              <CardDescription>Gestisci le tue preferenze sulla privacy</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-6 space-y-4">
               <p className="text-sm text-muted-foreground">
                 Per informazioni complete sulla privacy e sui cookie, consulta le nostre politiche:
               </p>
