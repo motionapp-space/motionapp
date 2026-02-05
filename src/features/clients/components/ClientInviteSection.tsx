@@ -76,9 +76,6 @@ export function ClientInviteSection({ clientId, email, hasUserAccount }: ClientI
       const result = await createInvite(clientId);
       if (result.success && result.inviteLink) {
         setGeneratedLink(result.inviteLink);
-        toast.success("Invito generato!", {
-          description: `Email inviata a ${result.email}`
-        });
         refetch();
       } else {
         toast.error("Errore nella generazione del link", {
@@ -130,26 +127,28 @@ export function ClientInviteSection({ clientId, email, hasUserAccount }: ClientI
   if (generatedLink) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-green-50 border border-green-200">
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-green-50 border border-green-200">
           <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
             <Check className="h-5 w-5 text-green-600" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-green-900">{toSentenceCase("Link generato!")}</p>
-            <p className="text-sm text-green-700 truncate">{generatedLink}</p>
+          <div className="flex-1">
+            <p className="font-medium text-green-900">{toSentenceCase("Nuovo invito generato")}</p>
+            <p className="text-sm text-green-700 mt-1">
+              Un'email con il link di attivazione verrà inviata a breve.
+            </p>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => handleCopyLink(generatedLink)}
-            className="shrink-0"
-          >
-            <Copy className="h-4 w-4 mr-2" />
-            Copia
-          </Button>
         </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => handleCopyLink(generatedLink)}
+          className="w-full"
+        >
+          <Copy className="h-4 w-4 mr-2" />
+          Copia link
+        </Button>
         <p className="text-xs text-muted-foreground">
-          Condividi questo link con il cliente per permettergli di completare la registrazione.
+          Puoi anche condividere manualmente il link con il cliente.
         </p>
       </div>
     );
