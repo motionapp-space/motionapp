@@ -225,7 +225,7 @@ export function PackageDialog({
               })}
               placeholder="Es. 10 lezioni individuali"
               readOnly={!isCustom}
-              className={!isCustom ? "bg-muted" : ""}
+              className={isCustom ? "bg-background" : "bg-muted"}
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -245,7 +245,7 @@ export function PackageDialog({
                 onChange={handlePriceChange}
                 placeholder="0.00"
                 readOnly={!isCustom}
-                className={!isCustom ? "bg-muted" : ""}
+                className={isCustom ? "bg-background" : "bg-muted"}
               />
             </div>
             <div className="space-y-2">
@@ -262,7 +262,7 @@ export function PackageDialog({
               onValueChange={handleDurationChange}
               disabled={!isCustom}
             >
-              <SelectTrigger className={!isCustom ? "bg-muted" : ""}>
+              <SelectTrigger className={isCustom ? "bg-background" : "bg-muted"}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
