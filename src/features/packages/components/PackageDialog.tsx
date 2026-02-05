@@ -161,15 +161,16 @@ export function PackageDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Nuovo pacchetto sessioni</DialogTitle>
           <DialogDescription>
             Crea un nuovo pacchetto di sessioni per il cliente.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmitForm)} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-y-auto space-y-4 pr-1">
           {/* Product Selection */}
           <div className="space-y-2">
             <Label>Pacchetto *</Label>
@@ -300,8 +301,9 @@ export function PackageDialog({
               rows={3}
             />
           </div>
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 pt-4 border-t mt-4">
             <Button 
               type="button" 
               variant="outline" 
