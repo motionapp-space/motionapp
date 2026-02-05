@@ -258,8 +258,8 @@ export function BookingSettingsForm() {
               {/* Late Cancellation Section - Always visible */}
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <h4 className="text-lg font-semibold">Cancellazione tardiva</h4>
-                  <p className="text-sm text-muted-foreground">
+                  <h3 className="text-base font-semibold leading-6 text-foreground">Cancellazione tardiva</h3>
+                  <p className="text-[13px] leading-5 text-muted-foreground">
                     Regole applicate a tutti gli appuntamenti
                   </p>
                 </div>
@@ -304,11 +304,15 @@ export function BookingSettingsForm() {
                           <SelectItem value="48">48 ore</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Se un appuntamento viene cancellato dopo questo limite:<br />
-                        – le lezioni da pacchetto vengono scalate<br />
-                        – le lezioni singole risultano dovute
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-sm leading-6 text-muted-foreground">
+                          Se un appuntamento viene cancellato dopo questo limite:
+                        </p>
+                        <ul className="text-sm leading-6 text-muted-foreground list-disc pl-5 space-y-1">
+                          <li>le lezioni da pacchetto vengono scalate</li>
+                          <li>le lezioni singole risultano dovute</li>
+                        </ul>
+                      </div>
                     </FormItem>
                   )}
                 />
@@ -359,8 +363,8 @@ export function BookingSettingsForm() {
                   {/* Booking Rules Section */}
                   <div className="space-y-6">
                     <div className="space-y-1">
-                      <h4 className="text-lg font-semibold">Regole di prenotazione</h4>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="text-base font-semibold leading-6 text-foreground">Regole di prenotazione</h3>
+                      <p className="text-[13px] leading-5 text-muted-foreground">
                         Questi parametri determinano come i clienti possono prenotare
                       </p>
                     </div>
@@ -556,8 +560,8 @@ export function BookingSettingsForm() {
                   {/* Weekly Time Slots Section */}
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <h4 className="text-lg font-semibold">Fasce orarie settimanali</h4>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="text-base font-semibold leading-6 text-foreground">Fasce orarie settimanali</h3>
+                      <p className="text-[13px] leading-5 text-muted-foreground">
                         Definisci quando i clienti possono prenotare
                       </p>
                     </div>
@@ -571,8 +575,8 @@ export function BookingSettingsForm() {
                   {/* Absence Periods Section */}
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <h4 className="text-lg font-semibold">Periodi di assenza</h4>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="text-base font-semibold leading-6 text-foreground">Periodi di assenza</h3>
+                      <p className="text-[13px] leading-5 text-muted-foreground">
                         Blocca date specifiche in cui non sei disponibile per i clienti
                       </p>
                     </div>

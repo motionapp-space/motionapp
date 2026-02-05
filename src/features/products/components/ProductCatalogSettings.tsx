@@ -178,9 +178,9 @@ export function ProductCatalogSettings() {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-muted-foreground shrink-0" />
-                <h4 className="text-lg font-semibold">Lezione singola</h4>
+                <h3 className="text-base font-semibold leading-6 text-foreground">Lezione singola</h3>
               </div>
-              <p className="text-sm text-muted-foreground pl-7">
+              <p className="text-[13px] leading-5 text-muted-foreground pl-7">
                 Imposta il prezzo di default di una lezione singola.
               </p>
             </div>
@@ -221,9 +221,9 @@ export function ProductCatalogSettings() {
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <Package className="h-5 w-5 text-muted-foreground shrink-0" />
-                  <h4 className="text-lg font-semibold">Pacchetti</h4>
+                  <h3 className="text-base font-semibold leading-6 text-foreground">Pacchetti</h3>
                 </div>
-                <p className="text-sm text-muted-foreground pl-7">
+                <p className="text-[13px] leading-5 text-muted-foreground pl-7">
                   Definisci i pacchetti predefiniti che potrai assegnare ai clienti.
                 </p>
               </div>
