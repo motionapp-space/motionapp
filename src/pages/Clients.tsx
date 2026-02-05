@@ -84,8 +84,6 @@ const Clients = () => {
     email: string;
     expiresAt: string;
     clientId: string;
-    emailSent: boolean;
-    emailError?: string;
   } | null>(null);
   const [formData, setFormData] = useState({
     first_name: "",
@@ -212,8 +210,6 @@ const Clients = () => {
             email: result.invite.email,
             expiresAt: result.invite.expiresAt,
             clientId: result.client.id,
-            emailSent: result.invite.emailSent,
-            emailError: result.invite.emailError,
           });
         } else {
           // Otherwise, navigate directly
@@ -1715,8 +1711,6 @@ const Clients = () => {
           clientName={inviteDialogData.clientName}
           email={inviteDialogData.email}
           expiresAt={inviteDialogData.expiresAt}
-          emailSent={inviteDialogData.emailSent}
-          emailError={inviteDialogData.emailError}
           onClose={handleCloseInviteDialog}
         />
       )}
