@@ -10,7 +10,7 @@ export function PanelHeader({ title, subtitle, action }: PanelHeaderProps) {
   return (
     <div className="flex items-start justify-between gap-4" data-testid="panel-header">
       <div>
-        <h2 className="text-lg font-semibold leading-6 text-foreground" data-testid="panel-header-title">
+        <h2 className="text-[19px] font-semibold leading-6 text-foreground" data-testid="panel-header-title">
           {title}
         </h2>
         {subtitle && (

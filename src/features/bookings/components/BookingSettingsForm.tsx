@@ -258,7 +258,7 @@ export function BookingSettingsForm() {
               {/* Late Cancellation Section - Always visible */}
               <div>
                 <div className="space-y-1">
-                  <h3 className="text-base font-semibold leading-6 text-foreground">Cancellazione tardiva</h3>
+                  <h3 className="text-[17px] font-semibold leading-6 text-foreground">Cancellazione tardiva</h3>
                   <p className="text-[13px] leading-5 text-muted-foreground">
                     Regole applicate a tutti gli appuntamenti
                   </p>
@@ -365,7 +365,7 @@ export function BookingSettingsForm() {
                   {/* Booking Rules Section */}
                   <div>
                     <div className="space-y-1">
-                      <h3 className="text-base font-semibold leading-6 text-foreground">Regole di prenotazione</h3>
+                      <h3 className="text-[17px] font-semibold leading-6 text-foreground">Regole di prenotazione</h3>
                       <p className="text-[13px] leading-5 text-muted-foreground">
                         Questi parametri determinano come i clienti possono prenotare
                       </p>
@@ -562,7 +562,7 @@ export function BookingSettingsForm() {
                   {/* Weekly Time Slots Section */}
                   <div>
                     <div className="space-y-1">
-                      <h3 className="text-base font-semibold leading-6 text-foreground">Fasce orarie settimanali</h3>
+                      <h3 className="text-[17px] font-semibold leading-6 text-foreground">Fasce orarie settimanali</h3>
                       <p className="text-[13px] leading-5 text-muted-foreground">
                         Definisci quando i clienti possono prenotare
                       </p>
@@ -579,7 +579,7 @@ export function BookingSettingsForm() {
                   {/* Absence Periods Section */}
                   <div>
                     <div className="space-y-1">
-                      <h3 className="text-base font-semibold leading-6 text-foreground">Periodi di assenza</h3>
+                      <h3 className="text-[17px] font-semibold leading-6 text-foreground">Periodi di assenza</h3>
                       <p className="text-[13px] leading-5 text-muted-foreground">
                         Blocca date specifiche in cui non sei disponibile per i clienti
                       </p>
