@@ -172,9 +172,9 @@ export function ProductCatalogSettings() {
           subtitle="Configura i valori di default per lezioni singole e pacchetti"
         />
         <Card>
-          <CardContent className="pt-6 space-y-6">
+          <CardContent className="pt-6 space-y-10">
           {/* SEZIONE 1: Lezione singola */}
-          <div className="space-y-4">
+          <div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-muted-foreground shrink-0" />
@@ -184,7 +184,7 @@ export function ProductCatalogSettings() {
                 Imposta il prezzo di default di una lezione singola.
               </p>
             </div>
-            <div className="space-y-2 pl-7">
+            <div className="mt-5 space-y-2 pl-7">
               <div className="flex items-center gap-2">
                 <div className="flex-1 max-w-sm">
                   <PriceInput
@@ -216,7 +216,7 @@ export function ProductCatalogSettings() {
           <Separator />
 
           {/* SEZIONE 2: Pacchetti */}
-          <div className="space-y-4">
+          <div>
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -233,7 +233,8 @@ export function ProductCatalogSettings() {
               </Button>
             </div>
 
-            {sortedPackages.length === 0 ? (
+            <div className="mt-5">
+              {sortedPackages.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
                 <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>Nessun pacchetto creato</p>
@@ -248,10 +249,11 @@ export function ProductCatalogSettings() {
                     singleSessionPrice={localPrice}
                     isBasePriceUpdating={updateProduct.isPending}
                     onEdit={handleEditProduct}
-                  />
-                ))}
-              </div>
-            )}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
