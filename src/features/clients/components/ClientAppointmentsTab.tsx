@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Calendar, MapPin, Clock } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { TabHeader } from "@/components/ui/tab-header";
 import { format, parseISO, addHours } from "date-fns";
 import { it } from "date-fns/locale";
 import { formatTimeRange, isEventInPast } from "@/features/events/utils/calendar-utils";
@@ -51,15 +52,24 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Appuntamenti</h3>
-        {(upcomingEvents.length > 0 || pastEvents.length > 0) && (
+      {/* Header - CTA sempre visibile */}
+      <TabHeader
+        title="Appuntamenti"
+        subtitle="Eventi a calendario tra te e il cliente, passati e futuri"
+        action={
           <Button onClick={handleNewEvent} size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
             Nuovo appuntamento
           </Button>
-        )}
-      </div>
+        }
+      />
+
+      {/* Microcopy educativo - solo quando ci sono eventi */}
+      {(upcomingEvents.length > 0 || pastEvents.length > 0) && (
+        <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+          Un appuntamento rappresenta un incontro. Se durante l'incontro si svolge un allenamento, puoi registrare una sessione di allenamento.
+        </p>
+      )}
 
       {upcomingEvents.length === 0 && pastEvents.length === 0 ? (
         <Card>
@@ -67,7 +77,7 @@ export function ClientAppointmentsTab({ clientId }: ClientAppointmentsTabProps) 
             <EmptyState
               icon={Calendar}
               title="Nessun appuntamento"
-              description="Non ci sono appuntamenti programmati per questo cliente. Crea il primo appuntamento per iniziare."
+              description="Crea un appuntamento per pianificare un incontro con il cliente, anche se non è previsto un allenamento."
               action={{
                 label: "Crea primo appuntamento",
                 onClick: handleNewEvent

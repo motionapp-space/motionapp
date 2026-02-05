@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { TabHeader } from "@/components/ui/tab-header";
 import { FileText, Plus } from "lucide-react";
-import { toSentenceCase } from "@/lib/text";
 import { ClientPlanCard } from "./ClientPlanCard";
 import { CreatePlanDialog } from "./CreatePlanDialog";
 import type { ClientPlanWithActive } from "../types";
@@ -46,22 +46,16 @@ export function ClientPlansTab({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <div className="flex items-baseline justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight">
-              {toSentenceCase("Piani di allenamento")}
-            </h2>
-            <p className="text-sm text-muted-foreground/80 leading-5 mt-1">
-              Il piano "In uso" è quello visibile al cliente e usato per scegliere i giorni quando crei una nuova sessione.
-            </p>
-          </div>
-          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 shrink-0">
+      <TabHeader
+        title="Piani di allenamento"
+        subtitle="Programmi di allenamento assegnati al cliente e visibili nell'app"
+        action={
+          <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
-            {toSentenceCase("Nuovo piano")}
+            Nuovo piano
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* No plans at all */}
       {plans.length === 0 ? (
@@ -70,7 +64,7 @@ export function ClientPlansTab({
             <EmptyState
               icon={FileText}
               title="Nessun piano assegnato"
-              description="Crea un nuovo piano da zero o usa un template salvato nella libreria."
+              description="Crea un piano di allenamento per mostrare al cliente come allenarsi e quali esercizi svolgere, e avere una base per le sessioni di allenamento."
               action={{
                 label: "Crea nuovo piano",
                 onClick: () => setCreateDialogOpen(true),
