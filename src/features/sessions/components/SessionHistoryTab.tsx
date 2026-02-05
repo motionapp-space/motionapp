@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Clock, Calendar, UserCheck, UserX, CalendarPlus, Play, X } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { TabHeader } from "@/components/ui/tab-header";
 import { format, parseISO, differenceInSeconds } from "date-fns";
 import { it } from "date-fns/locale";
 import { listSessions } from "../api/sessions.api";
@@ -125,6 +126,18 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Header uniforme - NESSUNA CTA */}
+      <TabHeader
+        title="Sessioni di allenamento"
+        subtitle="Allenamenti registrati, svolti con te o in autonomia dal cliente tramite l'app"
+      />
+
+      {/* Microcopy educativo - sempre visibile */}
+      <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 space-y-1">
+        <p>Le sessioni di allenamento si registrano da un appuntamento in calendario.</p>
+        <p>Il cliente può anche registrare sessioni in autonomia dall'app.</p>
+      </div>
+
       <Tabs defaultValue="with_coach" className="w-full">
         <div className="flex items-center justify-between mb-4">
           <TabsList>
@@ -143,17 +156,17 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
 
         {/* Tab: Sessioni Con PT */}
         <TabsContent value="with_coach" className="space-y-4">
-              <h3 className="text-base font-semibold leading-6 text-foreground mb-4">
-                Sessioni svolte insieme al personal trainer
-              </h3>
-
           {withCoachSessions.length === 0 ? (
             <Card>
               <CardContent className="p-0">
                 <EmptyState
                   icon={CalendarPlus}
-                  title="Nessuna sessione registrata"
-                  description="Per registrare una nuova sessione, crea prima un appuntamento nel calendario e avviala dalla scheda dell'evento."
+                  title="Nessuna sessione di allenamento registrata"
+                  description="Le sessioni vengono registrate durante un appuntamento oppure direttamente dal cliente tramite l'app."
+                  secondaryAction={{
+                    label: "Vai agli appuntamenti",
+                    onClick: () => navigate(`/clients/${clientId}?tab=appointments`)
+                  }}
                 />
               </CardContent>
             </Card>

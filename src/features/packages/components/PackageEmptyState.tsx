@@ -9,8 +9,8 @@ export function PackageEmptyState({ onCreatePackage }: PackageEmptyStateProps) {
   return (
     <EmptyState
       icon={Package}
-      title="Non ci sono pacchetti attivi"
-      description="Non ci sono pacchetti attivi per questo cliente. Crea un nuovo pacchetto o pianifica una lezione (verrà creato automaticamente un pacchetto singolo)."
+      title="Nessun pacchetto attivo"
+      description="Crea un pacchetto per gestire le lezioni del cliente e il conteggio automatico degli appuntamenti."
       action={{
         label: "Nuovo pacchetto",
         onClick: onCreatePackage

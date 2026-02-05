@@ -19,6 +19,7 @@ import { PackageCard } from "./PackageCard";
 import { PackageDialog } from "./PackageDialog";
 import { PackageEmptyState } from "./PackageEmptyState";
 import { PackageDetailsDrawer } from "./PackageDetailsDrawer";
+import { TabHeader } from "@/components/ui/tab-header";
 import { useClientPackages } from "../hooks/useClientPackages";
 import { useCreatePackage } from "../hooks/useCreatePackage";
 import { useUpdatePackage } from "../hooks/useUpdatePackage";
@@ -111,10 +112,11 @@ export function PackageTab({ clientId }: PackageTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Section Header with Button */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Pacchetti attivi</h3>
-        {(activePackages.length > 0 || completedPackages.length > 0) && (
+      {/* Header - CTA sempre visibile */}
+      <TabHeader
+        title="Pacchetti"
+        subtitle="Tracciamento delle lezioni acquistate e degli appuntamenti a calendario"
+        action={
           <Button 
             onClick={() => setDialogOpen(true)}
             size="sm"
@@ -123,8 +125,16 @@ export function PackageTab({ clientId }: PackageTabProps) {
             <Plus className="h-4 w-4" />
             Nuovo pacchetto
           </Button>
-        )}
-      </div>
+        }
+      />
+
+      {/* Microcopy educativo - solo quando ci sono pacchetti */}
+      {(activePackages.length > 0 || completedPackages.length > 0) && (
+        <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 space-y-1">
+          <p>I pacchetti tengono traccia degli appuntamenti a calendario, non delle sessioni di allenamento.</p>
+          <p>Le lezioni vengono scalate automaticamente per appuntamenti confermati e cancellazioni tardive (late cancel), se abilitate.</p>
+        </div>
+      )}
 
       {/* Active Packages */}
       {activePackages.length === 0 && completedPackages.length === 0 ? (
