@@ -450,22 +450,27 @@ const Clients = () => {
                 />
               </div>
               
-              {/* Checkbox Invito */}
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
-                <Checkbox
-                  id="withInvite-zero"
-                  checked={withInvite}
-                  onCheckedChange={(checked) => setWithInvite(checked === true)}
-                />
-                <div className="space-y-1">
-                  <Label htmlFor="withInvite-zero" className="cursor-pointer flex items-center gap-2 font-medium">
-                    <Mail className="h-4 w-4" />
+            </div>
+            {/* Invite bar - always visible above footer */}
+            <div className="shrink-0 pt-4">
+              <div className="bg-muted/40 border border-border/60 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <Label 
+                    htmlFor="withInvite-onboarding" 
+                    className="text-sm font-medium text-foreground cursor-pointer"
+                  >
                     Invia email di invito
                   </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Verrà inviata un'email al cliente con il link per creare il suo account.
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-5">
+                    Verrà inviata un&apos;email al cliente con il link per creare il suo account.
                   </p>
                 </div>
+                <Switch
+                  id="withInvite-onboarding"
+                  checked={withInvite}
+                  onCheckedChange={setWithInvite}
+                  className="mt-0.5"
+                />
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
@@ -1015,22 +1020,27 @@ const Clients = () => {
                 />
               </div>
               
-              {/* Checkbox Invito */}
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
-                <Checkbox
-                  id="withInvite-first"
-                  checked={withInvite}
-                  onCheckedChange={(checked) => setWithInvite(checked === true)}
-                />
-                <div className="space-y-1">
-                  <Label htmlFor="withInvite-first" className="cursor-pointer flex items-center gap-2 font-medium">
-                    <Mail className="h-4 w-4" />
+            </div>
+            {/* Invite bar - always visible above footer */}
+            <div className="shrink-0 pt-4">
+              <div className="bg-muted/40 border border-border/60 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <Label 
+                    htmlFor="withInvite-first" 
+                    className="text-sm font-medium text-foreground cursor-pointer"
+                  >
                     Invia email di invito
                   </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Verrà inviata un'email al cliente con il link per creare il suo account.
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-5">
+                    Verrà inviata un&apos;email al cliente con il link per creare il suo account.
                   </p>
                 </div>
+                <Switch
+                  id="withInvite-first"
+                  checked={withInvite}
+                  onCheckedChange={setWithInvite}
+                  className="mt-0.5"
+                />
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
@@ -1608,22 +1618,27 @@ const Clients = () => {
               />
             </div>
             
-            {/* Checkbox Invito */}
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted">
-              <Checkbox
-                id="withInvite-active"
-                checked={withInvite}
-                onCheckedChange={(checked) => setWithInvite(checked === true)}
-              />
-              <div className="space-y-1">
-                <Label htmlFor="withInvite-active" className="cursor-pointer flex items-center gap-2 font-medium">
-                  <Mail className="h-4 w-4" />
+          </div>
+          {/* Invite bar - always visible above footer */}
+          <div className="shrink-0 pt-4">
+            <div className="bg-muted/40 border border-border/60 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <Label 
+                  htmlFor="withInvite-active" 
+                  className="text-sm font-medium text-foreground cursor-pointer"
+                >
                   Invia email di invito
                 </Label>
-                <p className="text-xs text-muted-foreground">
-                  Verrà inviata un'email al cliente con il link per creare il suo account.
+                <p className="text-xs text-muted-foreground mt-0.5 leading-5">
+                  Verrà inviata un&apos;email al cliente con il link per creare il suo account.
                 </p>
               </div>
+              <Switch
+                id="withInvite-active"
+                checked={withInvite}
+                onCheckedChange={setWithInvite}
+                className="mt-0.5"
+              />
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
