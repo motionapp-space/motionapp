@@ -4,7 +4,7 @@
  * Funzioni per testare e visualizzare email senza inviarle.
  */
 
-import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { renderEmail } from "./renderer.ts";
 import type { RenderedEmail } from "./types.ts";
 
