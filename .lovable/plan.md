@@ -1,272 +1,227 @@
 
 
-# Scroll Affordance Neutro + Ripristino Bottoni Standard
+# Semplificazione Dialog Post-Creazione Cliente
 
-## Obiettivo
+## Problema attuale
 
-1. Rendere la scroll affordance **neutra** (gradient grigio `from-foreground/6`, senza blur, senza colore primary)
-2. **Full-width** sopra tutto il footer (invite bar + CTA), posizionata tramite wrapper `relative`
-3. **Ripristinare i bottoni standard size** nelle 3 modali "Nuovo cliente" (rimuovere `size="sm"` e `h-9 px-4`)
-4. Applicare lo stesso pattern a tutte le modali con body scroll + sticky footer
+Il dialog `InviteLinkDialog` mostra due scenari:
+- **Scenario A** (verde): "Email inviata con successo"
+- **Scenario B** (arancione): "Email non inviata - condividi manualmente il link"
+
+Questo design è obsoleto perché il sistema usa l'**Outbox Pattern**:
+1. L'email viene accodata nella tabella `email_messages`
+2. Il worker `email-worker` la processa in modo asincrono
+3. L'invio avviene sempre (salvo errori del worker), quindi non ha senso mostrare lo stato "inviata/non inviata" al momento della creazione
+
+## Soluzione
+
+Semplificare il dialog mostrando **un unico scenario positivo**: "Cliente creato con successo - riceverà un'email con le istruzioni".
 
 ---
 
 ## File da modificare
 
-| File | Tipo modifica |
-|------|---------------|
-| `src/components/ui/scroll-affordance.tsx` | Aggiornare gradient e posizionamento |
-| `src/pages/Clients.tsx` | 3 occorrenze: ripristinare bottoni standard |
-| `src/features/packages/components/PackageDialog.tsx` | Aggiungere ScrollAffordance |
-| `src/features/events/components/ClientAppointmentModal.tsx` | Aggiungere ScrollAffordance |
-| `src/features/client-bookings/components/SlotSelectorSheet.tsx` | Aggiungere ScrollAffordance |
-
-**Nota**: `EventEditorModal.tsx` non necessita di modifica - usa una struttura diversa con DialogFooter separato e non ha un body scrollabile centrale con sticky footer.
+| File | Modifica |
+|------|----------|
+| `src/features/clients/components/InviteLinkDialog.tsx` | Rimuovere branching emailSent, unico scenario positivo |
+| `src/features/clients/hooks/useCreateClient.ts` | Rimuovere mapping emailSent/emailError |
+| `src/features/clients/types.ts` | Rimuovere campi emailSent/emailError dal tipo |
+| `supabase/functions/create-invite/index.ts` | Rimuovere campo emailQueued dalla risposta |
 
 ---
 
 ## Modifiche dettagliate
 
-### 1. `src/components/ui/scroll-affordance.tsx`
+### 1. `src/features/clients/components/InviteLinkDialog.tsx`
 
-**Stato attuale (righe 76-77):**
+**Semplificare le props:**
 ```tsx
-placement === "top" && "bottom-full h-6 bg-gradient-to-t from-primary/10 to-transparent blur-[0.5px]",
-placement === "bottom" && "top-full h-6 bg-gradient-to-b from-primary/10 to-transparent blur-[0.5px]",
+interface InviteLinkDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  inviteLink: string;
+  clientName: string;
+  email: string;
+  expiresAt: string;
+  onClose: () => void;
+}
+// Rimuovere: emailSent, emailError
 ```
 
-**Nuovo codice:**
+**Unico scenario (sempre positivo):**
 ```tsx
-placement === "top" && "inset-x-0 top-0 h-8 bg-gradient-to-b from-foreground/6 to-transparent",
-placement === "bottom" && "inset-x-0 bottom-0 h-8 bg-gradient-to-t from-foreground/6 to-transparent",
-```
+export function InviteLinkDialog({
+  open,
+  onOpenChange,
+  inviteLink,
+  clientName,
+  email,
+  expiresAt,
+  onClose,
+}: InviteLinkDialogProps) {
+  const formattedExpiry = new Date(expiresAt).toLocaleDateString("it-IT", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
-**Cambiamenti:**
-- `from-primary/10` diventa `from-foreground/6` (grigio neutro, molto leggero)
-- Rimuovere `blur-[0.5px]` (look piu pulito)
-- Fix orientamento: `placement="top"` usa `to-b` (gradient che scende), `placement="bottom"` usa `to-t` (gradient che sale)
-- `inset-x-0` per full-width
-- `h-6` diventa `h-8` per maggiore visibilita
-- Rimuovere `bottom-full` / `top-full` - l'offset viene gestito dal chiamante tramite className
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+              <Check className="h-5 w-5 text-green-600" />
+            </div>
+            Cliente creato con successo!
+          </DialogTitle>
+          <DialogDescription className="pt-2">
+            Abbiamo inviato un'email a <strong>{email}</strong> con le 
+            istruzioni per completare la registrazione.
+          </DialogDescription>
+        </DialogHeader>
 
----
+        <div className="py-4">
+          <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
+            <p className="flex items-start gap-2">
+              <Mail className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Il link scade il <strong>{formattedExpiry}</strong>. 
+                Puoi reinviarlo in qualsiasi momento dalla scheda cliente.
+              </span>
+            </p>
+          </div>
+        </div>
 
-### 2. `src/pages/Clients.tsx` - 3 modali "Nuovo cliente"
-
-Le 3 occorrenze sono alle righe:
-- ~458-497 (onboarding)
-- ~1032-1073 (first client)  
-- ~1634-1675 (active user)
-
-**Per ciascuna occorrenza:**
-
-#### A. Aggiungere offset sulla ScrollAffordance
-
-Attuale:
-```tsx
-<div className="relative shrink-0">
-  <ScrollAffordance targetRef={modalScrollRef} placement="top" />
-```
-
-Nuovo:
-```tsx
-<div className="relative shrink-0">
-  <ScrollAffordance 
-    targetRef={modalScrollRef} 
-    placement="top" 
-    className="absolute -top-8 left-0 right-0"
-  />
-```
-
-#### B. Ripristinare bottoni standard size
-
-**Attuale (riga ~483-496):**
-```tsx
-<div className="flex justify-end gap-2 pt-3 pb-1">
-  <Button variant="outline" size="sm" className="h-9 px-4" onClick={...}>
-    {toSentenceCase("Annulla")}
-  </Button>
-  <Button size="sm" className="h-9 px-4" onClick={handleCreateClient} disabled={...}>
-```
-
-**Nuovo:**
-```tsx
-<div className="flex justify-end gap-3 pt-3 pb-3">
-  <Button variant="outline" onClick={...}>
-    {toSentenceCase("Annulla")}
-  </Button>
-  <Button onClick={handleCreateClient} disabled={...}>
+        <DialogFooter>
+          <Button type="button" onClick={onClose} className="w-full">
+            Vai alla scheda cliente
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 ```
 
 **Rimuovere:**
-- `size="sm"` 
-- `className="h-9 px-4"`
-- `gap-2` diventa `gap-3`
-- `pb-1` diventa `pb-3`
+- Import `AlertTriangle`, `Copy`, `Input`
+- useState per `copied`
+- Funzione `handleCopy`
+- Tutto lo Scenario B (righe 100-176)
 
 ---
 
-### 3. `src/features/packages/components/PackageDialog.tsx`
+### 2. `src/features/clients/hooks/useCreateClient.ts`
 
-Questa modale ha un body scrollabile e un DialogFooter sticky.
+**Rimuovere mapping emailSent/emailError (righe 20-28):**
 
-**Modifiche:**
-1. Aggiungere import: `import { ScrollAffordance } from "@/components/ui/scroll-affordance";`
-2. Aggiungere ref: `const scrollRef = useRef<HTMLDivElement>(null);`
-3. Applicare ref al container scrollabile (riga ~163): `ref={scrollRef}`
-4. Wrappare DialogFooter in un container relative con ScrollAffordance
-
-**Attuale (righe ~306-317):**
 ```tsx
-<DialogFooter className="shrink-0 pt-4 border-t mt-4">
-  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-    Annulla
-  </Button>
-  <Button type="submit" disabled={isLoading}>
-    {isLoading ? "Creazione..." : "Crea pacchetto"}
-  </Button>
-</DialogFooter>
-```
+// DA:
+if (inviteResult.success && inviteResult.inviteLink) {
+  invite = {
+    inviteLink: inviteResult.inviteLink,
+    expiresAt: inviteResult.expiresAt!,
+    email: inviteResult.email!,
+    clientName: inviteResult.clientName!,
+    emailSent: inviteResult.emailSent ?? false,
+    emailError: inviteResult.emailError,
+  };
+}
 
-**Nuovo:**
-```tsx
-<div className="relative shrink-0">
-  <ScrollAffordance 
-    targetRef={scrollRef} 
-    placement="top" 
-    className="absolute -top-8 left-0 right-0"
-  />
-  <DialogFooter className="pt-4 border-t mt-4">
-    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-      Annulla
-    </Button>
-    <Button type="submit" disabled={isLoading}>
-      {isLoading ? "Creazione..." : "Crea pacchetto"}
-    </Button>
-  </DialogFooter>
-</div>
+// A:
+if (inviteResult.success && inviteResult.inviteLink) {
+  invite = {
+    inviteLink: inviteResult.inviteLink,
+    expiresAt: inviteResult.expiresAt!,
+    email: inviteResult.email!,
+    clientName: inviteResult.clientName!,
+  };
+}
 ```
 
 ---
 
-### 4. `src/features/events/components/ClientAppointmentModal.tsx`
+### 3. `src/features/clients/types.ts`
 
-Ha un body scrollabile (riga 162: `flex-1 overflow-y-auto`) e footer sticky (righe 209-219).
+Verificare e aggiornare il tipo `CreateClientResult["invite"]`:
 
-**Modifiche:**
-1. Aggiungere import: `import { ScrollAffordance } from "@/components/ui/scroll-affordance";`
-2. Aggiungere: `const scrollRef = useRef<HTMLDivElement>(null);`
-3. Applicare ref: `<div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4">`
-4. Wrappare footer:
-
-**Attuale (righe 209-219):**
 ```tsx
-<div className="flex justify-end gap-2 pt-4 border-t">
-  <Button variant="outline" onClick={() => onOpenChange(false)}>
-    Annulla
-  </Button>
-  <Button ...>
-    Conferma prenotazione
-  </Button>
-</div>
-```
-
-**Nuovo:**
-```tsx
-<div className="relative shrink-0">
-  <ScrollAffordance 
-    targetRef={scrollRef} 
-    placement="top" 
-    className="absolute -top-8 left-0 right-0"
-  />
-  <div className="flex justify-end gap-3 pt-4 pb-3 border-t">
-    <Button variant="outline" onClick={() => onOpenChange(false)}>
-      Annulla
-    </Button>
-    <Button ...>
-      Conferma prenotazione
-    </Button>
-  </div>
-</div>
+// Rimuovere:
+emailSent: boolean;
+emailError?: string;
 ```
 
 ---
 
-### 5. `src/features/client-bookings/components/SlotSelectorSheet.tsx`
+### 4. `supabase/functions/create-invite/index.ts`
 
-Ha 2 step, ciascuno con body scrollabile e sticky footer.
+**Rimuovere logica emailQueued dalla risposta (righe 147-176):**
 
-**Step 1 (riga ~186-290):**
-- Body scrollabile: `<div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">`
-- Footer: righe 282-290
-
-**Step 2 (riga ~314-345):**
-- Body scrollabile: `<div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-6">`
-- Footer: righe 348-377
-
-**Modifiche:**
-1. Aggiungere import: `import { ScrollAffordance } from "@/components/ui/scroll-affordance";`
-2. Aggiungere 2 ref: `const scrollRefStep1 = useRef<HTMLDivElement>(null);` e `const scrollRefStep2 = useRef<HTMLDivElement>(null);`
-3. Applicare ref a ciascun body scrollabile
-4. Wrappare ciascun footer:
-
-**Step 1 footer - Attuale (righe 282-290):**
 ```tsx
-<div className="sticky bottom-0 px-4 pt-3 bg-background border-t flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
-  <Button ...>
-```
+// DA:
+let emailQueued = false;
+try {
+  await queueEmail(...);
+  emailQueued = true;
+} catch (emailError) {
+  console.warn('Failed to queue invite email (non-fatal):', emailError);
+}
 
-**Nuovo:**
-```tsx
-<div className="sticky bottom-0 bg-background flex-shrink-0 relative">
-  <ScrollAffordance 
-    targetRef={scrollRefStep1} 
-    placement="top" 
-    className="absolute -top-8 left-0 right-0"
-  />
-  <div className="px-4 pt-3 border-t pb-[max(1rem,env(safe-area-inset-bottom))]">
-    <Button ...>
-  </div>
-</div>
-```
+return new Response(
+  JSON.stringify({
+    success: true,
+    inviteLink,
+    expiresAt: invite.expires_at,
+    clientName: `${client.first_name} ${client.last_name}`,
+    email: client.email,
+    emailQueued,  // <-- rimuovere
+  }),
+  ...
+);
 
-Applicare lo stesso pattern al footer dello Step 2.
+// A:
+try {
+  await queueEmail(...);
+  console.log(`Email queued for client invite: ${client.email}`);
+} catch (emailError) {
+  console.warn('Failed to queue invite email (non-fatal):', emailError);
+  // Non blocchiamo - l'email può essere re-inviata dalla scheda cliente
+}
+
+return new Response(
+  JSON.stringify({
+    success: true,
+    inviteLink,
+    expiresAt: invite.expires_at,
+    clientName: `${client.first_name} ${client.last_name}`,
+    email: client.email,
+  }),
+  ...
+);
+```
 
 ---
 
-## Riepilogo visivo della struttura
+### 5. Aggiornare chiamate al dialog in `src/pages/Clients.tsx`
 
-```text
-DialogContent / SheetContent
-├── Header (shrink-0)
-├── Body scrollabile (flex-1 overflow-y-auto) ← targetRef
-└── Footer wrapper (shrink-0 relative)
-    ├── ScrollAffordance (absolute -top-8 inset-x-0) ← gradient neutro
-    └── Footer content (invite bar + bottoni)
-```
+Rimuovere le props `emailSent` e `emailError` dove viene usato `InviteLinkDialog`.
 
 ---
 
-## Specifiche tecniche finali ScrollAffordance
+## Riepilogo
 
-| Proprieta | Valore |
-|-----------|--------|
-| Gradient | `from-foreground/6 to-transparent` |
-| Altezza | `h-8` (32px) |
-| Direzione | `to-b` per placement="top", `to-t` per placement="bottom" |
-| Blur | Nessuno |
-| Posizione | `absolute` + offset gestito dal chiamante |
-| Larghezza | `inset-x-0` (full-width) |
-| Z-index | `z-10` |
+| Elemento | Prima | Dopo |
+|----------|-------|------|
+| Dialog scenari | 2 (successo/fallback) | 1 (sempre successo) |
+| Props emailSent | Sì | No |
+| Props emailError | Sì | No |
+| Campo API emailQueued | Sì | No |
+| Pulsante "Copia link" nel dialog | Sì (solo fallback) | No |
 
----
+## Note
 
-## Acceptance Criteria
-
-1. Scroll affordance visibile solo quando contenuto scrollabile E non sei in fondo
-2. Gradient grigio neutro `foreground/6`, niente primary color
-3. Nessun blur
-4. Full-width sopra tutto il footer
-5. Bottoni modali "Nuovo cliente" a dimensione standard (no `size="sm"`, no `h-9`)
-6. Pattern applicato a: Clients.tsx, PackageDialog, ClientAppointmentModal, SlotSelectorSheet
+- Il link di invito resta sempre disponibile nella scheda cliente
+- Se l'email non viene recapitata, il coach può reinviare dalla scheda cliente
+- L'esperienza utente è più semplice e positiva
 
