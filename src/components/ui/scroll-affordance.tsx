@@ -73,8 +73,8 @@ export function ScrollAffordance({
       data-testid="scroll-affordance"
       className={cn(
         "pointer-events-none absolute left-0 right-0 z-10",
-        placement === "top" && "bottom-full h-6 bg-gradient-to-t from-primary/10 to-transparent blur-[0.5px]",
-        placement === "bottom" && "top-full h-6 bg-gradient-to-b from-primary/10 to-transparent blur-[0.5px]",
+        placement === "top" && "inset-x-0 top-0 h-8 bg-gradient-to-b from-foreground/6 to-transparent",
+        placement === "bottom" && "inset-x-0 bottom-0 h-8 bg-gradient-to-t from-foreground/6 to-transparent",
         className
       )}
       aria-hidden="true"
