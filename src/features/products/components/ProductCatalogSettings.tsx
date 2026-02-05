@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Plus, Loader2, Package, CreditCard, Check } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { PanelHeader } from "@/components/ui/panel-header";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { PriceInput } from "@/components/ui/price-input";
@@ -165,14 +166,13 @@ export function ProductCatalogSettings() {
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Lezioni e pacchetti</CardTitle>
-        <CardDescription>
-          Configura i valori di default per lezioni singole e pacchetti
-        </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <div className="space-y-6">
+        <PanelHeader 
+          title="Lezioni e pacchetti" 
+          subtitle="Configura i valori di default per lezioni singole e pacchetti"
+        />
+        <Card>
+          <CardContent className="pt-6 space-y-6">
           {/* SEZIONE 1: Lezione singola */}
           <div className="space-y-4">
             <div className="space-y-1">
@@ -255,6 +255,7 @@ export function ProductCatalogSettings() {
           </div>
         </CardContent>
       </Card>
+      </div>
 
       {/* Form Dialog */}
       <ProductFormDialog

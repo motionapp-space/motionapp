@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { PanelHeader } from "@/components/ui/panel-header";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -245,14 +246,13 @@ export function BookingSettingsForm() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Prenotazioni</CardTitle>
-          <CardDescription>
-            Gestisci le regole di cancellazione e le prenotazioni dei clienti
-          </CardDescription>
-        </CardHeader>
-        <CardContent className={cn("space-y-8", hasUnsavedChanges && "pb-24")}>
+      <div className="space-y-6">
+        <PanelHeader 
+          title="Prenotazioni" 
+          subtitle="Gestisci le regole di cancellazione e le prenotazioni dei clienti"
+        />
+        <Card>
+          <CardContent className={cn("pt-6 space-y-8", hasUnsavedChanges && "pb-24")}>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               {/* Late Cancellation Section - Always visible */}
@@ -596,6 +596,7 @@ export function BookingSettingsForm() {
           />
         </CardContent>
       </Card>
+      </div>
     </TooltipProvider>
   );
 }
