@@ -252,11 +252,11 @@ export function BookingSettingsForm() {
           subtitle="Gestisci le regole di cancellazione e le prenotazioni dei clienti"
         />
         <Card>
-          <CardContent className={cn("pt-6 space-y-8", hasUnsavedChanges && "pb-24")}>
+          <CardContent className={cn("pt-6", hasUnsavedChanges && "pb-24")}>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
               {/* Late Cancellation Section - Always visible */}
-              <div className="space-y-4">
+              <div>
                 <div className="space-y-1">
                   <h3 className="text-base font-semibold leading-6 text-foreground">Cancellazione tardiva</h3>
                   <p className="text-[13px] leading-5 text-muted-foreground">
@@ -264,7 +264,8 @@ export function BookingSettingsForm() {
                   </p>
                 </div>
 
-                <FormField
+                <div className="mt-5">
+                  <FormField
                   control={form.control}
                   name="cancel_policy_hours"
                   render={({ field }) => (
@@ -316,6 +317,7 @@ export function BookingSettingsForm() {
                     </FormItem>
                   )}
                 />
+                </div>
               </div>
 
               {/* Prominent Toggle Section */}
@@ -361,7 +363,7 @@ export function BookingSettingsForm() {
               {form.watch("enabled") && (
                 <>
                   {/* Booking Rules Section */}
-                  <div className="space-y-6">
+                  <div>
                     <div className="space-y-1">
                       <h3 className="text-base font-semibold leading-6 text-foreground">Regole di prenotazione</h3>
                       <p className="text-[13px] leading-5 text-muted-foreground">
@@ -369,7 +371,7 @@ export function BookingSettingsForm() {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Min advance notice */}
                       <FormField
                         control={form.control}
@@ -558,32 +560,36 @@ export function BookingSettingsForm() {
                   </div>
 
                   {/* Weekly Time Slots Section */}
-                  <div className="space-y-4">
+                  <div>
                     <div className="space-y-1">
                       <h3 className="text-base font-semibold leading-6 text-foreground">Fasce orarie settimanali</h3>
                       <p className="text-[13px] leading-5 text-muted-foreground">
                         Definisci quando i clienti possono prenotare
                       </p>
                     </div>
-                    <AvailabilityEditor 
+                    <div className="mt-5">
+                      <AvailabilityEditor
                       key={resetAvailability}
-                      onChangeDetected={() => setHasUnsavedChanges(true)}
-                      localChangesRef={availabilityChangesRef}
-                    />
+                        onChangeDetected={() => setHasUnsavedChanges(true)}
+                        localChangesRef={availabilityChangesRef}
+                      />
+                    </div>
                   </div>
 
                   {/* Absence Periods Section */}
-                  <div className="space-y-4">
+                  <div>
                     <div className="space-y-1">
                       <h3 className="text-base font-semibold leading-6 text-foreground">Periodi di assenza</h3>
                       <p className="text-[13px] leading-5 text-muted-foreground">
                         Blocca date specifiche in cui non sei disponibile per i clienti
                       </p>
                     </div>
-                    <OutOfOfficeManager 
-                      ref={oooManagerRef}
-                      onChangeDetected={handleOOOChangeDetected} 
-                    />
+                    <div className="mt-5">
+                      <OutOfOfficeManager
+                        ref={oooManagerRef}
+                        onChangeDetected={handleOOOChangeDetected} 
+                      />
+                    </div>
                   </div>
                 </>
               )}
