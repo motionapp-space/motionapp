@@ -507,11 +507,12 @@ export function BookingSettingsForm() {
                     </div>
 
                     {/* Approval mode - full width */}
-                    <FormField
-                      control={form.control}
-                      name="approval_mode"
-                      render={({ field }) => (
-                        <FormItem className="space-y-3">
+                    <div className="mt-6">
+                      <FormField
+                        control={form.control}
+                        name="approval_mode"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
                           <div className="flex items-center gap-2">
                             <FormLabel className="text-sm font-medium">Modalità approvazione</FormLabel>
                             <Tooltip>
@@ -557,6 +558,7 @@ export function BookingSettingsForm() {
                         </FormItem>
                       )}
                     />
+                    </div>
                   </div>
 
                   {/* Weekly Time Slots Section */}
