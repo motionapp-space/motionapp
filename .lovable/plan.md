@@ -1,55 +1,25 @@
 
-# Piano: Fix Centratura e Scroll Modale PackageDialog
+# Fix: Aumentare dimensione testo microcopy nella tab Sessioni
 
 ## Problema
-
-La modale di creazione pacchetti:
-1. **Non scorre** quando il contenuto supera l'altezza della viewport
-2. **Appare tagliata** in basso (il footer con i pulsanti non è visibile)
-
-Causa: `DialogContent` usa posizionamento fisso centrato (`top-[50%] translate-y-[-50%]`) senza vincoli di altezza massima né overflow scroll.
-
----
+Il testo educativo nella tab Sessioni ("Le sessioni di allenamento si registrano...") usa `text-xs` (12px), risultando leggermente piccolo.
 
 ## Soluzione
+Aumentare la dimensione da 12px a 13px, coerente con la scala tipografica del design system (13px = microcopy/caption).
 
-Modificare il componente `DialogContent` in `src/components/ui/dialog.tsx` per supportare nativamente contenuti lunghi.
+## Modifica tecnica
 
-### `src/components/ui/dialog.tsx`
+**File:** `src/features/sessions/components/SessionHistoryTab.tsx`
 
-**Linea 39** — Aggiungere vincoli di altezza e scroll:
-
-```typescript
-// Da:
-"fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 ..."
-
-// A:
-"fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg max-h-[85vh] translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 overflow-y-auto ..."
+**Riga 136 - Da:**
+```tsx
+<div className="text-xs text-foreground/80 bg-muted/50 rounded-lg px-4 py-3 space-y-1">
 ```
 
-Aggiunte:
-- `max-h-[85vh]` — La modale non può superare l'85% dell'altezza viewport
-- `overflow-y-auto` — Abilita scroll verticale quando il contenuto eccede
-
----
-
-## Alternativa (se preferisci non toccare il componente base)
-
-Applicare le classi solo alla modale `PackageDialog.tsx`:
-
-```typescript
-// Linea 163
-<DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+**A:**
+```tsx
+<div className="text-[13px] text-foreground/80 bg-muted/50 rounded-lg px-4 py-3 space-y-1">
 ```
 
-**Consiglio**: La soluzione sul componente base è migliore perché risolve il problema per tutte le modali dell'app.
-
----
-
-## Riepilogo
-
-| File | Modifica |
-|------|----------|
-| `dialog.tsx` | Aggiungere `max-h-[85vh] overflow-y-auto` a DialogContent |
-
-Questo garantisce che tutte le Dialog siano sempre scrollabili e non escano dalla viewport.
+## Risultato
+Il testo passerà da 12px a 13px, migliorando la leggibilità mantenendo il ruolo di microcopy secondario.
