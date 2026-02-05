@@ -151,7 +151,9 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
             </TabsTrigger>
           </TabsList>
 
-          <Badge variant="secondary">{sessions.length} sessioni totali</Badge>
+          {sessions.length > 0 && (
+            <Badge variant="secondary">{sessions.length} sessioni totali</Badge>
+          )}
         </div>
 
         {/* Tab: Sessioni Con PT */}
