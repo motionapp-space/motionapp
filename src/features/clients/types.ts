@@ -62,8 +62,6 @@ export interface CreateClientResult {
     expiresAt: string;
     email: string;
     clientName: string;
-    emailSent: boolean;
-    emailError?: string;
   };
 }
 

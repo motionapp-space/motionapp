@@ -145,7 +145,6 @@ serve(async (req) => {
     const inviteLink = `${appUrl}/client/accept-invite?token=${invite.token}`;
 
     // Queue invite email via Email Outbox Pattern
-    let emailQueued = false;
     try {
       await queueEmail(supabaseAdmin, {
         type: 'client_invite',
@@ -159,10 +158,10 @@ serve(async (req) => {
           expires_at: invite.expires_at,
         },
       });
-      emailQueued = true;
       console.log(`Email queued for client invite: ${client.email}`);
     } catch (emailError) {
       console.warn('Failed to queue invite email (non-fatal):', emailError);
+      // Non blocchiamo - l'email può essere re-inviata dalla scheda cliente
     }
 
     return new Response(
@@ -172,7 +171,6 @@ serve(async (req) => {
         expiresAt: invite.expires_at,
         clientName: `${client.first_name} ${client.last_name}`,
         email: client.email,
-        emailQueued,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -6,8 +6,6 @@ export interface CreateInviteResult {
   expiresAt?: string;
   clientName?: string;
   email?: string;
-  emailSent?: boolean;
-  emailError?: string | null;
   error?: string;
 }
 

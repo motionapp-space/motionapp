@@ -76,19 +76,9 @@ export function ClientInviteSection({ clientId, email, hasUserAccount }: ClientI
       const result = await createInvite(clientId);
       if (result.success && result.inviteLink) {
         setGeneratedLink(result.inviteLink);
-        
-        // Show appropriate toast based on email status
-        if (result.emailSent) {
-          toast.success("Invito generato e email inviata!", {
-            description: `Email inviata a ${result.email}`
-          });
-        } else {
-          toast.success("Link di invito generato!", {
-            description: result.emailError 
-              ? "Email non inviata - condividi il link manualmente" 
-              : undefined
-          });
-        }
+        toast.success("Invito generato!", {
+          description: `Email inviata a ${result.email}`
+        });
         refetch();
       } else {
         toast.error("Errore nella generazione del link", {

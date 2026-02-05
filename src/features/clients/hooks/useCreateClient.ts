@@ -23,8 +23,6 @@ export function useCreateClient() {
             expiresAt: inviteResult.expiresAt!,
             email: inviteResult.email!,
             clientName: inviteResult.clientName!,
-            emailSent: inviteResult.emailSent ?? false,
-            emailError: inviteResult.emailError,
           };
         } else if (!inviteResult.success) {
           // Log error but don't fail the whole operation
