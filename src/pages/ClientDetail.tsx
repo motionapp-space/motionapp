@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TabHeader } from "@/components/ui/tab-header";
 import { Plus, X, Pencil, Activity, Smartphone } from "lucide-react";
@@ -215,16 +215,16 @@ const ClientDetail = () => {
 
             {/* 1. Accesso App Cliente */}
             <Card>
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2">
-                  <Smartphone className="h-5 w-5" />
+                  <Smartphone className="h-4 w-4 text-muted-foreground" />
                   {toSentenceCase("Accesso app cliente")}
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardDescription className="mt-1">
                   Stato di accesso del cliente all'app e azioni disponibili
-                </p>
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <ClientInviteSection
                   clientId={currentClient.id}
                   email={currentClient.email || ""}
@@ -235,26 +235,28 @@ const ClientDetail = () => {
 
             {/* 2. Informazioni Personali */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle>{toSentenceCase("Informazioni personali")}</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Dati anagrafici e di contatto del cliente
-                  </p>
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <CardTitle>{toSentenceCase("Informazioni personali")}</CardTitle>
+                    <CardDescription className="mt-1">
+                      Dati anagrafici e di contatto del cliente
+                    </CardDescription>
+                  </div>
+                  {!editMode && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEditMode(true)}
+                      className="h-8 w-8"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">{toSentenceCase("Modifica informazioni personali")}</span>
+                    </Button>
+                  )}
                 </div>
-                {!editMode && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setEditMode(true)}
-                    className="h-8 w-8"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    <span className="sr-only">{toSentenceCase("Modifica informazioni personali")}</span>
-                  </Button>
-                )}
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="pt-0 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Riga 1: Nome / Cognome */}
                   <div className="space-y-2">
@@ -345,13 +347,13 @@ const ClientDetail = () => {
 
             {/* 3. Tags */}
             <Card>
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-4">
                 <CardTitle>{toSentenceCase("Tags")}</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardDescription className="mt-1">
                   Etichette per organizzare e filtrare i clienti
-                </p>
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="pt-0 space-y-4">
                 <div className="flex gap-2 flex-wrap">
                   {currentClient.tags?.map((tag) => (
                     <Badge key={tag.id} variant="outline" className="gap-2">
@@ -381,13 +383,13 @@ const ClientDetail = () => {
 
             {/* 4. Misurazioni */}
             <Card>
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-4">
                 <CardTitle>{toSentenceCase("Misurazioni")}</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardDescription className="mt-1">
                   Dati fisici e metriche di monitoraggio
-                </p>
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <p className="text-sm text-muted-foreground">
                   {toSentenceCase("Funzionalità in sviluppo")}
                 </p>
@@ -396,13 +398,13 @@ const ClientDetail = () => {
 
             {/* 5. Cronologia Modifiche */}
             <Card>
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-4">
                 <CardTitle>{toSentenceCase("Cronologia modifiche")}</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <CardDescription className="mt-1">
                   Storico delle azioni e delle modifiche sul profilo
-                </p>
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <Button 
                   variant="outline" 
                   className="w-full gap-2"
