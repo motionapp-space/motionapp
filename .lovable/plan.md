@@ -1,25 +1,13 @@
 
-# Fix: InviteLinkDialog non visibile in tutti gli stati di onboarding
 
-## Problema identificato
+# Miglioramento UI: Reinvio Invito nel Profilo Cliente
 
-Il componente `Clients.tsx` ha **4 diversi blocchi `return`** basati sullo stato di onboarding:
+## Obiettivo
 
-| Riga | Stato | Ha InviteLinkDialog? |
-|------|-------|---------------------|
-| 298 | Loading | No (OK - non serve) |
-| 307 | ZERO_CLIENTS | **NO** |
-| 527 | FIRST_CLIENT_NO_CONTENT | **NO** |
-| 1108 | ACTIVE_USER | Si |
-
-Il coach `lex@gmail.com` è nello stato `FIRST_CLIENT_NO_CONTENT` (8 clienti, 0 piani, 0 appuntamenti), quindi quando crea un cliente:
-1. L'`onSuccess` imposta `inviteDialogData`
-2. Il componente fa return alla riga 527
-3. Il dialog (riga 1706) non viene mai renderizzato perché fa parte del return alla riga 1108
-
-## Soluzione
-
-Aggiungere `InviteLinkDialog` anche ai blocchi return degli stati `ZERO_CLIENTS` e `FIRST_CLIENT_NO_CONTENT`.
+Semplificare il feedback dopo il reinvio invito:
+- Rimuovere il toast (ridondante)
+- Migliorare il banner verde con info sull'email in coda
+- **Non mostrare il link** - solo bottone per copiarlo
 
 ---
 
@@ -27,65 +15,78 @@ Aggiungere `InviteLinkDialog` anche ai blocchi return degli stati `ZERO_CLIENTS`
 
 | File | Modifica |
 |------|----------|
-| `src/pages/Clients.tsx` | Aggiungere InviteLinkDialog in ZERO_CLIENTS (prima di riga 522) |
-| `src/pages/Clients.tsx` | Aggiungere InviteLinkDialog in FIRST_CLIENT_NO_CONTENT (prima di riga 1104) |
+| `src/features/clients/components/ClientInviteSection.tsx` | Rimuovere toast e migliorare banner senza mostrare link |
 
 ---
 
 ## Dettaglio tecnico
 
-### 1. Stato ZERO_CLIENTS (riga ~520, prima del closing tag)
-
-Aggiungere prima della chiusura `</div>` e `);`:
+### 1. Rimuovere il toast (righe 79-81)
 
 ```tsx
-      {/* Invite Link Dialog */}
-      {inviteDialogData && (
-        <InviteLinkDialog
-          open={!!inviteDialogData}
-          onOpenChange={(open) => !open && handleCloseInviteDialog()}
-          inviteLink={inviteDialogData.inviteLink}
-          clientName={inviteDialogData.clientName}
-          email={inviteDialogData.email}
-          expiresAt={inviteDialogData.expiresAt}
-          onClose={handleCloseInviteDialog}
-        />
-      )}
+// DA:
+if (result.success && result.inviteLink) {
+  setGeneratedLink(result.inviteLink);
+  toast.success("Invito generato!", {
+    description: `Email inviata a ${result.email}`
+  });
+  refetch();
+}
+
+// A:
+if (result.success && result.inviteLink) {
+  setGeneratedLink(result.inviteLink);
+  refetch();
+}
 ```
 
-### 2. Stato FIRST_CLIENT_NO_CONTENT (riga ~1102, prima del closing tag)
-
-Aggiungere lo stesso blocco:
+### 2. Migliorare il banner senza mostrare il link (righe 130-155)
 
 ```tsx
-      {/* Invite Link Dialog */}
-      {inviteDialogData && (
-        <InviteLinkDialog
-          open={!!inviteDialogData}
-          onOpenChange={(open) => !open && handleCloseInviteDialog()}
-          inviteLink={inviteDialogData.inviteLink}
-          clientName={inviteDialogData.clientName}
-          email={inviteDialogData.email}
-          expiresAt={inviteDialogData.expiresAt}
-          onClose={handleCloseInviteDialog}
-        />
-      )}
+// A:
+if (generatedLink) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-3 p-4 rounded-lg bg-green-50 border border-green-200">
+        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+          <Check className="h-5 w-5 text-green-600" />
+        </div>
+        <div className="flex-1">
+          <p className="font-medium text-green-900">{toSentenceCase("Nuovo invito generato")}</p>
+          <p className="text-sm text-green-700 mt-1">
+            Un'email con il link di attivazione verrà inviata a breve.
+          </p>
+        </div>
+      </div>
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={() => handleCopyLink(generatedLink)}
+        className="w-full"
+      >
+        <Copy className="h-4 w-4 mr-2" />
+        Copia link
+      </Button>
+      <p className="text-xs text-muted-foreground">
+        Puoi anche condividere manualmente il link con il cliente.
+      </p>
+    </div>
+  );
+}
 ```
 
 ---
 
-## Riepilogo modifiche
+## Risultato visivo
 
-| Return block | Prima | Dopo |
-|--------------|-------|------|
-| ZERO_CLIENTS | Nessun dialog | Dialog presente |
-| FIRST_CLIENT_NO_CONTENT | Nessun dialog | Dialog presente |
-| ACTIVE_USER | Dialog presente | Invariato |
-
-## Risultato atteso
-
-Dopo questa modifica:
-- Il dialog di conferma invito apparirà in **tutti gli stati di onboarding**
-- Il coach verrà reindirizzato alla scheda cliente quando chiude il dialog
-- L'esperienza sarà coerente indipendentemente dalla "maturità" del coach
+```
+┌─────────────────────────────────────┐
+│ ✓ Nuovo invito generato             │
+│   Un'email con il link di           │
+│   attivazione verrà inviata a breve.│
+└─────────────────────────────────────┘
+│         [Copia link]                │
+│ Puoi anche condividere manualmente  │
+│ il link con il cliente.             │
+```
 
