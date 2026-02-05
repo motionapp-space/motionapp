@@ -518,6 +518,19 @@ const Clients = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Invite Link Dialog */}
+        {inviteDialogData && (
+          <InviteLinkDialog
+            open={!!inviteDialogData}
+            onOpenChange={(open) => !open && handleCloseInviteDialog()}
+            inviteLink={inviteDialogData.inviteLink}
+            clientName={inviteDialogData.clientName}
+            email={inviteDialogData.email}
+            expiresAt={inviteDialogData.expiresAt}
+            onClose={handleCloseInviteDialog}
+          />
+        )}
       </div>
     );
   }
@@ -1100,6 +1113,19 @@ const Clients = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Invite Link Dialog */}
+        {inviteDialogData && (
+          <InviteLinkDialog
+            open={!!inviteDialogData}
+            onOpenChange={(open) => !open && handleCloseInviteDialog()}
+            inviteLink={inviteDialogData.inviteLink}
+            clientName={inviteDialogData.clientName}
+            email={inviteDialogData.email}
+            expiresAt={inviteDialogData.expiresAt}
+            onClose={handleCloseInviteDialog}
+          />
+        )}
       </div>
     );
   }
