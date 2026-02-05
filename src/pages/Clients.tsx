@@ -200,7 +200,7 @@ const Clients = () => {
         setCreateDialogOpen(false);
         setFormData({ first_name: "", last_name: "", email: "", phone: "", fiscal_code: "", notes: "" });
         setValidationErrors({});
-        setWithInvite(false);
+        setWithInvite(true);
         
         // If invite was created, show invite dialog
         if (result.invite) {
