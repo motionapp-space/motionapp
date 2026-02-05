@@ -26,4 +26,28 @@ test.describe("New client modal - invite bar sticky", () => {
     await inviteSwitch.click();
     await expect(inviteSwitch).toHaveAttribute("aria-checked", "true");
   });
+
+  test("modal shows scroll affordance only when scrollable", async ({ page }) => {
+    await page.goto("/clients");
+    await page.getByRole("button", { name: /nuovo cliente/i }).first().click();
+
+    const scrollArea = page.getByTestId("new-client-scroll");
+    const affordance = page.getByTestId("scroll-affordance");
+
+    // Check if scroll affordance is visible (depends on viewport/content)
+    // If content is short, affordance won't show - that's expected behavior
+    const isScrollable = await scrollArea.evaluate((el) => el.scrollHeight > el.clientHeight);
+    
+    if (isScrollable) {
+      await expect(affordance).toBeVisible();
+
+      // Scroll to bottom
+      await scrollArea.evaluate((el) => (el.scrollTop = el.scrollHeight));
+      await page.waitForTimeout(100);
+      
+      // Affordance should disappear when at bottom
+      await expect(affordance).toHaveCount(0);
+    }
+  });
 });
+

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useTopbar } from "@/contexts/TopbarContext";
@@ -42,6 +42,7 @@ import { ClientsTable } from "@/features/clients/components/ClientsTable";
 import { getClientById } from "@/features/clients/api/clients.api";
 import type { ClientsFilters, CreateClientResult } from "@/features/clients/types";
 import { cn } from "@/lib/utils";
+import { ScrollAffordance } from "@/components/ui/scroll-affordance";
 
 // Schema di validazione Zod
 const clientFormSchema = z.object({
@@ -101,6 +102,9 @@ const Clients = () => {
     clientId: string;
     clientName: string;
   } | null>(null);
+  
+  // Shared ref for modal scroll area (only one modal is open at a time)
+  const modalScrollRef = useRef<HTMLDivElement>(null);
 
   // Set topbar title
   useTopbar({
@@ -356,7 +360,7 @@ const Clients = () => {
             <DialogHeader className="shrink-0">
               <DialogTitle>{toSentenceCase("Nuovo cliente")}</DialogTitle>
             </DialogHeader>
-            <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1 -mx-1">
+            <div ref={modalScrollRef} data-testid="new-client-scroll" className="flex-1 overflow-y-auto space-y-4 py-4 px-1 -mx-1">
               <div className="space-y-2">
                 <Label htmlFor="first_name">{toSentenceCase("Nome")} *</Label>
                 <Input
@@ -449,44 +453,48 @@ const Clients = () => {
                   rows={3}
                 />
               </div>
-              
             </div>
-            {/* Invite bar - always visible above footer */}
-            <div className="shrink-0 pt-4">
-              <div className="bg-muted/40 border border-border/60 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <Label 
-                    htmlFor="withInvite-onboarding" 
-                    className="text-sm font-medium text-foreground cursor-pointer"
-                  >
-                    Invia email di invito
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-5">
-                    Verrà inviata un&apos;email al cliente con il link per creare il suo account.
-                  </p>
+            {/* Fixed area with scroll affordance */}
+            <div className="relative shrink-0">
+              <ScrollAffordance targetRef={modalScrollRef} placement="top" />
+              {/* Invite bar - compact */}
+              <div className="pt-3">
+                <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-2.5 flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <Label 
+                      htmlFor="withInvite-onboarding" 
+                      className="text-sm font-medium text-foreground cursor-pointer"
+                    >
+                      Invia email di invito
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-5">
+                      Verrà inviata un&apos;email al cliente con il link per creare il suo account.
+                    </p>
+                  </div>
+                  <Switch
+                    id="withInvite-onboarding"
+                    checked={withInvite}
+                    onCheckedChange={setWithInvite}
+                    className="mt-0.5"
+                  />
                 </div>
-                <Switch
-                  id="withInvite-onboarding"
-                  checked={withInvite}
-                  onCheckedChange={setWithInvite}
-                  className="mt-0.5"
-                />
               </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
-              <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-                {toSentenceCase("Annulla")}
-              </Button>
-              <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
-                {createMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creazione...
-                  </>
-                ) : (
-                  toSentenceCase("Crea cliente")
-                )}
-              </Button>
+              {/* Footer CTA - compact */}
+              <div className="flex justify-end gap-2 pt-3 pb-1">
+                <Button variant="outline" size="sm" className="h-9 px-4" onClick={() => setCreateDialogOpen(false)}>
+                  {toSentenceCase("Annulla")}
+                </Button>
+                <Button size="sm" className="h-9 px-4" onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
+                  {createMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creazione...
+                    </>
+                  ) : (
+                    toSentenceCase("Crea cliente")
+                  )}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -926,7 +934,7 @@ const Clients = () => {
             <DialogHeader className="shrink-0">
               <DialogTitle>{toSentenceCase("Nuovo cliente")}</DialogTitle>
             </DialogHeader>
-            <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1 -mx-1">
+            <div ref={modalScrollRef} data-testid="new-client-scroll" className="flex-1 overflow-y-auto space-y-4 py-4 px-1 -mx-1">
               <div className="space-y-2">
                 <Label htmlFor="first_name">{toSentenceCase("Nome")} *</Label>
                 <Input
@@ -1019,44 +1027,48 @@ const Clients = () => {
                   rows={3}
                 />
               </div>
-              
             </div>
-            {/* Invite bar - always visible above footer */}
-            <div className="shrink-0 pt-4">
-              <div className="bg-muted/40 border border-border/60 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <Label 
-                    htmlFor="withInvite-first" 
-                    className="text-sm font-medium text-foreground cursor-pointer"
-                  >
-                    Invia email di invito
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-5">
-                    Verrà inviata un&apos;email al cliente con il link per creare il suo account.
-                  </p>
+            {/* Fixed area with scroll affordance */}
+            <div className="relative shrink-0">
+              <ScrollAffordance targetRef={modalScrollRef} placement="top" />
+              {/* Invite bar - compact */}
+              <div className="pt-3">
+                <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-2.5 flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <Label 
+                      htmlFor="withInvite-first" 
+                      className="text-sm font-medium text-foreground cursor-pointer"
+                    >
+                      Invia email di invito
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-5">
+                      Verrà inviata un&apos;email al cliente con il link per creare il suo account.
+                    </p>
+                  </div>
+                  <Switch
+                    id="withInvite-first"
+                    checked={withInvite}
+                    onCheckedChange={setWithInvite}
+                    className="mt-0.5"
+                  />
                 </div>
-                <Switch
-                  id="withInvite-first"
-                  checked={withInvite}
-                  onCheckedChange={setWithInvite}
-                  className="mt-0.5"
-                />
               </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
-              <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-                {toSentenceCase("Annulla")}
-              </Button>
-              <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
-                {createMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creazione...
-                  </>
-                ) : (
-                  toSentenceCase("Crea cliente")
-                )}
-              </Button>
+              {/* Footer CTA - compact */}
+              <div className="flex justify-end gap-2 pt-3 pb-1">
+                <Button variant="outline" size="sm" className="h-9 px-4" onClick={() => setCreateDialogOpen(false)}>
+                  {toSentenceCase("Annulla")}
+                </Button>
+                <Button size="sm" className="h-9 px-4" onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
+                  {createMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creazione...
+                    </>
+                  ) : (
+                    toSentenceCase("Crea cliente")
+                  )}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -1524,7 +1536,7 @@ const Clients = () => {
           <DialogHeader className="shrink-0">
             <DialogTitle>{toSentenceCase("Nuovo cliente")}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1 -mx-1">
+          <div ref={modalScrollRef} data-testid="new-client-scroll" className="flex-1 overflow-y-auto space-y-4 py-4 px-1 -mx-1">
             <div className="space-y-2">
               <Label htmlFor="first_name">{toSentenceCase("Nome")} *</Label>
               <Input
@@ -1617,44 +1629,48 @@ const Clients = () => {
                 rows={3}
               />
             </div>
-            
           </div>
-          {/* Invite bar - always visible above footer */}
-          <div className="shrink-0 pt-4">
-            <div className="bg-muted/40 border border-border/60 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <Label 
-                  htmlFor="withInvite-active" 
-                  className="text-sm font-medium text-foreground cursor-pointer"
-                >
-                  Invia email di invito
-                </Label>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-5">
-                  Verrà inviata un&apos;email al cliente con il link per creare il suo account.
-                </p>
+          {/* Fixed area with scroll affordance */}
+          <div className="relative shrink-0">
+            <ScrollAffordance targetRef={modalScrollRef} placement="top" />
+            {/* Invite bar - compact */}
+            <div className="pt-3">
+              <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-2.5 flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <Label 
+                    htmlFor="withInvite-active" 
+                    className="text-sm font-medium text-foreground cursor-pointer"
+                  >
+                    Invia email di invito
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-5">
+                    Verrà inviata un&apos;email al cliente con il link per creare il suo account.
+                  </p>
+                </div>
+                <Switch
+                  id="withInvite-active"
+                  checked={withInvite}
+                  onCheckedChange={setWithInvite}
+                  className="mt-0.5"
+                />
               </div>
-              <Switch
-                id="withInvite-active"
-                checked={withInvite}
-                onCheckedChange={setWithInvite}
-                className="mt-0.5"
-              />
             </div>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-              {toSentenceCase("Annulla")}
-            </Button>
-            <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
-              {createMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creazione...
-                </>
-              ) : (
-                toSentenceCase("Crea cliente")
-              )}
-            </Button>
+            {/* Footer CTA - compact */}
+            <div className="flex justify-end gap-2 pt-3 pb-1">
+              <Button variant="outline" size="sm" className="h-9 px-4" onClick={() => setCreateDialogOpen(false)}>
+                {toSentenceCase("Annulla")}
+              </Button>
+              <Button size="sm" className="h-9 px-4" onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
+                {createMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creazione...
+                  </>
+                ) : (
+                  toSentenceCase("Crea cliente")
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
