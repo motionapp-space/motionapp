@@ -1,7 +1,7 @@
 // FASE 4: Client Appointment Modal - Vincoli hard
 // Mantiene la logica attuale di UnifiedAppointmentModal per i clienti
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format, parse, addMinutes, addDays } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import { useCreateEvent } from "../hooks/useCreateEvent";
 import { useAvailableSlots } from "@/features/bookings/hooks/useAvailableSlots";
 import { getAvailableSlots } from "@/features/bookings/api/available-slots.api";
 import { getCoachClientId } from "@/lib/coach-client";
-import { ScrollAffordance } from "@/components/ui/scroll-affordance";
 
 interface ClientAppointmentModalProps {
   open: boolean;
@@ -33,7 +32,6 @@ export function ClientAppointmentModal({
   const [rangeStart, setRangeStart] = useState(new Date());
   const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [isSearching, setIsSearching] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const rangeEnd = useMemo(() => addDays(rangeStart, 14), [rangeStart]);
 
@@ -161,7 +159,7 @@ export function ClientAppointmentModal({
         )}
 
         {!isLoading && !isSearching && slots.length > 0 && (
-          <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4">
+          <div className="flex-1 overflow-y-auto space-y-4">
             <div className="flex items-center justify-between">
               <Button
                 variant="outline"
@@ -208,19 +206,16 @@ export function ClientAppointmentModal({
           </div>
         )}
 
-        <div className="relative shrink-0">
-          <ScrollAffordance targetRef={scrollRef} placement="top" className="absolute -top-8 left-0 right-0" />
-          <div className="flex justify-end gap-3 pt-4 pb-3 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Annulla
-            </Button>
-            <Button
-              onClick={handleConfirm}
-              disabled={!selectedSlot || createEvent.isPending}
-            >
-              Conferma prenotazione
-            </Button>
-          </div>
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Annulla
+          </Button>
+          <Button
+            onClick={handleConfirm}
+            disabled={!selectedSlot || createEvent.isPending}
+          >
+            Conferma prenotazione
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

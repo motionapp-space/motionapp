@@ -455,8 +455,7 @@ const Clients = () => {
               </div>
             </div>
             {/* Fixed area with scroll affordance */}
-            <div className="relative shrink-0">
-              <ScrollAffordance targetRef={modalScrollRef} placement="top" className="absolute -top-8 left-0 right-0" />
+            <div className="shrink-0">
               {/* Invite bar - compact */}
               <div className="pt-3">
                 <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-2.5 flex items-start justify-between gap-3">
@@ -1028,9 +1027,8 @@ const Clients = () => {
                 />
               </div>
             </div>
-            {/* Fixed area with scroll affordance */}
-            <div className="relative shrink-0">
-              <ScrollAffordance targetRef={modalScrollRef} placement="top" className="absolute -top-8 left-0 right-0" />
+            {/* Fixed area */}
+            <div className="shrink-0">
               {/* Invite bar - compact */}
               <div className="pt-3">
                 <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-2.5 flex items-start justify-between gap-3">
@@ -1630,9 +1628,8 @@ const Clients = () => {
               />
             </div>
           </div>
-          {/* Fixed area with scroll affordance */}
-          <div className="relative shrink-0">
-            <ScrollAffordance targetRef={modalScrollRef} placement="top" className="absolute -top-8 left-0 right-0" />
+          {/* Fixed area */}
+          <div className="shrink-0">
             {/* Invite bar - compact */}
             <div className="pt-3">
               <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-2.5 flex items-start justify-between gap-3">
