@@ -54,7 +54,7 @@ export function NextStepsPanel({ clientName, onCreatePlan, onCreateAppointment }
                     <span className="font-semibold">Pianifica un appuntamento</span>
                   </div>
                   <p className="text-xs text-muted-foreground font-normal">
-                    Aggiungi una sessione al calendario
+                    Aggiungi un evento al calendario
                   </p>
                 </div>
               </Button>
