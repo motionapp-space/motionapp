@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { format, addMonths } from "date-fns";
+import { Pencil } from "lucide-react";
 import { it } from "date-fns/locale";
 import {
   Dialog,
@@ -187,7 +188,10 @@ export function PackageDialog({
                 ))}
                 {packageProducts.length > 0 && <SelectSeparator />}
                 <SelectItem value={CUSTOM_VALUE}>
-                  ✏️ Personalizzato...
+                  <span className="flex items-center gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Personalizzato...
+                  </span>
                 </SelectItem>
               </SelectContent>
             </Select>
