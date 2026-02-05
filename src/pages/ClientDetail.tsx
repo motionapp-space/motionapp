@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { TabHeader } from "@/components/ui/tab-header";
 import { Plus, X, Pencil, Activity, Smartphone } from "lucide-react";
 import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
@@ -206,6 +207,12 @@ const ClientDetail = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
+            {/* Header uniforme */}
+            <TabHeader
+              title="Profilo cliente"
+              subtitle="Dati del cliente e stato di accesso all'app"
+            />
+
             {/* 1. Accesso App Cliente */}
             <Card>
               <CardHeader className="pb-2">
