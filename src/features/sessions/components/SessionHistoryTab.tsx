@@ -133,7 +133,7 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
       />
 
       {/* Microcopy educativo - sempre visibile */}
-      <div className="text-[13px] text-foreground/80 bg-muted/50 rounded-lg px-4 py-3 space-y-1">
+      <div className="text-[13px] leading-snug text-foreground/80 bg-muted/50 rounded-lg px-4 py-3 space-y-0.5">
         <p>Le sessioni di allenamento si registrano da un appuntamento in calendario.</p>
         <p>Il cliente può anche registrare sessioni in autonomia dall'app.</p>
       </div>
