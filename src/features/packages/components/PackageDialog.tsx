@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { format, addMonths } from "date-fns";
 import { Pencil } from "lucide-react";
@@ -26,7 +26,6 @@ import {
 import { CreatePackageInput } from "../types";
 import { formatCurrency } from "../utils/kpi";
 import { useProducts } from "@/features/products/hooks/useProducts";
-import { ScrollAffordance } from "@/components/ui/scroll-affordance";
 import type { Product } from "@/features/products/types";
 
 interface PackageDialogProps {
@@ -47,7 +46,6 @@ export function PackageDialog({
   isLoading,
 }: PackageDialogProps) {
   const { data: products } = useProducts();
-  const scrollRef = useRef<HTMLDivElement>(null);
   
   // Filter active visible packages and single session
   const packageProducts = useMemo(() => 
@@ -172,7 +170,7 @@ export function PackageDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmitForm)} className="flex flex-col flex-1 min-h-0">
-          <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pr-1">
+          <div className="flex-1 overflow-y-auto space-y-4 pr-1">
           {/* Product Selection */}
           <div className="space-y-2">
             <Label>Pacchetto *</Label>
@@ -305,21 +303,18 @@ export function PackageDialog({
           </div>
           </div>
 
-          <div className="relative shrink-0">
-            <ScrollAffordance targetRef={scrollRef} placement="top" className="absolute -top-8 left-0 right-0" />
-            <DialogFooter className="pt-4 border-t mt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-              >
-                Annulla
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Creazione..." : "Crea pacchetto"}
-              </Button>
-            </DialogFooter>
-          </div>
+          <DialogFooter className="shrink-0 pt-4 border-t mt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+            >
+              Annulla
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Creazione..." : "Crea pacchetto"}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
