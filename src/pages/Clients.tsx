@@ -456,7 +456,7 @@ const Clients = () => {
             </div>
             {/* Fixed area with scroll affordance */}
             <div className="relative shrink-0">
-              <ScrollAffordance targetRef={modalScrollRef} placement="top" />
+              <ScrollAffordance targetRef={modalScrollRef} placement="top" className="absolute -top-8 left-0 right-0" />
               {/* Invite bar - compact */}
               <div className="pt-3">
                 <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-2.5 flex items-start justify-between gap-3">
@@ -479,12 +479,12 @@ const Clients = () => {
                   />
                 </div>
               </div>
-              {/* Footer CTA - compact */}
-              <div className="flex justify-end gap-2 pt-3 pb-1">
-                <Button variant="outline" size="sm" className="h-9 px-4" onClick={() => setCreateDialogOpen(false)}>
+              {/* Footer CTA */}
+              <div className="flex justify-end gap-3 pt-3 pb-3">
+                <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                   {toSentenceCase("Annulla")}
                 </Button>
-                <Button size="sm" className="h-9 px-4" onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
+                <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
                   {createMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1030,7 +1030,7 @@ const Clients = () => {
             </div>
             {/* Fixed area with scroll affordance */}
             <div className="relative shrink-0">
-              <ScrollAffordance targetRef={modalScrollRef} placement="top" />
+              <ScrollAffordance targetRef={modalScrollRef} placement="top" className="absolute -top-8 left-0 right-0" />
               {/* Invite bar - compact */}
               <div className="pt-3">
                 <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-2.5 flex items-start justify-between gap-3">
@@ -1053,12 +1053,12 @@ const Clients = () => {
                   />
                 </div>
               </div>
-              {/* Footer CTA - compact */}
-              <div className="flex justify-end gap-2 pt-3 pb-1">
-                <Button variant="outline" size="sm" className="h-9 px-4" onClick={() => setCreateDialogOpen(false)}>
+              {/* Footer CTA */}
+              <div className="flex justify-end gap-3 pt-3 pb-3">
+                <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                   {toSentenceCase("Annulla")}
                 </Button>
-                <Button size="sm" className="h-9 px-4" onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
+                <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
                   {createMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1632,7 +1632,7 @@ const Clients = () => {
           </div>
           {/* Fixed area with scroll affordance */}
           <div className="relative shrink-0">
-            <ScrollAffordance targetRef={modalScrollRef} placement="top" />
+            <ScrollAffordance targetRef={modalScrollRef} placement="top" className="absolute -top-8 left-0 right-0" />
             {/* Invite bar - compact */}
             <div className="pt-3">
               <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-2.5 flex items-start justify-between gap-3">
@@ -1655,12 +1655,12 @@ const Clients = () => {
                 />
               </div>
             </div>
-            {/* Footer CTA - compact */}
-            <div className="flex justify-end gap-2 pt-3 pb-1">
-              <Button variant="outline" size="sm" className="h-9 px-4" onClick={() => setCreateDialogOpen(false)}>
+            {/* Footer CTA */}
+            <div className="flex justify-end gap-3 pt-3 pb-3">
+              <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 {toSentenceCase("Annulla")}
               </Button>
-              <Button size="sm" className="h-9 px-4" onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
+              <Button onClick={handleCreateClient} disabled={!isFormValid || createMutation.isPending}>
                 {createMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Clock, CalendarDays, Loader2, AlertCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useClientBookingSettings } from "../hooks/useClientBookingSettings";
@@ -14,6 +14,7 @@ import { it } from "date-fns/locale";
 import { useClientAvailableSlots, clientAvailableSlotsQueryKey } from "../hooks/useClientAvailableSlots";
 import { useCreateBookingRequest } from "../hooks/useCreateBookingRequest";
 import { cn } from "@/lib/utils";
+import { ScrollAffordance } from "@/components/ui/scroll-affordance";
 import type { AvailableSlot } from "../types";
 
 type BookingStep = "SELECT_SLOT" | "CONFIRM";
@@ -39,6 +40,8 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const scrollRefStep1 = useRef<HTMLDivElement>(null);
+  const scrollRefStep2 = useRef<HTMLDivElement>(null);
   
   const queryClient = useQueryClient();
   const { data: slots, isLoading } = useClientAvailableSlots(28);
@@ -183,7 +186,7 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
             </SheetHeader>
 
             {/* Scrollable Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
+            <div ref={scrollRefStep1} className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
               {/* Week navigator */}
               <div className="flex items-center justify-between mb-4">
                 <Button 
@@ -279,14 +282,17 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
             </div>
 
             {/* Footer Step 1 */}
-            <div className="sticky bottom-0 px-4 pt-3 bg-background border-t flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <Button
-                className="w-full h-12"
-                disabled={!selectedSlot}
-                onClick={() => setStep("CONFIRM")}
-              >
-                {selectedSlot ? "Continua" : "Seleziona un orario"}
-              </Button>
+            <div className="sticky bottom-0 bg-background flex-shrink-0 relative">
+              <ScrollAffordance targetRef={scrollRefStep1} placement="top" className="absolute -top-8 left-0 right-0" />
+              <div className="px-4 pt-3 border-t pb-[max(1rem,env(safe-area-inset-bottom))]">
+                <Button
+                  className="w-full h-12"
+                  disabled={!selectedSlot}
+                  onClick={() => setStep("CONFIRM")}
+                >
+                  {selectedSlot ? "Continua" : "Seleziona un orario"}
+                </Button>
+              </div>
             </div>
           </>
         )}
@@ -311,7 +317,7 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
             </div>
 
               {/* Content - scrollable */}
-              <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-6">
+              <div ref={scrollRefStep2} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-6">
               {/* Slot summary card (read-only) */}
               <Card className="bg-muted/50">
                 <CardContent className="p-4 space-y-3">
@@ -345,35 +351,38 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
             </div>
 
             {/* Footer Step 2 */}
-            <div className="sticky bottom-0 px-4 pt-3 bg-background border-t space-y-3 flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              {/* Microcopy */}
-              <p className="text-xs text-muted-foreground text-center">
-                Invieremo la richiesta al coach. Riceverai una notifica alla conferma.
-              </p>
-              
-              {/* Error inline */}
-              {submitError && (
-                <Alert variant="destructive" className="py-2">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-sm">{submitError}</AlertDescription>
-                </Alert>
-              )}
-              
-              {/* CTA Button */}
-              <Button
-                className="w-full h-12"
-                disabled={createBooking.isPending}
-                onClick={handleSubmit}
-              >
-                {createBooking.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Invio richiesta...
-                  </>
-                ) : (
-                  "Richiedi appuntamento"
+            <div className="sticky bottom-0 bg-background flex-shrink-0 relative">
+              <ScrollAffordance targetRef={scrollRefStep2} placement="top" className="absolute -top-8 left-0 right-0" />
+              <div className="px-4 pt-3 border-t space-y-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                {/* Microcopy */}
+                <p className="text-xs text-muted-foreground text-center">
+                  Invieremo la richiesta al coach. Riceverai una notifica alla conferma.
+                </p>
+                
+                {/* Error inline */}
+                {submitError && (
+                  <Alert variant="destructive" className="py-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-sm">{submitError}</AlertDescription>
+                  </Alert>
                 )}
-              </Button>
+                
+                {/* CTA Button */}
+                <Button
+                  className="w-full h-12"
+                  disabled={createBooking.isPending}
+                  onClick={handleSubmit}
+                >
+                  {createBooking.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Invio richiesta...
+                    </>
+                  ) : (
+                    "Richiedi appuntamento"
+                  )}
+                </Button>
+              </div>
             </div>
           </>
         )}
