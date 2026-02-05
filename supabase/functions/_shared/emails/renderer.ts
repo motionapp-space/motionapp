@@ -5,8 +5,8 @@
  * NON invia email - solo rendering puro.
  */
 
-import React from 'https://esm.sh/react@18.3.1';
-import { renderToStaticMarkup } from 'https://esm.sh/react-dom@18.3.1/server?deps=react@18.3.1';
+import React from 'npm:react@18.3.1';
+import { renderToStaticMarkup } from 'npm:react-dom@18.3.1/server';
 import type { EmailType } from "../email-outbox.ts";
 import { resolveEmailTemplate, determineRecipient } from "./index.ts";
 import type { RenderedEmail } from "./types.ts";

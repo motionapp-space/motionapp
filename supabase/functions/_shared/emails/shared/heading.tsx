@@ -1,5 +1,5 @@
-/** @jsxImportSource https://esm.sh/react@18.3.1 */
-import React from 'https://esm.sh/react@18.3.1';
+/** @jsxImportSource npm:react@18.3.1 */
+import React from 'npm:react@18.3.1';
 import { colors, fonts } from './styles.ts';
 
 interface HeadingProps {

@@ -1,5 +1,5 @@
-/** @jsxImportSource https://esm.sh/react@18.3.1 */
-import React from 'https://esm.sh/react@18.3.1';
+/** @jsxImportSource npm:react@18.3.1 */
+import React from 'npm:react@18.3.1';
 import { Layout } from '../shared/layout.tsx';
 import { Heading } from '../shared/heading.tsx';
 import { Text } from '../shared/text.tsx';

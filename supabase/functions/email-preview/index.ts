@@ -1,6 +1,5 @@
 // Force rebuild v2 - 2026-01-19T19:05
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { previewEmail, previewEmailMock, getMockTemplateData } from "../_shared/emails/preview.ts";
 import { listAvailableTemplates } from "../_shared/emails/index.ts";
 
@@ -9,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   console.log('[email-preview] v2 - Request received:', req.method, req.url);
   
   if (req.method === 'OPTIONS') {
