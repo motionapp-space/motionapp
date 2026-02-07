@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS set_active_plan(uuid, uuid);
