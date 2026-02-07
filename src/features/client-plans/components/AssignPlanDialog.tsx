@@ -91,7 +91,7 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
             <Button
               onClick={() => {
                 onOpenChange(false);
-                navigate("/library?tab=templates");
+                navigate("/templates/new?mode=edit");
               }}
             >
               Crea template
