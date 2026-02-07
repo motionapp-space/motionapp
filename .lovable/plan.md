@@ -1,36 +1,21 @@
 
-
-# Aggiungere bottone Logout alla schermata Admin
+# Migliorare testo empty state nella dialog "Seleziona un template"
 
 ## Cosa cambia
 
-Aggiungere un bottone "Esci" nell'header della pagina Admin Dashboard, posizionato nella toolbar di `SectionShell` (area in alto a destra, accanto al titolo).
+Riscrivere titolo e descrizione dello stato vuoto nella dialog di assegnazione template (`AssignPlanDialog.tsx`) per renderli piu chiari e comprensibili.
 
 ## File da modificare
 
 | File | Modifica |
 |------|----------|
-| `src/pages/admin/AdminDashboard.tsx` | Aggiungere bottone logout nella toolbar di SectionShell |
+| `src/features/client-plans/components/AssignPlanDialog.tsx` | Aggiornare testi empty state (righe 86-89) |
 
-## Dettaglio tecnico
+## Testi proposti
 
-- Utilizzare il prop `toolbar` di `SectionShell` per posizionare il bottone in alto a destra
-- Importare `supabase` per chiamare `supabase.auth.signOut()`
-- Usare l'icona `LogOut` di lucide-react e il componente `Button` esistente
-- Variante `outline` per il bottone, coerente con il design system
+| Elemento | Prima | Dopo |
+|----------|-------|------|
+| Titolo | "Nessun template ancora" | "Non hai ancora creato un template" |
+| Descrizione | "Crea un template nella Libreria per riutilizzare piani già pronti." | "I template ti permettono di preparare piani di allenamento riutilizzabili e assegnarli ai tuoi clienti in pochi click." |
 
-```tsx
-// Toolbar prop di SectionShell
-<SectionShell 
-  title="Admin Dashboard"
-  toolbar={
-    <Button variant="outline" size="sm" onClick={handleLogout}>
-      <LogOut className="h-4 w-4 mr-2" />
-      Esci
-    </Button>
-  }
->
-```
-
-La funzione `handleLogout` chiamerà `supabase.auth.signOut()` con gestione errori tramite toast.
-
+Il nuovo testo spiega meglio il valore dei template (cosa sono e perche crearli), invece di dare solo un'istruzione generica.
