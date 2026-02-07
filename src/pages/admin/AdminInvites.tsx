@@ -1,5 +1,7 @@
-import { Mail } from "lucide-react";
+import { ArrowLeft, Mail } from "lucide-react";
+import { Link } from "react-router-dom";
 import SectionShell from "@/components/layout/SectionShell";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CoachInvitesList } from "@/features/admin/components/CoachInvitesList";
 import { CreateInviteDialog } from "@/features/admin/components/CreateInviteDialog";
@@ -9,7 +11,17 @@ export default function AdminInvites() {
   const { data: invites = [], isLoading } = useCoachInvites();
 
   return (
-    <SectionShell title="Inviti Coach">
+    <SectionShell
+      title="Inviti Coach"
+      toolbar={
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/admin">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Home
+          </Link>
+        </Button>
+      }
+    >
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
