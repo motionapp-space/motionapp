@@ -33,8 +33,6 @@ export interface Client {
   sex?: Sex;
   notes?: string;
   user_id?: string;
-  /** @deprecated Compat layer — do NOT use for business logic. Read from client_plan_assignments instead. */
-  active_plan_id?: string;
   last_access_at?: string;
   version?: number;
 }

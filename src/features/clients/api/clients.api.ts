@@ -313,8 +313,7 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
 }
 
 export async function updateClient(id: string, input: UpdateClientInput): Promise<Client> {
-  // Strip out FSM-controlled fields (active_plan_id managed by edge functions)
-  const { active_plan_id, ...profileData } = input as any;
+  const profileData = input;
   
   const { data, error } = await supabase
     .from("clients")
