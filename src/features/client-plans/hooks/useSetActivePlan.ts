@@ -16,7 +16,7 @@ export function useSetActivePlan() {
     }) => {
       const coachClientId = await getCoachClientId(clientId);
       
-      const { data, error } = await supabase.rpc('set_active_plan', {
+      const { data, error } = await supabase.rpc('set_active_plan_v2', {
         p_coach_client_id: coachClientId,
         p_plan_id: planId,
       });
