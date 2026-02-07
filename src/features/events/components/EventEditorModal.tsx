@@ -152,7 +152,7 @@ export function EventEditorModal({
 
   // Form state
   const [formData, setFormData] = useState({
-    title: event?.title || 'Allenamento',
+    title: event?.title || 'Appuntamento',
     clientId: lockedClientId || '',
     location: event?.location || '',
     date: defaultDate,
@@ -251,7 +251,7 @@ export function EventEditorModal({
         }
         
         setFormData({
-          title: 'Allenamento',
+          title: 'Appuntamento',
           clientId: lockedClientId || '',
           location: '',
           date: defaultDate,
@@ -275,7 +275,7 @@ export function EventEditorModal({
         getClientIdFromCoachClient(event.coach_client_id)
           .then(clientId => {
             setFormData({
-              title: event.title || 'Allenamento',
+              title: event.title || 'Appuntamento',
               clientId: clientId,
               location: event.location || '',
               date: new Date(event.start_at),
@@ -287,7 +287,7 @@ export function EventEditorModal({
           })
           .catch(() => {
             setFormData({
-              title: event.title || 'Allenamento',
+              title: event.title || 'Appuntamento',
               clientId: '',
               location: event.location || '',
               date: new Date(event.start_at),
@@ -641,7 +641,7 @@ export function EventEditorModal({
                 0,
                 1,
                 evt.id,
-                `Ricorrenza: ${evt.title || 'Allenamento'}`
+                `Ricorrenza: ${evt.title || 'Appuntamento'}`
               );
 
               currentOnHold += 1;
