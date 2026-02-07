@@ -1,15 +1,33 @@
-import { Shield, Users, Mail, Settings } from "lucide-react";
+import { Shield, Users, Mail, Settings, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import SectionShell from "@/components/layout/SectionShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 /**
  * Admin Dashboard v0 - Minimal MVP
  * Placeholder for future admin functionality
  */
 export default function AdminDashboard() {
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Errore durante il logout");
+    }
+  };
+
   return (
-    <SectionShell title="Admin Dashboard">
+    <SectionShell
+      title="Admin Dashboard"
+      toolbar={
+        <Button variant="outline" size="sm" onClick={handleLogout}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Esci
+        </Button>
+      }
+    >
       {/* Main description card */}
       <Card className="mb-6">
         <CardHeader>
