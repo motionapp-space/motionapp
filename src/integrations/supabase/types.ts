@@ -471,23 +471,32 @@ export type Database = {
         Row: {
           assigned_at: string
           client_id: string
+          coach_id: string | null
+          ended_at: string | null
           id: string
           note: string | null
           plan_id: string
+          status: string
         }
         Insert: {
           assigned_at?: string
           client_id: string
+          coach_id?: string | null
+          ended_at?: string | null
           id?: string
           note?: string | null
           plan_id: string
+          status?: string
         }
         Update: {
           assigned_at?: string
           client_id?: string
+          coach_id?: string | null
+          ended_at?: string | null
           id?: string
           note?: string | null
           plan_id?: string
+          status?: string
         }
         Relationships: [
           {
@@ -501,7 +510,7 @@ export type Database = {
             foreignKeyName: "client_plan_assignments_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
-            referencedRelation: "plans"
+            referencedRelation: "client_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -2296,6 +2305,17 @@ export type Database = {
         Returns: string
       }
       finalize_past_events: { Args: { p_now?: string }; Returns: Json }
+      fsm_assign_plan: {
+        Args: {
+          p_client_id: string
+          p_coach_client_id: string
+          p_coach_id: string
+          p_plan_data?: Json
+          p_plan_description?: string
+          p_plan_name: string
+        }
+        Returns: Json
+      }
       get_coach_occupied_slots: {
         Args: { p_coach_id: string; p_end_date: string; p_start_date: string }
         Returns: {
