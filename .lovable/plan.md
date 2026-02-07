@@ -1,42 +1,44 @@
 
-
-# Conversione titoli eventi: "Allenamento" / "Sessione di allenamento" → "Appuntamento"
+# Fix errore "Could not find the 'client_id' column of 'events'"
 
 ## Problema
 
-I titoli di default degli eventi usano termini incoerenti:
+Nella funzione `handleUpdate` di `EventEditorModal.tsx` (riga 762), quando si modifica un appuntamento esistente, il payload inviato contiene `client_id: formData.clientId`. Ma la tabella `events` non ha una colonna `client_id` -- usa `coach_client_id`.
 
-| Dove | Titolo attuale |
-|------|---------------|
-| Coach crea evento (EventEditorModal) | `"Allenamento"` |
-| Client prenota (ClientAppointmentModal) | `"Sessione di allenamento"` |
-| Booking request approvata (RPC SQL) | `"Appuntamento con [nome]"` (OK) |
-
-La terminologia del progetto prevede che gli eventi in calendario siano **appuntamenti**, non allenamenti o sessioni.
+La funzione `handleCreate` (riga 510-514) gestisce correttamente la conversione chiamando `getCoachClientId(formData.clientId)`, ma `handleUpdate` no.
 
 ## Soluzione
 
-Sostituire tutti i default con `"Appuntamento"`.
+Modificare `handleUpdate` in `src/features/events/components/EventEditorModal.tsx` (righe 757-769):
 
-### File 1: `src/features/events/components/EventEditorModal.tsx`
+- Aggiungere la conversione `formData.clientId` → `coach_client_id` tramite `getCoachClientId`
+- Sostituire `client_id` con `coach_client_id` nel payload
 
-Cambiare `'Allenamento'` in `'Appuntamento'` in 4 punti:
-- Riga 155: stato iniziale del form
-- Riga 254: reset form per nuovo evento
-- Riga 278: fallback titolo in edit mode (then)
-- Riga 290: fallback titolo in edit mode (catch)
+```typescript
+// Prima (riga 757-769)
+try {
+  await updateEvent.mutateAsync({
+    id: event.id,
+    data: {
+      title: formData.title,
+      client_id: formData.clientId,        // ERRORE: colonna inesistente
+      start_at: eventStartDateTime.toISOString(),
+      ...
+    }
+  });
 
-Anche riga 644 (log ricorrenza): `'Allenamento'` → `'Appuntamento'`
+// Dopo
+try {
+  const coachClientId = await getCoachClientId(formData.clientId);
+  await updateEvent.mutateAsync({
+    id: event.id,
+    data: {
+      title: formData.title,
+      coach_client_id: coachClientId,      // CORRETTO
+      start_at: eventStartDateTime.toISOString(),
+      ...
+    }
+  });
+```
 
-### File 2: `src/features/events/components/ClientAppointmentModal.tsx`
-
-- Riga 113: `"Sessione di allenamento"` → `"Appuntamento"`
-
-### Non modificati
-
-- Riga 1036 di EventEditorModal (`"Puoi registrare l'allenamento anche se già svolto"`) rimane invariata: qui si parla della sessione di allenamento derivata dall'appuntamento, non del titolo dell'evento.
-- RPC `finalize_booking_request`: gia usa `"Appuntamento con [nome]"`.
-- Tutti i file fuori da `src/features/events/` che usano "allenamento" in contesto diverso (piani, sessioni, UI educativa) non vengono toccati.
-
-## Riepilogo: 6 sostituzioni in 2 file
-
+Un solo file, una sola modifica: aggiungere una riga e rinominare il campo.
