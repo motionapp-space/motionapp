@@ -6,21 +6,26 @@ import { assignPlanToClient } from "@/features/clients/api/client-fsm.api";
 import { getCoachClientId } from "@/lib/coach-client";
 
 /**
- * Get all client plans with active_plan_id resolution
- * Returns plans with isActiveForClient flag based on coach_clients.active_plan_id
+ * Get all client plans with active status resolved from client_plan_assignments.
+ * Source of truth: client_plan_assignments.status = 'ACTIVE'
  */
 export async function getClientPlansWithActive(clientId: string): Promise<ClientPlanWithActive[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
   const coachClientId = await getCoachClientId(clientId);
 
-  // Fetch active_plan_id from coach_clients
-  const { data: cc, error: ccError } = await supabase
-    .from("coach_clients")
-    .select("active_plan_id")
-    .eq("id", coachClientId)
-    .single();
+  // Source of truth: client_plan_assignments
+  const { data: activeAssignment, error: assignError } = await supabase
+    .from("client_plan_assignments")
+    .select("plan_id")
+    .eq("coach_id", user.id)
+    .eq("client_id", clientId)
+    .eq("status", "ACTIVE")
+    .maybeSingle();
 
-  if (ccError) throw ccError;
-  const activePlanId = cc?.active_plan_id;
+  if (assignError) throw assignError;
+  const activePlanId = activeAssignment?.plan_id ?? null;
 
   // Fetch all non-deleted plans
   const { data, error } = await supabase
@@ -108,12 +113,7 @@ export async function assignTemplateToClient(clientId: string, input: AssignTemp
     finalData = { ...template.data, ...input.data_override };
   }
 
-  // Use FSM to assign plan - this will:
-  // 1. Set client status to ATTIVO
-  // 2. Set active_plan_id
-  // 3. Create plan with IN_CORSO status
-  // 4. Handle one-active-plan invariant
-  // 5. Log all transitions
+  // Use FSM to assign plan
   const result = await assignPlanToClient(clientId, {
     name: input.name_override || template.name,
     description: input.description || template.description,
@@ -161,7 +161,6 @@ export async function createClientPlanFromScratch(
 }
 
 export async function updateClientPlan(id: string, updates: Partial<ClientPlan>) {
-  // Simple update without auto-completion logic
   const { data, error } = await supabase
     .from("client_plans")
     .update(updates)
@@ -199,7 +198,7 @@ export async function saveClientPlanAsTemplate(planId: string, input: SaveAsTemp
 
   // Optionally assign this new template to the client
   if (input.also_assign) {
-    // Get the coach_client_id from the plan
+    // Get the client_id from the plan's coach_client
     const { data: cc } = await supabase
       .from("coach_clients")
       .select("client_id")
@@ -214,19 +213,19 @@ export async function saveClientPlanAsTemplate(planId: string, input: SaveAsTemp
         data: plan.data,
       });
 
-      // Update the newly created plan to link it to the template
-      const { data: clientPlan } = await supabase
-        .from("client_plans")
-        .select("*")
-        .eq("coach_client_id", plan.coach_client_id)
-        .eq("status", "IN_CORSO")
-        .single();
+      // Source of truth: client_plan_assignments
+      const { data: activeAssignment } = await supabase
+        .from("client_plan_assignments")
+        .select("plan_id")
+        .eq("client_id", cc.client_id)
+        .eq("status", "ACTIVE")
+        .maybeSingle();
 
-      if (clientPlan) {
+      if (activeAssignment) {
         await supabase
           .from("client_plans")
           .update({ derived_from_template_id: newTemplate.id })
-          .eq("id", clientPlan.id);
+          .eq("id", activeAssignment.plan_id);
       }
     }
   }

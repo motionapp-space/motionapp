@@ -35,7 +35,6 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
   } = filters;
   
   // Get client IDs for this coach via coach_clients
-  // Filter by status on coach_clients (relation-centric model)
   const statusFilter = includeArchived 
     ? ["active", "blocked", "archived"]
     : ["active", "blocked"];
@@ -50,7 +49,6 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
   
   const clientIds = coachClients?.map(cc => cc.client_id) || [];
   
-  // Build a map of client_id -> isArchived for later use
   const archivedClientIds = new Set(
     coachClients?.filter(cc => cc.status === 'archived').map(cc => cc.client_id) || []
   );
@@ -59,6 +57,7 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
     return { items: [], total: 0, page, limit };
   }
 
+  // Main query — NO join on active_plan_id
   let query = supabase
     .from("clients")
     .select(`
@@ -66,7 +65,6 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       tags:client_tag_on_client(
         tag:client_tags(*)
       ),
-      current_plan:client_plans!active_plan_id(name),
       coach_client:coach_clients!coach_clients_client_id_fkey(
         packages:package(package_id, consumed_sessions, total_sessions),
         sessions:training_sessions(id, started_at)
@@ -79,18 +77,11 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
     query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`);
   }
 
-  // Active plan filter
-  if (withActivePlan !== undefined) {
-    if (withActivePlan) {
-      query = query.not("active_plan_id", "is", null);
-    } else {
-      query = query.is("active_plan_id", null);
-    }
-  }
+  // NOTE: withActivePlan filter is now applied client-side after batch fetch
 
   // Active package filter
   if (withActivePackage !== undefined) {
-    // This is a client-side filter applied below since we can't do this easily in Postgres
+    // Client-side filter applied below
   }
 
   // Last access filter
@@ -135,6 +126,20 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
   // Get client IDs for batch computation
   const batchClientIds = (data || []).map((c: any) => c.id);
 
+  // Batch fetch active plan names via client_plan_assignments (source of truth)
+  let activePlanMap = new Map<string, string>();
+  if (batchClientIds.length > 0) {
+    const { data: activeAssignments } = await supabase
+      .from("client_plan_assignments")
+      .select("client_id, plan_id, client_plans!inner(name)")
+      .in("client_id", batchClientIds)
+      .eq("status", "ACTIVE");
+
+    activePlanMap = new Map(
+      (activeAssignments || []).map((a: any) => [a.client_id, (a.client_plans as any)?.name])
+    );
+  }
+
   // Compute additional data via edge function
   let computedDataMap: Record<string, ComputedClientData> = {};
   if (batchClientIds.length > 0) {
@@ -152,28 +157,24 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       }
     } catch (err) {
       console.error('Failed to compute client data:', err);
-      // Continue without computed data
     }
   }
 
   // Transform data structure
   let items: ClientWithDetails[] = (data || []).map((client: any) => {
-    // Extract packages and sessions from the coach_client relationship
-    const coachClient = client.coach_client?.[0]; // First (primary) coach_client
+    const coachClient = client.coach_client?.[0];
     const activePackage = coachClient?.packages?.find((p: any) => p.consumed_sessions < p.total_sessions);
     const lastSession = coachClient?.sessions?.sort((a: any, b: any) => 
       new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
     )[0];
 
     const computed = computedDataMap[client.id];
-    
-    // Determine isArchived from coach_clients.status (relation-centric model)
     const isArchived = archivedClientIds.has(client.id);
 
     return {
       ...client,
       tags: client.tags?.map((t: any) => t.tag).filter(Boolean) || [],
-      current_plan_name: client.current_plan?.name,
+      current_plan_name: activePlanMap.get(client.id) ?? undefined,
       package_sessions_used: activePackage?.consumed_sessions,
       package_sessions_total: activePackage?.total_sessions,
       last_session_date: lastSession?.started_at,
@@ -182,11 +183,18 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       appointment_status: computed?.appointment_status,
       activity_status: computed?.activity_status,
       next_appointment_date: computed?.next_appointment_date,
-      isArchived, // NEW: Derived from coach_clients.status
-      coach_client: undefined, // Remove the nested object
-      current_plan: undefined,
+      isArchived,
+      coach_client: undefined,
     };
   });
+
+  // Filter: withActivePlan (client-side, based on client_plan_assignments)
+  if (withActivePlan !== undefined) {
+    items = items.filter(c => {
+      const hasActive = activePlanMap.has(c.id);
+      return withActivePlan ? hasActive : !hasActive;
+    });
+  }
 
   // Apply client-side package filter
   if (withActivePackage !== undefined) {
@@ -199,30 +207,20 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
   }
 
   // Client-side filtering based on computed data
-  
-  // Filter: Senza piano
   if (withoutPlan) {
     items = items.filter(c => c.plan_weeks_since_assignment === null);
   }
-  
-  // Filter: Pacchetto da rinnovare
   if (packageToRenew) {
     items = items.filter(c => c.package_status === 'expired');
   }
-  
-  // Filter: Senza appuntamento futuro
   if (withoutAppointment) {
     items = items.filter(c => c.appointment_status === 'unplanned');
   }
-  
-  // Filter: Clienti non attivi (low OR inactive)
   if (lowActivity) {
     items = items.filter(c => 
       c.activity_status === 'low' || c.activity_status === 'inactive'
     );
   }
-  
-  // Advanced Filter: Plan weeks range
   if (planWeeksRange) {
     items = items.filter(c => {
       const weeks = c.plan_weeks_since_assignment;
@@ -235,26 +233,14 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       }
     });
   }
-  
-  // Advanced Filter: Package statuses
   if (packageStatuses && packageStatuses.length > 0) {
-    items = items.filter(c => 
-      packageStatuses.includes(c.package_status!)
-    );
+    items = items.filter(c => packageStatuses.includes(c.package_status!));
   }
-  
-  // Advanced Filter: Appointment statuses
   if (appointmentStatuses && appointmentStatuses.length > 0) {
-    items = items.filter(c => 
-      appointmentStatuses.includes(c.appointment_status!)
-    );
+    items = items.filter(c => appointmentStatuses.includes(c.appointment_status!));
   }
-  
-  // Advanced Filter: Activity statuses
   if (activityStatuses && activityStatuses.length > 0) {
-    items = items.filter(c => 
-      activityStatuses.includes(c.activity_status!)
-    );
+    items = items.filter(c => activityStatuses.includes(c.activity_status!));
   }
 
   return {
@@ -269,7 +255,6 @@ export async function getClientById(id: string): Promise<ClientWithTags> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Verify coach-client relationship exists
   const { data: ccData, error: ccError } = await supabase
     .from("coach_clients")
     .select("id")
@@ -303,7 +288,6 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Use atomic RPC function to create client + coach_client relationship in one transaction
   const { data: clientId, error: rpcError } = await supabase.rpc("create_client_with_coach_link", {
     p_first_name: input.first_name,
     p_last_name: input.last_name,
@@ -317,7 +301,6 @@ export async function createClient(input: CreateClientInput): Promise<Client> {
   if (rpcError) throw rpcError;
   if (!clientId) throw new Error("Failed to create client");
 
-  // Now fetch the created client (relationship exists, so SELECT RLS will pass)
   const { data: client, error: fetchError } = await supabase
     .from("clients")
     .select("*")
