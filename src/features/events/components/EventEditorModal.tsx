@@ -755,11 +755,12 @@ export function EventEditorModal({
     if (!isValid || !event) return;
 
     try {
+      const coachClientId = await getCoachClientId(formData.clientId);
       await updateEvent.mutateAsync({
         id: event.id,
         data: {
           title: formData.title,
-          client_id: formData.clientId,
+          coach_client_id: coachClientId,
           start_at: eventStartDateTime.toISOString(),
           end_at: eventEndDateTime.toISOString(),
           location: formData.location || null,
