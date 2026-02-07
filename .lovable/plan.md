@@ -1,232 +1,284 @@
 
-
-# Evoluzione `client_plan_assignments` -- Implementazione transazionale
+# Migrazione letture da `active_plan_id` a `client_plan_assignments`
 
 ## Panoramica
 
-Tre condizioni non negoziabili:
-1. ASSIGN_PLAN in un'unica transazione DB (RPC Postgres)
-2. `client_plans.status` frozen/legacy, non aggiornato dalla FSM
-3. `client_plan_assignments.status` dichiarata unica source of truth
-
-## Stato attuale della tabella `client_plan_assignments`
-
-| Colonna | Tipo | Note |
-|---------|------|------|
-| id | uuid PK | |
-| client_id | uuid FK -> clients | |
-| plan_id | uuid FK -> **plans** (template!) | Va cambiato |
-| assigned_at | timestamptz | |
-| note | text | |
-
-Mancano: `coach_id`, `status`, `ended_at`. La FK `plan_id` punta a `plans` (template), non a `client_plans`.
-
-`plan_state_logs.from_status` e `to_status` usano l'enum `plan_status` (IN_CORSO/COMPLETATO/ELIMINATO) -- la logica di logging manterra una mappatura per backward compat.
+Migrare tutte le letture applicative da `clients.active_plan_id` e `coach_clients.active_plan_id` verso `client_plan_assignments` (source of truth). Creare una RPC transazionale `set_active_plan_v2` per le scritture. Nessuna modifica ai componenti UI.
 
 ---
 
-## Modifiche
+## 1. Migrazione SQL
 
-### 1. Migrazione SQL
+### 1a. RLS: lettura client su `client_plan_assignments`
 
-Evoluzione schema + RPC transazionale + RLS.
+Attualmente solo i coach possono leggere le assignment. Serve una policy per il client finale:
 
-**Schema evolution:**
 ```sql
-ALTER TABLE client_plan_assignments
-  ADD COLUMN coach_id uuid REFERENCES auth.users(id),
-  ADD COLUMN status text NOT NULL DEFAULT 'ACTIVE',
-  ADD COLUMN ended_at timestamptz;
-
-ALTER TABLE client_plan_assignments
-  DROP CONSTRAINT client_plan_assignments_plan_id_fkey;
-
-ALTER TABLE client_plan_assignments
-  ADD CONSTRAINT client_plan_assignments_plan_id_fkey
-  FOREIGN KEY (plan_id) REFERENCES client_plans(id) ON DELETE CASCADE;
-
-CREATE UNIQUE INDEX uq_active_assignment_per_coach_client
-  ON client_plan_assignments (coach_id, client_id)
-  WHERE status = 'ACTIVE';
-
-CREATE INDEX idx_cpa_coach_id ON client_plan_assignments (coach_id);
-CREATE INDEX idx_cpa_status_active ON client_plan_assignments (status) WHERE status = 'ACTIVE';
+CREATE POLICY "Clients can view own assignments"
+  ON client_plan_assignments FOR SELECT
+  USING (
+    client_id IN (SELECT id FROM clients WHERE user_id = auth.uid())
+  );
 ```
 
-**RPC transazionale `fsm_assign_plan`:**
+### 1b. RPC `set_active_plan_v2`
 
-Questa funzione Postgres esegue tutte le operazioni in un'unica transazione. Se qualsiasi step fallisce, viene fatto rollback automatico.
+Sostituisce `set_active_plan`. Transazionale, opera su `client_plan_assignments`:
 
 ```sql
-CREATE OR REPLACE FUNCTION fsm_assign_plan(
-  p_coach_id uuid,
-  p_client_id uuid,
+CREATE OR REPLACE FUNCTION set_active_plan_v2(
   p_coach_client_id uuid,
-  p_plan_name text,
-  p_plan_description text DEFAULT NULL,
-  p_plan_data jsonb DEFAULT '{"days":[]}'::jsonb
+  p_plan_id uuid DEFAULT NULL
 )
 RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
 AS $$
 DECLARE
-  v_new_plan_id uuid;
-  v_old_assignment RECORD;
+  v_coach_id uuid;
+  v_client_id uuid;
 BEGIN
-  -- 1. Close existing ACTIVE assignments for this coach-client pair
-  UPDATE client_plan_assignments
-  SET status = 'COMPLETED', ended_at = now()
-  WHERE coach_id = p_coach_id
-    AND client_id = p_client_id
-    AND status = 'ACTIVE'
-  RETURNING id, plan_id INTO v_old_assignment;
-
-  -- 2. Log old assignment closure (if any)
-  IF v_old_assignment.id IS NOT NULL THEN
-    INSERT INTO plan_state_logs (plan_id, client_id, from_status, to_status, cause, actor_type, actor_id)
-    VALUES (v_old_assignment.plan_id, p_client_id, 'IN_CORSO', 'COMPLETATO', 'AUTO_COMPLETE_ON_NEW_PLAN', 'PT', p_coach_id);
+  -- Auth
+  SELECT coach_id, client_id INTO v_coach_id, v_client_id
+  FROM coach_clients WHERE id = p_coach_client_id;
+  IF v_coach_id IS NULL OR v_coach_id != auth.uid() THEN
+    RAISE EXCEPTION 'Unauthorized';
   END IF;
 
-  -- 3. Create client_plans record
-  --    NOTE: client_plans.status is FROZEN at 'IN_CORSO' (legacy).
-  --    Business lifecycle is managed ONLY by client_plan_assignments.status.
-  INSERT INTO client_plans (coach_client_id, name, description, data, status, is_visible)
-  VALUES (p_coach_client_id, p_plan_name, p_plan_description, p_plan_data, 'IN_CORSO', true)
-  RETURNING id INTO v_new_plan_id;
+  -- Close existing ACTIVE assignment
+  UPDATE client_plan_assignments
+  SET status = 'COMPLETED', ended_at = now()
+  WHERE coach_id = v_coach_id AND client_id = v_client_id AND status = 'ACTIVE';
 
-  -- 4. Create new ACTIVE assignment (source of truth for plan lifecycle)
-  INSERT INTO client_plan_assignments (coach_id, client_id, plan_id, status, assigned_at)
-  VALUES (p_coach_id, p_client_id, v_new_plan_id, 'ACTIVE', now());
+  -- If setting a new active plan
+  IF p_plan_id IS NOT NULL THEN
+    -- Validate plan ownership and not deleted
+    IF NOT EXISTS (
+      SELECT 1 FROM client_plans
+      WHERE id = p_plan_id AND coach_client_id = p_coach_client_id AND deleted_at IS NULL
+    ) THEN
+      RAISE EXCEPTION 'Plan not found or deleted';
+    END IF;
 
-  -- 5. [COMPAT LAYER] Sync coach_clients.active_plan_id
-  --    This is NOT the source of truth. It exists only for backward
-  --    compatibility with existing queries and UI filters.
+    -- Create new ACTIVE assignment
+    INSERT INTO client_plan_assignments (coach_id, client_id, plan_id, status, assigned_at)
+    VALUES (v_coach_id, v_client_id, p_plan_id, 'ACTIVE', now());
+
+    -- Update in_use_at on plan
+    UPDATE client_plans SET in_use_at = now() WHERE id = p_plan_id;
+  END IF;
+
+  -- [COMPAT LAYER] Sync coach_clients.active_plan_id
   UPDATE coach_clients
-  SET active_plan_id = v_new_plan_id
+  SET active_plan_id = p_plan_id, updated_at = now()
   WHERE id = p_coach_client_id;
 
-  -- 6. Log the new assignment
-  INSERT INTO plan_state_logs (plan_id, client_id, from_status, to_status, cause, actor_type, actor_id)
-  VALUES (v_new_plan_id, p_client_id, NULL, 'IN_CORSO', 'ASSIGN_PLAN', 'PT', p_coach_id);
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'plan_id', v_new_plan_id,
-    'old_assignment_closed', v_old_assignment.id IS NOT NULL
-  );
+  RETURN jsonb_build_object('success', true, 'plan_id', p_plan_id);
 END;
 $$;
 ```
 
-**RLS aggiornamento** (coach_id diretto, piu efficiente):
-```sql
-DROP POLICY "Coaches can view assignments for their clients" ON client_plan_assignments;
-CREATE POLICY "Coaches can view assignments" ON client_plan_assignments FOR SELECT
-  USING (coach_id = auth.uid());
+---
 
--- Analoga per INSERT, UPDATE, DELETE
+## 2. File da modificare (3 API + 1 hook + 2 tipi)
+
+### 2.1 `src/features/client-workouts/api/client-plans.api.ts` (lettura client)
+
+**Prima:**
+```typescript
+// 2 query: coach_clients.active_plan_id -> client_plans
+const { data: cc } = await supabase
+  .from("coach_clients").select("active_plan_id").eq("id", coachClientId).single();
+if (!cc?.active_plan_id) return null;
+const { data } = await supabase
+  .from("client_plans").select("...").eq("id", cc.active_plan_id);
 ```
 
-### 2. Edge function `client-fsm/index.ts`
-
-Riscrittura completa della logica FSM.
-
-**Tipi:**
-- Rimuovere `type PlanStatus` (legacy)
-- Aggiungere `type AssignmentStatus = 'ACTIVE' | 'COMPLETED' | 'DELETED' | 'PAUSED'`
-- Documentare nel commento: `client_plan_assignments.status` e l'unica source of truth
-
-**`assignPlan`:**
-- Rimuovere tutta la logica attuale (query IN_CORSO, loop auto-complete, insert, update coach_clients)
-- Sostituire con una singola chiamata RPC: `supabase.rpc('fsm_assign_plan', { ... })`
-- Nessun update parziale possibile: la transazione e atomica
-
-**`deletePlan`:**
-- Validazione: verificare assignment ACTIVE tramite `client_plan_assignments` (non piu `client_plans.status`)
-- Aggiornare `client_plans`: solo `deleted_at` e `is_visible = false` (NON toccare `status`)
-- Chiudere assignment: `UPDATE client_plan_assignments SET status = 'DELETED', ended_at = now()`
-- [COMPAT] `coach_clients.active_plan_id = null`
-
-**`completePlan`:**
-- Validazione tramite assignment
-- Aggiornare `client_plans`: solo `locked_at` e `completed_at` (NON toccare `status`)
-- Chiudere assignment: `UPDATE client_plan_assignments SET status = 'COMPLETED', ended_at = now()`
-- [COMPAT] `coach_clients.active_plan_id = null`
-
-**`archiveClient`:**
-- Rimuovere logica di auto-complete su `client_plans.status`
-- Chiudere assignment ACTIVE: `UPDATE client_plan_assignments SET status = 'COMPLETED', ended_at = now() WHERE coach_id AND client_id AND status = 'ACTIVE'`
-- `coach_clients.status = 'archived', active_plan_id = null`
-
-**Log:**
-- `logPlanTransition` continua a scrivere su `plan_state_logs` usando i valori enum legacy (IN_CORSO/COMPLETATO/ELIMINATO) per backward compat con la colonna `plan_status`
-
-### 3. Tipi TypeScript
-
-In `src/features/client-plans/types.ts`, aggiungere:
-
+**Dopo:**
 ```typescript
-// ============================================================
-// client_plan_assignments.status is the SOLE source of truth
-// for the plan lifecycle. client_plans.status is legacy/frozen.
-// ============================================================
-export type AssignmentStatus = 'ACTIVE' | 'COMPLETED' | 'DELETED' | 'PAUSED';
+// Query diretta su client_plan_assignments (source of truth)
+const { data: assignment } = await supabase
+  .from("client_plan_assignments")
+  .select("plan_id")
+  .eq("client_id", clientId)
+  .eq("status", "ACTIVE")
+  .maybeSingle();
 
-export interface ClientPlanAssignment {
-  id: string;
-  coach_id: string;
-  client_id: string;
-  plan_id: string;
-  status: AssignmentStatus;
-  assigned_at: string;
-  ended_at?: string;
-  note?: string;
+if (!assignment) return null;
+
+const { data } = await supabase
+  .from("client_plans")
+  .select("id, name, data, status, is_in_use")
+  .eq("id", assignment.plan_id)
+  .is("deleted_at", null)
+  .maybeSingle();
+```
+
+Nota: questa funzione ha bisogno del `clientId` (non `coachClientId`). `getClientCoachClientId()` gia restituisce `clientId`, quindi e disponibile.
+
+### 2.2 `src/features/client-plans/api/client-plans.api.ts` — `getClientPlansWithActive()`
+
+**Prima:**
+```typescript
+const { data: cc } = await supabase
+  .from("coach_clients").select("active_plan_id").eq("id", coachClientId).single();
+const activePlanId = cc?.active_plan_id;
+// ...
+isActiveForClient: plan.id === activePlanId,
+```
+
+**Dopo:**
+```typescript
+// Source of truth: client_plan_assignments
+const { data: activeAssignment } = await supabase
+  .from("client_plan_assignments")
+  .select("plan_id")
+  .eq("coach_id", user.id)  // coach-scoped
+  .eq("client_id", clientId)
+  .eq("status", "ACTIVE")
+  .maybeSingle();
+
+const activePlanId = activeAssignment?.plan_id ?? null;
+// ... rest unchanged
+isActiveForClient: plan.id === activePlanId,
+```
+
+Nota: serve il `clientId` oltre al `coachClientId`. Si ottiene con una query aggiuntiva su `coach_clients` (gia disponibile) oppure si puo passare dalla firma della funzione (gia riceve `clientId`).
+
+### 2.3 `src/features/client-plans/api/client-plans.api.ts` — `saveClientPlanAsTemplate()` (righe 218-223)
+
+**Prima:**
+```typescript
+const { data: clientPlan } = await supabase
+  .from("client_plans").select("*")
+  .eq("coach_client_id", plan.coach_client_id)
+  .eq("status", "IN_CORSO").single();
+```
+
+**Dopo:**
+```typescript
+// Source of truth: client_plan_assignments
+const { data: activeAssignment } = await supabase
+  .from("client_plan_assignments")
+  .select("plan_id")
+  .eq("client_id", cc.client_id)
+  .eq("status", "ACTIVE")
+  .maybeSingle();
+
+if (activeAssignment) {
+  await supabase.from("client_plans")
+    .update({ derived_from_template_id: newTemplate.id })
+    .eq("id", activeAssignment.plan_id);
 }
 ```
 
-Nessun tipo esistente viene rimosso.
+### 2.4 `src/features/clients/api/clients.api.ts` — `listClients()`
 
----
+Tre punti da migrare:
 
-## Flusso finale ASSIGN_PLAN
+**a) Riga 69 — Join per nome piano:**
 
-```text
-Edge Function riceve ASSIGN_PLAN
-  |
-  +--> Validazione (auth, coach-client, archived check)
-  |
-  +--> supabase.rpc('fsm_assign_plan', {...})
-  |      |
-  |      +--> [TX] Close ACTIVE assignments
-  |      +--> [TX] Log old closure
-  |      +--> [TX] Create client_plans (status='IN_CORSO' FROZEN)
-  |      +--> [TX] Create client_plan_assignments (status='ACTIVE')
-  |      +--> [TX] Sync coach_clients.active_plan_id (compat)
-  |      +--> [TX] Log new assignment
-  |      |
-  |      +--> COMMIT (atomico) o ROLLBACK (tutto annullato)
-  |
-  RETURN { success, plan_id }
+Prima: `current_plan:client_plans!active_plan_id(name)`
+
+Dopo: rimuovere la join dalla query principale. Aggiungere una query batch dopo il fetch dei clienti:
+
+```typescript
+// Batch fetch active plan names via client_plan_assignments
+const { data: activeAssignments } = await supabase
+  .from("client_plan_assignments")
+  .select("client_id, plan_id, client_plans!inner(name)")
+  .in("client_id", batchClientIds)
+  .eq("status", "ACTIVE");
+
+// Build map: client_id -> plan_name
+const activePlanMap = new Map(
+  (activeAssignments || []).map(a => [a.client_id, a.client_plans?.name])
+);
+```
+
+Poi nel mapping: `current_plan_name: activePlanMap.get(client.id) ?? undefined`
+
+**b) Righe 83-89 — Filtro `withActivePlan`:**
+
+Prima: `query.not("active_plan_id", "is", null)` / `query.is("active_plan_id", null)`
+
+Dopo: filtro client-side basato sulla `activePlanMap`:
+
+```typescript
+if (withActivePlan !== undefined) {
+  items = items.filter(c => {
+    const hasActive = activePlanMap.has(c.id);
+    return withActivePlan ? hasActive : !hasActive;
+  });
+}
+```
+
+**c) Riga 334 — Strip `active_plan_id` in `updateClient`:**
+
+Rimane invariato (protezione difensiva, non e una lettura).
+
+### 2.5 `src/features/client-plans/hooks/useSetActivePlan.ts`
+
+**Prima:**
+```typescript
+const { data, error } = await supabase.rpc('set_active_plan', {
+  p_coach_client_id: coachClientId,
+  p_plan_id: planId,
+});
+```
+
+**Dopo:**
+```typescript
+const { data, error } = await supabase.rpc('set_active_plan_v2', {
+  p_coach_client_id: coachClientId,
+  p_plan_id: planId,
+});
+```
+
+Singola riga di modifica. Tutta la logica e nella RPC.
+
+### 2.6 Tipi TypeScript
+
+In `src/features/clients/types.ts` e `src/types/client.ts`, marcare:
+
+```typescript
+/** @deprecated Compat layer — do NOT use for business logic. Read from client_plan_assignments instead. */
+active_plan_id?: string;
 ```
 
 ---
 
-## File da modificare
+## 3. Riepilogo file modificati
 
 | File | Modifica |
 |------|----------|
-| Migrazione SQL | Schema evolution + RPC `fsm_assign_plan` + RLS |
-| `supabase/functions/client-fsm/index.ts` | Riscrittura: RPC per ASSIGN, assignment per DELETE/COMPLETE/ARCHIVE |
-| `src/features/client-plans/types.ts` | Aggiunta `AssignmentStatus` + `ClientPlanAssignment` |
+| **SQL Migration** | RLS client + RPC `set_active_plan_v2` |
+| `src/features/client-workouts/api/client-plans.api.ts` | Lettura da `client_plan_assignments` |
+| `src/features/client-plans/api/client-plans.api.ts` | `getClientPlansWithActive()` + `saveClientPlanAsTemplate()` migrati |
+| `src/features/client-plans/hooks/useSetActivePlan.ts` | Chiamata a `set_active_plan_v2` |
+| `src/features/clients/api/clients.api.ts` | `listClients()`: join batch + filtro client-side |
+| `src/features/clients/types.ts` | `active_plan_id` deprecated |
+| `src/types/client.ts` | `active_plan_id` deprecated |
 
-## Garanzie
+## 4. File NON modificati
 
-- ASSIGN_PLAN e atomico (RPC Postgres, singola transazione)
-- `client_plans.status` non viene mai aggiornato dalla FSM (frozen, commentato)
-- `client_plan_assignments.status` e dichiarata source of truth nel codice
-- Vincolo unique partial: un solo ACTIVE per coppia coach-client
-- `coach_clients.active_plan_id` e compat layer documentato
-- Nessuna modifica alle API di lettura frontend
-- Nessuna regressione: filtri su `status = 'IN_CORSO'` continuano a funzionare (valore iniziale frozen)
+| File | Motivo |
+|------|--------|
+| `supabase/functions/client-fsm/index.ts` | Gia migrato, continua a scrivere compat layer |
+| Componenti UI | Consumano hook/API, nessun accesso diretto a `active_plan_id` |
+| `useClientActivePlan.ts` | Chiama `getClientActivePlan()` che viene migrato internamente |
+| `useClientPlansQuery.ts` | Chiama `getClientPlansWithActive()` che viene migrato internamente |
 
+## 5. Performance
+
+- `listClients`: la query batch su `client_plan_assignments` usa l'indice `idx_cpa_status_active` (gia creato) e il filtro `IN(client_ids)`. Nessun N+1.
+- `getClientPlansWithActive`: una query in piu (assignment ACTIVE) ma e singola e indicizzata.
+- `getClientActivePlan` (client): stesse 2 query di prima, ma su tabella diversa. Nessun impatto.
+
+## 6. Garanzie
+
+- Tutte le letture passano da `client_plan_assignments.status = 'ACTIVE'`
+- Nessun file applicativo legge piu `clients.active_plan_id` o `coach_clients.active_plan_id`
+- Nessuna logica di business dipende da `client_plans.status`
+- Tutte le scritture critiche sono atomiche (RPC `set_active_plan_v2` e `fsm_assign_plan`)
+- Nessuna regressione UI (stessi hook, stesse interfacce)
+- `coach_clients.active_plan_id` resta sincronizzato in scrittura (compat layer)
