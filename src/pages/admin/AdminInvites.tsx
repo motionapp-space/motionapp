@@ -11,17 +11,15 @@ export default function AdminInvites() {
   const { data: invites = [], isLoading } = useCoachInvites();
 
   return (
-    <SectionShell
-      title="Inviti Coach"
-      toolbar={
+    <SectionShell title="Inviti Coach">
+      <div className="mb-4">
         <Button variant="outline" size="sm" asChild>
           <Link to="/admin">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Home
           </Link>
         </Button>
-      }
-    >
+      </div>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
