@@ -708,7 +708,6 @@ export type Database = {
       }
       clients: {
         Row: {
-          active_plan_id: string | null
           birth_date: string | null
           created_at: string
           email: string | null
@@ -725,7 +724,6 @@ export type Database = {
           version: number
         }
         Insert: {
-          active_plan_id?: string | null
           birth_date?: string | null
           created_at?: string
           email?: string | null
@@ -742,7 +740,6 @@ export type Database = {
           version?: number
         }
         Update: {
-          active_plan_id?: string | null
           birth_date?: string | null
           created_at?: string
           email?: string | null
@@ -766,18 +763,10 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_clients_active_plan"
-            columns: ["active_plan_id"]
-            isOneToOne: false
-            referencedRelation: "client_plans"
-            referencedColumns: ["id"]
-          },
         ]
       }
       coach_clients: {
         Row: {
-          active_plan_id: string | null
           client_id: string
           coach_id: string
           created_at: string
@@ -790,7 +779,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          active_plan_id?: string | null
           client_id: string
           coach_id: string
           created_at?: string
@@ -803,7 +791,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          active_plan_id?: string | null
           client_id?: string
           coach_id?: string
           created_at?: string
@@ -816,13 +803,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "coach_clients_active_plan_id_fkey"
-            columns: ["active_plan_id"]
-            isOneToOne: false
-            referencedRelation: "client_plans"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "coach_clients_client_id_fkey"
             columns: ["client_id"]
