@@ -3,6 +3,11 @@ import { getClientPlan } from "../api/client-plans.api";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+/**
+ * Duplicates a plan as a draft. Does NOT activate the duplicated plan.
+ * Activation must be performed explicitly via set_active_plan_v2 or FSM assignment.
+ * The status "IN_CORSO" is a legacy DB default and must NOT be read as business state.
+ */
 export function useDuplicatePlan() {
   const queryClient = useQueryClient();
 

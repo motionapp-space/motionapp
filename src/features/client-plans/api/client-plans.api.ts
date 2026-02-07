@@ -135,6 +135,11 @@ export async function assignTemplateToClient(clientId: string, input: AssignTemp
   throw new Error("Failed to assign plan");
 }
 
+/**
+ * Creates a plan draft. Does NOT activate the plan.
+ * Activation must be performed explicitly via set_active_plan_v2 or FSM assignment.
+ * The status "IN_CORSO" is a legacy DB default and must NOT be read as business state.
+ */
 export async function createClientPlanFromScratch(
   clientId: string,
   input: { name: string; description?: string; objective?: string; data: any }
@@ -172,9 +177,6 @@ export async function updateClientPlan(id: string, updates: Partial<ClientPlan>)
   return data as ClientPlan;
 }
 
-export async function updateClientPlanStatus(id: string, status: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO') {
-  return updateClientPlan(id, { status });
-}
 
 export async function saveClientPlanAsTemplate(planId: string, input: SaveAsTemplateInput) {
   const plan = await getClientPlan(planId);

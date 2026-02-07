@@ -217,7 +217,7 @@ export function EventEditorModal({
   
   // Query piani cliente per wizard sessione
   const { data: clientPlans = [] } = useClientPlansQuery(formData.clientId);
-  const activePlans = clientPlans.filter((p) => p.status === "IN_CORSO");
+  const activePlans = clientPlans.filter((p) => p.isActiveForClient);
   // Reset form when opening in new mode or event changes
   useEffect(() => {
     if (open) {
