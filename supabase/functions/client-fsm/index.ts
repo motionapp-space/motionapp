@@ -205,15 +205,13 @@ async function assignPlan(supabase: any, client: any, userId: string, metadata: 
 
   await logPlanTransition(supabase, newPlan.id, client.id, null, 'IN_CORSO', 'ASSIGN_PLAN', userId);
 
-  // Update client active_plan_id ONLY - NO status change
-  const { error: clientError } = await supabase
-    .from('clients')
-    .update({
-      active_plan_id: newPlan.id,
-    })
-    .eq('id', client.id);
+  // Update coach_clients.active_plan_id (single source of truth)
+  const { error: ccUpdateError } = await supabase
+    .from('coach_clients')
+    .update({ active_plan_id: newPlan.id })
+    .eq('id', coachClientId);
 
-  if (clientError) throw clientError;
+  if (ccUpdateError) throw ccUpdateError;
 
   return { success: true, plan: newPlan };
 }
@@ -273,26 +271,15 @@ async function archiveClient(supabase: any, client: any, userId: string) {
     }
   }
 
-  // Update coach_clients.status to 'archived' (NEW: relation-centric model)
+  // Update coach_clients: archive + clear active_plan_id (single source of truth)
   const { error: ccError } = await supabase
     .from('coach_clients')
-    .update({ status: 'archived' })
+    .update({ status: 'archived', active_plan_id: null })
     .eq('id', coachClientId);
 
   if (ccError) {
     console.error('Archive update error on coach_clients:', ccError);
     throw ccError;
-  }
-
-  // Clear active_plan_id on clients
-  const { error: clientError } = await supabase
-    .from('clients')
-    .update({ active_plan_id: null })
-    .eq('id', client.id);
-
-  if (clientError) {
-    console.error('Error clearing active_plan_id:', clientError);
-    throw clientError;
   }
 
   console.log(`Client ${client.id} archived successfully via coach_clients`);
@@ -307,21 +294,13 @@ async function unarchiveClient(supabase: any, client: any, userId: string) {
     throw new Error('Client is not archived');
   }
 
-  // Update coach_clients.status to 'active' (NEW: relation-centric model)
+  // Update coach_clients: unarchive + clear active_plan_id (single source of truth)
   const { error: ccError } = await supabase
     .from('coach_clients')
-    .update({ status: 'active' })
+    .update({ status: 'active', active_plan_id: null })
     .eq('id', coachClientId);
 
   if (ccError) throw ccError;
-
-  // Clear active_plan_id
-  const { error: clientError } = await supabase
-    .from('clients')
-    .update({ active_plan_id: null })
-    .eq('id', client.id);
-
-  if (clientError) throw clientError;
 
   return { success: true };
 }
@@ -358,13 +337,13 @@ async function deletePlan(supabase: any, client: any, planId: string, userId: st
 
   await logPlanTransition(supabase, planId, client.id, 'IN_CORSO', 'ELIMINATO', 'DELETE_PLAN', userId);
 
-  // Update client active_plan_id ONLY - NO status change
-  const { error: clientError } = await supabase
-    .from('clients')
+  // Clear coach_clients.active_plan_id (single source of truth)
+  const { error: ccUpdateError } = await supabase
+    .from('coach_clients')
     .update({ active_plan_id: null })
-    .eq('id', client.id);
+    .eq('id', coachClientId);
 
-  if (clientError) throw clientError;
+  if (ccUpdateError) throw ccUpdateError;
 
   return { success: true };
 }
@@ -405,13 +384,13 @@ async function completePlan(supabase: any, client: any, planId: string, userId: 
 
   await logPlanTransition(supabase, planId, client.id, 'IN_CORSO', 'COMPLETATO', 'COMPLETE_PLAN', userId);
 
-  // Update client active_plan_id ONLY - NO status change
-  const { error: clientError } = await supabase
-    .from('clients')
+  // Clear coach_clients.active_plan_id (single source of truth)
+  const { error: ccUpdateError } = await supabase
+    .from('coach_clients')
     .update({ active_plan_id: null })
-    .eq('id', client.id);
+    .eq('id', coachClientId);
 
-  if (clientError) throw clientError;
+  if (ccUpdateError) throw ccUpdateError;
 
   return { success: true };
 }
