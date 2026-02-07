@@ -83,9 +83,9 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
               <FileText className="h-5 w-5 text-muted-foreground/70" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-base font-medium">Nessun template ancora</h3>
+              <h3 className="text-base font-medium">Non hai ancora creato un template</h3>
               <p className="text-sm text-muted-foreground max-w-xs">
-                Crea un template nella Libreria per riutilizzare piani già pronti.
+                I template ti permettono di preparare piani di allenamento riutilizzabili e assegnarli ai tuoi clienti in pochi click.
               </p>
             </div>
             <Button
