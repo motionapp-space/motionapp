@@ -2355,10 +2355,6 @@ export type Database = {
         }
         Returns: string
       }
-      set_active_plan: {
-        Args: { p_coach_client_id: string; p_plan_id?: string }
-        Returns: string
-      }
       set_active_plan_v2: {
         Args: { p_coach_client_id: string; p_plan_id?: string }
         Returns: Json
