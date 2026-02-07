@@ -1,21 +1,26 @@
 
-# Migliorare testo empty state nella dialog "Seleziona un template"
+# Modificare il bottone "Crea template" nella dialog di assegnazione
 
 ## Cosa cambia
 
-Riscrivere titolo e descrizione dello stato vuoto nella dialog di assegnazione template (`AssignPlanDialog.tsx`) per renderli piu chiari e comprensibili.
+Il bottone "Crea template" nello stato vuoto della dialog `AssignPlanDialog` attualmente rimanda a `/library?tab=templates`. Verra modificato per navigare direttamente a `/templates/new?mode=edit`, aprendo subito l'editor per creare un nuovo template.
 
 ## File da modificare
 
 | File | Modifica |
 |------|----------|
-| `src/features/client-plans/components/AssignPlanDialog.tsx` | Aggiornare testi empty state (righe 86-89) |
+| `src/features/client-plans/components/AssignPlanDialog.tsx` | Cambiare la navigazione del bottone "Crea template" da `/library?tab=templates` a `/templates/new?mode=edit` |
 
-## Testi proposti
+## Dettaglio tecnico
 
-| Elemento | Prima | Dopo |
-|----------|-------|------|
-| Titolo | "Nessun template ancora" | "Non hai ancora creato un template" |
-| Descrizione | "Crea un template nella Libreria per riutilizzare piani già pronti." | "I template ti permettono di preparare piani di allenamento riutilizzabili e assegnarli ai tuoi clienti in pochi click." |
+Alla riga 95 del file, l'`onClick` del bottone verra modificato:
 
-Il nuovo testo spiega meglio il valore dei template (cosa sono e perche crearli), invece di dare solo un'istruzione generica.
+```tsx
+// Prima
+navigate("/library?tab=templates");
+
+// Dopo
+navigate("/templates/new?mode=edit");
+```
+
+Questo segue lo stesso pattern gia usato nella tab Templates della libreria (`TemplatesTab.tsx`).
