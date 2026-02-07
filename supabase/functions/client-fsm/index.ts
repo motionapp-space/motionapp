@@ -251,10 +251,9 @@ async function archiveClient(supabase: any, client: any, userId: string) {
     }
   }
 
-  // Update coach_clients: archive + clear active_plan_id (compat layer)
   const { error: ccError } = await supabase
     .from('coach_clients')
-    .update({ status: 'archived', active_plan_id: null })
+    .update({ status: 'archived' })
     .eq('id', coachClientId);
 
   if (ccError) {
@@ -277,10 +276,9 @@ async function unarchiveClient(supabase: any, client: any, userId: string) {
     throw new Error('Client is not archived');
   }
 
-  // [COMPAT LAYER] clear active_plan_id
   const { error: ccError } = await supabase
     .from('coach_clients')
-    .update({ status: 'active', active_plan_id: null })
+    .update({ status: 'active' })
     .eq('id', coachClientId);
 
   if (ccError) throw ccError;
@@ -358,14 +356,6 @@ async function deletePlan(supabase: any, client: any, planId: string, userId: st
 
   await logPlanTransition(supabase, planId, client.id, 'IN_CORSO', 'ELIMINATO', 'DELETE_PLAN', userId);
 
-  // [COMPAT LAYER] Clear coach_clients.active_plan_id
-  const { error: ccUpdateError } = await supabase
-    .from('coach_clients')
-    .update({ active_plan_id: null })
-    .eq('id', coachClientId);
-
-  if (ccUpdateError) throw ccUpdateError;
-
   return { success: true };
 }
 
@@ -439,14 +429,6 @@ async function completePlan(supabase: any, client: any, planId: string, userId: 
   }
 
   await logPlanTransition(supabase, planId, client.id, 'IN_CORSO', 'COMPLETATO', 'COMPLETE_PLAN', userId);
-
-  // [COMPAT LAYER] Clear coach_clients.active_plan_id
-  const { error: ccUpdateError } = await supabase
-    .from('coach_clients')
-    .update({ active_plan_id: null })
-    .eq('id', coachClientId);
-
-  if (ccUpdateError) throw ccUpdateError;
 
   return { success: true };
 }
