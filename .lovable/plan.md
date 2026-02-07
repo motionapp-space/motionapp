@@ -1,36 +1,42 @@
 
 
-# Fix ordinamento temporale slot alternativi
+# Conversione titoli eventi: "Allenamento" / "Sessione di allenamento" → "Appuntamento"
 
 ## Problema
 
-La funzione `findNearestSlots` in `src/features/bookings/utils/slot-generator.ts` (riga 180) restituisce i 3 slot piu vicini ordinati per **distanza temporale** dalla richiesta originale, non in **ordine cronologico**.
+I titoli di default degli eventi usano termini incoerenti:
 
-Esempio con richiesta alle 13:00:
-- Distanza minore: 12:00 (1h)
-- Seconda: 14:00 (1h)
-- Terza: 11:00 (2h)
+| Dove | Titolo attuale |
+|------|---------------|
+| Coach crea evento (EventEditorModal) | `"Allenamento"` |
+| Client prenota (ClientAppointmentModal) | `"Sessione di allenamento"` |
+| Booking request approvata (RPC SQL) | `"Appuntamento con [nome]"` (OK) |
 
-Risultato attuale: 12:00, 14:00, 11:00 (per distanza)
-Risultato corretto: 11:00, 12:00, 14:00 (cronologico)
+La terminologia del progetto prevede che gli eventi in calendario siano **appuntamenti**, non allenamenti o sessioni.
 
 ## Soluzione
 
-Una modifica di una sola riga nel file `src/features/bookings/utils/slot-generator.ts`, riga 180:
+Sostituire tutti i default con `"Appuntamento"`.
 
-```typescript
-// Prima
-return sorted.slice(0, 3).map(s => s.slot);
+### File 1: `src/features/events/components/EventEditorModal.tsx`
 
-// Dopo
-return sorted.slice(0, 3).map(s => s.slot).sort((a, b) => parseISO(a.start).getTime() - parseISO(b.start).getTime());
-```
+Cambiare `'Allenamento'` in `'Appuntamento'` in 4 punti:
+- Riga 155: stato iniziale del form
+- Riga 254: reset form per nuovo evento
+- Riga 278: fallback titolo in edit mode (then)
+- Riga 290: fallback titolo in edit mode (catch)
 
-Seleziona i 3 slot piu vicini per distanza (logica invariata), poi li riordina cronologicamente per la visualizzazione.
+Anche riga 644 (log ricorrenza): `'Allenamento'` → `'Appuntamento'`
 
-## Impatto
+### File 2: `src/features/events/components/ClientAppointmentModal.tsx`
 
-- `BookingRequestDrawer.tsx`: gli slot alternativi nel drawer di approvazione saranno in ordine cronologico
-- `CounterProposeDialog.tsx`: anche gli slot suggeriti nel dialog di controproposta beneficeranno dello stesso fix
+- Riga 113: `"Sessione di allenamento"` → `"Appuntamento"`
 
-Nessun altro file da modificare.
+### Non modificati
+
+- Riga 1036 di EventEditorModal (`"Puoi registrare l'allenamento anche se già svolto"`) rimane invariata: qui si parla della sessione di allenamento derivata dall'appuntamento, non del titolo dell'evento.
+- RPC `finalize_booking_request`: gia usa `"Appuntamento con [nome]"`.
+- Tutti i file fuori da `src/features/events/` che usano "allenamento" in contesto diverso (piani, sessioni, UI educativa) non vengono toccati.
+
+## Riepilogo: 6 sostituzioni in 2 file
+
