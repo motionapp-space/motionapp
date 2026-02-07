@@ -1,4 +1,8 @@
 export type Sex = "M" | "F" | "ALTRO";
+/**
+ * @deprecated Legacy frozen field. Do NOT use for business logic.
+ * Read from client_plan_assignments.status instead.
+ */
 export type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
 export type ActivityType = 
   | "CREATED" 
