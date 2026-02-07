@@ -1,26 +1,23 @@
 
-# Modificare il bottone "Crea template" nella dialog di assegnazione
+# Ridurre dimensione bottone feedback per evitare sovrapposizione
 
-## Cosa cambia
+## Problema
+Il bottone di feedback (64x64px) si sovrappone alla barra di salvataggio del template editor, entrambi posizionati in basso a destra con `z-50`.
 
-Il bottone "Crea template" nello stato vuoto della dialog `AssignPlanDialog` attualmente rimanda a `/library?tab=templates`. Verra modificato per navigare direttamente a `/templates/new?mode=edit`, aprendo subito l'editor per creare un nuovo template.
+## Soluzione
+Ridurre il bottone feedback da `h-16 w-16` (64px) a `h-12 w-12` (48px) e l'icona da `h-6 w-6` a `h-5 w-5`. Il bottone resta visibile e cliccabile ma non copre piu la CTA "Salva".
 
 ## File da modificare
 
 | File | Modifica |
 |------|----------|
-| `src/features/client-plans/components/AssignPlanDialog.tsx` | Cambiare la navigazione del bottone "Crea template" da `/library?tab=templates` a `/templates/new?mode=edit` |
+| `src/components/feedback/FeedbackButton.tsx` | Ridurre dimensioni bottone e icona |
 
 ## Dettaglio tecnico
 
-Alla riga 95 del file, l'`onClick` del bottone verra modificato:
-
-```tsx
-// Prima
-navigate("/library?tab=templates");
-
-// Dopo
-navigate("/templates/new?mode=edit");
+```text
+Bottone:  h-16 w-16 (64px)  -->  h-12 w-12 (48px)
+Icona:    h-6 w-6  (24px)   -->  h-5 w-5  (20px)
 ```
 
-Questo segue lo stesso pattern gia usato nella tab Templates della libreria (`TemplatesTab.tsx`).
+La posizione (`bottom-8 right-8`) resta invariata. Il bottone piu piccolo lascia spazio sufficiente alla barra di salvataggio sottostante.
