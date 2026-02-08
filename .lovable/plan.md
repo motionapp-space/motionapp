@@ -1,104 +1,56 @@
 
-# Fix eliminazione piano: gestione assignment duplicati
+# Fix: Rimuovere toast duplicato nell'assegnazione piano
 
-## Problema identificato
+## Problema
 
-Quando elimini un piano, lo status rimane `COMPLETED` invece di diventare `DELETED` perché:
+Quando assegni un piano, appaiono due toast "Piano assegnato" perché il toast viene chiamato in **due punti diversi**:
 
-1. **Backend**: La query `.single()` fallisce quando trova più di un assignment per lo stesso piano (duplicati creati da assegnazioni multiple)
-2. **Frontend**: Il filtro `.neq("status", "DELETED")` mostra ancora piani con status `COMPLETED` anche se eliminati
+| File | Riga | Codice |
+|------|------|--------|
+| `useAssignTemplate.ts` | 26 | `toast.success("Piano assegnato")` nell'`onSuccess` dell'hook |
+| `AssignPlanDialog.tsx` | 45 | `toast.success("Piano assegnato")` dopo `await mutateAsync()` |
 
-### Dati nel database
-```
-Piano b29c1829-a8ab-4a25-9b6c-ed22488a8f76 ("Template 1"):
-- Assignment 1: status = COMPLETED
-- Assignment 2: status = COMPLETED
-- client_plans.deleted_at = settato (eliminato)
+## Flusso attuale
+
+```text
+Click "Assegna" 
+    → handleAssignAsIs() 
+    → await assignMutation.mutateAsync()
+        → [Backend risponde]
+        → useAssignTemplate.onSuccess() → toast.success() ← TOAST #1
+    → continua dopo await
+    → toast.success() ← TOAST #2
 ```
 
 ## Soluzione
 
-### 1. Backend: Usare `maybeSingle()` + gestire duplicati
+Rimuovere il toast duplicato da `AssignPlanDialog.tsx` (riga 45), mantenendo quello centralizzato nell'hook `useAssignTemplate`.
 
-**File**: `supabase/functions/client-fsm/index.ts`
+Questo approccio è preferibile perché:
+- L'hook è il punto centrale per la logica di assegnazione
+- Tutti i componenti che usano l'hook avranno lo stesso comportamento
+- Evita duplicazioni future
+
+## Modifica
+
+**File**: `src/features/client-plans/components/AssignPlanDialog.tsx`
 
 ```typescript
-// Da (riga 305):
-.single();
+// Da (righe 43-45):
+      });
+
+      toast.success("Piano assegnato");
+      onOpenChange(false);
 
 // A:
-.order('assigned_at', { ascending: false })
-.limit(1)
-.maybeSingle();
-```
+      });
 
-E aggiornare **tutti** gli assignment duplicati quando si elimina:
-
-```typescript
-// Alla riga 346-354, sostituire con:
-await supabase
-  .from('client_plan_assignments')
-  .update({
-    status: 'DELETED' as AssignmentStatus,
-    ended_at: new Date().toISOString(),
-  })
-  .eq('plan_id', planId)
-  .eq('coach_id', userId)
-  .eq('client_id', client.id);
-```
-
-### 2. Frontend: Deduplica piani per ID
-
-**File**: `src/features/client-plans/api/client-plans.api.ts`
-
-```typescript
-// Deduplica plan_id prima del fetch
-const uniquePlanIds = [...new Set(assignments.map(a => a.plan_id))];
-```
-
-E determinare lo stato effettivo considerando tutti gli assignment:
-
-```typescript
-// Un piano è "deleted" se TUTTI i suoi assignment sono DELETED
-const deletedPlanIds = new Set(
-  Object.entries(
-    assignments.reduce((acc, a) => {
-      if (!acc[a.plan_id]) acc[a.plan_id] = [];
-      acc[a.plan_id].push(a.status);
-      return acc;
-    }, {} as Record<string, string[]>)
-  )
-  .filter(([_, statuses]) => statuses.every(s => s === 'DELETED'))
-  .map(([planId]) => planId)
-);
-
-const visiblePlanIds = uniquePlanIds.filter(id => !deletedPlanIds.has(id));
-```
-
-## File da modificare
-
-| File | Modifica |
-|------|----------|
-| `supabase/functions/client-fsm/index.ts` | Usare `maybeSingle()`, aggiornare TUTTI gli assignment per plan_id |
-| `src/features/client-plans/api/client-plans.api.ts` | Deduplica plan_id, gestire stati multipli per piano |
-
-## Migration DML (opzionale)
-
-Per correggere i dati esistenti, esegui:
-
-```sql
-UPDATE client_plan_assignments 
-SET status = 'DELETED', ended_at = NOW()
-WHERE plan_id IN (
-  SELECT id FROM client_plans WHERE deleted_at IS NOT NULL
-);
+      onOpenChange(false);
 ```
 
 ## Riepilogo
 
 | Categoria | File |
 |-----------|------|
-| Edge Function | 1 |
-| API Frontend | 1 |
-| Migration DML | 1 query (opzionale) |
-| **Totale** | **2 file + 1 migration** |
+| Componente | `src/features/client-plans/components/AssignPlanDialog.tsx` |
+| **Totale** | **1 file** |
