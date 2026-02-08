@@ -66,7 +66,7 @@ export function ClientUserMenu() {
               {getInitials()}
             </AvatarFallback>
           </Avatar>
-          <p className="text-sm font-semibold text-foreground">{fullName || "Utente"}</p>
+          <p className="text-[15px] leading-6 font-semibold text-foreground">{fullName || "Utente"}</p>
         </div>
         
         <DropdownMenuSeparator />
@@ -80,7 +80,7 @@ export function ClientUserMenu() {
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   <div className="flex flex-col">
                     <span className="text-xs text-muted-foreground">Email</span>
-                    <span className="text-sm text-foreground truncate">{client.email}</span>
+                    <span className="text-[15px] leading-6 text-foreground truncate">{client.email}</span>
                   </div>
                 </div>
               )}
@@ -89,7 +89,7 @@ export function ClientUserMenu() {
                   <Phone className="h-4 w-4 text-muted-foreground" />
                   <div className="flex flex-col">
                     <span className="text-xs text-muted-foreground">Telefono</span>
-                    <span className="text-sm text-foreground">{client.phone}</span>
+                    <span className="text-[15px] leading-6 text-foreground">{client.phone}</span>
                   </div>
                 </div>
               )}

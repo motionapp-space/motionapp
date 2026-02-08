@@ -75,7 +75,7 @@ export function AppointmentsList({ appointments, onSelect }: AppointmentsListPro
           {future.length === 0 ? (
             <Card className="border-dashed mt-2">
               <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground text-center">
+                <p className="text-[15px] leading-6 text-muted-foreground text-center">
                   Nessun appuntamento futuro
                 </p>
               </CardContent>
@@ -115,7 +115,7 @@ export function AppointmentsList({ appointments, onSelect }: AppointmentsListPro
           {past.length === 0 ? (
             <Card className="border-dashed mt-2">
               <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground text-center">
+                <p className="text-[15px] leading-6 text-muted-foreground text-center">
                   Nessun appuntamento passato
                 </p>
               </CardContent>

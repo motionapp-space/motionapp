@@ -135,7 +135,7 @@ function CompletedSeriesChips({ actuals, exerciseIds, numExercises, exercises }:
 
   return (
     <div className="mt-3">
-      <p className="text-sm font-medium text-muted-foreground">Serie completate</p>
+      <p className="text-[15px] leading-6 font-medium text-muted-foreground">Serie completate</p>
       <div className="flex flex-wrap gap-2 mt-1.5">
         {seriesData.map(({ index, summary }) => (
           <span
@@ -175,7 +175,7 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
       </h4>
       
       {/* Target - no rest info */}
-      <p className="text-sm text-muted-foreground leading-5">
+      <p className="text-[15px] leading-6 text-muted-foreground">
         {targetDisplay}
       </p>
       

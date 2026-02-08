@@ -73,7 +73,7 @@ function AuthenticatedClientLayout({ userId }: { userId: string }) {
               </div>
               <div>
                 <h2 className="text-xl font-semibold mb-2">Account non collegato</h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-[15px] leading-6 text-muted-foreground">
                   Il tuo account non è ancora collegato a un profilo cliente.
                   Contatta il tuo personal trainer per completare la configurazione.
                 </p>

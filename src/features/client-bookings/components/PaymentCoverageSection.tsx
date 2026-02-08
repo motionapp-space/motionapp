@@ -38,9 +38,9 @@ export function PaymentCoverageSection({
   if (packages.length === 0) {
     return (
       <div className="space-y-2">
-        <h3 className="text-sm font-medium">Pagamento</h3>
+        <h3 className="text-[15px] leading-6 font-medium">Pagamento</h3>
         <div className="p-3 bg-muted/50 rounded-lg">
-          <p className="text-sm font-medium">Lezione singola</p>
+          <p className="text-[15px] leading-6 font-medium">Lezione singola</p>
           <p className="text-xs text-muted-foreground mt-1">
             Il pagamento sarà dovuto dopo l'appuntamento o in caso di cancellazione tardiva.
           </p>
@@ -54,9 +54,9 @@ export function PaymentCoverageSection({
     const pkg = packages[0];
     return (
       <div className="space-y-2">
-        <h3 className="text-sm font-medium">Copertura</h3>
+        <h3 className="text-[15px] leading-6 font-medium">Copertura</h3>
         <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-          <p className="text-sm font-medium">{pkg.name}</p>
+          <p className="text-[15px] leading-6 font-medium">{pkg.name}</p>
           <p className="text-xs text-muted-foreground mt-1">
             Disponibili: {pkg.available} · {formatExpiry(pkg.expiresAt)}
           </p>
@@ -71,7 +71,7 @@ export function PaymentCoverageSection({
   // State 2+: Radio list with FEFO badge
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-medium">Seleziona pacchetto</h3>
+      <h3 className="text-[15px] leading-6 font-medium">Seleziona pacchetto</h3>
       <div className="space-y-2">
         {packages.map((pkg) => (
           <button
@@ -86,7 +86,7 @@ export function PaymentCoverageSection({
             )}
           >
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">{pkg.name}</p>
+              <p className="text-[15px] leading-6 font-medium">{pkg.name}</p>
               {pkg.isFefoDefault && (
                 <Badge variant="outline" className="text-xs">
                   Consigliato

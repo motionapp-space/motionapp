@@ -45,7 +45,7 @@ export function ActivePlanCard({ plan, isLoading, onClick }: ActivePlanCardProps
             <p className="font-semibold text-foreground truncate">
               {plan.name}
             </p>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <p className="text-[15px] leading-6 text-muted-foreground mt-0.5">
               {daysCount} {daysCount === 1 ? "giorno" : "giorni"} di allenamento
             </p>
           </div>

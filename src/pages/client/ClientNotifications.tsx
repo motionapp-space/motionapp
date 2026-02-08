@@ -89,7 +89,7 @@ export default function ClientNotifications() {
           </div>
         ) : filteredNotifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-[15px] leading-6">
               {filter === "unread"
                 ? "Nessuna notifica non letta"
                 : "Nessuna notifica"}

@@ -10,7 +10,7 @@ interface BookingCTAProps {
 export function BookingCTA({ enabled, onBook, isLoading }: BookingCTAProps) {
   if (!enabled) {
     return (
-      <p className="text-sm text-muted-foreground text-center px-4 py-2">
+      <p className="text-[15px] leading-6 text-muted-foreground text-center px-4 py-2">
         Le prenotazioni self-service non sono abilitate dal coach.
       </p>
     );

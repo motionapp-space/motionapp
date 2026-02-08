@@ -28,7 +28,7 @@ export function SessionHistoryCard({
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm text-foreground truncate">
+            <p className="font-medium text-[15px] leading-6 text-foreground truncate">
               {title}
             </p>
             <div className="flex items-center gap-2 mt-0.5">

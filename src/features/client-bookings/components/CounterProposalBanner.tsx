@@ -44,7 +44,7 @@ export function CounterProposalBanner({
         {/* Original slot - barrato */}
         <div className="mb-3">
           <p className="text-xs text-muted-foreground mb-1">Orario richiesto:</p>
-          <p className="text-sm text-muted-foreground line-through capitalize">
+          <p className="text-[15px] leading-6 text-muted-foreground line-through capitalize">
             {originalFormattedDay} alle {originalFormattedTime}
           </p>
         </div>

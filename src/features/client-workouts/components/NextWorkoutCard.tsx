@@ -33,7 +33,7 @@ export function NextWorkoutCard({
             </div>
             <div className="flex-1">
               <p className="font-semibold text-foreground">Settimana completata!</p>
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <p className="text-[15px] leading-6 text-muted-foreground mt-0.5">
                 Ottimo lavoro, hai completato tutti gli allenamenti
               </p>
             </div>
@@ -62,7 +62,7 @@ export function NextWorkoutCard({
             <p className="font-semibold text-foreground truncate">
               {day.title}
             </p>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <p className="text-[15px] leading-6 text-muted-foreground mt-0.5">
               {exerciseCount} esercizi
             </p>
           </div>

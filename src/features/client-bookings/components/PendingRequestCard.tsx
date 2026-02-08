@@ -25,7 +25,7 @@ export function PendingRequestCard({ request, onCancel, isLoading }: PendingRequ
           <div className="flex-1 min-w-0">
             <p className="text-xs text-muted-foreground mb-1">Richiesta inviata</p>
             <p className="font-medium capitalize text-foreground">{formattedDate}</p>
-            <p className="text-sm text-muted-foreground">{formattedTime}</p>
+            <p className="text-[15px] leading-6 text-muted-foreground">{formattedTime}</p>
           </div>
           <Badge variant="secondary" className="text-xs shrink-0">
             In attesa
