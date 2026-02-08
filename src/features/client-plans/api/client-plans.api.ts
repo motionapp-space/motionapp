@@ -154,7 +154,6 @@ export async function createClientPlanFromScratch(
       description: input.description,
       objective: input.objective,
       data: input.data,
-      status: "IN_CORSO",
       is_visible: true,
       is_in_use: false,
     })

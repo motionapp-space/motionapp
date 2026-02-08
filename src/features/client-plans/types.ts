@@ -1,4 +1,5 @@
-import { PlanStatus } from "@/features/clients/types";
+/** @deprecated Legacy frozen field. Do NOT use for business logic. */
+type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
 
 // ============================================================
 // ASSIGNMENT STATUS — SOLE SOURCE OF TRUTH

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "@/integrations/supabase/client";
-import type { Client, ClientTag, ClientWithTags, ClientWithDetails, PlanStatus, ActivityType } from "@/types/client";
+import type { Client, ClientTag, ClientWithTags, ClientWithDetails, ActivityType } from "@/types/client";
 import { toast } from "sonner";
 
 interface ClientFilters {

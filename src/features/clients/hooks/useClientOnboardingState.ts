@@ -24,7 +24,7 @@ export function useClientOnboardingState(clientId: string): ClientOnboardingStat
         .from('client_plans')
         .select('id')
         .eq('coach_client_id', coachClientId)
-        .neq('status', 'ELIMINATO')
+        .is('deleted_at', null)
         .limit(1);
 
       if (error) throw error;
