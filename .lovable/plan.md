@@ -1,53 +1,21 @@
 
-## Chiudere la modale "Salvare prima di esportare?" anche in caso di errore
+
+## Ridurre l'altezza dello SlotSelectorSheet su mobile
 
 ### Problema
-Quando l'utente clicca "Salva e esporta" ma il campo "Nome per il piano" è vuoto:
-- Viene mostrato il toast di errore "Inserisci un nome per il piano"
-- La modale rimane aperta, bloccando l'utente
+Il foglio "Prenota appuntamento" (`SlotSelectorSheet`) si apre con `h-[90vh]` (90% dell'altezza dello schermo), coprendo quasi tutto il display del telefono e dando l'impressione di un'apertura a tutto schermo.
 
-### Comportamento desiderato
-La modale deve chiudersi sempre dopo il click su "Salva e esporta", indipendentemente dal risultato del salvataggio. L'utente vedrà comunque il toast di errore e potrà correggere il problema.
+### Soluzione
+Ridurre l'altezza del foglio e renderla adattiva al contenuto, mantenendo un limite massimo ragionevole.
 
-### Modifica da effettuare
+### Dettagli tecnici
 
-**File: `src/pages/ClientPlanEditor.tsx`**
+**File: `src/features/client-bookings/components/SlotSelectorSheet.tsx`**
 
-Modificare la funzione `handleSaveAndExport` (righe 410-421) per chiudere sempre la modale:
+Modificare la classe CSS di `SheetContent` alla riga 165:
 
-```typescript
-// Attuale (riga 410-421)
-const handleSaveAndExport = async () => {
-  const success = await handleSave();
-  if (success) {
-    setSaveBeforeExportOpen(false);
-    // After save, we can export
-    setIsExporting(true);
-    try {
-      exportPlanToPDF({ name, days });
-    } finally {
-      setIsExporting(false);
-    }
-  }
-};
+- **Attuale**: `h-[90vh]` (altezza fissa al 90% dello schermo)
+- **Nuovo**: `h-[75vh]` (altezza fissa al 75% dello schermo)
 
-// Nuovo
-const handleSaveAndExport = async () => {
-  setSaveBeforeExportOpen(false); // Chiudi sempre la modale
-  const success = await handleSave();
-  if (success) {
-    // After save, we can export
-    setIsExporting(true);
-    try {
-      exportPlanToPDF({ name, days });
-    } finally {
-      setIsExporting(false);
-    }
-  }
-};
-```
+Questo lascia visibile una porzione significativa della pagina sottostante, rendendo chiaro che si tratta di un pannello sovrapposto e non di una pagina a tutto schermo. Il pattern e' coerente con l'`AppointmentDetailSheet` che usa `max-h-[80vh]`.
 
-### Risultato
-- Click su "Salva e esporta" → la modale si chiude immediatamente
-- Se il salvataggio riesce → viene generato il PDF
-- Se il salvataggio fallisce (es. nome mancante) → l'utente vede il toast di errore e può inserire il nome, poi riprovare
