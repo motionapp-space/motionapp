@@ -408,9 +408,9 @@ const ClientPlanEditor = () => {
 
   // Save and export
   const handleSaveAndExport = async () => {
+    setSaveBeforeExportOpen(false); // Chiudi sempre la modale
     const success = await handleSave();
     if (success) {
-      setSaveBeforeExportOpen(false);
       // After save, we can export
       setIsExporting(true);
       try {
