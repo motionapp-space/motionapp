@@ -1,135 +1,104 @@
 
+# Fix eliminazione piano: gestione assignment duplicati
 
-# Velocizzare la rimozione dei piani dall'UI con Optimistic Update
+## Problema identificato
 
-## Problema
+Quando elimini un piano, lo status rimane `COMPLETED` invece di diventare `DELETED` perché:
 
-Quando elimini un piano, il backend risponde immediatamente con `{"success":true}`, ma l'UI impiega tempo ad aggiornarsi perché:
-1. `invalidateQueries` invalida la cache React Query
-2. Viene eseguito un refetch completo dal database
-3. `getClientPlansWithActive()` esegue query concatenate (auth → assignments → plans → templates)
-4. L'UI si aggiorna solo dopo il completamento di tutte le query
+1. **Backend**: La query `.single()` fallisce quando trova più di un assignment per lo stesso piano (duplicati creati da assegnazioni multiple)
+2. **Frontend**: Il filtro `.neq("status", "DELETED")` mostra ancora piani con status `COMPLETED` anche se eliminati
+
+### Dati nel database
+```
+Piano b29c1829-a8ab-4a25-9b6c-ed22488a8f76 ("Template 1"):
+- Assignment 1: status = COMPLETED
+- Assignment 2: status = COMPLETED
+- client_plans.deleted_at = settato (eliminato)
+```
 
 ## Soluzione
 
-Implementare **Optimistic Update**: aggiornare la cache locale *prima* della risposta del server, rendendo l'UI istantanea.
+### 1. Backend: Usare `maybeSingle()` + gestire duplicati
 
-## Modifiche tecniche
-
-### `src/features/client-plans/hooks/useDeletePlan.ts`
+**File**: `supabase/functions/client-fsm/index.ts`
 
 ```typescript
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deletePlan } from "@/features/clients/api/client-fsm.api";
-import { toast } from "@/hooks/use-toast";
-import type { ClientPlanWithActive } from "../types";
+// Da (riga 305):
+.single();
 
-export function useDeletePlan() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ clientId, planId, version }: { 
-      clientId: string; 
-      planId: string; 
-      version?: number 
-    }) => deletePlan(clientId, planId, version),
-    
-    // OPTIMISTIC UPDATE: rimuovi subito dalla cache
-    onMutate: async (variables) => {
-      // Annulla query in corso per evitare conflitti
-      await queryClient.cancelQueries({ 
-        queryKey: ["clientPlans", variables.clientId] 
-      });
-
-      // Salva stato precedente per rollback
-      const previousPlans = queryClient.getQueryData<ClientPlanWithActive[]>(
-        ["clientPlans", variables.clientId]
-      );
-
-      // Aggiorna la cache rimuovendo il piano
-      queryClient.setQueryData<ClientPlanWithActive[]>(
-        ["clientPlans", variables.clientId],
-        (old) => old?.filter(plan => plan.id !== variables.planId) ?? []
-      );
-
-      // Ritorna contesto per rollback
-      return { previousPlans };
-    },
-    
-    onSuccess: (_, variables) => {
-      // Invalida query correlate per sincronizzazione
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
-      queryClient.invalidateQueries({ queryKey: ["onboarding-plans-check"] });
-      queryClient.invalidateQueries({ 
-        queryKey: ["client-onboarding-plans", variables.clientId] 
-      });
-      
-      toast({
-        title: "Piano eliminato",
-        description: "Il piano è stato eliminato con successo.",
-      });
-    },
-    
-    // ROLLBACK: ripristina in caso di errore
-    onError: (error: Error, variables, context) => {
-      if (context?.previousPlans) {
-        queryClient.setQueryData(
-          ["clientPlans", variables.clientId],
-          context.previousPlans
-        );
-      }
-      
-      toast({
-        title: "Errore",
-        description: error.message || "Impossibile eliminare il piano.",
-        variant: "destructive",
-      });
-    },
-    
-    // Refetch finale per garantire sincronizzazione
-    onSettled: (_, __, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: ["clientPlans", variables.clientId] 
-      });
-    },
-  });
-}
+// A:
+.order('assigned_at', { ascending: false })
+.limit(1)
+.maybeSingle();
 ```
 
-## Flusso aggiornato
+E aggiornare **tutti** gli assignment duplicati quando si elimina:
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                         PRIMA (lento)                           │
-├─────────────────────────────────────────────────────────────────┤
-│ Click Elimina → POST server → onSuccess → invalidateQueries     │
-│                                                → refetch...     │
-│                                                → refetch...     │
-│                                                → UI aggiornata  │
-│                                                   (2-3 sec)     │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│                        DOPO (istantaneo)                        │
-├─────────────────────────────────────────────────────────────────┤
-│ Click Elimina → onMutate → cache update → UI aggiornata        │
-│                            (istantaneo)     ↓                   │
-│                                        POST server (background) │
-│                                             ↓                   │
-│                                        onSettled → sync         │
-└─────────────────────────────────────────────────────────────────┘
+```typescript
+// Alla riga 346-354, sostituire con:
+await supabase
+  .from('client_plan_assignments')
+  .update({
+    status: 'DELETED' as AssignmentStatus,
+    ended_at: new Date().toISOString(),
+  })
+  .eq('plan_id', planId)
+  .eq('coach_id', userId)
+  .eq('client_id', client.id);
 ```
 
-## Vantaggi
+### 2. Frontend: Deduplica piani per ID
 
-- **UI istantanea**: il piano scompare subito, senza attendere il server
-- **Resilienza**: in caso di errore, lo stato viene ripristinato automaticamente
-- **Sincronizzazione**: `onSettled` garantisce che la cache sia allineata al DB
+**File**: `src/features/client-plans/api/client-plans.api.ts`
+
+```typescript
+// Deduplica plan_id prima del fetch
+const uniquePlanIds = [...new Set(assignments.map(a => a.plan_id))];
+```
+
+E determinare lo stato effettivo considerando tutti gli assignment:
+
+```typescript
+// Un piano è "deleted" se TUTTI i suoi assignment sono DELETED
+const deletedPlanIds = new Set(
+  Object.entries(
+    assignments.reduce((acc, a) => {
+      if (!acc[a.plan_id]) acc[a.plan_id] = [];
+      acc[a.plan_id].push(a.status);
+      return acc;
+    }, {} as Record<string, string[]>)
+  )
+  .filter(([_, statuses]) => statuses.every(s => s === 'DELETED'))
+  .map(([planId]) => planId)
+);
+
+const visiblePlanIds = uniquePlanIds.filter(id => !deletedPlanIds.has(id));
+```
+
+## File da modificare
+
+| File | Modifica |
+|------|----------|
+| `supabase/functions/client-fsm/index.ts` | Usare `maybeSingle()`, aggiornare TUTTI gli assignment per plan_id |
+| `src/features/client-plans/api/client-plans.api.ts` | Deduplica plan_id, gestire stati multipli per piano |
+
+## Migration DML (opzionale)
+
+Per correggere i dati esistenti, esegui:
+
+```sql
+UPDATE client_plan_assignments 
+SET status = 'DELETED', ended_at = NOW()
+WHERE plan_id IN (
+  SELECT id FROM client_plans WHERE deleted_at IS NOT NULL
+);
+```
 
 ## Riepilogo
 
 | Categoria | File |
 |-----------|------|
-| Hook | `src/features/client-plans/hooks/useDeletePlan.ts` |
-| **Totale** | **1 file** |
-
+| Edge Function | 1 |
+| API Frontend | 1 |
+| Migration DML | 1 query (opzionale) |
+| **Totale** | **2 file + 1 migration** |
