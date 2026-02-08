@@ -7,7 +7,7 @@ type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
 // for the plan lifecycle. client_plans.status is legacy/frozen
 // and must NOT be used for business logic decisions.
 // ============================================================
-export type AssignmentStatus = 'ACTIVE' | 'COMPLETED' | 'DELETED';
+export type AssignmentStatus = 'ACTIVE' | 'INACTIVE' | 'DELETED';
 
 export interface ClientPlanAssignment {
   id: string;
