@@ -23,7 +23,6 @@ export function useDuplicatePlan() {
           description: original.description,
           data: original.data,
           derived_from_template_id: original.derived_from_template_id,
-          status: "IN_CORSO",
           is_in_use: false,
         })
         .select()

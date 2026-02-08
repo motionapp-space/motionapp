@@ -1,9 +1,4 @@
 export type Sex = "M" | "F" | "ALTRO";
-/**
- * @deprecated Legacy frozen field. Do NOT use for business logic.
- * Read from client_plan_assignments.status instead.
- */
-export type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
 export type ActivityType = 
   | "CREATED" 
   | "UPDATED" 
@@ -44,14 +39,8 @@ export interface ClientTag {
   created_at: string;
 }
 
-export interface ClientPlanAssignment {
-  id: string;
-  client_id: string;
-  plan_id: string;
-  assigned_at: string;
-  status: PlanStatus;
-  note?: string;
-}
+// ClientPlanAssignment is defined in @/features/client-plans/types
+export type { ClientPlanAssignment, AssignmentStatus } from '@/features/client-plans/types';
 
 export interface Measurement {
   id: string;
