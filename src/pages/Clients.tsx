@@ -1262,31 +1262,6 @@ const Clients = () => {
                           </RadioGroup>
                         </div>
 
-                        {/* Attività */}
-                        <div className="space-y-3">
-                          <Label className="text-sm font-medium">Attività</Label>
-                          <RadioGroup
-                            value={filters.activityStatuses?.[0] || "all"}
-                            onValueChange={(v) => setFilters({ activityStatuses: v === "all" ? undefined : [v as any] })}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="all" id="act-all-active" />
-                              <Label htmlFor="act-all-active" className="cursor-pointer font-normal">Tutti</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="active" id="act-active-state" />
-                              <Label htmlFor="act-active-state" className="cursor-pointer font-normal">Attivo</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="low" id="act-low-active" />
-                              <Label htmlFor="act-low-active" className="cursor-pointer font-normal">Bassa</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="inactive" id="act-inactive-active" />
-                              <Label htmlFor="act-inactive-active" className="cursor-pointer font-normal">Assente</Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
                       </div>
 
                       {/* Actions */}
@@ -1297,7 +1272,6 @@ const Clients = () => {
                           onClick={() => {
                             setFilters({
                               appointmentStatuses: undefined,
-                              activityStatuses: undefined,
                               planWeeksRange: undefined,
                               packageStatuses: undefined,
                             });
