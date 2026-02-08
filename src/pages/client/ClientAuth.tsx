@@ -62,7 +62,7 @@ const ClientAuth = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[hsl(0,0%,96%)] p-4">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(0,0%,96%)] p-4">
       <div className="w-full max-w-md space-y-8">
         {/* Logo and Branding */}
         <div className="flex flex-col items-center space-y-4">
