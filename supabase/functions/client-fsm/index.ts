@@ -296,13 +296,16 @@ async function deletePlan(supabase: any, client: any, planId: string, userId: st
   const coachClientId = client.coach_client_id;
 
   // Validate: check assignment status (source of truth), not client_plans.status
+  // Use maybeSingle() to handle duplicate assignments gracefully
   const { data: assignment, error: assignmentError } = await supabase
     .from('client_plan_assignments')
     .select('id, status')
     .eq('plan_id', planId)
     .eq('coach_id', userId)
     .eq('client_id', client.id)
-    .single();
+    .order('assigned_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   if (assignmentError || !assignment) {
     // Fallback: check if plan exists in client_plans for backward compat
@@ -343,16 +346,16 @@ async function deletePlan(supabase: any, client: any, planId: string, userId: st
 
   if (error) throw error;
 
-  // Close assignment (source of truth)
-  if (assignment) {
-    await supabase
-      .from('client_plan_assignments')
-      .update({
-        status: 'DELETED' as AssignmentStatus,
-        ended_at: new Date().toISOString(),
-      })
-      .eq('id', assignment.id);
-  }
+  // Close ALL assignments for this plan (handles duplicates)
+  await supabase
+    .from('client_plan_assignments')
+    .update({
+      status: 'DELETED' as AssignmentStatus,
+      ended_at: new Date().toISOString(),
+    })
+    .eq('plan_id', planId)
+    .eq('coach_id', userId)
+    .eq('client_id', client.id);
 
   await logPlanTransition(supabase, planId, client.id, 'IN_CORSO', 'ELIMINATO', 'DELETE_PLAN', userId);
 
