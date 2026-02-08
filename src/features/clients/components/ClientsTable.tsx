@@ -98,7 +98,7 @@ export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: Clie
         <TableHeader className="border-b-2 border-border/50">
           <TableRow>
             <TableHead>{toSentenceCase("Cliente")}</TableHead>
-            <TableHead>{toSentenceCase("Piano attivo")}</TableHead>
+            <TableHead>{toSentenceCase("Piano")}</TableHead>
             <TableHead>{toSentenceCase("Pacchetto")}</TableHead>
             <TableHead>{toSentenceCase("Appuntamento")}</TableHead>
             <TableHead>{toSentenceCase("Attività")}</TableHead>
