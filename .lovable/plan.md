@@ -1,77 +1,44 @@
 
 
-## Aggiornare il corpo testo nell'app cliente da 14px a 15px
+## Correggere lo scorrimento della pagina /client/auth su mobile
 
-### Obiettivo
-Aumentare la leggibilità del testo standard nell'app cliente (ottimizzata per mobile) portando il corpo testo da `text-sm` (14px) a `text-[15px] leading-6` (15px con line-height 24px).
+### Problema
+Due cause contribuiscono allo scroll:
 
-### Ambito
-Solo i componenti dell'app cliente. I file del coach/trainer non vengono toccati.
+1. **`App.css`** applica `padding: 2rem` a `#root`, aggiungendo 32px di padding extra attorno a tutto il contenuto. Questo spinge il form fuori dall'area visibile.
+2. **`min-h-screen`** usa `100vh`, che su Safari mobile include l'altezza della barra degli indirizzi, risultando piu' alto del viewport visibile.
 
-### File coinvolti
+### Soluzione
 
-**Componenti client condivisi** (`src/components/client/`):
-1. `ClientPageHeader.tsx` — descrizione sotto il titolo
-2. `ClientEmptyState.tsx` — descrizione dello stato vuoto
-3. `ClientHistoryItem.tsx` — titolo dell'elemento
-4. `ClientSessionLayout.tsx` — testo "account non collegato"
-5. `ClientAppLayout.tsx` — testo "account non collegato"
-6. `ClientUserMenu.tsx` — nome utente, email, telefono
+**File 1: `src/App.css`**
+- Rimuovere `padding: 2rem` da `#root` (residuo del template Vite, non usato dall'app)
+- Questo file contiene solo stili legacy del boilerplate Vite. Le regole rimanenti (`.logo`, `.card`, `.read-the-docs`) non sono usate dall'app e possono essere rimosse per pulizia, oppure lasciate.
 
-**Pagine client** (`src/pages/client/`):
-7. `ClientAcceptInvite.tsx` — testi del form di invito
-8. `ClientAllAppointments.tsx` — orari e descrizioni
-9. `ClientLiveSession.tsx` — testi della sessione live (target, serie, recupero, durata, azioni)
-10. `ClientNotifications.tsx` (se contiene text-sm)
-
-**Feature client-workouts** (`src/features/client-workouts/components/`):
-11. `ActivePlanCard.tsx` — sottotitolo giorni
-12. `ClientWorkoutExerciseList.tsx` — nome esercizio, messaggi vuoto
-13. `NextWorkoutCTA.tsx` — link "Cambia giorno"
-14. `SessionHistoryCard.tsx` — titolo sessione
-15. `PlanOverviewSheet.tsx` — sottotitoli e nomi giorni
-16. `ChangeDaySheet.tsx` — dettagli giorno
-17. `NextWorkoutCard.tsx` — sottotitoli
-18. `ClientWorkoutDayCard.tsx` — titolo giorno
-19. `ClientSessionDetailSheet.tsx` — dettagli esercizio, azioni
-
-**Feature client-bookings** (`src/features/client-bookings/components/`):
-20. `BookingCTA.tsx` — messaggio disabilitato
-21. `CounterProposalBanner.tsx` — orario originale
-22. `AppointmentsList.tsx` — messaggi vuoto
-23. `PaymentCoverageSection.tsx` — titoli e nomi pacchetti
-24. `NextAppointmentCard.tsx` — data, orario, sottotitolo
-25. `CounterProposalCard.tsx` — orario e label
-26. `AppointmentDetailSheet.tsx` — dettagli appuntamento
-27. `PendingRequestCard.tsx` — orario
-
-### Regola di sostituzione
-
-Per ogni file sopra elencato, sostituire le occorrenze di `text-sm` che rappresentano **corpo testo leggibile** con `text-[15px] leading-6`.
-
-**Non verranno toccati:**
-- `text-xs` (12px) — label e microcopy, restano invariati
-- `text-[13px]` — caption/subtitle, restano invariati
-- `text-sm` usato su **bottoni** o **badge** (elementi UI, non corpo testo)
-- `text-sm` nei componenti del coach/trainer
+**File 2: `src/pages/client/ClientAuth.tsx`**
+- Cambiare il container esterno da `min-h-screen` a `min-h-[100dvh]`
+- `100dvh` (dynamic viewport height) si adatta automaticamente alla barra degli indirizzi su mobile, evitando overflow
+- Questo garantisce che la pagina occupi esattamente il viewport visibile senza scorrimento
 
 ### Dettaglio tecnico
 
-Esempio di trasformazione:
+```css
+/* App.css - rimuovere padding da #root */
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  /* padding: 2rem rimosso */
+  text-align: center;
+}
 ```
-// Prima
-<p className="text-sm text-muted-foreground">descrizione</p>
 
-// Dopo
-<p className="text-[15px] leading-6 text-muted-foreground">descrizione</p>
+```tsx
+// ClientAuth.tsx riga 65 - prima
+<div className="flex min-h-screen items-center justify-center bg-[hsl(0,0%,96%)] p-4">
+
+// dopo
+<div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(0,0%,96%)] p-4">
 ```
 
-La scala tipografica dell'app cliente diventa:
-| Elemento | Prima | Dopo |
-|---|---|---|
-| Titolo pagina | 19px | 19px (invariato) |
-| Titolo sezione/card | 17px | 17px (invariato) |
-| Corpo testo | 14px | **15px + leading-6** |
-| Caption/subtitle | 13px | 13px (invariato) |
-| Label/micro | 12px | 12px (invariato) |
+### Verifica da fare
+Controllare che la pagina `/auth` (coach login) non sia impattata dalla rimozione del padding in `App.css` -- usa lo stesso pattern `min-h-screen` e dovrebbe beneficiare della stessa correzione.
 
