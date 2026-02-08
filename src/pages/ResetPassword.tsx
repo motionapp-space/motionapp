@@ -71,7 +71,7 @@ const ResetPassword = () => {
   // Invalid or expired token
   if (isValidSession === false) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[hsl(0,0%,96%)] p-4">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(0,0%,96%)] p-4">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-4">
             <div className="mx-auto w-20 h-20 bg-destructive/10 rounded-3xl flex items-center justify-center">
@@ -98,7 +98,7 @@ const ResetPassword = () => {
   // Success state
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[hsl(0,0%,96%)] p-4">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(0,0%,96%)] p-4">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-4">
             <div className="mx-auto w-20 h-20 bg-green-100 dark:bg-green-900/20 rounded-3xl flex items-center justify-center">
@@ -125,7 +125,7 @@ const ResetPassword = () => {
   // Loading session check
   if (isValidSession === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[hsl(0,0%,96%)] p-4">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(0,0%,96%)] p-4">
         <div className="w-full max-w-md">
           <div className="text-center py-8">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
@@ -138,7 +138,7 @@ const ResetPassword = () => {
 
   // Reset form
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[hsl(0,0%,96%)] p-4">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(0,0%,96%)] p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-4">
           <div className="mx-auto w-20 h-20 bg-[hsl(220,70%,95%)] rounded-3xl flex items-center justify-center">
