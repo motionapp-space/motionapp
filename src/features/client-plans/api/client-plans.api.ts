@@ -16,13 +16,12 @@ export async function getClientPlansWithActive(clientId: string): Promise<Client
   const coachClientId = await getCoachClientId(clientId);
 
   // Source of truth: client_plan_assignments
-  // Fetch all assignments for this coach-client, excluding DELETED
+  // Fetch all assignments for this coach-client (including DELETED to check all statuses)
   const { data: assignments, error: assignError } = await supabase
     .from("client_plan_assignments")
     .select("plan_id, status")
     .eq("coach_id", user.id)
-    .eq("client_id", clientId)
-    .neq("status", "DELETED");
+    .eq("client_id", clientId);
 
   if (assignError) throw assignError;
 
@@ -31,16 +30,37 @@ export async function getClientPlansWithActive(clientId: string): Promise<Client
     return [];
   }
 
-  // Find the active plan ID
-  const activePlanId = assignments.find(a => a.status === "ACTIVE")?.plan_id ?? null;
-  const planIds = assignments.map(a => a.plan_id);
+  // Group statuses by plan_id to handle duplicates
+  const statusesByPlan = assignments.reduce((acc, a) => {
+    if (!acc[a.plan_id]) acc[a.plan_id] = [];
+    acc[a.plan_id].push(a.status);
+    return acc;
+  }, {} as Record<string, string[]>);
 
-  // Fetch all plans by their IDs
+  // A plan is deleted only if ALL its assignments are DELETED
+  const deletedPlanIds = new Set(
+    Object.entries(statusesByPlan)
+      .filter(([_, statuses]) => statuses.every(s => s === "DELETED"))
+      .map(([planId]) => planId)
+  );
+
+  // Get unique plan IDs that are NOT fully deleted
+  const visiblePlanIds = [...new Set(assignments.map(a => a.plan_id))]
+    .filter(id => !deletedPlanIds.has(id));
+
+  if (visiblePlanIds.length === 0) {
+    return [];
+  }
+
+  // Find the active plan ID (from visible plans only)
+  const activePlanId = assignments.find(a => a.status === "ACTIVE" && !deletedPlanIds.has(a.plan_id))?.plan_id ?? null;
+
+  // Fetch all plans by their IDs (only visible ones)
   const { data, error } = await supabase
     .from("client_plans")
     .select("*")
     .eq("coach_client_id", coachClientId)
-    .in("id", planIds)
+    .in("id", visiblePlanIds)
     .order("updated_at", { ascending: false });
 
   if (error) throw error;
