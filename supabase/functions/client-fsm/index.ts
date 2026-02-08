@@ -11,7 +11,7 @@ const corsHeaders = {
 // for the plan lifecycle. client_plans.status is legacy/frozen
 // and must NEVER be updated by the FSM.
 // ============================================================
-type AssignmentStatus = 'ACTIVE' | 'COMPLETED' | 'DELETED' | 'PAUSED';
+type AssignmentStatus = 'ACTIVE' | 'COMPLETED' | 'DELETED';
 
 // Legacy type kept ONLY for plan_state_logs backward compatibility.
 // plan_state_logs uses the DB enum plan_status (IN_CORSO/COMPLETATO/ELIMINATO).
