@@ -572,7 +572,7 @@ const Clients = () => {
                 size="sm"
                 className="h-9"
               >
-                Senza piano
+                Nessun piano
               </Toggle>
               
               <Toggle
@@ -592,7 +592,7 @@ const Clients = () => {
                 size="sm"
                 className="h-9"
               >
-                Senza appuntamento futuro
+                Appuntamento da pianificare
               </Toggle>
             </div>
           )}
@@ -768,7 +768,7 @@ const Clients = () => {
               
               {filters.withoutPlan && (
                 <Badge variant="secondary" className="gap-1">
-                  Senza piano
+                  Nessun piano
                   <X 
                     className="h-3 w-3 cursor-pointer" 
                     onClick={() => setFilters({ withoutPlan: undefined })}
@@ -788,7 +788,7 @@ const Clients = () => {
 
               {filters.withoutAppointment && (
                 <Badge variant="secondary" className="gap-1">
-                  Senza appuntamento futuro
+                  Appuntamento da pianificare
                   <X 
                     className="h-3 w-3 cursor-pointer" 
                     onClick={() => setFilters({ withoutAppointment: undefined })}
@@ -1118,7 +1118,7 @@ const Clients = () => {
                 size="sm"
                 className="h-9"
               >
-                Senza piano
+                Nessun piano
               </Toggle>
               
               <Toggle
@@ -1138,7 +1138,7 @@ const Clients = () => {
                 size="sm"
                 className="h-9"
               >
-                Senza appuntamento futuro
+                Appuntamento da pianificare
               </Toggle>
             </div>
           )}
@@ -1282,7 +1282,7 @@ const Clients = () => {
               
               {filters.withoutPlan && (
                 <Badge variant="secondary" className="gap-1">
-                  Senza piano
+                  Nessun piano
                   <X 
                     className="h-3 w-3 cursor-pointer" 
                     onClick={() => setFilters({ withoutPlan: undefined })}
@@ -1302,7 +1302,7 @@ const Clients = () => {
 
               {filters.withoutAppointment && (
                 <Badge variant="secondary" className="gap-1">
-                  Senza appuntamento futuro
+                  Appuntamento da pianificare
                   <X 
                     className="h-3 w-3 cursor-pointer" 
                     onClick={() => setFilters({ withoutAppointment: undefined })}
