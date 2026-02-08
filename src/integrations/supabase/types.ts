@@ -2188,6 +2188,7 @@ export type Database = {
           activity_status: string
           appointment_status: string
           client_id: string
+          has_active_plan: boolean
           next_appointment_date: string
           package_status: string
           plan_weeks_since_assignment: number

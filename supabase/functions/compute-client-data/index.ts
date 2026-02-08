@@ -9,12 +9,40 @@ interface ComputeRequest {
   clientIds: string[];
 }
 
+interface RpcRow {
+  client_id: string;
+  plan_weeks_since_assignment: number | null;
+  package_status: string;
+  appointment_status: string;
+  activity_status: string;
+  next_appointment_date: string | null;
+  has_active_plan: boolean;
+}
+
 interface ComputedClientData {
   client_id: string;
   plan_weeks_since_assignment: number | null;
   package_status: 'active' | 'low' | 'expired' | 'none';
   appointment_status: 'planned' | 'unplanned';
   activity_status: 'active' | 'low' | 'inactive';
+  next_appointment_date: string | null;
+  has_active_plan: boolean;
+}
+
+/**
+ * Mappa righe RPC al formato ComputedClientData
+ * Esportata per testing
+ */
+export function mapRpcRowToComputedData(row: RpcRow): ComputedClientData {
+  return {
+    client_id: row.client_id,
+    plan_weeks_since_assignment: row.plan_weeks_since_assignment,
+    package_status: row.package_status as ComputedClientData['package_status'],
+    appointment_status: row.appointment_status as ComputedClientData['appointment_status'],
+    activity_status: row.activity_status as ComputedClientData['activity_status'],
+    next_appointment_date: row.next_appointment_date,
+    has_active_plan: row.has_active_plan ?? false,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -58,9 +86,12 @@ Deno.serve(async (req) => {
       throw error;
     }
 
-    console.log(`Computed data for ${data?.length || 0} clients`);
+    // Map RPC rows to ComputedClientData
+    const mappedData = (data || []).map(mapRpcRowToComputedData);
 
-    return new Response(JSON.stringify({ data }), {
+    console.log(`Computed data for ${mappedData.length} clients`);
+
+    return new Response(JSON.stringify({ data: mappedData }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

@@ -263,8 +263,6 @@ const Clients = () => {
     { value: "name_desc", label: "Nome Z-A" },
     { value: "created_desc", label: "Creato di recente" },
     { value: "created_asc", label: "Creato meno recente" },
-    { value: "plan_weeks_asc", label: "Piano (recente → scaduto)" },
-    { value: "plan_weeks_desc", label: "Piano (scaduto → recente)" },
     { value: "package_status", label: "Pacchetto (critico → ok)" },
     { value: "appointment_status", label: "Agenda (da pianificare)" },
     { value: "activity_status", label: "Attività (inattivi → attivi)" },

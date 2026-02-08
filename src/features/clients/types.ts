@@ -40,6 +40,7 @@ export interface ClientWithDetails extends ClientWithTags {
   appointment_status?: 'planned' | 'unplanned';
   activity_status?: 'active' | 'low' | 'inactive';
   next_appointment_date?: string | null;
+  has_active_plan?: boolean;  // Source of truth for "Piano attivo" column
   isArchived?: boolean;  // Derived from coach_clients.status
 }
 

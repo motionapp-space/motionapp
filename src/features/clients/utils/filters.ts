@@ -18,10 +18,16 @@ export function getDefaultFilters(sp: URLSearchParams): ClientsFilters {
   const appointmentStatuses = sp.getAll("appointmentStatus") as ClientsFilters['appointmentStatuses'];
   const activityStatuses = sp.getAll("activityStatus") as ClientsFilters['activityStatuses'];
 
+  // Sanitizza sort legacy (plan_weeks_* → updated_desc)
+  let sort = sp.get("sort") as ClientsFilters['sort'];
+  if (sort === "plan_weeks_asc" || sort === "plan_weeks_desc") {
+    sort = "updated_desc";
+  }
+
   return {
     q: sp.get("q") || "",
     tag: sp.get("tag") || "",
-    sort: (sp.get("sort") as any) || "updated_desc",
+    sort: sort || "updated_desc",
     page: Number(sp.get("page")) || 1,
     limit: Number(sp.get("limit")) || 25,
     
