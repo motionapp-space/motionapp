@@ -1,47 +1,53 @@
 
-
-## Chiudere la modale "Uscire senza salvare?" anche in caso di errore
+## Chiudere la modale "Salvare prima di esportare?" anche in caso di errore
 
 ### Problema
-Quando l'utente clicca "Salva ed esci" ma il campo "Nome per il piano" è vuoto:
+Quando l'utente clicca "Salva e esporta" ma il campo "Nome per il piano" è vuoto:
 - Viene mostrato il toast di errore "Inserisci un nome per il piano"
 - La modale rimane aperta, bloccando l'utente
 
 ### Comportamento desiderato
-La modale deve chiudersi sempre dopo il click su "Salva ed esci", indipendentemente dal risultato del salvataggio. L'utente vedrà comunque il toast di errore e potrà correggere il problema.
+La modale deve chiudersi sempre dopo il click su "Salva e esporta", indipendentemente dal risultato del salvataggio. L'utente vedrà comunque il toast di errore e potrà correggere il problema.
 
 ### Modifica da effettuare
 
 **File: `src/pages/ClientPlanEditor.tsx`**
 
-Modificare la funzione `handleSaveAndExit` (righe 358-367) per chiudere sempre la modale:
+Modificare la funzione `handleSaveAndExport` (righe 410-421) per chiudere sempre la modale:
 
 ```typescript
-// Attuale (riga 358-367)
-const handleSaveAndExit = async () => {
+// Attuale (riga 410-421)
+const handleSaveAndExport = async () => {
   const success = await handleSave();
   if (success) {
-    setExitDialogOpen(false);
-    pendingNavigation.current?.();
-    pendingNavigation.current = null;
+    setSaveBeforeExportOpen(false);
+    // After save, we can export
+    setIsExporting(true);
+    try {
+      exportPlanToPDF({ name, days });
+    } finally {
+      setIsExporting(false);
+    }
   }
-  // If save fails, dialog stays open, user sees error toast
 };
 
 // Nuovo
-const handleSaveAndExit = async () => {
-  setExitDialogOpen(false); // Chiudi sempre la modale
+const handleSaveAndExport = async () => {
+  setSaveBeforeExportOpen(false); // Chiudi sempre la modale
   const success = await handleSave();
   if (success) {
-    pendingNavigation.current?.();
-    pendingNavigation.current = null;
+    // After save, we can export
+    setIsExporting(true);
+    try {
+      exportPlanToPDF({ name, days });
+    } finally {
+      setIsExporting(false);
+    }
   }
-  // Se il salvataggio fallisce, l'utente vede il toast di errore e può correggere
 };
 ```
 
 ### Risultato
-- Click su "Salva ed esci" → la modale si chiude immediatamente
-- Se il salvataggio riesce → l'utente viene reindirizzato
-- Se il salvataggio fallisce (es. nome mancante) → l'utente vede il toast di errore e può inserire il nome, poi salvare di nuovo
-
+- Click su "Salva e esporta" → la modale si chiude immediatamente
+- Se il salvataggio riesce → viene generato il PDF
+- Se il salvataggio fallisce (es. nome mancante) → l'utente vede il toast di errore e può inserire il nome, poi riprovare
