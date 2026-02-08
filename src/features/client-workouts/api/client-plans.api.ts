@@ -28,12 +28,11 @@ export async function getClientActivePlan(): Promise<ClientActivePlan | null> {
   if (assignError) throw assignError;
   if (!assignment) return null;
 
-  // Fetch the active plan
+  // Fetch the active plan (assignment status = ACTIVE is already the filter)
   const { data, error } = await supabase
     .from("client_plans")
     .select("id, name, data, status, is_in_use")
     .eq("id", assignment.plan_id)
-    .is("deleted_at", null)
     .maybeSingle();
 
   if (error) throw error;

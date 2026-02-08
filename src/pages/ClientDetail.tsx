@@ -16,7 +16,7 @@ import { toSentenceCase } from "@/lib/text";
 import { toast } from "sonner";
 import { useClientPlansQuery } from "@/features/client-plans/hooks/useClientPlansQuery";
 import { useSetActivePlan } from "@/features/client-plans/hooks/useSetActivePlan";
-import { useDeletePlanPermanent } from "@/features/client-plans/hooks/useDeletePlanPermanent";
+import { useDeletePlan } from "@/features/client-plans/hooks/useDeletePlan";
 import { useDuplicatePlan } from "@/features/client-plans/hooks/useDuplicatePlan";
 import { useSaveAsTemplate } from "@/features/client-plans/hooks/useSaveAsTemplate";
 import { ClientPlansTab } from "@/features/client-plans/components/ClientPlansTab";
@@ -62,7 +62,7 @@ const ClientDetail = () => {
 
   const { data: clientPlans = [], isLoading: plansLoading } = useClientPlansQuery(id || "");
   const setActivePlanMutation = useSetActivePlan();
-  const deletePlanMutation = useDeletePlanPermanent();
+  const deletePlanMutation = useDeletePlan();
   const duplicatePlanMutation = useDuplicatePlan();
   const saveAsTemplateMutation = useSaveAsTemplate();
   const onboardingState = useClientOnboardingState(id || "");

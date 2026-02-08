@@ -8,10 +8,12 @@ export function useDeletePlan() {
   return useMutation({
     mutationFn: ({ clientId, planId, version }: { clientId: string; planId: string; version?: number }) =>
       deletePlan(clientId, planId, version),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["client-plans"] });
+      queryClient.invalidateQueries({ queryKey: ["clientPlans", variables.clientId] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ['onboarding-plans-check'] });
+      queryClient.invalidateQueries({ queryKey: ['client-onboarding-plans', variables.clientId] });
       toast({
         title: "Piano eliminato",
         description: "Il piano è stato eliminato con successo.",

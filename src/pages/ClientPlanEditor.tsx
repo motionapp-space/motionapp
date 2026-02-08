@@ -45,7 +45,7 @@ import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClie
 import { useSaveAsTemplate } from "@/features/client-plans/hooks/useSaveAsTemplate";
 import { useAssignTemplate } from "@/features/client-plans/hooks/useAssignTemplate";
 import { useCreateClientPlan } from "@/features/client-plans/hooks/useCreateClientPlan";
-import { useDeletePlanPermanent } from "@/features/client-plans/hooks/useDeletePlanPermanent";
+import { useDeletePlan } from "@/features/client-plans/hooks/useDeletePlan";
 import { useTemplate } from "@/features/templates/hooks/useTemplate";
 import { getClientIdFromCoachClient, getCoachClientId } from "@/lib/coach-client";
 import { PlanEditorSaveBar } from "@/features/plans/components/PlanEditorSaveBar";
@@ -98,7 +98,7 @@ const ClientPlanEditor = () => {
   const assignMutation = useAssignTemplate();
   const createPlanMutation = useCreateClientPlan();
   const createSession = useCreateSession();
-  const deleteMutation = useDeletePlanPermanent();
+  const deleteMutation = useDeletePlan();
 
   // Track ID of newly created plan (to avoid remount on URL update)
   const [createdPlanId, setCreatedPlanId] = useState<string | null>(null);

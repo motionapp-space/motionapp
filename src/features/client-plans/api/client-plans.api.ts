@@ -16,23 +16,31 @@ export async function getClientPlansWithActive(clientId: string): Promise<Client
   const coachClientId = await getCoachClientId(clientId);
 
   // Source of truth: client_plan_assignments
-  const { data: activeAssignment, error: assignError } = await supabase
+  // Fetch all assignments for this coach-client, excluding DELETED
+  const { data: assignments, error: assignError } = await supabase
     .from("client_plan_assignments")
-    .select("plan_id")
+    .select("plan_id, status")
     .eq("coach_id", user.id)
     .eq("client_id", clientId)
-    .eq("status", "ACTIVE")
-    .maybeSingle();
+    .neq("status", "DELETED");
 
   if (assignError) throw assignError;
-  const activePlanId = activeAssignment?.plan_id ?? null;
 
-  // Fetch all non-deleted plans
+  // If no assignments, return empty array
+  if (!assignments || assignments.length === 0) {
+    return [];
+  }
+
+  // Find the active plan ID
+  const activePlanId = assignments.find(a => a.status === "ACTIVE")?.plan_id ?? null;
+  const planIds = assignments.map(a => a.plan_id);
+
+  // Fetch all plans by their IDs
   const { data, error } = await supabase
     .from("client_plans")
     .select("*")
     .eq("coach_client_id", coachClientId)
-    .is("deleted_at", null)
+    .in("id", planIds)
     .order("updated_at", { ascending: false });
 
   if (error) throw error;
