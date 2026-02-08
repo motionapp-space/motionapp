@@ -30,8 +30,8 @@ export function useSetActivePlan() {
       queryClient.invalidateQueries({ queryKey: ["coach-clients"] });
       toast.success(
         variables.planId 
-          ? "Piano impostato come in uso" 
-          : "Piano rimosso da in uso"
+          ? "Piano impostato come attivo" 
+          : "Piano rimosso da attivo"
       );
     },
     onError: (error: Error) => {

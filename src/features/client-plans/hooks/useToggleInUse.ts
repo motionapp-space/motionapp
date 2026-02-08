@@ -31,14 +31,14 @@ export function useToggleInUse() {
       queryClient.invalidateQueries({ queryKey: ["clientPlans", variables.clientId] });
       toast.success(
         variables.currentValue 
-          ? "Piano rimosso da In Uso" 
-          : "Piano impostato come In Uso"
+          ? "Piano rimosso da Attivo" 
+          : "Piano impostato come Attivo"
       );
     },
     onError: (error: Error) => {
       if (error.message === "MAX_IN_USE_REACHED") {
         toast.error("Limite raggiunto", {
-          description: "Un cliente può avere fino a 3 piani in uso contemporaneamente. Rimuovi uno dei piani attivi per continuare.",
+          description: "Un cliente può avere fino a 3 piani attivi contemporaneamente. Rimuovi uno dei piani attivi per continuare.",
         });
       } else {
         toast.error("Errore", {
