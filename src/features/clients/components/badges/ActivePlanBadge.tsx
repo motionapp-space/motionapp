@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, MinusCircle } from "lucide-react";
 
 interface ActivePlanBadgeProps {
   hasActivePlan: boolean | undefined;
@@ -27,9 +27,9 @@ export function ActivePlanBadge({ hasActivePlan }: ActivePlanBadgeProps) {
   return (
     <Badge variant="outline" className={cn(
       "font-medium gap-1",
-      "border-muted-foreground/50 bg-muted/50 text-muted-foreground"
+      "border-gray-300 bg-gray-50 text-gray-600 dark:bg-gray-900 dark:text-gray-400"
     )}>
-      <XCircle className="h-3 w-3" />
+      <MinusCircle className="h-3 w-3" />
       Nessuno
     </Badge>
   );
