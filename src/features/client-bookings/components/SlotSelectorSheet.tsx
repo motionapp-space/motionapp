@@ -162,7 +162,7 @@ export function SlotSelectorSheet({ open, onOpenChange }: SlotSelectorSheetProps
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[90vh] rounded-t-2xl flex flex-col p-0">
+      <SheetContent side="bottom" className="h-[75vh] rounded-t-2xl flex flex-col p-0">
         
         {/* ============ STEP 1: SELECT SLOT ============ */}
         {step === "SELECT_SLOT" && (
