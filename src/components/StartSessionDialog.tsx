@@ -114,9 +114,9 @@ export function StartSessionDialog({
               <div className="text-center py-8 space-y-4">
                 <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
                 <div className="space-y-2">
-                  <p className="font-medium">Nessun piano in uso</p>
+                  <p className="font-medium">Nessun piano attivo</p>
                   <p className="text-sm text-muted-foreground">
-                    Imposta un piano in uso per creare una sessione.
+                    Imposta un piano attivo per creare una sessione.
                   </p>
                 </div>
                 <Button 
@@ -138,7 +138,7 @@ export function StartSessionDialog({
                 <div className="space-y-4">
                   {/* Show active plan info */}
                   <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Piano in uso</p>
+                    <p className="text-sm text-muted-foreground mb-1">Piano attivo</p>
                     <p className="font-medium">{activePlan.name}</p>
                   </div>
                   

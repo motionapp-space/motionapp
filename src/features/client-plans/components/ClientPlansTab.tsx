@@ -74,10 +74,10 @@ export function ClientPlansTab({
         </Card>
       ) : (
         <div className="mt-6">
-          {/* Section: Piano in uso */}
+          {/* Section: Piano attivo */}
           <div>
             <h3 className="text-xs font-medium tracking-widest text-muted-foreground/70 uppercase mb-3">
-              Piano in uso
+              Piano attivo
             </h3>
             
             {activePlan ? (
@@ -93,7 +93,7 @@ export function ClientPlansTab({
               <Card className="border-dashed border-border/60">
                 <CardContent className="py-8 text-center">
                   <p className="text-sm text-muted-foreground">
-                    Nessun piano in uso. Imposta un piano come in uso per renderlo visibile al cliente.
+                    Nessun piano attivo. Imposta un piano come attivo per renderlo visibile al cliente.
                   </p>
                 </CardContent>
               </Card>

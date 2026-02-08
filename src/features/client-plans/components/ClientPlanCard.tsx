@@ -97,7 +97,7 @@ export function ClientPlanCard({
                         ? "text-primary cursor-default" 
                         : "text-muted-foreground hover:text-primary cursor-pointer group/star"
                     )}
-                    aria-label={isActive ? "Piano in uso" : "Imposta come piano in uso"}
+                    aria-label={isActive ? "Piano attivo" : "Imposta come piano attivo"}
                   >
                     <Star className={cn(
                       "h-4 w-4 transition-all",
@@ -107,7 +107,7 @@ export function ClientPlanCard({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  {isActive ? "Piano in uso" : "Imposta come piano in uso"}
+                  {isActive ? "Piano attivo" : "Imposta come piano attivo"}
                 </TooltipContent>
               </Tooltip>
 
@@ -118,7 +118,7 @@ export function ClientPlanCard({
                 </h3>
                 {isActive && (
                   <p className="text-sm text-muted-foreground/80 mt-0.5">
-                    In uso · visibile al cliente
+                    Attivo · visibile al cliente
                   </p>
                 )}
               </div>
