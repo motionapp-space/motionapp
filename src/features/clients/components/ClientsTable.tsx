@@ -56,9 +56,6 @@ function ClientRow({
           nextAppointmentDate={client.next_appointment_date}
         />
       </TableCell>
-      <TableCell>
-        <ActivityStatusBadge status={client.activity_status} />
-      </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-3">
           <IconTooltipButton
@@ -101,7 +98,6 @@ export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: Clie
             <TableHead>{toSentenceCase("Piano")}</TableHead>
             <TableHead>{toSentenceCase("Pacchetto")}</TableHead>
             <TableHead>{toSentenceCase("Appuntamento")}</TableHead>
-            <TableHead>{toSentenceCase("Attività")}</TableHead>
             <TableHead className="text-right">{toSentenceCase("Azioni")}</TableHead>
           </TableRow>
         </TableHeader>
