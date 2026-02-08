@@ -1,22 +1,50 @@
-# ✅ COMPLETATO: Rimozione codice legacy `client_plans.status`
 
-## Modifiche applicate
+# Rimozione stato PAUSED da AssignmentStatus
+
+## Analisi
+
+Ho verificato che:
+1. **Database**: La colonna `status` in `client_plan_assignments` è di tipo `text` con default `'ACTIVE'`
+2. **Valori esistenti**: Solo `ACTIVE` e `COMPLETED` sono presenti nel database
+3. **Nessun uso di PAUSED**: Nessuna riga ha mai usato questo stato
+
+## File da modificare
 
 | File | Modifica |
 |------|----------|
-| `src/features/clients/types.ts` | Rimosso `PlanStatus` e `PlanStateLog` duplicato |
-| `src/types/client.ts` | Rimosso `PlanStatus`, re-export da `client-plans/types` |
-| `src/types/template.ts` | Campo `status` reso opzionale con deprecation warning |
-| `src/features/client-plans/types.ts` | `PlanStatus` locale (non importato) |
-| `src/features/client-plans/api/client-plans.api.ts` | Rimosso `status: "IN_CORSO"` dall'insert |
-| `src/features/client-plans/hooks/useDuplicatePlan.ts` | Rimosso `status: "IN_CORSO"` dall'insert |
-| `src/features/clients/hooks/useClientOnboardingState.ts` | Query usa `.is('deleted_at', null)` |
-| `src/stores/useClientStore.ts` | Rimosso import `PlanStatus` inutilizzato |
+| `src/features/client-plans/types.ts` | Rimuovere `'PAUSED'` dal tipo `AssignmentStatus` |
+| `supabase/functions/client-fsm/index.ts` | Rimuovere `'PAUSED'` dal tipo `AssignmentStatus` |
 
-## Source of truth
+## Dettaglio modifiche
 
-`client_plan_assignments.status` è l'unica fonte di verità per lo stato del piano:
-- `ACTIVE` = piano in uso
-- `COMPLETED` / `DELETED` / `PAUSED` = altri piani
+### `src/features/client-plans/types.ts` (riga 10)
+```typescript
+// Da:
+export type AssignmentStatus = 'ACTIVE' | 'COMPLETED' | 'DELETED' | 'PAUSED';
 
-`client_plans.status` è frozen al valore di default DB e non viene più scritto esplicitamente.
+// A:
+export type AssignmentStatus = 'ACTIVE' | 'COMPLETED' | 'DELETED';
+```
+
+### `supabase/functions/client-fsm/index.ts` (riga 14)
+```typescript
+// Da:
+type AssignmentStatus = 'ACTIVE' | 'COMPLETED' | 'DELETED' | 'PAUSED';
+
+// A:
+type AssignmentStatus = 'ACTIVE' | 'COMPLETED' | 'DELETED';
+```
+
+## Note
+
+- **Nessun impatto funzionale**: Lo stato `PAUSED` non è mai stato usato
+- **Nessun cambio al database**: La colonna è di tipo `text`, non enum — nessuna migrazione necessaria
+- I riferimenti a `isPaused` in altri file (come `useSessionStore.ts`) riguardano il **timer delle sessioni di allenamento**, non lo stato degli assignment dei piani
+
+## Riepilogo
+
+| Categoria | File |
+|-----------|------|
+| Tipi frontend | 1 |
+| Edge Function | 1 |
+| **Totale** | **2 file** |
