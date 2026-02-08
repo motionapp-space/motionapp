@@ -471,23 +471,32 @@ export type Database = {
         Row: {
           assigned_at: string
           client_id: string
+          coach_id: string | null
+          ended_at: string | null
           id: string
           note: string | null
           plan_id: string
+          status: string
         }
         Insert: {
           assigned_at?: string
           client_id: string
+          coach_id?: string | null
+          ended_at?: string | null
           id?: string
           note?: string | null
           plan_id: string
+          status?: string
         }
         Update: {
           assigned_at?: string
           client_id?: string
+          coach_id?: string | null
+          ended_at?: string | null
           id?: string
           note?: string | null
           plan_id?: string
+          status?: string
         }
         Relationships: [
           {
@@ -501,7 +510,7 @@ export type Database = {
             foreignKeyName: "client_plan_assignments_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
-            referencedRelation: "plans"
+            referencedRelation: "client_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -699,7 +708,6 @@ export type Database = {
       }
       clients: {
         Row: {
-          active_plan_id: string | null
           birth_date: string | null
           created_at: string
           email: string | null
@@ -716,7 +724,6 @@ export type Database = {
           version: number
         }
         Insert: {
-          active_plan_id?: string | null
           birth_date?: string | null
           created_at?: string
           email?: string | null
@@ -733,7 +740,6 @@ export type Database = {
           version?: number
         }
         Update: {
-          active_plan_id?: string | null
           birth_date?: string | null
           created_at?: string
           email?: string | null
@@ -757,18 +763,10 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_clients_active_plan"
-            columns: ["active_plan_id"]
-            isOneToOne: false
-            referencedRelation: "client_plans"
-            referencedColumns: ["id"]
-          },
         ]
       }
       coach_clients: {
         Row: {
-          active_plan_id: string | null
           client_id: string
           coach_id: string
           created_at: string
@@ -781,7 +779,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          active_plan_id?: string | null
           client_id: string
           coach_id: string
           created_at?: string
@@ -794,7 +791,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          active_plan_id?: string | null
           client_id?: string
           coach_id?: string
           created_at?: string
@@ -807,13 +803,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "coach_clients_active_plan_id_fkey"
-            columns: ["active_plan_id"]
-            isOneToOne: false
-            referencedRelation: "client_plans"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "coach_clients_client_id_fkey"
             columns: ["client_id"]
@@ -2199,6 +2188,7 @@ export type Database = {
           activity_status: string
           appointment_status: string
           client_id: string
+          has_active_plan: boolean
           next_appointment_date: string
           package_status: string
           plan_weeks_since_assignment: number
@@ -2296,6 +2286,17 @@ export type Database = {
         Returns: string
       }
       finalize_past_events: { Args: { p_now?: string }; Returns: Json }
+      fsm_assign_plan: {
+        Args: {
+          p_client_id: string
+          p_coach_client_id: string
+          p_coach_id: string
+          p_plan_data?: Json
+          p_plan_description?: string
+          p_plan_name: string
+        }
+        Returns: Json
+      }
       get_coach_occupied_slots: {
         Args: { p_coach_id: string; p_end_date: string; p_start_date: string }
         Returns: {
@@ -2335,9 +2336,9 @@ export type Database = {
         }
         Returns: string
       }
-      set_active_plan: {
+      set_active_plan_v2: {
         Args: { p_coach_client_id: string; p_plan_id?: string }
-        Returns: string
+        Returns: Json
       }
     }
     Enums: {

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useClientPlansQuery } from "@/features/client-plans/hooks/useClientPlansQuery";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Day } from "@/types/plan";
-import type { ClientPlan } from "@/features/client-plans/types";
+import type { ClientPlanWithActive } from "@/features/client-plans/types";
 
 interface DayPickerProps {
   open: boolean;
@@ -30,7 +30,7 @@ export function DayPicker({
   const isMobile = useIsMobile();
   const { data: clientPlans = [] } = useClientPlansQuery(clientId);
   
-  const activePlans = clientPlans.filter((p) => p.status === "IN_CORSO");
+  const activePlans = clientPlans.filter((p) => p.isActiveForClient);
   const [selectedPlanId, setSelectedPlanId] = useState<string>("");
   const [selectedDayId, setSelectedDayId] = useState<string>("");
 

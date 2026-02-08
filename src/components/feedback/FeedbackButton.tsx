@@ -18,10 +18,10 @@ export function FeedbackButton({ onClick }: FeedbackButtonProps) {
           <Button
             onClick={onClick}
             size="icon"
-            className="h-16 w-16 rounded-full shadow-xl hover:shadow-2xl transition-shadow"
+            className="h-12 w-12 rounded-full shadow-xl hover:shadow-2xl transition-shadow"
             aria-label="Invia feedback"
           >
-            <MessageSquarePlus className="!h-6 !w-6" />
+            <MessageSquarePlus className="!h-5 !w-5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="left">

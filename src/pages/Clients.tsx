@@ -263,33 +263,26 @@ const Clients = () => {
     { value: "name_desc", label: "Nome Z-A" },
     { value: "created_desc", label: "Creato di recente" },
     { value: "created_asc", label: "Creato meno recente" },
-    { value: "plan_weeks_asc", label: "Piano (recente → scaduto)" },
-    { value: "plan_weeks_desc", label: "Piano (scaduto → recente)" },
     { value: "package_status", label: "Pacchetto (critico → ok)" },
     { value: "appointment_status", label: "Agenda (da pianificare)" },
-    { value: "activity_status", label: "Attività (inattivi → attivi)" },
   ];
 
   const hasActiveFilters =
     filters.withoutPlan ||
     filters.packageToRenew ||
     filters.withoutAppointment ||
-    filters.lowActivity ||
     filters.planWeeksRange ||
     (filters.packageStatuses && filters.packageStatuses.length > 0) ||
-    (filters.appointmentStatuses && filters.appointmentStatuses.length > 0) ||
-    (filters.activityStatuses && filters.activityStatuses.length > 0);
+    (filters.appointmentStatuses && filters.appointmentStatuses.length > 0);
 
   const clearFilters = () => {
     setFilters({
       withoutPlan: undefined,
       packageToRenew: undefined,
       withoutAppointment: undefined,
-      lowActivity: undefined,
       planWeeksRange: undefined,
       packageStatuses: undefined,
       appointmentStatuses: undefined,
-      activityStatuses: undefined,
     });
   };
 
@@ -579,7 +572,7 @@ const Clients = () => {
                 size="sm"
                 className="h-9"
               >
-                Senza piano
+                Nessun piano
               </Toggle>
               
               <Toggle
@@ -599,17 +592,7 @@ const Clients = () => {
                 size="sm"
                 className="h-9"
               >
-                Senza appuntamento futuro
-              </Toggle>
-
-              <Toggle
-                pressed={filters.lowActivity || false}
-                onPressedChange={(pressed) => setFilters({ lowActivity: pressed ? true : undefined })}
-                variant="outline"
-                size="sm"
-                className="h-9"
-              >
-                Clienti non attivi
+                Appuntamento da pianificare
               </Toggle>
             </div>
           )}
@@ -733,31 +716,6 @@ const Clients = () => {
                           </RadioGroup>
                         </div>
 
-                        {/* Attività */}
-                        <div className="space-y-3">
-                          <Label className="text-sm font-medium">Attività</Label>
-                          <RadioGroup
-                            value={filters.activityStatuses?.[0] || "all"}
-                            onValueChange={(v) => setFilters({ activityStatuses: v === "all" ? undefined : [v as any] })}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="all" id="act-all" />
-                              <Label htmlFor="act-all" className="cursor-pointer font-normal">Tutti</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="active" id="act-active" />
-                              <Label htmlFor="act-active" className="cursor-pointer font-normal">Attivo</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="low" id="act-low" />
-                              <Label htmlFor="act-low" className="cursor-pointer font-normal">Bassa</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="inactive" id="act-inactive" />
-                              <Label htmlFor="act-inactive" className="cursor-pointer font-normal">Assente</Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
                       </div>
 
                       {/* Actions */}
@@ -810,7 +768,7 @@ const Clients = () => {
               
               {filters.withoutPlan && (
                 <Badge variant="secondary" className="gap-1">
-                  Senza piano
+                  Nessun piano
                   <X 
                     className="h-3 w-3 cursor-pointer" 
                     onClick={() => setFilters({ withoutPlan: undefined })}
@@ -830,7 +788,7 @@ const Clients = () => {
 
               {filters.withoutAppointment && (
                 <Badge variant="secondary" className="gap-1">
-                  Senza appuntamento futuro
+                  Appuntamento da pianificare
                   <X 
                     className="h-3 w-3 cursor-pointer" 
                     onClick={() => setFilters({ withoutAppointment: undefined })}
@@ -890,19 +848,6 @@ const Clients = () => {
                 </Badge>
               )}
 
-              {filters.activityStatuses && filters.activityStatuses.length > 0 && (
-                <Badge variant="secondary" className="gap-1">
-                  Attività: {
-                    filters.activityStatuses[0] === "active" ? "Attivo" :
-                    filters.activityStatuses[0] === "low" ? "Bassa" :
-                    "Assente"
-                  }
-                  <X 
-                    className="h-3 w-3 cursor-pointer" 
-                    onClick={() => setFilters({ activityStatuses: undefined })}
-                  />
-                </Badge>
-              )}
 
               <Button
                 variant="ghost"
@@ -1173,7 +1118,7 @@ const Clients = () => {
                 size="sm"
                 className="h-9"
               >
-                Senza piano
+                Nessun piano
               </Toggle>
               
               <Toggle
@@ -1193,17 +1138,7 @@ const Clients = () => {
                 size="sm"
                 className="h-9"
               >
-                Senza appuntamento futuro
-              </Toggle>
-
-              <Toggle
-                pressed={filters.lowActivity || false}
-                onPressedChange={(pressed) => setFilters({ lowActivity: pressed ? true : undefined })}
-                variant="outline"
-                size="sm"
-                className="h-9"
-              >
-                Clienti non attivi
+                Appuntamento da pianificare
               </Toggle>
             </div>
           )}
@@ -1245,36 +1180,6 @@ const Clients = () => {
                   <PopoverContent className="w-[600px] p-0" align="start">
                     <div className="p-5">
                       <div className="grid grid-cols-2 gap-6">
-                        {/* Ultimo Piano */}
-                        <div className="space-y-3">
-                          <Label className="text-sm font-medium">Ultimo Piano</Label>
-                          <RadioGroup
-                            value={filters.planWeeksRange || "all"}
-                            onValueChange={(v) => setFilters({ planWeeksRange: v === "all" ? undefined : v as any })}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="all" id="plan-all-active" />
-                              <Label htmlFor="plan-all-active" className="cursor-pointer font-normal">Tutti</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="none" id="plan-none-active" />
-                              <Label htmlFor="plan-none-active" className="cursor-pointer font-normal">Nessun piano</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="0-4" id="plan-0-4-active" />
-                              <Label htmlFor="plan-0-4-active" className="cursor-pointer font-normal">0-4 settimane</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="4-8" id="plan-4-8-active" />
-                              <Label htmlFor="plan-4-8-active" className="cursor-pointer font-normal">4-8 settimane</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="8+" id="plan-8+-active" />
-                              <Label htmlFor="plan-8+-active" className="cursor-pointer font-normal">8+ settimane</Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
-
                         {/* Stato Pacchetto */}
                         <div className="space-y-3">
                           <Label className="text-sm font-medium">Stato Pacchetto</Label>
@@ -1327,31 +1232,6 @@ const Clients = () => {
                           </RadioGroup>
                         </div>
 
-                        {/* Attività */}
-                        <div className="space-y-3">
-                          <Label className="text-sm font-medium">Attività</Label>
-                          <RadioGroup
-                            value={filters.activityStatuses?.[0] || "all"}
-                            onValueChange={(v) => setFilters({ activityStatuses: v === "all" ? undefined : [v as any] })}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="all" id="act-all-active" />
-                              <Label htmlFor="act-all-active" className="cursor-pointer font-normal">Tutti</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="active" id="act-active-state" />
-                              <Label htmlFor="act-active-state" className="cursor-pointer font-normal">Attivo</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="low" id="act-low-active" />
-                              <Label htmlFor="act-low-active" className="cursor-pointer font-normal">Bassa</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="inactive" id="act-inactive-active" />
-                              <Label htmlFor="act-inactive-active" className="cursor-pointer font-normal">Assente</Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
                       </div>
 
                       {/* Actions */}
@@ -1362,8 +1242,6 @@ const Clients = () => {
                           onClick={() => {
                             setFilters({
                               appointmentStatuses: undefined,
-                              activityStatuses: undefined,
-                              planWeeksRange: undefined,
                               packageStatuses: undefined,
                             });
                           }}
@@ -1404,7 +1282,7 @@ const Clients = () => {
               
               {filters.withoutPlan && (
                 <Badge variant="secondary" className="gap-1">
-                  Senza piano
+                  Nessun piano
                   <X 
                     className="h-3 w-3 cursor-pointer" 
                     onClick={() => setFilters({ withoutPlan: undefined })}
@@ -1424,7 +1302,7 @@ const Clients = () => {
 
               {filters.withoutAppointment && (
                 <Badge variant="secondary" className="gap-1">
-                  Senza appuntamento futuro
+                  Appuntamento da pianificare
                   <X 
                     className="h-3 w-3 cursor-pointer" 
                     onClick={() => setFilters({ withoutAppointment: undefined })}
@@ -1432,15 +1310,6 @@ const Clients = () => {
                 </Badge>
               )}
 
-              {filters.lowActivity && (
-                <Badge variant="secondary" className="gap-1">
-                  Clienti non attivi
-                  <X 
-                    className="h-3 w-3 cursor-pointer" 
-                    onClick={() => setFilters({ lowActivity: undefined })}
-                  />
-                </Badge>
-              )}
 
               {filters.planWeeksRange && (
                 <Badge variant="secondary" className="gap-1">
@@ -1484,19 +1353,6 @@ const Clients = () => {
                 </Badge>
               )}
 
-              {filters.activityStatuses && filters.activityStatuses.length > 0 && (
-                <Badge variant="secondary" className="gap-1">
-                  Attività: {
-                    filters.activityStatuses[0] === "active" ? "Attivo" :
-                    filters.activityStatuses[0] === "low" ? "Bassa" :
-                    "Assente"
-                  }
-                  <X 
-                    className="h-3 w-3 cursor-pointer" 
-                    onClick={() => setFilters({ activityStatuses: undefined })}
-                  />
-                </Badge>
-              )}
 
               <Button
                 variant="ghost"

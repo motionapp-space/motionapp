@@ -45,7 +45,7 @@ import { useUpdateClientPlan } from "@/features/client-plans/hooks/useUpdateClie
 import { useSaveAsTemplate } from "@/features/client-plans/hooks/useSaveAsTemplate";
 import { useAssignTemplate } from "@/features/client-plans/hooks/useAssignTemplate";
 import { useCreateClientPlan } from "@/features/client-plans/hooks/useCreateClientPlan";
-import { useDeletePlanPermanent } from "@/features/client-plans/hooks/useDeletePlanPermanent";
+import { useDeletePlan } from "@/features/client-plans/hooks/useDeletePlan";
 import { useTemplate } from "@/features/templates/hooks/useTemplate";
 import { getClientIdFromCoachClient, getCoachClientId } from "@/lib/coach-client";
 import { PlanEditorSaveBar } from "@/features/plans/components/PlanEditorSaveBar";
@@ -98,7 +98,7 @@ const ClientPlanEditor = () => {
   const assignMutation = useAssignTemplate();
   const createPlanMutation = useCreateClientPlan();
   const createSession = useCreateSession();
-  const deleteMutation = useDeletePlanPermanent();
+  const deleteMutation = useDeletePlan();
 
   // Track ID of newly created plan (to avoid remount on URL update)
   const [createdPlanId, setCreatedPlanId] = useState<string | null>(null);
@@ -357,13 +357,13 @@ const ClientPlanEditor = () => {
 
   // Save and exit
   const handleSaveAndExit = async () => {
+    setExitDialogOpen(false); // Chiudi sempre la modale
     const success = await handleSave();
     if (success) {
-      setExitDialogOpen(false);
       pendingNavigation.current?.();
       pendingNavigation.current = null;
     }
-    // If save fails, dialog stays open, user sees error toast
+    // Se il salvataggio fallisce, l'utente vede il toast di errore e può correggere
   };
 
   const handleSaveAsTemplate = async () => {
@@ -408,9 +408,9 @@ const ClientPlanEditor = () => {
 
   // Save and export
   const handleSaveAndExport = async () => {
+    setSaveBeforeExportOpen(false); // Chiudi sempre la modale
     const success = await handleSave();
     if (success) {
-      setSaveBeforeExportOpen(false);
       // After save, we can export
       setIsExporting(true);
       try {

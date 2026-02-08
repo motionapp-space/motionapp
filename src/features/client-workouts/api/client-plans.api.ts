@@ -11,36 +11,33 @@ export interface ClientActivePlan {
 }
 
 /**
- * Get the active plan for the current client user
- * Uses coach_clients.active_plan_id instead of is_in_use flag
+ * Get the active plan for the current client user.
+ * Source of truth: client_plan_assignments.status = 'ACTIVE'
  */
 export async function getClientActivePlan(): Promise<ClientActivePlan | null> {
-  const { coachClientId } = await getClientCoachClientId();
+  const { clientId } = await getClientCoachClientId();
 
-  // Fetch active_plan_id from coach_clients
-  const { data: cc, error: ccError } = await supabase
-    .from("coach_clients")
-    .select("active_plan_id")
-    .eq("id", coachClientId)
-    .single();
+  // Source of truth: client_plan_assignments
+  const { data: assignment, error: assignError } = await supabase
+    .from("client_plan_assignments")
+    .select("plan_id")
+    .eq("client_id", clientId)
+    .eq("status", "ACTIVE")
+    .maybeSingle();
 
-  if (ccError) throw ccError;
-  
-  // If no active plan, return null
-  if (!cc?.active_plan_id) return null;
+  if (assignError) throw assignError;
+  if (!assignment) return null;
 
-  // Fetch the active plan
+  // Fetch the active plan (assignment status = ACTIVE is already the filter)
   const { data, error } = await supabase
     .from("client_plans")
     .select("id, name, data, status, is_in_use")
-    .eq("id", cc.active_plan_id)
-    .is("deleted_at", null)
+    .eq("id", assignment.plan_id)
     .maybeSingle();
 
   if (error) throw error;
-  
   if (!data) return null;
-  
+
   return {
     ...data,
     data: data.data as unknown as Plan,

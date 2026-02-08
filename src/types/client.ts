@@ -1,5 +1,4 @@
 export type Sex = "M" | "F" | "ALTRO";
-export type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
 export type ActivityType = 
   | "CREATED" 
   | "UPDATED" 
@@ -29,7 +28,6 @@ export interface Client {
   sex?: Sex;
   notes?: string;
   user_id?: string;
-  active_plan_id?: string;
   last_access_at?: string;
   version?: number;
 }
@@ -41,14 +39,8 @@ export interface ClientTag {
   created_at: string;
 }
 
-export interface ClientPlanAssignment {
-  id: string;
-  client_id: string;
-  plan_id: string;
-  assigned_at: string;
-  status: PlanStatus;
-  note?: string;
-}
+// ClientPlanAssignment is defined in @/features/client-plans/types
+export type { ClientPlanAssignment, AssignmentStatus } from '@/features/client-plans/types';
 
 export interface Measurement {
   id: string;

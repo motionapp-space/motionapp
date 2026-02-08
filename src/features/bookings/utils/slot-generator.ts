@@ -177,7 +177,7 @@ export function findNearestSlots(
     }))
     .sort((a, b) => a.distance - b.distance);
 
-  return sorted.slice(0, 3).map(s => s.slot);
+  return sorted.slice(0, 3).map(s => s.slot).sort((a, b) => parseISO(a.start).getTime() - parseISO(b.start).getTime());
 }
 
 /**

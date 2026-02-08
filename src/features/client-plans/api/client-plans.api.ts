@@ -6,28 +6,61 @@ import { assignPlanToClient } from "@/features/clients/api/client-fsm.api";
 import { getCoachClientId } from "@/lib/coach-client";
 
 /**
- * Get all client plans with active_plan_id resolution
- * Returns plans with isActiveForClient flag based on coach_clients.active_plan_id
+ * Get all client plans with active status resolved from client_plan_assignments.
+ * Source of truth: client_plan_assignments.status = 'ACTIVE'
  */
 export async function getClientPlansWithActive(clientId: string): Promise<ClientPlanWithActive[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
   const coachClientId = await getCoachClientId(clientId);
 
-  // Fetch active_plan_id from coach_clients
-  const { data: cc, error: ccError } = await supabase
-    .from("coach_clients")
-    .select("active_plan_id")
-    .eq("id", coachClientId)
-    .single();
+  // Source of truth: client_plan_assignments
+  // Fetch all assignments for this coach-client (including DELETED to check all statuses)
+  const { data: assignments, error: assignError } = await supabase
+    .from("client_plan_assignments")
+    .select("plan_id, status")
+    .eq("coach_id", user.id)
+    .eq("client_id", clientId);
 
-  if (ccError) throw ccError;
-  const activePlanId = cc?.active_plan_id;
+  if (assignError) throw assignError;
 
-  // Fetch all non-deleted plans
+  // If no assignments, return empty array
+  if (!assignments || assignments.length === 0) {
+    return [];
+  }
+
+  // Group statuses by plan_id to handle duplicates
+  const statusesByPlan = assignments.reduce((acc, a) => {
+    if (!acc[a.plan_id]) acc[a.plan_id] = [];
+    acc[a.plan_id].push(a.status);
+    return acc;
+  }, {} as Record<string, string[]>);
+
+  // A plan is deleted only if ALL its assignments are DELETED
+  const deletedPlanIds = new Set(
+    Object.entries(statusesByPlan)
+      .filter(([_, statuses]) => statuses.every(s => s === "DELETED"))
+      .map(([planId]) => planId)
+  );
+
+  // Get unique plan IDs that are NOT fully deleted
+  const visiblePlanIds = [...new Set(assignments.map(a => a.plan_id))]
+    .filter(id => !deletedPlanIds.has(id));
+
+  if (visiblePlanIds.length === 0) {
+    return [];
+  }
+
+  // Find the active plan ID (from visible plans only)
+  const activePlanId = assignments.find(a => a.status === "ACTIVE" && !deletedPlanIds.has(a.plan_id))?.plan_id ?? null;
+
+  // Fetch all plans by their IDs (only visible ones)
   const { data, error } = await supabase
     .from("client_plans")
     .select("*")
     .eq("coach_client_id", coachClientId)
-    .is("deleted_at", null)
+    .in("id", visiblePlanIds)
     .order("updated_at", { ascending: false });
 
   if (error) throw error;
@@ -108,12 +141,7 @@ export async function assignTemplateToClient(clientId: string, input: AssignTemp
     finalData = { ...template.data, ...input.data_override };
   }
 
-  // Use FSM to assign plan - this will:
-  // 1. Set client status to ATTIVO
-  // 2. Set active_plan_id
-  // 3. Create plan with IN_CORSO status
-  // 4. Handle one-active-plan invariant
-  // 5. Log all transitions
+  // Use FSM to assign plan
   const result = await assignPlanToClient(clientId, {
     name: input.name_override || template.name,
     description: input.description || template.description,
@@ -135,6 +163,11 @@ export async function assignTemplateToClient(clientId: string, input: AssignTemp
   throw new Error("Failed to assign plan");
 }
 
+/**
+ * Creates a plan draft. Does NOT activate the plan.
+ * Activation must be performed explicitly via set_active_plan_v2 or FSM assignment.
+ * The status "IN_CORSO" is a legacy DB default and must NOT be read as business state.
+ */
 export async function createClientPlanFromScratch(
   clientId: string,
   input: { name: string; description?: string; objective?: string; data: any }
@@ -149,7 +182,6 @@ export async function createClientPlanFromScratch(
       description: input.description,
       objective: input.objective,
       data: input.data,
-      status: "IN_CORSO",
       is_visible: true,
       is_in_use: false,
     })
@@ -161,7 +193,6 @@ export async function createClientPlanFromScratch(
 }
 
 export async function updateClientPlan(id: string, updates: Partial<ClientPlan>) {
-  // Simple update without auto-completion logic
   const { data, error } = await supabase
     .from("client_plans")
     .update(updates)
@@ -173,9 +204,6 @@ export async function updateClientPlan(id: string, updates: Partial<ClientPlan>)
   return data as ClientPlan;
 }
 
-export async function updateClientPlanStatus(id: string, status: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO') {
-  return updateClientPlan(id, { status });
-}
 
 export async function saveClientPlanAsTemplate(planId: string, input: SaveAsTemplateInput) {
   const plan = await getClientPlan(planId);
@@ -199,7 +227,7 @@ export async function saveClientPlanAsTemplate(planId: string, input: SaveAsTemp
 
   // Optionally assign this new template to the client
   if (input.also_assign) {
-    // Get the coach_client_id from the plan
+    // Get the client_id from the plan's coach_client
     const { data: cc } = await supabase
       .from("coach_clients")
       .select("client_id")
@@ -214,19 +242,19 @@ export async function saveClientPlanAsTemplate(planId: string, input: SaveAsTemp
         data: plan.data,
       });
 
-      // Update the newly created plan to link it to the template
-      const { data: clientPlan } = await supabase
-        .from("client_plans")
-        .select("*")
-        .eq("coach_client_id", plan.coach_client_id)
-        .eq("status", "IN_CORSO")
-        .single();
+      // Source of truth: client_plan_assignments
+      const { data: activeAssignment } = await supabase
+        .from("client_plan_assignments")
+        .select("plan_id")
+        .eq("client_id", cc.client_id)
+        .eq("status", "ACTIVE")
+        .maybeSingle();
 
-      if (clientPlan) {
+      if (activeAssignment) {
         await supabase
           .from("client_plans")
           .update({ derived_from_template_id: newTemplate.id })
-          .eq("id", clientPlan.id);
+          .eq("id", activeAssignment.plan_id);
       }
     }
   }

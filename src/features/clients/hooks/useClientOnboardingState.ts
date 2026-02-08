@@ -14,17 +14,20 @@ export interface ClientOnboardingState {
  * Controlla se il cliente ha almeno un piano o un appuntamento
  */
 export function useClientOnboardingState(clientId: string): ClientOnboardingState {
-  // Query piani del cliente (limit 1 per performance)
+  // Query piani del cliente via client_plan_assignments (limit 1 per performance)
   const plansQuery = useQuery({
     queryKey: ['client-onboarding-plans', clientId],
     queryFn: async () => {
-      const coachClientId = await getCoachClientId(clientId);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
       
+      // Source of truth: client_plan_assignments (exclude DELETED)
       const { data, error } = await supabase
-        .from('client_plans')
+        .from('client_plan_assignments')
         .select('id')
-        .eq('coach_client_id', coachClientId)
-        .neq('status', 'ELIMINATO')
+        .eq('coach_id', user.id)
+        .eq('client_id', clientId)
+        .neq('status', 'DELETED')
         .limit(1);
 
       if (error) throw error;

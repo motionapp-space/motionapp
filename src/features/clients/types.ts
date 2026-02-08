@@ -1,5 +1,4 @@
 export type Sex = "M" | "F" | "ALTRO";
-export type PlanStatus = "IN_CORSO" | "COMPLETATO" | "ELIMINATO";
 export type ActorType = "SYSTEM" | "PT";
 export type CoachClientStatus = "active" | "blocked" | "archived";
 
@@ -16,7 +15,6 @@ export interface Client {
   sex?: Sex;
   notes?: string;
   user_id?: string;
-  active_plan_id?: string;
   last_access_at?: string;
   version?: number;
 }
@@ -42,6 +40,7 @@ export interface ClientWithDetails extends ClientWithTags {
   appointment_status?: 'planned' | 'unplanned';
   activity_status?: 'active' | 'low' | 'inactive';
   next_appointment_date?: string | null;
+  has_active_plan?: boolean;  // Source of truth for "Piano attivo" column
   isArchived?: boolean;  // Derived from coach_clients.status
 }
 
@@ -106,14 +105,5 @@ export interface ClientsPageResult {
   limit: number;
 }
 
-export interface PlanStateLog {
-  id: string;
-  plan_id: string;
-  client_id: string;
-  from_status: PlanStatus | null;
-  to_status: PlanStatus;
-  cause: string;
-  actor_type: ActorType;
-  actor_id: string;
-  created_at: string;
-}
+// PlanStateLog uses DB enum types from integrations/supabase/types.ts
+// import { Database } from "@/integrations/supabase/types" for type-safe access

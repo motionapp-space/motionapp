@@ -110,7 +110,7 @@ export function ClientAppointmentModal({
 
     await createEvent.mutateAsync({
       coach_client_id: coachClientId,
-      title: "Sessione di allenamento",
+      title: "Appuntamento",
       start_at: slotStart.toISOString(),
       end_at: slotEnd.toISOString(),
       source: 'client',

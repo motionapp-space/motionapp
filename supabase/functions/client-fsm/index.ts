@@ -5,8 +5,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-type PlanStatus = 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO';
+// ============================================================
+// ASSIGNMENT STATUS — SOLE SOURCE OF TRUTH
+// client_plan_assignments.status is the ONLY source of truth
+// for the plan lifecycle. client_plans.status is legacy/frozen
+// and must NEVER be updated by the FSM.
+// ============================================================
+type AssignmentStatus = 'ACTIVE' | 'INACTIVE' | 'DELETED';
+
+// Legacy type kept ONLY for plan_state_logs backward compatibility.
+// plan_state_logs uses the DB enum plan_status (IN_CORSO/COMPLETATO/ELIMINATO).
+type LegacyPlanStatus = 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO';
+
 type ActorType = 'SYSTEM' | 'PT';
+
+// Maps AssignmentStatus → legacy plan_status for plan_state_logs
+const ASSIGNMENT_TO_LEGACY_STATUS: Record<string, LegacyPlanStatus> = {
+  'ACTIVE': 'IN_CORSO',
+  'INACTIVE': 'COMPLETATO',
+  'DELETED': 'ELIMINATO',
+};
 
 interface TransitionRequest {
   action: string;
@@ -41,7 +59,7 @@ Deno.serve(async (req) => {
 
     console.log(`FSM Action: ${action} for client ${clientId}`);
 
-    // First verify the coach-client relationship and get its status
+    // Verify coach-client relationship
     const { data: coachClientCheck, error: ccError } = await supabaseClient
       .from('coach_clients')
       .select('id, client_id, status')
@@ -57,7 +75,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Then fetch the client data
+    // Fetch client data
     const { data: client, error: clientError } = await supabaseClient
       .from('clients')
       .select('*')
@@ -72,11 +90,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Attach coach_client info for use in handlers
+    // Attach coach_client info
     client.coach_client_id = coachClientCheck.id;
     client.coach_client_status = coachClientCheck.status;
 
-    console.log(`Coach-client status: ${coachClientCheck.status}, active_plan_id: ${client.active_plan_id}`);
+    console.log(`Coach-client status: ${coachClientCheck.status}`);
 
     // Optimistic concurrency check
     if (version !== undefined && client.version !== version) {
@@ -106,7 +124,6 @@ Deno.serve(async (req) => {
       case 'CLIENT_LOGS_IN':
         result = await clientLogsIn(supabaseClient, client);
         break;
-      // NO_ACCESS_X_DAYS is REMOVED - no longer supported
       default:
         return new Response(JSON.stringify({ error: 'Invalid action' }), {
           status: 400,
@@ -129,12 +146,16 @@ Deno.serve(async (req) => {
   }
 });
 
+// ============================================================
+// Logging helper — uses legacy enum values for plan_state_logs
+// backward compatibility. The DB column is enum plan_status.
+// ============================================================
 async function logPlanTransition(
   supabase: any,
   planId: string,
   clientId: string,
-  fromStatus: PlanStatus | null,
-  toStatus: PlanStatus,
+  fromStatus: LegacyPlanStatus | null,
+  toStatus: LegacyPlanStatus,
   cause: string,
   actorId: string,
   actorType: ActorType = 'PT'
@@ -150,8 +171,11 @@ async function logPlanTransition(
   });
 }
 
+// ============================================================
+// ASSIGN_PLAN — Atomic via Postgres RPC (single transaction)
+// ============================================================
 async function assignPlan(supabase: any, client: any, userId: string, metadata: any) {
-  // Check archived status via coach_clients.status (new model)
+  // Check archived status
   if (client.coach_client_status === 'archived') {
     throw new Error('Cannot assign plan to archived client');
   }
@@ -161,119 +185,72 @@ async function assignPlan(supabase: any, client: any, userId: string, metadata: 
     throw new Error('Coach-client relationship not found');
   }
 
-  // Check if there are any existing IN_CORSO plans (handle multiple)
-  const { data: existingPlans } = await supabase
-    .from('client_plans')
-    .select('*')
-    .eq('coach_client_id', coachClientId)
-    .eq('status', 'IN_CORSO')
-    .eq('is_visible', true);
+  // Single atomic RPC call — all logic runs in one DB transaction.
+  // If any step fails, the entire transaction is rolled back.
+  // No partial state can survive an error.
+  const { data, error } = await supabase.rpc('fsm_assign_plan', {
+    p_coach_id: userId,
+    p_client_id: client.id,
+    p_coach_client_id: coachClientId,
+    p_plan_name: metadata?.name || 'New Plan',
+    p_plan_description: metadata?.description || null,
+    p_plan_data: metadata?.data || { days: [] },
+  });
 
-  // Auto-complete all existing IN_CORSO plans
-  if (existingPlans && existingPlans.length > 0) {
-    const now = new Date().toISOString();
-    
-    for (const plan of existingPlans) {
-      await supabase
-        .from('client_plans')
-        .update({
-          status: 'COMPLETATO',
-          locked_at: now,
-          completed_at: now,
-        })
-        .eq('id', plan.id);
-
-      await logPlanTransition(supabase, plan.id, client.id, 'IN_CORSO', 'COMPLETATO', 'AUTO_COMPLETE_ON_NEW_PLAN', userId);
-    }
+  if (error) {
+    console.error('RPC fsm_assign_plan error:', error);
+    throw error;
   }
 
-  // Create new plan
-  const { data: newPlan, error: planError } = await supabase
-    .from('client_plans')
-    .insert({
-      coach_client_id: coachClientId,
-      name: metadata?.name || 'New Plan',
-      description: metadata?.description,
-      data: metadata?.data || { days: [] },
-      status: 'IN_CORSO',
-      is_visible: true,
-    })
-    .select()
-    .single();
+  console.log('ASSIGN_PLAN result:', JSON.stringify(data));
 
-  if (planError) throw planError;
-
-  await logPlanTransition(supabase, newPlan.id, client.id, null, 'IN_CORSO', 'ASSIGN_PLAN', userId);
-
-  // Update client active_plan_id ONLY - NO status change
-  const { error: clientError } = await supabase
-    .from('clients')
-    .update({
-      active_plan_id: newPlan.id,
-    })
-    .eq('id', client.id);
-
-  if (clientError) throw clientError;
-
-  return { success: true, plan: newPlan };
+  // Return plan object for backward compat with callers expecting { plan: { id } }
+  return {
+    success: true,
+    plan: { id: data.plan_id },
+    old_assignment_closed: data.old_assignment_closed,
+  };
 }
 
+// ============================================================
+// ARCHIVE_CLIENT
+// Closes ACTIVE assignments, archives coach_clients relationship.
+// ⚠️ Does NOT update client_plans.status (frozen/legacy).
+// ============================================================
 async function archiveClient(supabase: any, client: any, userId: string) {
   const coachClientId = client.coach_client_id;
-  
-  console.log(`Archiving client ${client.id}, coach_client_status: ${client.coach_client_status}, active_plan_id: ${client.active_plan_id}`);
-  
-  // Check if already archived via coach_clients.status
+
+  console.log(`Archiving client ${client.id}, coach_client_status: ${client.coach_client_status}`);
+
   if (client.coach_client_status === 'archived') {
     return { success: true, message: 'Already archived' };
   }
 
-  // CASO I: If there's an IN_CORSO plan, complete it automatically
-  if (client.active_plan_id) {
-    console.log(`Auto-completing active plan ${client.active_plan_id} before archiving`);
-    
-    const { data: activePlan, error: planFetchError } = await supabase
-      .from('client_plans')
-      .select('*')
-      .eq('id', client.active_plan_id)
-      .single();
+  // Close all ACTIVE assignments for this coach-client pair
+  // ✅ Source of truth: client_plan_assignments.status
+  const { data: closedAssignments } = await supabase
+    .from('client_plan_assignments')
+    .update({ status: 'INACTIVE' as AssignmentStatus, ended_at: new Date().toISOString() })
+    .eq('coach_id', userId)
+    .eq('client_id', client.id)
+    .eq('status', 'ACTIVE')
+    .select('id, plan_id');
 
-    if (planFetchError) {
-      console.error('Failed to fetch active plan:', planFetchError);
-      throw new Error('Failed to fetch active plan');
-    }
-
-    if (activePlan && activePlan.status === 'IN_CORSO') {
-      const { error: planUpdateError } = await supabase
-        .from('client_plans')
-        .update({
-          status: 'COMPLETATO',
-          locked_at: new Date().toISOString(),
-          completed_at: new Date().toISOString(),
-          is_visible: true,
-        })
-        .eq('id', activePlan.id);
-
-      if (planUpdateError) {
-        console.error('Failed to complete plan:', planUpdateError);
-        throw new Error('Failed to complete plan before archiving');
-      }
-
+  // Log closures (non-blocking intent, but awaited for consistency)
+  if (closedAssignments && closedAssignments.length > 0) {
+    for (const assignment of closedAssignments) {
       await logPlanTransition(
         supabase,
-        activePlan.id,
+        assignment.plan_id,
         client.id,
         'IN_CORSO',
         'COMPLETATO',
         'AUTO_COMPLETE_ON_ARCHIVE',
         userId
       );
-
-      console.log(`Plan ${activePlan.id} auto-completed`);
     }
   }
 
-  // Update coach_clients.status to 'archived' (NEW: relation-centric model)
   const { error: ccError } = await supabase
     .from('coach_clients')
     .update({ status: 'archived' })
@@ -284,30 +261,21 @@ async function archiveClient(supabase: any, client: any, userId: string) {
     throw ccError;
   }
 
-  // Clear active_plan_id on clients
-  const { error: clientError } = await supabase
-    .from('clients')
-    .update({ active_plan_id: null })
-    .eq('id', client.id);
-
-  if (clientError) {
-    console.error('Error clearing active_plan_id:', clientError);
-    throw clientError;
-  }
-
-  console.log(`Client ${client.id} archived successfully via coach_clients`);
+  console.log(`Client ${client.id} archived successfully`);
   return { success: true };
 }
 
+// ============================================================
+// UNARCHIVE_CLIENT
+// Restores coach_clients status. Assignments remain closed.
+// ============================================================
 async function unarchiveClient(supabase: any, client: any, userId: string) {
   const coachClientId = client.coach_client_id;
-  
-  // Check if archived via coach_clients.status
+
   if (client.coach_client_status !== 'archived') {
     throw new Error('Client is not archived');
   }
 
-  // Update coach_clients.status to 'active' (NEW: relation-centric model)
   const { error: ccError } = await supabase
     .from('coach_clients')
     .update({ status: 'active' })
@@ -315,40 +283,62 @@ async function unarchiveClient(supabase: any, client: any, userId: string) {
 
   if (ccError) throw ccError;
 
-  // Clear active_plan_id
-  const { error: clientError } = await supabase
-    .from('clients')
-    .update({ active_plan_id: null })
-    .eq('id', client.id);
-
-  if (clientError) throw clientError;
-
   return { success: true };
 }
 
+// ============================================================
+// DELETE_PLAN
+// Validates via client_plan_assignments (source of truth).
+// ⚠️ Does NOT update client_plans.status (frozen/legacy).
+// Only updates client_plans.deleted_at and is_visible.
+// ============================================================
 async function deletePlan(supabase: any, client: any, planId: string, userId: string) {
   const coachClientId = client.coach_client_id;
 
-  const { data: plan, error: planError } = await supabase
-    .from('client_plans')
-    .select('*')
-    .eq('id', planId)
-    .eq('coach_client_id', coachClientId)
-    .single();
+  // Validate: check assignment status (source of truth), not client_plans.status
+  // Use maybeSingle() to handle duplicate assignments gracefully
+  const { data: assignment, error: assignmentError } = await supabase
+    .from('client_plan_assignments')
+    .select('id, status')
+    .eq('plan_id', planId)
+    .eq('coach_id', userId)
+    .eq('client_id', client.id)
+    .order('assigned_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  if (planError || !plan) {
-    throw new Error('Plan not found');
+  if (assignmentError || !assignment) {
+    // Fallback: check if plan exists in client_plans for backward compat
+    const { data: plan, error: planError } = await supabase
+      .from('client_plans')
+      .select('id, status')
+      .eq('id', planId)
+      .eq('coach_client_id', coachClientId)
+      .single();
+
+    if (planError || !plan) {
+      throw new Error('Plan not found');
+    }
+
+    // Legacy plan without assignment — allow delete if not already deleted
+    if (plan.status === 'ELIMINATO') {
+      throw new Error('Cannot delete an already deleted plan');
+    }
+  } else {
+    // Assignment-based validation
+    if (assignment.status === 'DELETED') {
+      throw new Error('Cannot delete an already deleted plan');
+    }
+    if (assignment.status === 'INACTIVE') {
+      throw new Error('Cannot delete an inactive plan');
+    }
   }
 
-  if (plan.status === 'COMPLETATO' || plan.status === 'ELIMINATO') {
-    throw new Error('Cannot delete a completed or already deleted plan');
-  }
-
-  // Soft delete the plan
+  // Update client_plans: metadata only, NOT status (frozen/legacy)
+  // ⚠️ client_plans.status is FROZEN — do NOT update it.
   const { error } = await supabase
     .from('client_plans')
     .update({
-      status: 'ELIMINATO',
       is_visible: false,
       deleted_at: new Date().toISOString(),
     })
@@ -356,46 +346,73 @@ async function deletePlan(supabase: any, client: any, planId: string, userId: st
 
   if (error) throw error;
 
+  // Close ALL assignments for this plan (handles duplicates)
+  await supabase
+    .from('client_plan_assignments')
+    .update({
+      status: 'DELETED' as AssignmentStatus,
+      ended_at: new Date().toISOString(),
+    })
+    .eq('plan_id', planId)
+    .eq('coach_id', userId)
+    .eq('client_id', client.id);
+
   await logPlanTransition(supabase, planId, client.id, 'IN_CORSO', 'ELIMINATO', 'DELETE_PLAN', userId);
-
-  // Update client active_plan_id ONLY - NO status change
-  const { error: clientError } = await supabase
-    .from('clients')
-    .update({ active_plan_id: null })
-    .eq('id', client.id);
-
-  if (clientError) throw clientError;
 
   return { success: true };
 }
 
+// ============================================================
+// COMPLETE_PLAN
+// Validates via client_plan_assignments (source of truth).
+// ⚠️ Does NOT update client_plans.status (frozen/legacy).
+// Only updates client_plans.locked_at and completed_at.
+// ============================================================
 async function completePlan(supabase: any, client: any, planId: string, userId: string) {
   const coachClientId = client.coach_client_id;
 
-  const { data: plan, error: planError } = await supabase
-    .from('client_plans')
-    .select('*')
-    .eq('id', planId)
-    .eq('coach_client_id', coachClientId)
+  // Validate: check assignment status (source of truth)
+  const { data: assignment, error: assignmentError } = await supabase
+    .from('client_plan_assignments')
+    .select('id, status')
+    .eq('plan_id', planId)
+    .eq('coach_id', userId)
+    .eq('client_id', client.id)
     .single();
 
-  if (planError || !plan) {
-    throw new Error('Plan not found');
+  if (assignmentError || !assignment) {
+    // Fallback: legacy plan without assignment
+    const { data: plan, error: planError } = await supabase
+      .from('client_plans')
+      .select('id, status')
+      .eq('id', planId)
+      .eq('coach_client_id', coachClientId)
+      .single();
+
+    if (planError || !plan) {
+      throw new Error('Plan not found');
+    }
+
+    if (plan.status === 'COMPLETATO') {
+      return { success: true, message: 'Already completed' };
+    }
+    if (plan.status === 'ELIMINATO') {
+      throw new Error('Cannot complete a deleted plan');
+    }
+  } else {
+    if (assignment.status === 'INACTIVE') {
+      return { success: true, message: 'Already inactive' };
+    }
+    if (assignment.status === 'DELETED') {
+      throw new Error('Cannot complete a deleted plan');
+    }
   }
 
-  if (plan.status === 'COMPLETATO') {
-    return { success: true, message: 'Already completed' };
-  }
-
-  if (plan.status === 'ELIMINATO') {
-    throw new Error('Cannot complete a deleted plan');
-  }
-
-  // Complete the plan
+  // Update client_plans: temporal metadata only, NOT status (frozen/legacy)
+  // ⚠️ client_plans.status is FROZEN — do NOT update it.
   const { error } = await supabase
     .from('client_plans')
     .update({
-      status: 'COMPLETATO',
       locked_at: new Date().toISOString(),
       completed_at: new Date().toISOString(),
     })
@@ -403,21 +420,26 @@ async function completePlan(supabase: any, client: any, planId: string, userId: 
 
   if (error) throw error;
 
+  // Close assignment (source of truth)
+  if (assignment) {
+    await supabase
+      .from('client_plan_assignments')
+      .update({
+        status: 'INACTIVE' as AssignmentStatus,
+        ended_at: new Date().toISOString(),
+      })
+      .eq('id', assignment.id);
+  }
+
   await logPlanTransition(supabase, planId, client.id, 'IN_CORSO', 'COMPLETATO', 'COMPLETE_PLAN', userId);
-
-  // Update client active_plan_id ONLY - NO status change
-  const { error: clientError } = await supabase
-    .from('clients')
-    .update({ active_plan_id: null })
-    .eq('id', client.id);
-
-  if (clientError) throw clientError;
 
   return { success: true };
 }
 
+// ============================================================
+// CLIENT_LOGS_IN — Updates last_access_at only, no status change
+// ============================================================
 async function clientLogsIn(supabase: any, client: any) {
-  // Simply update last_access_at - NO status change
   await supabase
     .from('clients')
     .update({ last_access_at: new Date().toISOString() })

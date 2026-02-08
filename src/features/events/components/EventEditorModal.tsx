@@ -152,7 +152,7 @@ export function EventEditorModal({
 
   // Form state
   const [formData, setFormData] = useState({
-    title: event?.title || 'Allenamento',
+    title: event?.title || 'Appuntamento',
     clientId: lockedClientId || '',
     location: event?.location || '',
     date: defaultDate,
@@ -217,7 +217,7 @@ export function EventEditorModal({
   
   // Query piani cliente per wizard sessione
   const { data: clientPlans = [] } = useClientPlansQuery(formData.clientId);
-  const activePlans = clientPlans.filter((p) => p.status === "IN_CORSO");
+  const activePlans = clientPlans.filter((p) => p.isActiveForClient);
   // Reset form when opening in new mode or event changes
   useEffect(() => {
     if (open) {
@@ -251,7 +251,7 @@ export function EventEditorModal({
         }
         
         setFormData({
-          title: 'Allenamento',
+          title: 'Appuntamento',
           clientId: lockedClientId || '',
           location: '',
           date: defaultDate,
@@ -275,7 +275,7 @@ export function EventEditorModal({
         getClientIdFromCoachClient(event.coach_client_id)
           .then(clientId => {
             setFormData({
-              title: event.title || 'Allenamento',
+              title: event.title || 'Appuntamento',
               clientId: clientId,
               location: event.location || '',
               date: new Date(event.start_at),
@@ -287,7 +287,7 @@ export function EventEditorModal({
           })
           .catch(() => {
             setFormData({
-              title: event.title || 'Allenamento',
+              title: event.title || 'Appuntamento',
               clientId: '',
               location: event.location || '',
               date: new Date(event.start_at),
@@ -641,7 +641,7 @@ export function EventEditorModal({
                 0,
                 1,
                 evt.id,
-                `Ricorrenza: ${evt.title || 'Allenamento'}`
+                `Ricorrenza: ${evt.title || 'Appuntamento'}`
               );
 
               currentOnHold += 1;
@@ -755,11 +755,12 @@ export function EventEditorModal({
     if (!isValid || !event) return;
 
     try {
+      const coachClientId = await getCoachClientId(formData.clientId);
       await updateEvent.mutateAsync({
         id: event.id,
         data: {
           title: formData.title,
-          client_id: formData.clientId,
+          coach_client_id: coachClientId,
           start_at: eventStartDateTime.toISOString(),
           end_at: eventEndDateTime.toISOString(),
           location: formData.location || null,

@@ -49,7 +49,8 @@ export interface ClientPlanWithTemplate {
   name: string;
   description?: string;
   data: any;
-  status: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO';
+  /** @deprecated Legacy frozen field - do NOT use for business logic */
+  status?: 'IN_CORSO' | 'COMPLETATO' | 'ELIMINATO';
   is_visible: boolean;
   is_in_use: boolean;
   locked_at?: string;
