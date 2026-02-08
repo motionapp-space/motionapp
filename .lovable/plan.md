@@ -1,27 +1,38 @@
 
-## Rimuovere i filtri obsoleti "Ultimo Piano"
+## Correggere la trasparenza dei Toast
 
-### Contesto
-La colonna "Ultimo Piano" (basata sulle settimane dall'assegnazione) è stata sostituita dalla colonna "Piano" con un indicatore booleano (piano attivo sì/no). I filtri avanzati mostrano ancora le opzioni basate sulle settimane che non hanno più senso con la nuova logica.
+### Problema
+I toast appaiono trasparenti perché le classi CSS per i tipi specifici (success, error, info, warning) usano sfondi con opacità molto bassa (10-20%), che sovrascrivono lo sfondo solido `bg-card` definito per il toast base.
+
+### Soluzione
+Modificare gli stili dei toast per mantenere uno sfondo opaco con solo un leggero tinting colorato, garantendo leggibilità e coerenza visiva.
 
 ### Modifiche da effettuare
 
-**File: `src/pages/Clients.tsx`**
+**File: `src/components/ui/sonner.tsx`**
 
-1. **Rimuovere la sezione "Ultimo Piano" dai filtri avanzati** (righe 1183-1211)
-   - Eliminare l'intero RadioGroup con le opzioni:
-     - Tutti
-     - Nessun piano
-     - 0-4 settimane
-     - 4-8 settimane
-     - 8+ settimane
+Aggiornare le classi CSS per ogni tipo di toast:
 
-2. **Aggiornare la logica di reset dei filtri** (riga 1275)
-   - Rimuovere `planWeeksRange: undefined` dalla funzione di reset
+| Tipo | Attuale | Nuovo |
+|------|---------|-------|
+| success | `bg-accent/10` | `bg-card` (mantiene solo il bordo colorato) |
+| error | `bg-destructive/10` | `bg-card` |
+| info | `bg-primary/10` | `bg-card` |
+| warning | `bg-amber-50 dark:bg-amber-950/20` | `bg-card` |
+
+Ogni toast manterrà:
+- Lo sfondo solido `bg-card` per la leggibilità
+- Il bordo laterale colorato (`border-l-4`) per differenziare visivamente i tipi
+- L'ombra esistente (`shadow-lg`) per la profondità
+
+### Dettagli tecnici
+```typescript
+// Nuovo oggetto classNames
+success: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-accent group-[.toaster]:bg-card",
+error: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-destructive group-[.toaster]:bg-card",
+info: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-primary group-[.toaster]:bg-card",
+warning: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-amber-500 group-[.toaster]:bg-card",
+```
 
 ### Risultato
-I filtri avanzati mostreranno solo:
-- Stato Pacchetto
-- Appuntamenti
-
-Il filtro "Piano attivo" rapido (toggle esistente) rimane disponibile per filtrare i clienti con/senza piano attivo.
+I toast avranno uno sfondo opaco e solido, con il bordo colorato laterale che indica il tipo di notifica (successo, errore, info, warning).
