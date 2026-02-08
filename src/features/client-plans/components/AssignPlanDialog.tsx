@@ -42,7 +42,6 @@ export function AssignPlanDialog({ clientId, open, onOpenChange }: AssignPlanDia
         },
       });
 
-      toast.success("Piano assegnato");
       onOpenChange(false);
       
       // Keep on Plans tab
