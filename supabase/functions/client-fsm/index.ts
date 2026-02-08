@@ -11,7 +11,7 @@ const corsHeaders = {
 // for the plan lifecycle. client_plans.status is legacy/frozen
 // and must NEVER be updated by the FSM.
 // ============================================================
-type AssignmentStatus = 'ACTIVE' | 'COMPLETED' | 'DELETED';
+type AssignmentStatus = 'ACTIVE' | 'INACTIVE' | 'DELETED';
 
 // Legacy type kept ONLY for plan_state_logs backward compatibility.
 // plan_state_logs uses the DB enum plan_status (IN_CORSO/COMPLETATO/ELIMINATO).
@@ -22,7 +22,7 @@ type ActorType = 'SYSTEM' | 'PT';
 // Maps AssignmentStatus → legacy plan_status for plan_state_logs
 const ASSIGNMENT_TO_LEGACY_STATUS: Record<string, LegacyPlanStatus> = {
   'ACTIVE': 'IN_CORSO',
-  'COMPLETED': 'COMPLETATO',
+  'INACTIVE': 'COMPLETATO',
   'DELETED': 'ELIMINATO',
 };
 
@@ -230,7 +230,7 @@ async function archiveClient(supabase: any, client: any, userId: string) {
   // ✅ Source of truth: client_plan_assignments.status
   const { data: closedAssignments } = await supabase
     .from('client_plan_assignments')
-    .update({ status: 'COMPLETED' as AssignmentStatus, ended_at: new Date().toISOString() })
+    .update({ status: 'INACTIVE' as AssignmentStatus, ended_at: new Date().toISOString() })
     .eq('coach_id', userId)
     .eq('client_id', client.id)
     .eq('status', 'ACTIVE')
@@ -326,8 +326,8 @@ async function deletePlan(supabase: any, client: any, planId: string, userId: st
     if (assignment.status === 'DELETED') {
       throw new Error('Cannot delete an already deleted plan');
     }
-    if (assignment.status === 'COMPLETED') {
-      throw new Error('Cannot delete a completed plan');
+    if (assignment.status === 'INACTIVE') {
+      throw new Error('Cannot delete an inactive plan');
     }
   }
 
@@ -397,8 +397,8 @@ async function completePlan(supabase: any, client: any, planId: string, userId: 
       throw new Error('Cannot complete a deleted plan');
     }
   } else {
-    if (assignment.status === 'COMPLETED') {
-      return { success: true, message: 'Already completed' };
+    if (assignment.status === 'INACTIVE') {
+      return { success: true, message: 'Already inactive' };
     }
     if (assignment.status === 'DELETED') {
       throw new Error('Cannot complete a deleted plan');
@@ -422,7 +422,7 @@ async function completePlan(supabase: any, client: any, planId: string, userId: 
     await supabase
       .from('client_plan_assignments')
       .update({
-        status: 'COMPLETED' as AssignmentStatus,
+        status: 'INACTIVE' as AssignmentStatus,
         ended_at: new Date().toISOString(),
       })
       .eq('id', assignment.id);
