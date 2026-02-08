@@ -8,7 +8,66 @@ interface ComputedClientData {
   appointment_status: 'planned' | 'unplanned';
   activity_status: 'active' | 'low' | 'inactive';
   next_appointment_date: string | null;
+  has_active_plan: boolean;
 }
+
+// ========== Pure Helper Functions (exported for testing) ==========
+
+/**
+ * Sanitizza query di ricerca per uso in .or() PostgREST
+ * Escapa wildcards SQL e limita lunghezza
+ */
+export function sanitizeSearchQuery(q: string): string {
+  return q
+    .trim()
+    .slice(0, 80)
+    .replace(/\\/g, '\\\\')
+    .replace(/%/g, '\\%')
+    .replace(/_/g, '\\_');
+}
+
+/**
+ * Applica filtro piano attivo su array di IDs
+ * Restituisce IDs filtrati in base a withActivePlan/withoutPlan
+ */
+export function applyActivePlanFilter(
+  ids: string[],
+  activePlanIds: Set<string>,
+  flags: { withActivePlan?: boolean; withoutPlan?: boolean }
+): string[] {
+  // withActivePlan ha precedenza
+  if (flags.withActivePlan === true) {
+    return ids.filter(id => activePlanIds.has(id));
+  }
+  if (flags.withoutPlan === true) {
+    return ids.filter(id => !activePlanIds.has(id));
+  }
+  return ids;
+}
+
+/**
+ * Pagina array di IDs
+ */
+export function paginateIds(ids: string[], page: number, limit: number): string[] {
+  const from = (page - 1) * limit;
+  const to = from + limit;
+  return ids.slice(from, to);
+}
+
+/**
+ * Riordina items per corrispondere all'ordine di pagedIds
+ * Items non presenti in orderedIds finiscono in fondo
+ */
+export function reorderByIds<T extends { id: string }>(items: T[], orderedIds: string[]): T[] {
+  const orderMap = new Map(orderedIds.map((id, idx) => [id, idx]));
+  return [...items].sort((a, b) => {
+    const ai = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+    const bi = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+    return ai - bi;
+  });
+}
+
+// ========== API Functions ==========
 
 export async function listClients(filters: ClientsFilters): Promise<ClientsPageResult> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,25 +75,23 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
 
   const { 
     q = "", 
-    tag = "", 
     sort = "updated_desc", 
     page = 1, 
     limit = 25,
     withActivePlan,
-    withActivePackage,
     lastAccessDays,
     includeArchived = false,
     withoutPlan,
     packageToRenew,
     withoutAppointment,
     lowActivity,
-    planWeeksRange,
     packageStatuses,
     appointmentStatuses,
-    activityStatuses
+    activityStatuses,
+    withActivePackage,
   } = filters;
   
-  // Get client IDs for this coach via coach_clients
+  // ====== STEP 1: IDs del coach ======
   const statusFilter = includeArchived 
     ? ["active", "blocked", "archived"]
     : ["active", "blocked"];
@@ -47,18 +104,112 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
 
   if (ccError) throw ccError;
   
-  const clientIds = coachClients?.map(cc => cc.client_id) || [];
-  
+  const coachClientIds = coachClients?.map(cc => cc.client_id) || [];
   const archivedClientIds = new Set(
     coachClients?.filter(cc => cc.status === 'archived').map(cc => cc.client_id) || []
   );
   
-  if (clientIds.length === 0) {
+  if (coachClientIds.length === 0) {
     return { items: [], total: 0, page, limit };
   }
 
-  // Main query — NO join on active_plan_id
-  let query = supabase
+  // ====== STEP 2: Query IDS-ONLY con filtri DB + SORT ======
+  let idsQuery = supabase
+    .from("clients")
+    .select("id")
+    .in("id", coachClientIds);
+
+  // Sanitize e applica ricerca
+  if (q) {
+    const qSafe = sanitizeSearchQuery(q);
+    idsQuery = idsQuery.or(
+      `first_name.ilike.%${qSafe}%,last_name.ilike.%${qSafe}%,email.ilike.%${qSafe}%`
+    );
+  }
+
+  // Last access filter
+  if (lastAccessDays !== undefined && lastAccessDays > 0) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - lastAccessDays);
+    idsQuery = idsQuery.gte("last_access_at", cutoffDate.toISOString());
+  }
+
+  // Sort sulla query ids (mantiene ordine per paginazione)
+  switch (sort) {
+    case "created_desc":
+      idsQuery = idsQuery.order("created_at", { ascending: false });
+      break;
+    case "created_asc":
+      idsQuery = idsQuery.order("created_at", { ascending: true });
+      break;
+    case "name_asc":
+      idsQuery = idsQuery.order("last_name", { ascending: true })
+                         .order("first_name", { ascending: true });
+      break;
+    case "name_desc":
+      idsQuery = idsQuery.order("last_name", { ascending: false })
+                         .order("first_name", { ascending: false });
+      break;
+    case "updated_asc":
+      idsQuery = idsQuery.order("updated_at", { ascending: true });
+      break;
+    // Legacy sort values fallback to updated_desc
+    case "plan_weeks_asc":
+    case "plan_weeks_desc":
+    case "updated_desc":
+    default:
+      idsQuery = idsQuery.order("updated_at", { ascending: false });
+      break;
+  }
+
+  const { data: dbFilteredData, error: idsError } = await idsQuery;
+  if (idsError) throw idsError;
+
+  let dbFilteredIds = (dbFilteredData || []).map(c => c.id);
+
+  if (dbFilteredIds.length === 0) {
+    return { items: [], total: 0, page, limit };
+  }
+
+  // ====== STEP 3: Filtro piano attivo (server-assisted, scoped al coach) ======
+  const needsActivePlanFilter = withActivePlan === true || withoutPlan === true;
+  let finalIds = dbFilteredIds;
+
+  if (needsActivePlanFilter) {
+    const { data: activeAssignments } = await supabase
+      .from("client_plan_assignments")
+      .select("client_id")
+      .eq("coach_id", user.id)
+      .eq("status", "ACTIVE")
+      .in("client_id", dbFilteredIds);
+    
+    const activePlanIdSet = new Set(
+      (activeAssignments || []).map(a => a.client_id)
+    );
+    
+    // Usa helper pure
+    finalIds = applyActivePlanFilter(dbFilteredIds, activePlanIdSet, {
+      withActivePlan,
+      withoutPlan,
+    });
+    
+    if (finalIds.length === 0) {
+      return { items: [], total: 0, page, limit };
+    }
+  }
+
+  // ====== STEP 4: Total corretto (dopo tutti i filtri) ======
+  const total = finalIds.length;
+
+  // ====== STEP 5: Paginazione manuale sugli IDs ======
+  const pagedIds = paginateIds(finalIds, page, limit);
+
+  if (pagedIds.length === 0) {
+    return { items: [], total, page, limit };
+  }
+
+  // ====== STEP 6: Query DETTAGLI (NO .order() - ordine gestito in memoria) ======
+  const { data, error } = await supabase
     .from("clients")
     .select(`
       *,
@@ -69,103 +220,42 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
         packages:package(package_id, consumed_sessions, total_sessions),
         sessions:training_sessions(id, started_at)
       )
-    `, { count: "exact" })
-    .in("id", clientIds);
-
-  // Search filter
-  if (q) {
-    query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`);
-  }
-
-  // NOTE: withActivePlan filter is now applied client-side after batch fetch
-
-  // Active package filter
-  if (withActivePackage !== undefined) {
-    // Client-side filter applied below
-  }
-
-  // Last access filter
-  if (lastAccessDays !== undefined && lastAccessDays > 0) {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - lastAccessDays);
-    query = query.gte("last_access_at", cutoffDate.toISOString());
-  }
-
-  // Sorting
-  switch (sort) {
-    case "created_desc":
-      query = query.order("created_at", { ascending: false });
-      break;
-    case "created_asc":
-      query = query.order("created_at", { ascending: true });
-      break;
-    case "name_asc":
-      query = query.order("last_name", { ascending: true }).order("first_name", { ascending: true });
-      break;
-    case "name_desc":
-      query = query.order("last_name", { ascending: false }).order("first_name", { ascending: false });
-      break;
-    case "updated_asc":
-      query = query.order("updated_at", { ascending: true });
-      break;
-    case "updated_desc":
-    default:
-      query = query.order("updated_at", { ascending: false });
-      break;
-  }
-
-  // Pagination
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
-  query = query.range(from, to);
-
-  const { data, error, count } = await query;
+    `)
+    .in("id", pagedIds);
 
   if (error) throw error;
 
-  // Get client IDs for batch computation
-  const batchClientIds = (data || []).map((c: any) => c.id);
-
-  // Batch fetch active plan names via client_plan_assignments (source of truth)
-  let activePlanMap = new Map<string, string>();
-  if (batchClientIds.length > 0) {
-    const { data: activeAssignments } = await supabase
-      .from("client_plan_assignments")
-      .select("client_id, plan_id, client_plans!inner(name)")
-      .in("client_id", batchClientIds)
-      .eq("status", "ACTIVE");
-
-    activePlanMap = new Map(
-      (activeAssignments || []).map((a: any) => [a.client_id, (a.client_plans as any)?.name])
-    );
-  }
-
-  // Compute additional data via edge function
+  // ====== STEP 7: compute-client-data ======
   let computedDataMap: Record<string, ComputedClientData> = {};
-  if (batchClientIds.length > 0) {
+  if (pagedIds.length > 0) {
     try {
       const { data: computedData, error: computeError } = await supabase.functions.invoke(
         'compute-client-data',
-        { body: { clientIds: batchClientIds } }
+        { body: { clientIds: pagedIds } }
       );
 
       if (!computeError && computedData?.data) {
-        computedDataMap = computedData.data.reduce((acc: Record<string, ComputedClientData>, item: ComputedClientData) => {
-          acc[item.client_id] = item;
-          return acc;
-        }, {});
+        computedDataMap = computedData.data.reduce(
+          (acc: Record<string, ComputedClientData>, item: ComputedClientData) => {
+            acc[item.client_id] = item;
+            return acc;
+          }, 
+          {}
+        );
       }
     } catch (err) {
       console.error('Failed to compute client data:', err);
     }
   }
 
-  // Transform data structure
+  // ====== STEP 8: Transform ======
   let items: ClientWithDetails[] = (data || []).map((client: any) => {
     const coachClient = client.coach_client?.[0];
-    const activePackage = coachClient?.packages?.find((p: any) => p.consumed_sessions < p.total_sessions);
-    const lastSession = coachClient?.sessions?.sort((a: any, b: any) => 
-      new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+    const activePackage = coachClient?.packages?.find(
+      (p: any) => p.consumed_sessions < p.total_sessions
+    );
+    const lastSession = coachClient?.sessions?.sort(
+      (a: any, b: any) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
     )[0];
 
     const computed = computedDataMap[client.id];
@@ -174,7 +264,6 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
     return {
       ...client,
       tags: client.tags?.map((t: any) => t.tag).filter(Boolean) || [],
-      current_plan_name: activePlanMap.get(client.id) ?? undefined,
       package_sessions_used: activePackage?.consumed_sessions,
       package_sessions_total: activePackage?.total_sessions,
       last_session_date: lastSession?.started_at,
@@ -183,20 +272,17 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       appointment_status: computed?.appointment_status,
       activity_status: computed?.activity_status,
       next_appointment_date: computed?.next_appointment_date,
+      has_active_plan: computed?.has_active_plan ?? false,
       isArchived,
       coach_client: undefined,
     };
   });
 
-  // Filter: withActivePlan (client-side, based on client_plan_assignments)
-  if (withActivePlan !== undefined) {
-    items = items.filter(c => {
-      const hasActive = activePlanMap.has(c.id);
-      return withActivePlan ? hasActive : !hasActive;
-    });
-  }
+  // Riordina per corrispondere a pagedIds
+  items = reorderByIds(items, pagedIds);
 
-  // Apply client-side package filter
+  // ====== Filtri client-side rimanenti ======
+  // Active package filter
   if (withActivePackage !== undefined) {
     items = items.filter(client => {
       const hasActivePackage = client.package_sessions_total !== undefined && 
@@ -206,10 +292,6 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
     });
   }
 
-  // Client-side filtering based on computed data
-  if (withoutPlan) {
-    items = items.filter(c => c.plan_weeks_since_assignment === null);
-  }
   if (packageToRenew) {
     items = items.filter(c => c.package_status === 'expired');
   }
@@ -221,18 +303,6 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
       c.activity_status === 'low' || c.activity_status === 'inactive'
     );
   }
-  if (planWeeksRange) {
-    items = items.filter(c => {
-      const weeks = c.plan_weeks_since_assignment;
-      switch (planWeeksRange) {
-        case 'none': return weeks === null;
-        case '0-4': return weeks !== null && weeks >= 0 && weeks < 4;
-        case '4-8': return weeks !== null && weeks >= 4 && weeks < 8;
-        case '8+': return weeks !== null && weeks >= 8;
-        default: return true;
-      }
-    });
-  }
   if (packageStatuses && packageStatuses.length > 0) {
     items = items.filter(c => packageStatuses.includes(c.package_status!));
   }
@@ -243,12 +313,7 @@ export async function listClients(filters: ClientsFilters): Promise<ClientsPageR
     items = items.filter(c => activityStatuses.includes(c.activity_status!));
   }
 
-  return {
-    items,
-    total: items.length,
-    page,
-    limit,
-  };
+  return { items, total, page, limit };
 }
 
 export async function getClientById(id: string): Promise<ClientWithTags> {

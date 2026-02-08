@@ -5,7 +5,7 @@ import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 import { toSentenceCase } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import type { ClientWithDetails } from "../types";
-import { PlanWeeksBadge } from "./badges/PlanWeeksBadge";
+import { ActivePlanBadge } from "./badges/ActivePlanBadge";
 import { PackageStatusBadge } from "./badges/PackageStatusBadge";
 import { AppointmentStatusBadge } from "./badges/AppointmentStatusBadge";
 import { ActivityStatusBadge } from "./badges/ActivityStatusBadge";
@@ -41,7 +41,7 @@ function ClientRow({
         {client.first_name} {client.last_name}
       </TableCell>
       <TableCell>
-        <PlanWeeksBadge weeks={client.plan_weeks_since_assignment} />
+        <ActivePlanBadge hasActivePlan={client.has_active_plan} />
       </TableCell>
       <TableCell>
         <PackageStatusBadge 
@@ -98,7 +98,7 @@ export function ClientsTable({ rows, highlightId, onArchive, onUnarchive }: Clie
         <TableHeader className="border-b-2 border-border/50">
           <TableRow>
             <TableHead>{toSentenceCase("Cliente")}</TableHead>
-            <TableHead>{toSentenceCase("Ultimo Piano")}</TableHead>
+            <TableHead>{toSentenceCase("Piano attivo")}</TableHead>
             <TableHead>{toSentenceCase("Pacchetto")}</TableHead>
             <TableHead>{toSentenceCase("Appuntamento")}</TableHead>
             <TableHead>{toSentenceCase("Attività")}</TableHead>
