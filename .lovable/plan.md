@@ -1,38 +1,47 @@
 
-## Correggere la trasparenza dei Toast
+
+## Chiudere la modale "Uscire senza salvare?" anche in caso di errore
 
 ### Problema
-I toast appaiono trasparenti perché le classi CSS per i tipi specifici (success, error, info, warning) usano sfondi con opacità molto bassa (10-20%), che sovrascrivono lo sfondo solido `bg-card` definito per il toast base.
+Quando l'utente clicca "Salva ed esci" ma il campo "Nome per il piano" è vuoto:
+- Viene mostrato il toast di errore "Inserisci un nome per il piano"
+- La modale rimane aperta, bloccando l'utente
 
-### Soluzione
-Modificare gli stili dei toast per mantenere uno sfondo opaco con solo un leggero tinting colorato, garantendo leggibilità e coerenza visiva.
+### Comportamento desiderato
+La modale deve chiudersi sempre dopo il click su "Salva ed esci", indipendentemente dal risultato del salvataggio. L'utente vedrà comunque il toast di errore e potrà correggere il problema.
 
-### Modifiche da effettuare
+### Modifica da effettuare
 
-**File: `src/components/ui/sonner.tsx`**
+**File: `src/pages/ClientPlanEditor.tsx`**
 
-Aggiornare le classi CSS per ogni tipo di toast:
+Modificare la funzione `handleSaveAndExit` (righe 358-367) per chiudere sempre la modale:
 
-| Tipo | Attuale | Nuovo |
-|------|---------|-------|
-| success | `bg-accent/10` | `bg-card` (mantiene solo il bordo colorato) |
-| error | `bg-destructive/10` | `bg-card` |
-| info | `bg-primary/10` | `bg-card` |
-| warning | `bg-amber-50 dark:bg-amber-950/20` | `bg-card` |
-
-Ogni toast manterrà:
-- Lo sfondo solido `bg-card` per la leggibilità
-- Il bordo laterale colorato (`border-l-4`) per differenziare visivamente i tipi
-- L'ombra esistente (`shadow-lg`) per la profondità
-
-### Dettagli tecnici
 ```typescript
-// Nuovo oggetto classNames
-success: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-accent group-[.toaster]:bg-card",
-error: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-destructive group-[.toaster]:bg-card",
-info: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-primary group-[.toaster]:bg-card",
-warning: "group-[.toaster]:border-l-4 group-[.toaster]:border-l-amber-500 group-[.toaster]:bg-card",
+// Attuale (riga 358-367)
+const handleSaveAndExit = async () => {
+  const success = await handleSave();
+  if (success) {
+    setExitDialogOpen(false);
+    pendingNavigation.current?.();
+    pendingNavigation.current = null;
+  }
+  // If save fails, dialog stays open, user sees error toast
+};
+
+// Nuovo
+const handleSaveAndExit = async () => {
+  setExitDialogOpen(false); // Chiudi sempre la modale
+  const success = await handleSave();
+  if (success) {
+    pendingNavigation.current?.();
+    pendingNavigation.current = null;
+  }
+  // Se il salvataggio fallisce, l'utente vede il toast di errore e può correggere
+};
 ```
 
 ### Risultato
-I toast avranno uno sfondo opaco e solido, con il bordo colorato laterale che indica il tipo di notifica (successo, errore, info, warning).
+- Click su "Salva ed esci" → la modale si chiude immediatamente
+- Se il salvataggio riesce → l'utente viene reindirizzato
+- Se il salvataggio fallisce (es. nome mancante) → l'utente vede il toast di errore e può inserire il nome, poi salvare di nuovo
+
