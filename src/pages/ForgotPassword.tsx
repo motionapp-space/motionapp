@@ -37,7 +37,7 @@ const ForgotPassword = () => {
 
   if (submitted) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[hsl(0,0%,96%)] p-4">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(0,0%,96%)] p-4">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-4">
             <div className="mx-auto w-20 h-20 bg-[hsl(220,70%,95%)] rounded-3xl flex items-center justify-center">
@@ -62,7 +62,7 @@ const ForgotPassword = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[hsl(0,0%,96%)] p-4">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(0,0%,96%)] p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-4">
           <div className="mx-auto w-20 h-20 bg-[hsl(220,70%,95%)] rounded-3xl flex items-center justify-center">
