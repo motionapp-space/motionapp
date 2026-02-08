@@ -30,7 +30,7 @@ export function ActivePlanBadge({ hasActivePlan }: ActivePlanBadgeProps) {
       "border-muted-foreground/50 bg-muted/50 text-muted-foreground"
     )}>
       <XCircle className="h-3 w-3" />
-      Nessun piano
+      Nessuno
     </Badge>
   );
 }
