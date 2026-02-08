@@ -1180,36 +1180,6 @@ const Clients = () => {
                   <PopoverContent className="w-[600px] p-0" align="start">
                     <div className="p-5">
                       <div className="grid grid-cols-2 gap-6">
-                        {/* Ultimo Piano */}
-                        <div className="space-y-3">
-                          <Label className="text-sm font-medium">Ultimo Piano</Label>
-                          <RadioGroup
-                            value={filters.planWeeksRange || "all"}
-                            onValueChange={(v) => setFilters({ planWeeksRange: v === "all" ? undefined : v as any })}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="all" id="plan-all-active" />
-                              <Label htmlFor="plan-all-active" className="cursor-pointer font-normal">Tutti</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="none" id="plan-none-active" />
-                              <Label htmlFor="plan-none-active" className="cursor-pointer font-normal">Nessun piano</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="0-4" id="plan-0-4-active" />
-                              <Label htmlFor="plan-0-4-active" className="cursor-pointer font-normal">0-4 settimane</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="4-8" id="plan-4-8-active" />
-                              <Label htmlFor="plan-4-8-active" className="cursor-pointer font-normal">4-8 settimane</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="8+" id="plan-8+-active" />
-                              <Label htmlFor="plan-8+-active" className="cursor-pointer font-normal">8+ settimane</Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
-
                         {/* Stato Pacchetto */}
                         <div className="space-y-3">
                           <Label className="text-sm font-medium">Stato Pacchetto</Label>
@@ -1272,7 +1242,6 @@ const Clients = () => {
                           onClick={() => {
                             setFilters({
                               appointmentStatuses: undefined,
-                              planWeeksRange: undefined,
                               packageStatuses: undefined,
                             });
                           }}
