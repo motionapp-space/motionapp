@@ -192,10 +192,6 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
 
         {/* Tab: Sessioni Autonome */}
         <TabsContent value="autonomous" className="space-y-4">
-              <h3 className="text-base font-semibold leading-6 text-foreground mb-4">
-                Sessioni svolte dal cliente in autonomia
-              </h3>
-
           {autonomousSessions.length === 0 ? (
             <Card>
               <CardContent className="p-0">
