@@ -29,7 +29,7 @@ export function ClientEmptyState({
       <div className="space-y-1 max-w-xs">
         <p className="text-base font-medium text-foreground">{title}</p>
         {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-[15px] leading-6 text-muted-foreground">{description}</p>
         )}
       </div>
       {action && (

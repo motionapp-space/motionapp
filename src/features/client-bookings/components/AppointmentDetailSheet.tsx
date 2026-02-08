@@ -125,14 +125,14 @@ export function AppointmentDetailSheet({
             <>
               <Separator />
               <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 space-y-2">
-                <p className="text-sm font-medium text-amber-800">Nuovo orario proposto</p>
-                <div className="flex items-center gap-2 text-sm">
+                <p className="text-[15px] leading-6 font-medium text-amber-800">Nuovo orario proposto</p>
+                <div className="flex items-center gap-2 text-[15px] leading-6">
                   <Calendar className="h-4 w-4 text-amber-600" />
                   <span className="capitalize">
                     {format(parseISO(appointment.proposedStartAt), "EEEE d MMMM", { locale: it })}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-2 text-[15px] leading-6">
                   <Clock className="h-4 w-4 text-amber-600" />
                   <span>
                     {format(parseISO(appointment.proposedStartAt), "HH:mm")} – 
@@ -147,8 +147,8 @@ export function AppointmentDetailSheet({
             <>
               <Separator />
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Note</p>
-                <p className="text-sm">{appointment.notes}</p>
+                <p className="text-[15px] leading-6 text-muted-foreground mb-1">Note</p>
+                <p className="text-[15px] leading-6">{appointment.notes}</p>
               </div>
             </>
           )}
@@ -199,7 +199,7 @@ export function AppointmentDetailSheet({
             )}
 
             {appointment.status === 'CONFIRMED' && !appointment.canCancel && (
-              <p className="text-sm text-muted-foreground text-center">
+              <p className="text-[15px] leading-6 text-muted-foreground text-center">
                 Non è più possibile annullare l'appuntamento
               </p>
             )}

@@ -170,9 +170,9 @@ const ClientAcceptInvite = () => {
 
         {/* Welcome Message */}
         <div className="rounded-2xl bg-card p-4 text-center">
-          <p className="text-sm text-muted-foreground">Benvenuto/a,</p>
+          <p className="text-[15px] leading-6 text-muted-foreground">Benvenuto/a,</p>
           <p className="text-lg font-semibold text-foreground">{validation.clientName}</p>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-[15px] leading-6 text-muted-foreground">
             Crea una password per accedere alla tua area personale
           </p>
         </div>

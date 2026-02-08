@@ -19,7 +19,7 @@ function ExerciseItem({ exercise }: { exercise: Exercise }) {
 
   return (
     <div className="py-2 border-b border-border/50 last:border-0">
-      <p className="font-medium text-sm text-foreground">
+      <p className="font-medium text-[15px] leading-6 text-foreground">
         {exercise.name || "Esercizio senza nome"}
       </p>
       <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
@@ -79,7 +79,7 @@ export function ClientWorkoutExerciseList({ day }: ClientWorkoutExerciseListProp
   
   if (phases.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-2">
+      <p className="text-[15px] leading-6 text-muted-foreground py-2">
         Nessun esercizio in questo giorno
       </p>
     );

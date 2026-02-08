@@ -45,7 +45,7 @@ export function NextAppointmentCard({
             </div>
             <div className="flex-1">
               <p className="font-medium text-foreground">Nessun appuntamento</p>
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <p className="text-[15px] leading-6 text-muted-foreground mt-0.5">
                 Prenota il tuo prossimo appuntamento
               </p>
             </div>
@@ -77,10 +77,10 @@ export function NextAppointmentCard({
               </p>
               {getStatusBadge(appointment.status)}
             </div>
-            <p className="text-sm text-foreground capitalize">
+            <p className="text-[15px] leading-6 text-foreground capitalize">
               {formattedDay}
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-[15px] leading-6 text-muted-foreground">
               {formattedTime}
             </p>
           </div>

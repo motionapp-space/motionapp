@@ -37,7 +37,7 @@ export function ClientHistoryItem({
       )}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">{title}</p>
+        <p className="text-[15px] leading-6 font-medium text-foreground truncate">{title}</p>
         <div className="flex items-center gap-1.5 mt-0.5">
           <span className="text-xs text-muted-foreground">{date}</span>
           {time && (

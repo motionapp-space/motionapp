@@ -55,7 +55,7 @@ export default function ClientAllAppointments() {
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
               <p className="font-medium capitalize text-foreground truncate">{formattedDate}</p>
-              <p className="text-sm text-muted-foreground">{formattedTime}</p>
+              <p className="text-[15px] leading-6 text-muted-foreground">{formattedTime}</p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           </div>
@@ -79,7 +79,7 @@ export default function ClientAllAppointments() {
           <Icon className="h-6 w-6 text-muted-foreground" />
         </div>
         <p className="font-medium text-foreground">{title}</p>
-        <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        <p className="text-[15px] leading-6 text-muted-foreground mt-1">{description}</p>
       </div>
     );
   };

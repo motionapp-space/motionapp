@@ -30,7 +30,7 @@ export function ClientWorkoutDayCard({ day, index }: ClientWorkoutDayCardProps) 
           <CardContent className="py-3 px-4 cursor-pointer hover:bg-accent/50 transition-colors">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-foreground truncate">
+                <p className="font-medium text-[15px] leading-6 text-foreground truncate">
                   {title}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">

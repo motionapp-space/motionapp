@@ -27,14 +27,14 @@ export function WorkoutDayDetailSheet({ day, open, onOpenChange, onStartSession 
             </div>
             <div>
               <SheetTitle className="text-lg">{day.title}</SheetTitle>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-[15px] leading-6 text-muted-foreground">
                 {exerciseCount} esercizi
               </p>
             </div>
           </div>
           
           {day.objective && (
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-[15px] leading-6 text-muted-foreground mt-2">
               {day.objective}
             </p>
           )}
