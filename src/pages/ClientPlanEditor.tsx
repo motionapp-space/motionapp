@@ -357,13 +357,13 @@ const ClientPlanEditor = () => {
 
   // Save and exit
   const handleSaveAndExit = async () => {
+    setExitDialogOpen(false); // Chiudi sempre la modale
     const success = await handleSave();
     if (success) {
-      setExitDialogOpen(false);
       pendingNavigation.current?.();
       pendingNavigation.current = null;
     }
-    // If save fails, dialog stays open, user sees error toast
+    // Se il salvataggio fallisce, l'utente vede il toast di errore e può correggere
   };
 
   const handleSaveAsTemplate = async () => {
