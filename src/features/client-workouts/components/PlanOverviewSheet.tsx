@@ -45,7 +45,7 @@ export function PlanOverviewSheet({ plan, sessions, open, onOpenChange }: PlanOv
               </div>
               <div>
                 <SheetTitle className="text-lg">{plan.name}</SheetTitle>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-[15px] leading-6 text-muted-foreground">
                   {days.length} {days.length === 1 ? "giorno" : "giorni"} di allenamento
                 </p>
               </div>
@@ -54,7 +54,7 @@ export function PlanOverviewSheet({ plan, sessions, open, onOpenChange }: PlanOv
           
           <div className="overflow-y-auto flex-1 py-4 space-y-2">
             {days.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
+              <p className="text-[15px] leading-6 text-muted-foreground text-center py-4">
                 Il piano non contiene ancora giorni di allenamento
               </p>
             ) : (
@@ -84,7 +84,7 @@ export function PlanOverviewSheet({ plan, sessions, open, onOpenChange }: PlanOv
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-foreground truncate">
+                          <p className="font-medium text-[15px] leading-6 text-foreground truncate">
                             {day.title}
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">

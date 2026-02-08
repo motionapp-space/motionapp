@@ -42,7 +42,7 @@ export function CounterProposalCard({
         {/* Proposed time */}
         <div>
           <p className="font-semibold text-foreground capitalize">{formattedDate}</p>
-          <p className="text-sm text-muted-foreground">{formattedTime}</p>
+          <p className="text-[15px] leading-6 text-muted-foreground">{formattedTime}</p>
         </div>
         
         {/* Explanation */}

@@ -32,7 +32,7 @@ export function ChangeProposalBanner({
       <CalendarClock className="h-4 w-4 text-blue-600" />
       <AlertTitle className="text-blue-900">Proposta di modifica</AlertTitle>
       <AlertDescription className="text-blue-700">
-        <p className="mb-3">
+        <p className="mb-3 text-[15px] leading-6">
           Il coach propone un nuovo orario per <strong>{appointment.title}</strong>:
         </p>
         <p className="font-medium capitalize mb-4">

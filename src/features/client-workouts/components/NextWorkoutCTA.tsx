@@ -96,7 +96,7 @@ export function NextWorkoutCTA({
           {/* Secondary link */}
           <button
             onClick={onChangeDay}
-            className="w-full text-center text-sm text-muted-foreground hover:underline mt-3"
+            className="w-full text-center text-[15px] leading-6 text-muted-foreground hover:underline mt-3"
           >
             Cambia giorno →
           </button>

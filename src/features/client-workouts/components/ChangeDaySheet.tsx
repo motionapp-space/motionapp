@@ -83,7 +83,7 @@ export function ChangeDaySheet({
                   <p className="font-medium truncate">
                     {day.title}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-[15px] leading-6 text-muted-foreground">
                     {day.exercisesCount} esercizi
                     {day.estimatedMinutes && ` · ~${day.estimatedMinutes} min`}
                   </p>

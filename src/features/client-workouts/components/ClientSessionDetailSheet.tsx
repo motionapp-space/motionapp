@@ -108,7 +108,7 @@ function SetLine({ actual, index }: { actual: ExerciseActual; index: number }) {
       <span className="text-xs text-muted-foreground w-14 flex-shrink-0">
         Serie {index + 1}
       </span>
-      <span className="text-sm text-foreground">
+      <span className="text-[15px] leading-6 text-foreground">
         {parts.join(" • ") || "—"}
       </span>
     </div>
@@ -118,7 +118,7 @@ function SetLine({ actual, index }: { actual: ExerciseActual; index: number }) {
 function ExerciseDetail({ group }: { group: GroupedActuals }) {
   return (
     <div className="py-3 border-b border-border/50 last:border-0">
-      <p className="font-medium text-sm text-foreground mb-1">
+      <p className="font-medium text-[15px] leading-6 text-foreground mb-1">
         {group.exerciseName}
       </p>
       <div className="space-y-0">
@@ -207,7 +207,7 @@ export function ClientSessionDetailSheet({
               <Skeleton className="h-20 w-full" />
             </div>
           ) : grouped.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
+            <p className="text-[15px] leading-6 text-muted-foreground text-center py-8">
               Nessun esercizio registrato per questa sessione
             </p>
           ) : (
@@ -224,7 +224,7 @@ export function ClientSessionDetailSheet({
               type="button"
               onClick={handleRemoveFromHistory}
               disabled={isRemoving}
-              className="w-full min-h-[44px] px-3 py-2 text-sm font-medium text-destructive/70 hover:text-destructive hover:bg-destructive/5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full min-h-[44px] px-3 py-2 text-[15px] leading-6 font-medium text-destructive/70 hover:text-destructive hover:bg-destructive/5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
               {isRemoving ? 'Rimozione...' : 'Rimuovi dalla cronologia'}
