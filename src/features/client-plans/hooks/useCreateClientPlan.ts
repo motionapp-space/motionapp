@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClientPlanFromScratch } from "../api/client-plans.api";
+import { assignPlanToClient } from "@/features/clients/api/client-fsm.api";
 import { toast } from "sonner";
 
 export function useCreateClientPlan() {
@@ -19,10 +19,9 @@ export function useCreateClientPlan() {
       objective?: string;
       days: any;
     }) =>
-      createClientPlanFromScratch(clientId, {
+      assignPlanToClient(clientId, {
         name,
         description,
-        objective,
         data: { days },
       }),
     onSuccess: (plan, variables) => {
