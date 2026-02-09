@@ -1,49 +1,44 @@
 
 
-## Notifica al cliente quando il coach assegna un nuovo piano
+## Fix: Piano creato da zero non visibile nella lista
 
-### Cosa cambia
+### Problema
 
-Quando il coach assegna un piano, il cliente riceve una notifica in-app (visibile nella campanella e nella pagina Notifiche) con titolo e nome del piano.
+La funzione `createClientPlanFromScratch` inserisce il piano solo nella tabella `client_plans`, senza creare un record in `client_plan_assignments`. La lista piani (`getClientPlansWithActive`) usa esclusivamente `client_plan_assignments` come source of truth per determinare quali piani mostrare. Risultato: il piano esiste nel DB ma non appare.
 
-### Modifiche
+### Soluzione
 
-**1. Migrazione SQL -- Inserimento notifica dentro `fsm_assign_plan`**
-
-Aggiungere un `INSERT INTO client_notifications` alla fine della funzione RPC `fsm_assign_plan`, subito prima del `RETURN`. La notifica viene creata atomicamente nella stessa transazione dell'assegnazione.
-
-```sql
-INSERT INTO client_notifications (client_id, type, title, message, related_id, related_type)
-VALUES (
-  p_client_id,
-  'plan_assigned',
-  'Nuovo piano assegnato',
-  'Il tuo coach ti ha assegnato il piano "' || p_plan_name || '"',
-  v_new_plan_id,
-  'plan'
-);
-```
-
-Aggiungere anche il valore `plan_assigned` al CHECK constraint della colonna `type` (se presente), oppure verificare che la colonna accetti valori liberi.
-
-**2. `src/features/client-notifications/types.ts` -- Nuovo tipo**
-
-Aggiungere `"plan_assigned"` all'union type `ClientNotificationType`.
-
-**3. `src/features/client-notifications/components/ClientNotificationItem.tsx` -- Icona e colore**
-
-- In `getNotificationIcon`: aggiungere `case "plan_assigned": return ClipboardList` (o icona simile da lucide-react)
-- In `getIconColorClass`: aggiungere `case "plan_assigned": return "text-blue-500"`
+Modificare il flusso "Crea da zero" per passare attraverso il FSM (`assignPlanToClient`), esattamente come fa gia' "Crea da template". Questo garantisce:
+- Creazione del piano in `client_plans`
+- Creazione dell'assignment in `client_plan_assignments` con status `ACTIVE`
+- Log in `plan_state_logs`
+- Notifica al cliente (`plan_assigned`, appena aggiunta)
 
 ### Dettaglio tecnico
 
-La funzione `fsm_assign_plan` attuale (nella migrazione `20260207195044`) ha gia' tutti i dati necessari: `p_client_id`, `p_plan_name`, `v_new_plan_id`. L'INSERT della notifica viene aggiunto prima del RETURN finale (riga 100), cosi' se l'inserimento fallisce l'intera transazione viene annullata.
+**File: `src/features/client-plans/hooks/useCreateClientPlan.ts`**
 
-Nessuna modifica necessaria ai componenti di lista o alla bell icon: il sistema di polling esistente (ogni 30s) mostrera' automaticamente la nuova notifica.
+Sostituire la chiamata a `createClientPlanFromScratch` con `assignPlanToClient` (dal modulo FSM), che gestisce l'intero ciclo di vita:
+
+```typescript
+import { assignPlanToClient } from "@/features/clients/api/client-fsm.api";
+
+// mutationFn diventa:
+mutationFn: ({ clientId, name, description, objective, days }) =>
+  assignPlanToClient(clientId, {
+    name,
+    description,
+    data: { days },
+  }),
+```
+
+La funzione `assignPlanToClient` chiama l'edge function `client-fsm` con action `ASSIGN_PLAN`, che a sua volta invoca `fsm_assign_plan` — la stessa RPC usata per l'assegnazione da template.
+
+**Nota importante**: questo significa che creare un piano da zero lo rende automaticamente il piano ATTIVO. Il precedente piano attivo viene chiuso con status `COMPLETED`. Questo e' coerente con il flusso da template e con l'aspettativa dell'utente (il piano appena creato diventa quello in uso).
+
+### File coinvolti
 
 | File | Azione |
 |---|---|
-| Nuova migrazione SQL | Ricreare `fsm_assign_plan` con INSERT notifica |
-| `src/features/client-notifications/types.ts` | Aggiungere `"plan_assigned"` al tipo |
-| `src/features/client-notifications/components/ClientNotificationItem.tsx` | Icona e colore per `plan_assigned` |
+| `src/features/client-plans/hooks/useCreateClientPlan.ts` | Usare `assignPlanToClient` invece di `createClientPlanFromScratch` |
 
