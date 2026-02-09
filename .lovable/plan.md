@@ -1,52 +1,93 @@
 
 
-## Standardizzare il titolo degli eventi a "Appuntamento"
+## Fix: Bottone "Inizia allenamento" non funzionante
 
-### Obiettivo
-Tutti gli eventi/appuntamenti creati nel sistema devono avere il titolo fisso **"Appuntamento"**, eliminando varianti come "Appuntamento con [Nome]" o titoli personalizzati dal coach.
+### Diagnosi
 
-### Modifiche necessarie
+Analizzando il flusso completo:
 
-**1. `src/features/events/components/EventEditorModal.tsx`**
-- Rimuovere il campo titolo dal form (non piu' modificabile dal coach)
-- Impostare il titolo fisso a `"Appuntamento"` nella logica di submit
-- Rimuovere la logica che genera "Appuntamento con [nome cliente]" al cambio cliente
+1. **`NextWorkoutCTA`** chiama `onStart()` (che e' `handleStartSession`) senza `await` -- se l'operazione asincrona fallisce prima del try/catch interno, il rejection non viene gestito
+2. **`useStartClientSession`** non ha un handler `onError` nel mutation hook -- gli errori sono gestiti solo dal try/catch nel componente chiamante, ma questo e' fragile
+3. Se `resolveCoachClientId()` o `createSession()` lanciano un errore non previsto (es. problema di rete, utente non autenticato), il rejection puo' sfuggire e causare un crash (schermo bianco)
 
-**2. `src/features/events/components/ClientAppointmentModal.tsx`**
-- Gia' usa `"Appuntamento"` — nessuna modifica necessaria
+### Soluzione
 
-**3. `supabase/functions/_shared/` o migrazione SQL — `finalize_booking_request`**
-- Modificare la funzione RPC `finalize_booking_request` che attualmente genera il titolo come `'Appuntamento con ' || v_client_name`
-- Cambiare in titolo fisso `'Appuntamento'`
+Tre interventi difensivi:
 
-**4. `src/features/client-bookings/api/client-bookings.api.ts`**
-- Il fallback `event.title || 'Appuntamento'` resta corretto — nessuna modifica necessaria
-- Il titolo `'Richiesta appuntamento'` per le booking request in attesa resta corretto
+**1. `src/features/client-workouts/components/NextWorkoutCTA.tsx`**
+- Rendere `handleStartClick` asincrono con try/catch esplicito
+- Questo previene rejection non gestiti dal propagarsi
+
+```text
+Prima:  const handleStartClick = () => { ... onStart(); }
+Dopo:   const handleStartClick = async () => { try { await onStart(); } catch { toast.error(...) } }
+```
+
+**2. `src/features/session-tracking/hooks/useClientSessionTracking.ts`**
+- Aggiungere `onError` al mutation `useStartClientSession` come rete di sicurezza
+- Questo cattura errori anche se il chiamante dimentica il try/catch
+
+**3. `src/pages/client/ClientWorkouts.tsx`**
+- Verificare che `handleStartSession` e `handleSelectDay` abbiano try/catch robusti (gia' presenti, ma aggiungere log console per debug)
 
 ### Dettaglio tecnico
 
-**EventEditorModal.tsx** — rimuovere il campo titolo dal JSX e forzare il valore:
+**File 1: `NextWorkoutCTA.tsx`** -- handler sicuro
+
 ```tsx
-// Rimuovere dal form il campo <Input> per il titolo
-// Nel submit, usare sempre:
-title: "Appuntamento"
+// Cambiare onStart: () => void  →  onStart: () => void | Promise<void>
+// E nel handler:
+const handleStartClick = async () => {
+  if (startDisabled) {
+    toast.info(startDisabledReason);
+    return;
+  }
+  try {
+    await onStart();
+  } catch (error) {
+    console.error("Failed to start workout:", error);
+    toast.error("Impossibile avviare l'allenamento. Riprova.");
+  }
+};
 ```
 
-**Migrazione SQL** per `finalize_booking_request`:
-```sql
--- Dentro la funzione, cambiare la riga:
---   v_title := 'Appuntamento con ' || v_client_name;
--- in:
-v_title := 'Appuntamento';
+**File 2: `useClientSessionTracking.ts`** -- onError nel mutation
+
+```tsx
+export function useStartClientSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: StartSessionParams) => service.startClientSession(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.active });
+    },
+    onError: (error) => {
+      console.error("[useStartClientSession] Error:", error);
+    },
+  });
+}
+```
+
+**File 3: `WorkoutDayDetailSheet.tsx`** -- handler sicuro per "Registra sessione"
+
+```tsx
+// Il bottone onClick={onStartSession} dovrebbe essere wrappato:
+const handleStart = async () => {
+  try {
+    await onStartSession?.();
+  } catch (error) {
+    console.error("Failed to start session from detail:", error);
+    toast.error("Impossibile avviare la sessione. Riprova.");
+  }
+};
 ```
 
 ### File coinvolti
+
 | File | Azione |
 |---|---|
-| `src/features/events/components/EventEditorModal.tsx` | Rimuovere campo titolo, forzare "Appuntamento" |
-| Migrazione SQL `finalize_booking_request` | Cambiare titolo generato da "Appuntamento con X" a "Appuntamento" |
-
-### Note
-- Gli eventi gia' esistenti nel database manterranno il titolo attuale. Se si vuole uniformare anche quelli, servira' un UPDATE separato.
-- Il titolo "Richiesta appuntamento" mostrato nella vista client per le booking request in attesa non cambia (non e' un evento a calendario).
+| `src/features/client-workouts/components/NextWorkoutCTA.tsx` | Wrap handler in async try/catch |
+| `src/features/session-tracking/hooks/useClientSessionTracking.ts` | Aggiungere onError al mutation |
+| `src/features/client-workouts/components/WorkoutDayDetailSheet.tsx` | Wrap handler in async try/catch |
+| `src/pages/client/ClientWorkouts.tsx` | Aggiungere console.error nei catch esistenti |
 
