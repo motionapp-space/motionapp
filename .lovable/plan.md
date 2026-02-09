@@ -1,67 +1,49 @@
 
 
-## Fix: Due sessioni nello stesso giorno contate come una sola
+## Notifica al cliente quando il coach assegna un nuovo piano
 
-### Problema
+### Cosa cambia
 
-`useWeeklyProgress` conta le sessioni completate usando un `Set<number>` basato sull'**indice del giorno della settimana** (lunedi=0, martedi=1, ecc.). Se due sessioni avvengono lo stesso giorno (es. una autonoma e una con il coach), il Set le deduplica e ne conta solo una.
+Quando il coach assegna un piano, il cliente riceve una notifica in-app (visibile nella campanella e nella pagina Notifiche) con titolo e nome del piano.
 
-Nel caso specifico di Draco Malfoy:
-- Sessione autonoma completata lunedi 9 Feb alle 22:21
-- Sessione con il coach completata lunedi 9 Feb alle 22:28
-- Entrambe mappano a indice `0` (lunedi) -> il Set conta 1 invece di 2
+### Modifiche
 
-### Soluzione
+**1. Migrazione SQL -- Inserimento notifica dentro `fsm_assign_plan`**
 
-Cambiare la logica di conteggio in `useWeeklyProgress.ts`: invece di contare i **giorni unici** con almeno una sessione, contare il **numero totale di sessioni completate** questa settimana.
+Aggiungere un `INSERT INTO client_notifications` alla fine della funzione RPC `fsm_assign_plan`, subito prima del `RETURN`. La notifica viene creata atomicamente nella stessa transazione dell'assegnazione.
+
+```sql
+INSERT INTO client_notifications (client_id, type, title, message, related_id, related_type)
+VALUES (
+  p_client_id,
+  'plan_assigned',
+  'Nuovo piano assegnato',
+  'Il tuo coach ti ha assegnato il piano "' || p_plan_name || '"',
+  v_new_plan_id,
+  'plan'
+);
+```
+
+Aggiungere anche il valore `plan_assigned` al CHECK constraint della colonna `type` (se presente), oppure verificare che la colonna accetti valori liberi.
+
+**2. `src/features/client-notifications/types.ts` -- Nuovo tipo**
+
+Aggiungere `"plan_assigned"` all'union type `ClientNotificationType`.
+
+**3. `src/features/client-notifications/components/ClientNotificationItem.tsx` -- Icona e colore**
+
+- In `getNotificationIcon`: aggiungere `case "plan_assigned": return ClipboardList` (o icona simile da lucide-react)
+- In `getIconColorClass`: aggiungere `case "plan_assigned": return "text-blue-500"`
 
 ### Dettaglio tecnico
 
-**File: `src/features/client-workouts/hooks/useWeeklyProgress.ts`**
+La funzione `fsm_assign_plan` attuale (nella migrazione `20260207195044`) ha gia' tutti i dati necessari: `p_client_id`, `p_plan_name`, `v_new_plan_id`. L'INSERT della notifica viene aggiunto prima del RETURN finale (riga 100), cosi' se l'inserimento fallisce l'intera transazione viene annullata.
 
-Sostituire il calcolo basato su `completedWeekDayIndices` (Set di indici giorno) con un semplice conteggio delle sessioni completate nella settimana:
-
-```typescript
-// PRIMA (buggy): conta giorni unici della settimana
-const completedWeekDayIndices = new Set<number>(
-  (sessions || [])
-    .filter(...)
-    .map((s) => {
-      const jsDay = sessionDate.getDay();
-      return jsDay === 0 ? 6 : jsDay - 1;
-    })
-);
-const completedCount = completedWeekDayIndices.size;
-
-// DOPO (corretto): conta il numero totale di sessioni completate
-const thisWeekSessions = (sessions || []).filter((s) => {
-  if (!s.started_at) return false;
-  const sessionDate = new Date(s.started_at);
-  return isWithinInterval(sessionDate, { start: weekStart, end: weekEnd });
-});
-const completedCount = thisWeekSessions.length;
-```
-
-Per la visualizzazione dei pallini dei giorni della settimana (`weekDays`), mantenere il Set degli indici solo per determinare `isCompleted` su ogni giorno:
-
-```typescript
-// Set per i pallini (visualizzazione)
-const completedWeekDayIndices = new Set<number>(
-  thisWeekSessions.map((s) => {
-    const sessionDate = new Date(s.started_at!);
-    const jsDay = sessionDate.getDay();
-    return jsDay === 0 ? 6 : jsDay - 1;
-  })
-);
-```
-
-Questo separa due concetti:
-- **completedCount**: numero totale di sessioni (per la progress bar e il contatore X/Y)
-- **completedWeekDayIndices**: giorni unici con sessioni (per i pallini della settimana)
-
-### File coinvolti
+Nessuna modifica necessaria ai componenti di lista o alla bell icon: il sistema di polling esistente (ogni 30s) mostrera' automaticamente la nuova notifica.
 
 | File | Azione |
 |---|---|
-| `src/features/client-workouts/hooks/useWeeklyProgress.ts` | Separare conteggio sessioni da visualizzazione giorni |
+| Nuova migrazione SQL | Ricreare `fsm_assign_plan` con INSERT notifica |
+| `src/features/client-notifications/types.ts` | Aggiungere `"plan_assigned"` al tipo |
+| `src/features/client-notifications/components/ClientNotificationItem.tsx` | Icona e colore per `plan_assigned` |
 
