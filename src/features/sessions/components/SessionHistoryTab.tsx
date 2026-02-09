@@ -42,8 +42,8 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
   });
 
   // Separate sessions by source
-  const withCoachSessions = sessions.filter((s) => s.source === "with_coach");
-  const autonomousSessions = sessions.filter((s) => s.source === "autonomous");
+  const withCoachSessions = sessions.filter((s) => s.source === "with_coach" && s.status !== "discarded");
+  const autonomousSessions = sessions.filter((s) => s.source === "autonomous" && s.status !== "discarded");
 
   const formatDuration = (startAt?: string, endAt?: string) => {
     if (!startAt || !endAt) return "—";
@@ -261,7 +261,7 @@ function SessionCard({
         isInProgress && "border-l-4 border-l-primary/70 bg-primary/5",
         isDiscarded && "opacity-60",
         !isInProgress && "cursor-pointer hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-primary/20",
-        isReadOnly && "opacity-90"
+        false
       )}
       onClick={!isInProgress ? onViewDetails : undefined}
     >
@@ -271,11 +271,6 @@ function SessionCard({
           <div className="min-w-0 flex-1 space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
                 {getStatusBadge(session.status)}
-                {isReadOnly && (
-                  <Badge variant="outline" className="text-xs">
-                    Solo lettura
-                  </Badge>
-                )}
                 {session.started_at && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />
