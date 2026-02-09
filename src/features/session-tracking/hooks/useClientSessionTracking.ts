@@ -75,6 +75,9 @@ export function useStartClientSession() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CLIENT_SESSION_KEYS.active });
     },
+    onError: (error) => {
+      console.error("[useStartClientSession] Error:", error);
+    },
   });
 }
 

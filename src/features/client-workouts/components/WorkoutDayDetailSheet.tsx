@@ -4,18 +4,28 @@ import { Play, Dumbbell } from "lucide-react";
 import { ClientWorkoutExerciseList } from "./ClientWorkoutExerciseList";
 import type { Day } from "@/types/plan";
 import { countDayExercises } from "../utils/plan-utils";
+import { toast } from "sonner";
 
 interface WorkoutDayDetailSheetProps {
   day: Day | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onStartSession?: () => void;
+  onStartSession?: () => void | Promise<void>;
 }
 
 export function WorkoutDayDetailSheet({ day, open, onOpenChange, onStartSession }: WorkoutDayDetailSheetProps) {
   if (!day) return null;
 
   const exerciseCount = countDayExercises(day);
+
+  const handleStart = async () => {
+    try {
+      await onStartSession?.();
+    } catch (error) {
+      console.error("Failed to start session from detail:", error);
+      toast.error("Impossibile avviare la sessione. Riprova.");
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -45,7 +55,7 @@ export function WorkoutDayDetailSheet({ day, open, onOpenChange, onStartSession 
         </div>
         
         <div className="sticky bottom-0 pt-4 pb-2 bg-background border-t">
-          <Button className="w-full" size="lg" onClick={onStartSession}>
+          <Button className="w-full" size="lg" onClick={handleStart}>
             <Play className="h-4 w-4 mr-2" />
             Registra sessione
           </Button>
