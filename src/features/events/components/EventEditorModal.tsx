@@ -442,7 +442,6 @@ export function EventEditorModal({
 
   // Validation - ora include la scelta del tipo di lezione e scadenza pacchetto
   const isValid = useMemo(() => {
-    if (!formData.title.trim()) return false;
     if (!formData.clientId) return false;
     
     const [startH, startM] = formData.startTime.split(':').map(Number);
@@ -473,7 +472,6 @@ export function EventEditorModal({
 
   // Validation message for tooltip
   const validationMessage = useMemo(() => {
-    if (!formData.title.trim()) return "Inserisci un titolo";
     if (!formData.clientId) return "Seleziona un cliente";
     
     const [startH, startM] = formData.startTime.split(':').map(Number);
@@ -512,7 +510,7 @@ export function EventEditorModal({
       
       const basePayload = {
         coach_client_id: coachClientId,
-        title: formData.title,
+        title: "Appuntamento",
         location: formData.location || null,
         reminder_offset_minutes: formData.reminderOffset || null,
         notes: formData.notes || null,
@@ -759,7 +757,7 @@ export function EventEditorModal({
       await updateEvent.mutateAsync({
         id: event.id,
         data: {
-          title: formData.title,
+          title: "Appuntamento",
           coach_client_id: coachClientId,
           start_at: eventStartDateTime.toISOString(),
           end_at: eventEndDateTime.toISOString(),
@@ -1284,19 +1282,7 @@ export function EventEditorModal({
             {/* EDIT/NEW FORM */}
             {(viewMode === 'new' || viewMode === 'edit') && (
               <div className="space-y-6">
-            {/* Titolo */}
-            <div className="space-y-1.5">
-              <Label htmlFor="title" className="text-sm font-medium text-foreground">
-                Titolo <span className="text-muted-foreground/60">*</span>
-              </Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Aggiungi un titolo"
-                className="h-10"
-              />
-            </div>
+            {/* Titolo fisso - non modificabile */}
 
             {/* Cliente */}
             <div className="space-y-1.5">
