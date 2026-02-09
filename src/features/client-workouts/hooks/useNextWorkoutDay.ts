@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { isThisWeek } from "date-fns";
+import { startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 import type { ClientActivePlan } from "../api/client-plans.api";
 import type { ClientSession } from "../api/client-sessions.api";
 import type { Day } from "@/types/plan";
@@ -24,17 +24,22 @@ export function useNextWorkoutDay(
       return { day: null, exerciseCount: 0, allCompleted: false };
     }
 
-    const days = plan.data.days;
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
 
-    // Get day IDs completed this week
+    // Get day IDs completed this week (Monday-Sunday)
     const completedDayIdsThisWeek = new Set(
       (sessions || [])
-        .filter((s) => s.day_id && s.started_at && isThisWeek(new Date(s.started_at)))
+        .filter((s) => {
+          if (!s.day_id || !s.started_at) return false;
+          return isWithinInterval(new Date(s.started_at), { start: weekStart, end: weekEnd });
+        })
         .map((s) => s.day_id!)
     );
 
     // Find first uncompleted day
-    const nextDay = days.find((d) => !completedDayIdsThisWeek.has(d.id));
+    const nextDay = plan.data.days.find((d) => !completedDayIdsThisWeek.has(d.id));
 
     if (!nextDay) {
       // All days completed this week
