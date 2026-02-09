@@ -1,44 +1,52 @@
 
 
-## Correggere lo scorrimento della pagina /client/auth su mobile
+## Standardizzare il titolo degli eventi a "Appuntamento"
 
-### Problema
-Due cause contribuiscono allo scroll:
+### Obiettivo
+Tutti gli eventi/appuntamenti creati nel sistema devono avere il titolo fisso **"Appuntamento"**, eliminando varianti come "Appuntamento con [Nome]" o titoli personalizzati dal coach.
 
-1. **`App.css`** applica `padding: 2rem` a `#root`, aggiungendo 32px di padding extra attorno a tutto il contenuto. Questo spinge il form fuori dall'area visibile.
-2. **`min-h-screen`** usa `100vh`, che su Safari mobile include l'altezza della barra degli indirizzi, risultando piu' alto del viewport visibile.
+### Modifiche necessarie
 
-### Soluzione
+**1. `src/features/events/components/EventEditorModal.tsx`**
+- Rimuovere il campo titolo dal form (non piu' modificabile dal coach)
+- Impostare il titolo fisso a `"Appuntamento"` nella logica di submit
+- Rimuovere la logica che genera "Appuntamento con [nome cliente]" al cambio cliente
 
-**File 1: `src/App.css`**
-- Rimuovere `padding: 2rem` da `#root` (residuo del template Vite, non usato dall'app)
-- Questo file contiene solo stili legacy del boilerplate Vite. Le regole rimanenti (`.logo`, `.card`, `.read-the-docs`) non sono usate dall'app e possono essere rimosse per pulizia, oppure lasciate.
+**2. `src/features/events/components/ClientAppointmentModal.tsx`**
+- Gia' usa `"Appuntamento"` — nessuna modifica necessaria
 
-**File 2: `src/pages/client/ClientAuth.tsx`**
-- Cambiare il container esterno da `min-h-screen` a `min-h-[100dvh]`
-- `100dvh` (dynamic viewport height) si adatta automaticamente alla barra degli indirizzi su mobile, evitando overflow
-- Questo garantisce che la pagina occupi esattamente il viewport visibile senza scorrimento
+**3. `supabase/functions/_shared/` o migrazione SQL — `finalize_booking_request`**
+- Modificare la funzione RPC `finalize_booking_request` che attualmente genera il titolo come `'Appuntamento con ' || v_client_name`
+- Cambiare in titolo fisso `'Appuntamento'`
+
+**4. `src/features/client-bookings/api/client-bookings.api.ts`**
+- Il fallback `event.title || 'Appuntamento'` resta corretto — nessuna modifica necessaria
+- Il titolo `'Richiesta appuntamento'` per le booking request in attesa resta corretto
 
 ### Dettaglio tecnico
 
-```css
-/* App.css - rimuovere padding da #root */
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  /* padding: 2rem rimosso */
-  text-align: center;
-}
-```
-
+**EventEditorModal.tsx** — rimuovere il campo titolo dal JSX e forzare il valore:
 ```tsx
-// ClientAuth.tsx riga 65 - prima
-<div className="flex min-h-screen items-center justify-center bg-[hsl(0,0%,96%)] p-4">
-
-// dopo
-<div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(0,0%,96%)] p-4">
+// Rimuovere dal form il campo <Input> per il titolo
+// Nel submit, usare sempre:
+title: "Appuntamento"
 ```
 
-### Verifica da fare
-Controllare che la pagina `/auth` (coach login) non sia impattata dalla rimozione del padding in `App.css` -- usa lo stesso pattern `min-h-screen` e dovrebbe beneficiare della stessa correzione.
+**Migrazione SQL** per `finalize_booking_request`:
+```sql
+-- Dentro la funzione, cambiare la riga:
+--   v_title := 'Appuntamento con ' || v_client_name;
+-- in:
+v_title := 'Appuntamento';
+```
+
+### File coinvolti
+| File | Azione |
+|---|---|
+| `src/features/events/components/EventEditorModal.tsx` | Rimuovere campo titolo, forzare "Appuntamento" |
+| Migrazione SQL `finalize_booking_request` | Cambiare titolo generato da "Appuntamento con X" a "Appuntamento" |
+
+### Note
+- Gli eventi gia' esistenti nel database manterranno il titolo attuale. Se si vuole uniformare anche quelli, servira' un UPDATE separato.
+- Il titolo "Richiesta appuntamento" mostrato nella vista client per le booking request in attesa non cambia (non e' un evento a calendario).
 
