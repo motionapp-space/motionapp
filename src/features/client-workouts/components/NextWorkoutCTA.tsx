@@ -10,7 +10,7 @@ interface NextWorkoutCTAProps {
   exercisesCount?: number;
   estimatedMinutes?: number;
   status: "today" | "todo";
-  onStart: () => void;
+  onStart: () => void | Promise<void>;
   onChangeDay: () => void;
   onViewDetail?: () => void;
   startDisabled?: boolean;
@@ -50,11 +50,16 @@ export function NextWorkoutCTA({
     );
   }
 
-  const handleStartClick = () => {
+  const handleStartClick = async () => {
     if (startDisabled) {
       toast.info(startDisabledReason);
-    } else {
-      onStart();
+      return;
+    }
+    try {
+      await onStart();
+    } catch (error) {
+      console.error("Failed to start workout:", error);
+      toast.error("Impossibile avviare l'allenamento. Riprova.");
     }
   };
 

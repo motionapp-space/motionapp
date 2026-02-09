@@ -110,6 +110,7 @@ function ClientWorkoutsContent() {
       sessionStore.start(session.id, Date.now());
       navigate(`/client/app/session?sessionId=${session.id}`);
     } catch (error) {
+      console.error("[handleSelectDay] Error:", error);
       toast.error("Errore nell'avvio della sessione");
     }
   };
@@ -137,6 +138,7 @@ function ClientWorkoutsContent() {
       sessionStore.start(session.id, Date.now());
       navigate(`/client/app/session?sessionId=${session.id}`);
     } catch (error) {
+      console.error("[handleStartSession] Error:", error);
       toast.error("Errore nell'avvio della sessione");
     }
   };
