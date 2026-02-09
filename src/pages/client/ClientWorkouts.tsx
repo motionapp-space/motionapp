@@ -128,7 +128,12 @@ function ClientWorkoutsContent() {
   };
 
   const handleStartSession = async () => {
-    if (!activePlan || !displayDay) return;
+    console.log("[handleStartSession] Called", { activePlan: !!activePlan, displayDay: !!displayDay, displayDayId: displayDay?.id });
+    if (!activePlan || !displayDay) {
+      console.warn("[handleStartSession] Aborted: activePlan or displayDay is null", { activePlan, displayDay });
+      toast.error("Nessun allenamento selezionato.");
+      return;
+    }
     try {
       const session = await startSession({
         plan: activePlan.data,
