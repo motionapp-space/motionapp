@@ -98,22 +98,23 @@ export function useWeeklyProgress(
         .map((s) => s.day_id!)
     );
 
-    // Calculate which weekday indices (0=Mon, 6=Sun) have completed sessions
-    const completedWeekDayIndices = new Set<number>(
-      (sessions || [])
-        .filter((s) => {
-          if (!s.started_at) return false;
-          const sessionDate = new Date(s.started_at);
-          return isWithinInterval(sessionDate, { start: weekStart, end: weekEnd });
-        })
-        .map((s) => {
-          const sessionDate = new Date(s.started_at!);
-          const jsDay = sessionDate.getDay(); // 0=Sun, 1=Mon, ...
-          return jsDay === 0 ? 6 : jsDay - 1; // Convert to 0=Mon, 6=Sun
-        })
-    );
+    // Count total sessions completed this week (not unique days)
+    const thisWeekSessions = (sessions || []).filter((s) => {
+      if (!s.started_at) return false;
+      const sessionDate = new Date(s.started_at);
+      return isWithinInterval(sessionDate, { start: weekStart, end: weekEnd });
+    });
 
-    const completedCount = completedWeekDayIndices.size;
+    const completedCount = thisWeekSessions.length;
+
+    // Set of weekday indices for visual day indicators only
+    const completedWeekDayIndices = new Set<number>(
+      thisWeekSessions.map((s) => {
+        const sessionDate = new Date(s.started_at!);
+        const jsDay = sessionDate.getDay();
+        return jsDay === 0 ? 6 : jsDay - 1;
+      })
+    );
     const remainingCount = Math.max(0, totalDays - completedCount);
     const percentage = totalDays > 0 ? Math.round((completedCount / totalDays) * 100) : 0;
     const isWeekCompleted = completedCount >= totalDays;
