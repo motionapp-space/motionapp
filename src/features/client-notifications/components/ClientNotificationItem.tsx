@@ -1,4 +1,4 @@
-import { CheckCircle, XCircle, Clock, type LucideIcon } from "lucide-react";
+import { CheckCircle, XCircle, Clock, ClipboardList, type LucideIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
 import type { ClientNotification, ClientNotificationType } from "../types";
@@ -22,6 +22,8 @@ function getNotificationIcon(type: ClientNotificationType): LucideIcon {
     case "booking_request_declined":
     case "booking_request_canceled":
       return XCircle;
+    case "plan_assigned":
+      return ClipboardList;
   }
 }
 
@@ -38,6 +40,8 @@ function getIconColorClass(type: ClientNotificationType): string {
       return "text-amber-500";
     case "booking_request_declined":
       return "text-destructive";
+    case "plan_assigned":
+      return "text-blue-500";
   }
 }
 
