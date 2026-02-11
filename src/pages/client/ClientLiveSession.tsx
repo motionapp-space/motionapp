@@ -77,6 +77,26 @@ function translatePhaseType(phaseType: string): string {
   return translations[phaseType] || phaseType;
 }
 
+// ================== Group Rest Helper ==================
+
+/**
+ * Determine rest seconds for a group:
+ * - superset/circuit: use group_rest_seconds, fallback to max(exercises.rest_seconds) or 60
+ * - single: use exercise rest_seconds or 60
+ * 
+ * Note: sharedRestBetweenExercises and restBetweenRounds both represent
+ * "rest after group/round completion", mapped to group_rest_seconds in snapshot.
+ */
+function getGroupRestSeconds(group: SnapshotGroup): number {
+  if (group.type !== 'single' && group.group_rest_seconds != null) {
+    return group.group_rest_seconds;
+  }
+  if (group.type !== 'single') {
+    return Math.max(...group.exercises.map(e => e.rest_seconds ?? 0)) || 60;
+  }
+  return group.exercises[0]?.rest_seconds || 60;
+}
+
 // ================== Completed Series Chips (MVP: Complete Sets Only) ==================
 
 interface CompletedSeriesChipsProps {
@@ -155,6 +175,7 @@ function CompletedSeriesChips({ actuals, exerciseIds, numExercises, exercises }:
 
 interface ExerciseBlockProps {
   exercise: SnapshotExercise;
+  isSingle: boolean;
   reps: string;
   setReps: (value: string) => void;
   load: string;
@@ -162,10 +183,28 @@ interface ExerciseBlockProps {
   showDivider?: boolean;
 }
 
-function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: ExerciseBlockProps) {
-  // Target line: show only reps target (no rest info here)
-  const repsDisplay = exercise.reps ? `${exercise.reps} rip` : '';
-  const targetDisplay = repsDisplay ? `Target · ${repsDisplay}` : `Target · ${exercise.sets} serie`;
+function ExerciseBlock({ exercise, isSingle, reps, setReps, load, setLoad, showDivider }: ExerciseBlockProps) {
+  // Build target display with elegant degradation
+  let targetDisplay: string;
+  if (isSingle) {
+    const parts: string[] = [];
+    if (exercise.sets > 0 && exercise.reps) {
+      parts.push(`${exercise.sets} serie × ${exercise.reps} rip`);
+    } else if (exercise.sets > 0) {
+      parts.push(`${exercise.sets} serie`);
+    } else if (exercise.reps) {
+      parts.push(`${exercise.reps} rip`);
+    }
+    if (exercise.load) parts.push(exercise.load);
+    if (exercise.rest_seconds && exercise.rest_seconds > 0) {
+      parts.push(`Rec ${formatRestTime(exercise.rest_seconds)}`);
+    }
+    targetDisplay = parts.length > 0 ? parts.join(' · ') : 'Target';
+  } else {
+    targetDisplay = exercise.reps
+      ? `Target · ${exercise.reps} rip`
+      : `Target · ${exercise.sets} serie`;
+  }
 
   return (
     <div className={cn(showDivider && "pt-4 border-t border-border/40")}>
@@ -174,10 +213,18 @@ function ExerciseBlock({ exercise, reps, setReps, load, setLoad, showDivider }: 
         {exercise.name || 'Esercizio'}
       </h4>
       
-      {/* Target - no rest info */}
+      {/* Target */}
       <p className="text-[15px] leading-6 text-muted-foreground">
         {targetDisplay}
       </p>
+      
+      {/* Notes (italic) and Goal (normal) */}
+      {exercise.notes && (
+        <p className="text-xs text-muted-foreground italic mt-1">{exercise.notes}</p>
+      )}
+      {exercise.goal && (
+        <p className="text-xs text-muted-foreground mt-0.5">{exercise.goal}</p>
+      )}
       
       {/* Inputs - 44px height, 16px font */}
       <div className="grid grid-cols-2 gap-4 mt-3">
@@ -303,11 +350,11 @@ function GroupCard({
     }
   });
   
-  const targetSeries = Math.min(...group.exercises.map(e => e.sets));
+  const targetSeries = group.target_sets ?? Math.min(...group.exercises.map(e => e.sets));
   const MAX_SERIES_LIMIT = 30;
   // Use MAX set_index + 1 to prevent overwrites after Undo
   const nextSeriesIndex = maxSetIndex + 1;
-  const restSeconds = group.exercises[0]?.rest_seconds || 60;
+  const restSeconds = getGroupRestSeconds(group);
 
   const handleComplete = () => {
     // Prevent recording beyond 30 series
@@ -393,6 +440,7 @@ function GroupCard({
           <ExerciseBlock
             key={exercise.id}
             exercise={exercise}
+            isSingle={group.type === 'single'}
             reps={getInputValue(exercise.id, 'reps') || exercise.reps || ''}
             setReps={(value) => store.setDraft(exercise.id, { reps: value })}
             load={getInputValue(exercise.id, 'load')}
@@ -615,7 +663,7 @@ export default function ClientLiveSession() {
       }
     });
     
-    const targetSeries = Math.min(...group.exercises.map(e => e.sets));
+    const targetSeries = group.target_sets ?? Math.min(...group.exercises.map(e => e.sets));
     
     return { completed: completedSeries, target: targetSeries };
   }, [currentFlatGroup, actuals]);
@@ -875,8 +923,17 @@ export default function ClientLiveSession() {
             <div className="flex items-center justify-between gap-2 mb-3">
               {/* Left: Group type text (only for superset/circuit) */}
               {groupTypeLabel ? (
-                <div className="text-sm font-medium text-foreground">
-                  {groupTypeLabel}
+                <div>
+                  <div className="text-sm font-medium text-foreground">
+                    {groupTypeLabel}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {currentFlatGroup.group.target_sets
+                      ?? Math.min(...currentFlatGroup.group.exercises.map(e => e.sets))
+                    } serie · Rec {formatRestTime(
+                      getGroupRestSeconds(currentFlatGroup.group)
+                    )}
+                  </p>
                 </div>
               ) : (
                 <span />
