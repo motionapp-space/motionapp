@@ -62,7 +62,7 @@ export const ExerciseRowCompact = ({
   return (
     <div className="flex flex-col" data-testid="exercise-row">
       {/* Desktop row - 9 columns aligned with header */}
-      <div className="hidden sm:grid sm:grid-cols-[32px_minmax(360px,1.6fr)_64px_88px_140px_72px_minmax(110px,0.7fr)_minmax(110px,0.7fr)_40px] items-start gap-1 py-3 px-2 border-b border-border/50 hover:bg-muted/45 transition-colors">
+      <div className="hidden sm:grid sm:grid-cols-[32px_minmax(360px,1.6fr)_64px_88px_140px_72px_minmax(110px,0.7fr)_minmax(110px,0.7fr)_40px] items-start gap-1 py-1.5 px-2 border-b border-border/50 hover:bg-muted/45 transition-colors">
         <DraggableHandle
           level="group-exercise"
           disabled={readonly}
@@ -197,7 +197,7 @@ export const ExerciseRowCompact = ({
       </div>
 
       {/* Mobile: 2 rows layout with inline Obiettivo/Note */}
-      <div className="sm:hidden py-3 px-2 border-b border-border/50 space-y-2">
+      <div className="sm:hidden py-2 px-2 border-b border-border/50 space-y-2">
         <div className="flex items-center gap-2">
           <DraggableHandle
             level="group-exercise"
