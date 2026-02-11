@@ -59,23 +59,7 @@ interface FlatGroup {
 }
 
 // ================== Phase Type Translation ==================
-
-function translatePhaseType(phaseType: string): string {
-  const translations: Record<string, string> = {
-    'warm-up': 'Riscaldamento',
-    'warmup': 'Riscaldamento',
-    'Warm-up': 'Riscaldamento',
-    'Warmup': 'Riscaldamento',
-    'main': 'Corpo principale',
-    'Main': 'Corpo principale',
-    'cooldown': 'Defaticamento',
-    'cool-down': 'Defaticamento',
-    'Cooldown': 'Defaticamento',
-    'stretching': 'Stretching',
-    'Stretching': 'Stretching',
-  };
-  return translations[phaseType] || phaseType;
-}
+import { translatePhaseType } from '@/features/session-tracking/utils/translatePhaseType';
 
 // ================== Group Rest Helper ==================
 
