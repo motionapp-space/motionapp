@@ -202,8 +202,8 @@ function ExerciseBlock({ exercise, isSingle, reps, setReps, load, setLoad, showD
     targetDisplay = parts.length > 0 ? parts.join(' · ') : 'Target';
   } else {
     targetDisplay = exercise.reps
-      ? `Target · ${exercise.reps} rip`
-      : `Target · ${exercise.sets} serie`;
+      ? `${exercise.reps} rip`
+      : `${exercise.sets} serie`;
   }
 
   return (
