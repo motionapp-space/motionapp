@@ -29,15 +29,15 @@ export function WorkoutDayDetailSheet({ day, open, onOpenChange, onStartSession 
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[75vh] rounded-t-2xl flex flex-col">
-        <SheetHeader className="text-left pb-4 border-b shrink-0">
+      <SheetContent side="bottom" className="h-[75vh] rounded-t-2xl flex flex-col px-5 py-6">
+        <SheetHeader className="text-left pb-4 border-b shrink-0 mb-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
               <Dumbbell className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <SheetTitle className="text-lg">{day.title}</SheetTitle>
-              <p className="text-[15px] leading-6 text-muted-foreground">
+              <SheetTitle className="text-[22px] font-semibold tracking-tight leading-snug">{day.title}</SheetTitle>
+              <p className="text-sm font-medium text-muted-foreground mt-1">
                 {exerciseCount} esercizi
               </p>
             </div>
