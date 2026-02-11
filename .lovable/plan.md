@@ -1,95 +1,33 @@
 
 
-## Fix: Notifica mancante quando si riassegna un piano completato
+## Fix: Scroll verticale bloccato nel WorkoutDayDetailSheet
 
 ### Problema
 
-Esistono due percorsi per assegnare un piano a un cliente:
-
-1. **Creazione nuovo piano** (da zero o da template) -- usa `fsm_assign_plan` RPC, che ora genera correttamente la notifica `plan_assigned`
-2. **Riattivazione piano esistente** (piano completato rimesso come attivo) -- usa `set_active_plan_v2` RPC, che NON genera notifiche
-
-Entrambi i percorsi rappresentano un'assegnazione di piano e dovrebbero notificare il cliente.
+Il contenitore `SheetContent` ha altezza fissa (`h-[85vh]`) ma **non ha `flex flex-col`**. Di conseguenza:
+- Il `div` con `overflow-y-auto flex-1` non puo' espandersi perche' `flex-1` funziona solo dentro un flex container
+- Senza un'altezza vincolata, `overflow-y-auto` non attiva lo scroll
+- Il bottone "Registra sessione" con `sticky bottom-0` potrebbe coprire gli ultimi esercizi
 
 ### Soluzione
 
-Aggiungere un `INSERT INTO client_notifications` nella funzione `set_active_plan_v2`, subito dopo la creazione del nuovo assignment (riga 47 della migrazione attuale). La notifica viene generata solo quando `p_plan_id IS NOT NULL` (cioe' quando si sta effettivamente assegnando un piano, non quando si sta solo disattivando quello corrente).
-
-### Dettaglio tecnico
-
-**Database (migrazione SQL)**: Aggiornare la funzione `set_active_plan_v2` per inserire la notifica:
-
-```sql
-CREATE OR REPLACE FUNCTION set_active_plan_v2(
-  p_coach_client_id uuid,
-  p_plan_id uuid DEFAULT NULL
-)
-RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
-AS $$
-DECLARE
-  v_coach_id uuid;
-  v_client_id uuid;
-  v_plan_name text;
-BEGIN
-  SELECT coach_id, client_id INTO v_coach_id, v_client_id
-  FROM coach_clients WHERE id = p_coach_client_id;
-
-  IF v_coach_id IS NULL OR v_coach_id != auth.uid() THEN
-    RAISE EXCEPTION 'Unauthorized';
-  END IF;
-
-  -- Chiudi assignment attivo esistente
-  UPDATE client_plan_assignments
-  SET status = 'COMPLETED', ended_at = now()
-  WHERE coach_id = v_coach_id
-    AND client_id = v_client_id
-    AND status = 'ACTIVE';
-
-  IF p_plan_id IS NOT NULL THEN
-    IF NOT EXISTS (
-      SELECT 1 FROM client_plans
-      WHERE id = p_plan_id
-        AND coach_client_id = p_coach_client_id
-        AND deleted_at IS NULL
-    ) THEN
-      RAISE EXCEPTION 'Plan not found or deleted';
-    END IF;
-
-    -- Recupera il nome del piano per la notifica
-    SELECT name INTO v_plan_name
-    FROM client_plans WHERE id = p_plan_id;
-
-    -- Crea nuovo assignment ACTIVE
-    INSERT INTO client_plan_assignments
-      (coach_id, client_id, plan_id, status, assigned_at)
-    VALUES
-      (v_coach_id, v_client_id, p_plan_id, 'ACTIVE', now());
-
-    UPDATE client_plans SET in_use_at = now() WHERE id = p_plan_id;
-
-    -- Notifica il cliente
-    INSERT INTO client_notifications
-      (client_id, type, title, message, related_id, related_type)
-    VALUES (
-      v_client_id,
-      'plan_assigned',
-      'Nuovo piano assegnato',
-      'Il tuo coach ti ha assegnato il piano "' || COALESCE(v_plan_name, 'Piano') || '"',
-      p_plan_id,
-      'plan'
-    );
-  END IF;
-
-  RETURN jsonb_build_object('success', true, 'plan_id', p_plan_id);
-END;
-$$;
-```
+Aggiungere `flex flex-col` al `SheetContent` e `min-h-0` al div scrollabile (necessario per evitare che flex items trabocchino).
 
 ### Modifiche
 
-| Elemento | Azione |
-|---|---|
-| `set_active_plan_v2` (RPC, migrazione SQL) | Aggiungere lookup del nome piano e INSERT in `client_notifications` |
+**File: `src/features/client-workouts/components/WorkoutDayDetailSheet.tsx`**
 
-Nessuna modifica al codice frontend: l'hook `useSetActivePlan` continua a chiamare la stessa RPC, che ora genera anche la notifica.
+| Riga | Prima | Dopo |
+|------|-------|------|
+| 32 | `className="h-[85vh] rounded-t-2xl"` | `className="h-[75vh] rounded-t-2xl flex flex-col"` |
+| 33 | `<SheetHeader className="text-left pb-4 border-b">` | `<SheetHeader className="text-left pb-4 border-b shrink-0">` |
+| 53 | `<div className="overflow-y-auto flex-1 py-4">` | `<div className="overflow-y-auto flex-1 min-h-0 py-4">` |
+| 57 | `<div className="sticky bottom-0 pt-4 pb-2 bg-background border-t">` | `<div className="shrink-0 pt-4 pb-2 bg-background border-t">` |
+
+Dettagli:
+- **`flex flex-col`** sul container: abilita il layout flex verticale cosi' `flex-1` funziona
+- **`shrink-0`** su header e footer: impedisce che vengano compressi
+- **`min-h-0`** sul div scrollabile: permette al contenuto di attivare lo scroll (override del `min-height: auto` di default dei flex items)
+- **`h-[75vh]`**: ridotto da 85vh per mantenere contesto visivo della pagina sottostante (come da preferenza salvata)
+- **Rimosso `sticky bottom-0`**: non serve piu' perche' il footer e' gia' posizionato in fondo dal layout flex
+
