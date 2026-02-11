@@ -109,10 +109,10 @@ export const PhaseSectionCompact = ({
   const totalExercises = groups.reduce((sum, g) => sum + g.exercises.length, 0);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Phase Header - Minimal */}
       <div className="flex items-baseline gap-2">
-        <h3 className="text-sm font-medium text-foreground/90">
+        <h3 className="text-sm font-semibold text-foreground/90">
           {phaseLabels[phase.type] || phase.type}
         </h3>
         <span className="text-xs text-muted-foreground/60">
@@ -247,7 +247,7 @@ export const PhaseSectionCompact = ({
           
           {/* Quick Add - Always visible at end with ALL options */}
           {!readonly && (
-            <div className="pl-6 mt-2 flex items-center gap-3 text-sm text-muted-foreground/80">
+            <div className="pl-6 mt-3 flex items-center gap-3 text-sm text-muted-foreground/80">
               <button
                 onClick={() => onAddGroup("single")}
                 className="hover:text-foreground hover:underline underline-offset-2 transition-colors"
