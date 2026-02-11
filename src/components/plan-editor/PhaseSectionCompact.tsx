@@ -112,7 +112,7 @@ export const PhaseSectionCompact = ({
     <div className="space-y-3">
       {/* Phase Header - Minimal */}
       <div className="flex items-baseline gap-2">
-        <h3 className="text-sm font-medium text-foreground/90">
+        <h3 className="text-sm font-semibold text-foreground/90">
           {phaseLabels[phase.type] || phase.type}
         </h3>
         <span className="text-xs text-muted-foreground/60">
