@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { format, differenceInMinutes } from "date-fns";
 import { it } from "date-fns/locale";
 import { useClientSessionDetail } from "../hooks/useClientSessionDetail";
+import { translatePhaseType } from "@/features/session-tracking/utils/translatePhaseType";
 import type { ClientSession, PlanDaySnapshot } from "../api/client-sessions.api";
 import type { ClientActivePlan } from "../api/client-plans.api";
 import type { ExerciseActual } from "@/features/sessions/types";
@@ -30,13 +31,10 @@ interface GroupedActuals {
   sets: ExerciseActual[];
 }
 
-/**
- * Groups actuals by exercise and resolves exercise names using snapshot-first approach:
- * 1. Try snapshot.phases (new format from buildPlanDaySnapshot)
- * 2. Try snapshot.day_structure (legacy format)
- * 3. Fallback to active plan
- * 4. Fallback to generic name
- */
+// ================== Legacy flat grouping ==================
+// Legacy rendering: keep unchanged, do not refactor.
+// Used for sessions without snapshot phases data.
+
 function groupActualsByExercise(
   actuals: ExerciseActual[],
   snapshot: PlanDaySnapshot | null,
@@ -48,17 +46,14 @@ function groupActualsByExercise(
     if (!groups[actual.exercise_id]) {
       let exerciseName: string | null = null;
       
-      // 1. NEW FORMAT: snapshot.phases (from buildPlanDaySnapshot)
       if (snapshot?.phases) {
         exerciseName = findExerciseNameFromPhases(snapshot.phases, actual.exercise_id);
       }
       
-      // 2. LEGACY FORMAT: snapshot.day_structure.phases
       if (!exerciseName && snapshot?.day_structure) {
         exerciseName = findExerciseNameFromDayStructure(snapshot.day_structure, actual.exercise_id);
       }
       
-      // Fallback to active plan if not found in snapshot
       if (!exerciseName && plan?.data?.days) {
         for (const day of plan.data.days) {
           for (const phase of day.phases || []) {
@@ -74,7 +69,6 @@ function groupActualsByExercise(
         }
       }
 
-      // Final fallback
       if (!exerciseName) {
         exerciseName = `Esercizio ${actual.exercise_id.slice(0, 8)}`;
       }
@@ -88,12 +82,13 @@ function groupActualsByExercise(
     groups[actual.exercise_id].sets.push(actual);
   }
 
-  // Sort sets by set_index
   return Object.values(groups).map(g => ({
     ...g,
     sets: g.sets.sort((a, b) => a.set_index - b.set_index),
   }));
 }
+
+// ================== Shared sub-components ==================
 
 function SetLine({ actual, index }: { actual: ExerciseActual; index: number }) {
   const parts: string[] = [];
@@ -115,20 +110,117 @@ function SetLine({ actual, index }: { actual: ExerciseActual; index: number }) {
   );
 }
 
-function ExerciseDetail({ group }: { group: GroupedActuals }) {
+function ExerciseDetail({ name, sets }: { name: string; sets: ExerciseActual[] }) {
   return (
     <div className="py-3 border-b border-border/50 last:border-0">
       <p className="font-medium text-[15px] leading-6 text-foreground mb-1">
-        {group.exerciseName}
+        {name}
       </p>
       <div className="space-y-0">
-        {group.sets.map((actual, i) => (
+        {sets.map((actual, i) => (
           <SetLine key={actual.id} actual={actual} index={i} />
         ))}
       </div>
     </div>
   );
 }
+
+// ================== Structured rendering helpers ==================
+
+function buildActualsMap(actuals: ExerciseActual[]): Map<string, ExerciseActual[]> {
+  const map = new Map<string, ExerciseActual[]>();
+  for (const a of actuals) {
+    const arr = map.get(a.exercise_id) || [];
+    arr.push(a);
+    map.set(a.exercise_id, arr);
+  }
+  map.forEach(arr => arr.sort((a, b) => a.set_index - b.set_index));
+  return map;
+}
+
+function getGroupLabel(type: string): string | null {
+  if (type === 'superset') return 'Superset';
+  if (type === 'circuit') return 'Circuito';
+  return null;
+}
+
+function StructuredContent({
+  phases,
+  actualsMap,
+}: {
+  phases: any[];
+  actualsMap: Map<string, ExerciseActual[]>;
+}) {
+  return (
+    <>
+      {phases.map((phase: any, phaseIdx: number) => {
+        // Count exercises with actuals in this phase
+        const exercisesWithData: { name: string; sets: ExerciseActual[] }[] = [];
+        for (const group of phase.groups || []) {
+          for (const ex of group.exercises || []) {
+            const sets = actualsMap.get(ex.id);
+            if (sets && sets.length > 0) {
+              exercisesWithData.push({ name: ex.name || `Esercizio ${ex.id.slice(0, 8)}`, sets });
+            }
+          }
+        }
+
+        // Skip phase if no exercises have actuals
+        if (exercisesWithData.length === 0) return null;
+
+        return (
+          <div key={phaseIdx} className="mt-6 first:mt-0">
+            <h3 className="pb-2 mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/40">
+              {translatePhaseType(phase.type)}
+            </h3>
+
+            {(phase.groups || []).map((group: any, groupIdx: number) => {
+              // Collect exercises with actuals in this group
+              const completedExercises: { name: string; sets: ExerciseActual[] }[] = [];
+              for (const ex of group.exercises || []) {
+                const sets = actualsMap.get(ex.id);
+                if (sets && sets.length > 0) {
+                  completedExercises.push({ name: ex.name || `Esercizio ${ex.id.slice(0, 8)}`, sets });
+                }
+              }
+
+              if (completedExercises.length === 0) return null;
+
+              const isMultiGroup = group.type === 'superset' || group.type === 'circuit';
+              const showWrapper = isMultiGroup && completedExercises.length >= 2;
+              const label = getGroupLabel(group.type);
+
+              if (showWrapper) {
+                return (
+                  <div key={group.id || groupIdx} className="mt-3 border-l-2 border-primary/30 pl-3">
+                    {label && (
+                      <span className="text-xs font-medium text-primary/70 mb-1 block">
+                        {label}
+                      </span>
+                    )}
+                    {completedExercises.map((ex, i) => (
+                      <ExerciseDetail key={i} name={ex.name} sets={ex.sets} />
+                    ))}
+                  </div>
+                );
+              }
+
+              return (
+                <div key={group.id || groupIdx} className="mt-3">
+                  {completedExercises.map((ex, i) => (
+                    <ExerciseDetail key={i} name={ex.name} sets={ex.sets} />
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+// ================== Main component ==================
 
 export function ClientSessionDetailSheet({
   session,
@@ -167,7 +259,14 @@ export function ClientSessionDetailSheet({
     : null;
 
   const isWithCoach = session.source === "with_coach";
-  const grouped = actuals ? groupActualsByExercise(actuals, session.plan_day_snapshot, plan) : [];
+  const snapshot = session.plan_day_snapshot;
+  const hasStructuredPhases = snapshot?.phases && snapshot.phases.length > 0;
+
+  // Build rendering data
+  const actualsMap = actuals ? buildActualsMap(actuals) : null;
+  const legacyGrouped = !hasStructuredPhases && actuals
+    ? groupActualsByExercise(actuals, snapshot, plan)
+    : [];
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -206,14 +305,24 @@ export function ClientSessionDetailSheet({
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
             </div>
-          ) : grouped.length === 0 ? (
+          ) : hasStructuredPhases && actualsMap ? (
+            // Structured rendering using snapshot phases
+            actualsMap.size === 0 ? (
+              <p className="text-[15px] leading-6 text-muted-foreground text-center py-8">
+                Nessun esercizio registrato per questa sessione
+              </p>
+            ) : (
+              <StructuredContent phases={snapshot!.phases!} actualsMap={actualsMap} />
+            )
+          ) : legacyGrouped.length === 0 ? (
             <p className="text-[15px] leading-6 text-muted-foreground text-center py-8">
               Nessun esercizio registrato per questa sessione
             </p>
           ) : (
+            // Legacy rendering: keep unchanged, do not refactor.
             <div>
-              {grouped.map((group) => (
-                <ExerciseDetail key={group.exerciseId} group={group} />
+              {legacyGrouped.map((group) => (
+                <ExerciseDetail key={group.exerciseId} name={group.exerciseName} sets={group.sets} />
               ))}
             </div>
           )}
