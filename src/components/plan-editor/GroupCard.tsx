@@ -151,7 +151,7 @@ export const GroupCard = ({
               onChange={(e) =>
                 onUpdateGroup({ sharedSets: parseInt(e.target.value) || undefined })
               }
-              className="w-12 h-7 text-center border border-transparent bg-transparent text-sm transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0"
+className="w-16 h-7 text-center border border-transparent bg-transparent text-sm transition-colors hover:bg-muted/40 focus:bg-muted/50 focus:border-primary/40 focus:ring-0"
               placeholder="4"
               disabled={readonly}
             />
