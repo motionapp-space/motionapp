@@ -27,6 +27,8 @@ export interface SnapshotGroup {
   id: string;
   type: 'single' | 'superset' | 'circuit';
   label?: string;
+  group_rest_seconds?: number;  // rest dopo completamento round (superset/circuit)
+  target_sets?: number;         // superset: sharedSets, circuit: rounds
   exercises: SnapshotExercise[];
 }
 
@@ -36,6 +38,9 @@ export interface SnapshotExercise {
   sets: number;
   reps: string;
   rest_seconds?: number;
+  load?: string;
+  notes?: string;
+  goal?: string;
 }
 
 // ================== Session Update Types ==================

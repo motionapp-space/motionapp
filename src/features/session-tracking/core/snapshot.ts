@@ -44,12 +44,20 @@ function mapPhase(phase: Phase, index: number): SnapshotPhase {
 }
 
 function mapGroup(group: ExerciseGroup): SnapshotGroup {
-  return {
+  const result: SnapshotGroup = {
     id: group.id,
     type: group.type,
     label: group.name,
     exercises: (group.exercises || []).map(mapExercise),
   };
+  if (group.type === 'superset') {
+    result.group_rest_seconds = parseRestToSeconds(group.sharedRestBetweenExercises);
+    result.target_sets = group.sharedSets;
+  } else if (group.type === 'circuit') {
+    result.group_rest_seconds = parseRestToSeconds(group.restBetweenRounds);
+    result.target_sets = group.rounds;
+  }
+  return result;
 }
 
 function mapExercise(exercise: Exercise): SnapshotExercise {
@@ -59,6 +67,9 @@ function mapExercise(exercise: Exercise): SnapshotExercise {
     sets: exercise.sets || 0,
     reps: exercise.reps || '',
     rest_seconds: parseRestToSeconds(exercise.rest),
+    load: exercise.load || undefined,
+    notes: exercise.notes || undefined,
+    goal: exercise.goal || undefined,
   };
 }
 
