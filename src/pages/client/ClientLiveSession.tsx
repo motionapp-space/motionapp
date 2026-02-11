@@ -195,7 +195,7 @@ function ExerciseBlock({ exercise, isSingle, reps, setReps, load, setLoad, showD
     } else if (exercise.reps) {
       parts.push(`${exercise.reps} rip`);
     }
-    if (exercise.load) parts.push(exercise.load);
+    if (exercise.load && exercise.load.toLowerCase() !== 'nessuno') parts.push(exercise.load);
     if (exercise.rest_seconds && exercise.rest_seconds > 0) {
       parts.push(`Rec ${formatRestTime(exercise.rest_seconds)}`);
     }
