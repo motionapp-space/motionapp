@@ -928,9 +928,9 @@ export default function ClientLiveSession() {
                     {groupTypeLabel}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {currentFlatGroup.group.target_sets
+                    {Math.max(1, currentFlatGroup.group.target_sets
                       ?? Math.min(...currentFlatGroup.group.exercises.map(e => e.sets))
-                    } serie · Rec {formatRestTime(
+                    )} serie · Rec {formatRestTime(
                       getGroupRestSeconds(currentFlatGroup.group)
                     )}
                   </p>
