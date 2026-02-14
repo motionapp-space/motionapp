@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format, addMinutes, differenceInMinutes, isWithinInterval, startOfDay, setHours, setMinutes } from "date-fns";
 import { it } from "date-fns/locale";
 import { Calendar as CalendarIcon, AlertTriangle, Info, AlertCircle, Trash2, Play, Pencil, MapPin, Clock, User, UserCircle, Bell, FileText, Package, Gift, CreditCard, MoreVertical, ChevronLeft } from "lucide-react";
@@ -13,8 +13,6 @@ import { useActiveProducts } from "@/features/products/hooks/useProducts";
 import { calculatePackageKPI } from "@/features/packages/utils/kpi";
 import { generateRecurrenceOccurrences } from "../utils/recurrence";
 import { RecurrenceSection, type RecurrenceConfig } from "./RecurrenceSection";
-import { handleEventConfirm } from "@/features/packages/api/calendar-integration.api";
-import { createLedgerEntry } from "@/features/packages/api/ledger.api";
 
 import { supabase } from "@/integrations/supabase/client";
 import { buildEventSnapshot, queueBookingEmailWithSnapshot } from "@/lib/email-snapshot";
@@ -52,7 +50,7 @@ import { useCreateSession } from "@/features/sessions/hooks/useCreateSession";
 import type { Day } from "@/types/plan";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import type { EventWithClient, Event } from "../types";
+import type { EventWithClient } from "../types";
 import { Badge } from "@/components/ui/badge";
 import { useBookingSettingsQuery } from "@/features/bookings/hooks/useBookingSettingsQuery";
 import { deriveEventBadge } from "../utils/deriveEventBadge";
@@ -500,163 +498,155 @@ export function EventEditorModal({
     return null;
   }, [formData, recurrence, occurrences, lessonType, selectedPackageId, selectedPackageCredits, isNewMode, selectedPackageExpiresBeforeSeries, lastOccurrenceDate, availablePackages]);
 
+  // Helpers: determine economic type for the RPC
+  const resolveEconomicType = (): string => {
+    if (lessonType === "free") return "free";
+    if (lessonType === "single") return "single_paid";
+    if (lessonType === "package") return "package";
+    return "none";
+  };
+
+  // Helper: find product_id for current lesson type
+  const resolveProductId = (): string | null => {
+    if (!activeProducts) return null;
+    if (lessonType === "single") {
+      return activeProducts.find(p => p.type === 'single_session')?.id ?? null;
+    }
+    if (lessonType === "package" && selectedPackageId) {
+      const pkg = availablePackages.find(p => p.package_id === selectedPackageId);
+      if (pkg) {
+        return activeProducts.find(p => p.type === 'session_pack' && p.credits_amount === pkg.total_sessions)?.id ?? null;
+      }
+    }
+    return null;
+  };
+
   // Handlers
   const handleCreate = async () => {
     if (!isValid) return;
 
     try {
-      // Get coach_client_id from client_id
       const coachClientId = await getCoachClientId(formData.clientId);
-      
-      const basePayload = {
-        coach_client_id: coachClientId,
-        title: "Appuntamento",
-        location: formData.location || null,
-        reminder_offset_minutes: formData.reminderOffset || null,
-        notes: formData.notes || null,
-      };
+      const economicType = resolveEconomicType();
+      const productId = resolveProductId();
 
       const [startH, startM] = formData.startTime.split(':').map(Number);
       const [endH, endM] = formData.endTime.split(':').map(Number);
 
+      // Determine if we should use the RPC (any economic lesson type)
+      const useRpc = economicType !== "none";
+
+      // Helper to create a single event via RPC or plain INSERT
+      const createSingleEvent = async (startAt: Date, endAt: Date, seriesId?: string) => {
+        if (useRpc) {
+          const { data: eventId, error } = await supabase.rpc('create_event_with_economics_internal', {
+            p_coach_client_id: coachClientId,
+            p_title: "Appuntamento",
+            p_start_at: startAt.toISOString(),
+            p_end_at: endAt.toISOString(),
+            p_economic_type: economicType,
+            p_location: formData.location || null,
+            p_notes: formData.notes || null,
+            p_series_id: seriesId || null,
+            p_package_id: lessonType === "package" ? selectedPackageId : null,
+            p_amount_cents: lessonType === "single" ? (singleLessonPrice ?? defaultSinglePrice) : null,
+            p_source: 'coach',
+            p_product_id: productId,
+          });
+          if (error) throw error;
+          return eventId as string;
+        } else {
+          const result = await createEvent.mutateAsync({
+            coach_client_id: coachClientId,
+            title: "Appuntamento",
+            start_at: startAt.toISOString(),
+            end_at: endAt.toISOString(),
+            location: formData.location || null,
+            reminder_offset_minutes: formData.reminderOffset || null,
+            notes: formData.notes || null,
+            series_id: seriesId || undefined,
+          });
+          return result.id;
+        }
+      };
+
       // === RICORRENZE ===
       if (recurrence.enabled && occurrences.length > 0) {
         toast.info(`Creazione di ${occurrences.length} appuntamenti ricorrenti...`);
-
-        // NUOVO: Generare series_id unico per collegare tutti gli eventi della serie
         const seriesId = crypto.randomUUID();
         
         let successCount = 0;
         let failCount = 0;
 
-        // Creazione batch con Promise.all per performance
-        const createPromises = occurrences.map(async (occurrenceDate) => {
-          const startAt = setMinutes(setHours(startOfDay(occurrenceDate), startH), startM);
-          const endAt = setMinutes(setHours(startOfDay(occurrenceDate), endH), endM);
-
-          try {
-            const result = await createEvent.mutateAsync({
-              ...basePayload,
-              start_at: startAt.toISOString(),
-              end_at: endAt.toISOString(),
-              series_id: seriesId,
-            });
-            successCount++;
-            return result;
-          } catch (err) {
-            failCount++;
-            console.error('Failed to create occurrence:', err);
-            return null;
+        // Sequential for package (atomic credit deduction per event), parallel for others
+        if (lessonType === "package") {
+          for (const occurrenceDate of occurrences) {
+            const startAt = setMinutes(setHours(startOfDay(occurrenceDate), startH), startM);
+            const endAt = setMinutes(setHours(startOfDay(occurrenceDate), endH), endM);
+            try {
+              await createSingleEvent(startAt, endAt, seriesId);
+              successCount++;
+            } catch (err) {
+              failCount++;
+              console.error('Failed to create occurrence:', err);
+            }
           }
-        });
+        } else {
+          await Promise.all(
+            occurrences.map(async (occurrenceDate) => {
+              const startAt = setMinutes(setHours(startOfDay(occurrenceDate), startH), startM);
+              const endAt = setMinutes(setHours(startOfDay(occurrenceDate), endH), endM);
+              try {
+                await createSingleEvent(startAt, endAt, seriesId);
+                successCount++;
+                return true;
+              } catch (err) {
+                failCount++;
+                console.error('Failed to create occurrence:', err);
+                return false;
+              }
+            })
+          );
+        }
 
-        const createdEvents = (await Promise.all(createPromises)).filter(Boolean) as Event[];
-
-        // Feedback migliorato per fallimenti parziali
         if (failCount > 0 && successCount > 0) {
           toast.warning(`Creati ${successCount} appuntamenti, ${failCount} falliti`);
         } else if (failCount > 0 && successCount === 0) {
           toast.error("Creazione fallita per tutti gli appuntamenti");
           return;
+        } else {
+          const desc = lessonType === "package" ? "Tutti coperti dal pacchetto" 
+                     : lessonType === "single" ? "Con pagamento singolo per ciascuno"
+                     : lessonType === "free" ? "Appuntamenti gratuiti" : undefined;
+          toast.success(`Creati ${successCount} appuntamenti ricorrenti`, { description: desc });
         }
 
-        // Gestione economica in base al tipo di lezione
-        if (lessonType === "free") {
-          // Lezione gratuita - nessun pagamento
-          toast.success(`Creati ${createdEvents.length} appuntamenti gratuiti`);
-          onOpenChange(false);
-          return;
-        }
-
-
-        if (lessonType === "package" && selectedPackageId) {
-          // Pacchetto - associa crediti agli eventi
-          const pkg = availablePackages.find(p => p.package_id === selectedPackageId);
-          if (!pkg) {
-            toast.success(`Creati ${createdEvents.length} appuntamenti ricorrenti`);
-            onOpenChange(false);
-            return;
-          }
-
-          let currentOnHold = pkg.on_hold_sessions;
-          const sortedEvents = [...createdEvents].sort(
-            (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
-          );
-
-          for (const evt of sortedEvents) {
-            try {
-              await createLedgerEntry(
-                pkg.package_id,
-                'HOLD_CREATE',
-                'CONFIRM',
-                0,
-                1,
-                evt.id,
-                `Ricorrenza: ${evt.title || 'Appuntamento'}`
-              );
-
-              currentOnHold += 1;
-              await supabase
-                .from("package")
-                .update({ on_hold_sessions: currentOnHold })
-                .eq("package_id", pkg.package_id);
-            } catch (err) {
-              console.warn('Could not create HOLD for recurring event:', err);
-            }
-          }
-
-          queryClient.invalidateQueries({ queryKey: ["packages"] });
-          toast.success(`Creati ${createdEvents.length} appuntamenti ricorrenti`, {
-            description: `Tutti coperti dal pacchetto`
-          });
-          onOpenChange(false);
-          return;
-        }
-
-        // Fallback (non dovrebbe mai succedere con validazione corretta)
-        toast.success(`Creati ${createdEvents.length} appuntamenti ricorrenti`);
+        queryClient.invalidateQueries({ queryKey: ["events"], exact: false });
+        queryClient.invalidateQueries({ queryKey: ["packages"], exact: false });
         onOpenChange(false);
         return;
       }
       
       // === EVENTO SINGOLO ===
-      const event = await createEvent.mutateAsync({
-        ...basePayload,
-        start_at: eventStartDateTime.toISOString(),
-        end_at: eventEndDateTime.toISOString(),
-      });
+      await createSingleEvent(eventStartDateTime, eventEndDateTime);
 
-      // Gestione economica in base al tipo di lezione
+      // Toast based on lesson type
       if (lessonType === "free") {
         toast.success("Appuntamento gratuito creato");
-        onOpenChange(false);
-        return;
+      } else if (lessonType === "package") {
+        queryClient.invalidateQueries({ queryKey: ["packages"] });
+        toast.success("Appuntamento creato", { description: "1 credito prenotato dal pacchetto" });
+      } else if (lessonType === "single") {
+        toast.success("Appuntamento creato", { description: "Pagamento registrato" });
+      } else {
+        toast.success("Appuntamento creato");
       }
 
-
-      if (lessonType === "package" && selectedPackageId) {
-        // Associa al pacchetto
-        try {
-          await handleEventConfirm(event.id, formData.clientId, event.start_at);
-          queryClient.invalidateQueries({ queryKey: ["packages"] });
-          toast.success("Appuntamento creato", {
-            description: "1 credito prenotato dal pacchetto"
-          });
-        } catch (error: any) {
-          toast.warning("Appuntamento creato senza gestione crediti", {
-            description: error.message
-          });
-        }
-        
-        onOpenChange(false);
-        return;
-      }
-
-      // Fallback
-      toast.success("Appuntamento creato");
+      queryClient.invalidateQueries({ queryKey: ["events"], exact: false });
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Create event error:', error);
+      toast.error("Errore nella creazione", { description: error.message });
     }
   };
 
