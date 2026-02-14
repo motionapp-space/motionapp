@@ -1,0 +1,24 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+export function useMarkOrderPaid() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (orderId: string) => {
+      const { data, error } = await supabase.rpc("mark_order_as_paid", {
+        p_order_id: orderId,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      toast.success("Pagamento registrato");
+    },
+    onError: () => {
+      toast.error("Errore nel registrare il pagamento");
+    },
+  });
+}
