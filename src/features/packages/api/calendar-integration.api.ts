@@ -11,8 +11,7 @@ import type { Package } from "../types";
 
 /**
  * Handle event confirmation - creates hold on package
- * Returns null if no active package exists (UI must handle this case)
- * Single lesson packages are created explicitly via SingleLessonDialog
+ * Returns null if no active package exists
  */
 export async function handleEventConfirm(
   eventId: string,
@@ -26,7 +25,6 @@ export async function handleEventConfirm(
   const pkg = await getActivePackageByCoachClient(coachClientId);
   
   if (!pkg) {
-    // Return null - UI will show SingleLessonDialog for explicit coach decision
     return null;
   }
 
