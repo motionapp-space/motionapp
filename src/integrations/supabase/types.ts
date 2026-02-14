@@ -2253,6 +2253,25 @@ export type Database = {
               p_location?: string
               p_notes?: string
               p_package_id?: string
+              p_product_id?: string
+              p_series_id?: string
+              p_series_request_id?: string
+              p_source?: string
+              p_start_at: string
+              p_title: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_amount_cents?: number
+              p_client_request_id?: string
+              p_coach_client_id: string
+              p_economic_type: string
+              p_end_at: string
+              p_location?: string
+              p_notes?: string
+              p_package_id?: string
               p_series_id?: string
               p_series_request_id?: string
               p_source?: string
