@@ -15,7 +15,7 @@ import { generateRecurrenceOccurrences } from "../utils/recurrence";
 import { RecurrenceSection, type RecurrenceConfig } from "./RecurrenceSection";
 import { handleEventConfirm } from "@/features/packages/api/calendar-integration.api";
 import { createLedgerEntry } from "@/features/packages/api/ledger.api";
-import { createPackage } from "@/features/packages/api/packages.api";
+
 import { supabase } from "@/integrations/supabase/client";
 import { buildEventSnapshot, queueBookingEmailWithSnapshot } from "@/lib/email-snapshot";
 import { useSessionStore } from "@/stores/useSessionStore";
@@ -568,53 +568,6 @@ export function EventEditorModal({
           return;
         }
 
-        if (lessonType === "single") {
-          // Lezione singola - crea order_payment per ogni occorrenza
-          const priceToUse = singleLessonPrice ?? defaultSinglePrice;
-          
-          for (const evt of createdEvents) {
-            try {
-              // Crea pacchetto tecnico per ogni evento
-              const pkg = await createPackage({
-                coach_client_id: coachClientId,
-                name: `Lezione singola - ${format(new Date(evt.start_at), "d MMM yyyy", { locale: it })}`,
-                total_sessions: 1,
-                price_total_cents: priceToUse,
-                duration_months: 1,
-                payment_status: 'unpaid',
-                is_single_technical: true,
-              });
-
-              // Crea HOLD per l'evento
-              await createLedgerEntry(
-                pkg.package_id,
-                'HOLD_CREATE',
-                'CONFIRM',
-                0,
-                1,
-                evt.id,
-                `Lezione singola: ${evt.title}`
-              );
-
-              // Aggiorna on_hold
-              await supabase
-                .from("package")
-                .update({ on_hold_sessions: 1 })
-                .eq("package_id", pkg.package_id);
-            } catch (err) {
-              console.warn('Could not create single lesson for recurring event:', err);
-            }
-          }
-
-          queryClient.invalidateQueries({ queryKey: ["packages"] });
-          toast.success(`Creati ${createdEvents.length} appuntamenti`, {
-            description: recurrence.enabled 
-              ? "Il pagamento sarà dovuto per ciascuna occorrenza" 
-              : "Il pagamento sarà dovuto dopo l'appuntamento"
-          });
-          onOpenChange(false);
-          return;
-        }
 
         if (lessonType === "package" && selectedPackageId) {
           // Pacchetto - associa crediti agli eventi
@@ -680,48 +633,6 @@ export function EventEditorModal({
         return;
       }
 
-      if (lessonType === "single") {
-        // Lezione singola - crea pacchetto tecnico e order_payment
-        const priceToUse = singleLessonPrice ?? defaultSinglePrice;
-        
-        try {
-          const pkg = await createPackage({
-            coach_client_id: coachClientId,
-            name: `Lezione singola - ${format(eventStartDateTime, "d MMM yyyy", { locale: it })}`,
-            total_sessions: 1,
-            price_total_cents: priceToUse,
-            duration_months: 1,
-            payment_status: 'unpaid',
-            is_single_technical: true,
-          });
-
-          await createLedgerEntry(
-            pkg.package_id,
-            'HOLD_CREATE',
-            'CONFIRM',
-            0,
-            1,
-            event.id,
-            `Lezione singola: ${event.title}`
-          );
-
-          await supabase
-            .from("package")
-            .update({ on_hold_sessions: 1 })
-            .eq("package_id", pkg.package_id);
-
-          queryClient.invalidateQueries({ queryKey: ["packages"] });
-          toast.success("Appuntamento creato", {
-            description: "Il pagamento sarà dovuto dopo l'appuntamento"
-          });
-        } catch (err) {
-          console.warn('Could not create single lesson:', err);
-          toast.success("Appuntamento creato");
-        }
-        
-        onOpenChange(false);
-        return;
-      }
 
       if (lessonType === "package" && selectedPackageId) {
         // Associa al pacchetto

@@ -109,16 +109,6 @@ export function PackageCard({
               </TooltipContent>
             </Tooltip>
 
-            {pkg.is_single_technical && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge variant="secondary" className="cursor-help">Tecnico</Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">Pacchetto creato automaticamente</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
           </TooltipProvider>
 
           <DropdownMenu>
