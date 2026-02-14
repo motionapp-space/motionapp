@@ -2328,6 +2328,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_order_as_paid: {
+        Args: { p_external_payment_id?: string; p_order_id: string }
+        Returns: Json
+      }
       select_fefo_package_internal: {
         Args: {
           p_coach_client_id: string
