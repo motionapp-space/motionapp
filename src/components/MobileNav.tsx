@@ -1,4 +1,4 @@
-import { Users, FileText, Calendar, Settings } from "lucide-react";
+import { Users, FileText, Calendar, Settings, Wallet } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -14,6 +14,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Clienti", to: "/", icon: Users },
   { label: "Agenda", to: "/calendar", icon: Calendar },
   { label: "Libreria", to: "/library", icon: FileText },
+  { label: "Pagamenti", to: "/payments", icon: Wallet },
   { label: "Impostazioni", to: "/settings", icon: Settings },
 ];
 
