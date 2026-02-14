@@ -26,6 +26,7 @@ import BookingManagement from "./pages/BookingManagement";
 import ClientBooking from "./pages/ClientBooking";
 import LiveSession from "./pages/LiveSession";
 import Settings from "./pages/Settings";
+import Payments from "./pages/Payments";
 import SharedPlan from "./pages/SharedPlan";
 import NotFound from "./pages/NotFound";
 import Notifications from "./pages/Notifications";
@@ -174,6 +175,7 @@ const App = () => {
                 <Route path="/calendar/manage" element={<BookingManagement />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/session/live" element={<LiveSession />} />
+                <Route path="/payments" element={<Payments />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
