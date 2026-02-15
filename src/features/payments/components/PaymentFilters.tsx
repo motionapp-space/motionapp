@@ -1,4 +1,6 @@
 import { Search, X } from "lucide-react";
+import { format, isSameMonth, isSameYear } from "date-fns";
+import { it } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -32,6 +34,20 @@ export function PaymentFilters({
 
   if (onlyDueNow && status === "outstanding") {
     chips.push({ label: "Solo già dovuti", onRemove: () => onOnlyDueNowChange(false) });
+  }
+
+  if (dateRange?.from && dateRange?.to) {
+    const from = dateRange.from;
+    const to = dateRange.to;
+    let label: string;
+    if (isSameMonth(from, to) && isSameYear(from, to)) {
+      label = `Periodo: ${format(from, "d", { locale: it })}–${format(to, "d MMM yyyy", { locale: it })}`;
+    } else if (isSameYear(from, to)) {
+      label = `Periodo: ${format(from, "d MMM", { locale: it })} – ${format(to, "d MMM yyyy", { locale: it })}`;
+    } else {
+      label = `Periodo: ${format(from, "d MMM yyyy", { locale: it })} – ${format(to, "d MMM yyyy", { locale: it })}`;
+    }
+    chips.push({ label, onRemove: () => onDateRangeChange(undefined) });
   }
 
   return (
