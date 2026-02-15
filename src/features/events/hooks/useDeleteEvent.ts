@@ -1,20 +1,27 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteEvent, getEventById } from "../api/events.api";
+import { getEventById } from "../api/events.api";
 import { toast } from "@/hooks/use-toast";
 import { logClientActivity } from "@/features/clients/api/activities.api";
 import { getCoachClientDetails } from "@/lib/coach-client";
 import { supabase } from "@/integrations/supabase/client";
 import { buildEventSnapshot, queueBookingEmailWithSnapshot } from "@/lib/email-snapshot";
 
+interface CancelResult {
+  status: string;
+  already_canceled?: boolean;
+  credit_released?: boolean;
+  penalty_applied?: boolean;
+}
+
 export function useDeleteEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // 1. Recupera evento PRIMA di eliminare
+      // 1. Recupera evento PRIMA di cancellare
       const event = await getEventById(id);
       
-      // 2. Costruisci snapshot PRIMA dell'eliminazione (dati disponibili)
+      // 2. Costruisci snapshot PRIMA della cancellazione (dati disponibili)
       let snapshot;
       try {
         snapshot = await buildEventSnapshot(event, 'coach');
@@ -22,13 +29,22 @@ export function useDeleteEvent() {
         console.warn("Could not build event snapshot for email:", e);
       }
       
-      // 3. Elimina evento
-      await deleteEvent(id);
+      // 3. Cancella evento via RPC (soft-delete + ledger + trigger notifica)
+      const { data, error } = await supabase.rpc('cancel_event_with_ledger', {
+        p_event_id: id,
+        p_actor: 'coach',
+      });
+
+      if (error) {
+        throw new Error(error.message || "Impossibile cancellare l'appuntamento.");
+      }
+
+      const result = (typeof data === 'string' ? JSON.parse(data) : data) as CancelResult;
       
-      // 4. Ritorna entrambi per uso in onSuccess
-      return { event, snapshot };
+      // 4. Ritorna tutto per uso in onSuccess
+      return { event, snapshot, result };
     },
-    onSuccess: async ({ event: deletedEvent, snapshot }) => {
+    onSuccess: async ({ event: deletedEvent, snapshot, result }) => {
       // Get client_id from coach_client relationship
       try {
         const { client_id: clientId } = await getCoachClientDetails(deletedEvent.coach_client_id);
@@ -45,11 +61,25 @@ export function useDeleteEvent() {
         console.warn("Could not get client details for activity log:", error);
       }
 
+      // Invalidate all affected queries
       queryClient.invalidateQueries({ queryKey: ["events"], exact: false });
-      toast({
-        title: "Appuntamento eliminato",
-        description: "L'appuntamento è stato eliminato con successo.",
-      });
+      queryClient.invalidateQueries({ queryKey: ["packages"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["package-ledger"], exact: false });
+
+      // Toast appropriato in base al risultato della RPC
+      if (result?.already_canceled) {
+        toast({
+          title: "Già cancellato",
+          description: "Questo appuntamento era già stato cancellato.",
+        });
+      } else {
+        toast({
+          title: "Appuntamento cancellato",
+          description: result?.credit_released
+            ? "Credito restituito al cliente."
+            : "L'appuntamento è stato cancellato con successo.",
+        });
+      }
 
       // Queue email notification to client usando snapshot (già costruito)
       if (snapshot) {
