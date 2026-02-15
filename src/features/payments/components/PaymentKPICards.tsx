@@ -33,18 +33,7 @@ export function PaymentKPICards({
         }`}
         onClick={onFilterOutstanding}
       >
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Da incassare</p>
-          <span
-            className={`min-w-[5rem] text-center text-xs ${
-              isOutstandingActive
-                ? "text-foreground font-medium"
-                : "text-muted-foreground"
-            }`}
-          >
-            {isOutstandingActive ? "Filtro attivo" : "Filtra"}
-          </span>
-        </div>
+        <p className="text-sm text-muted-foreground">Da incassare</p>
         <p className="text-3xl font-semibold text-foreground mt-1">
           {formatEur(daIncassareTotale)}
         </p>
