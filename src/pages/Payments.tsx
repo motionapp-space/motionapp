@@ -35,12 +35,9 @@ export default function Payments() {
 
   return (
     <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6 space-y-6">
-      <TabHeader
-        title="Pagamenti"
-        action={
-          <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
-        }
-      />
+      <div className="flex justify-end">
+        <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
+      </div>
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
