@@ -1,4 +1,10 @@
 import type { PaymentKPIs } from "../hooks/usePaymentKPIs";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 
 function formatEur(cents: number) {
   return (cents / 100).toLocaleString("it-IT", {
@@ -63,6 +69,30 @@ export function PaymentKPICards({
                   style={{ width: `${certaPct}%` }}
                 />
               )}
+            </div>
+
+            <div className="mt-2">
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Come viene calcolato?
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="start" className="max-w-xs text-xs leading-relaxed">
+                    <p>
+                      <span className="font-medium text-foreground">Già dovuti</span>: pacchetti venduti e lezioni già svolte.
+                    </p>
+                    <p className="mt-1">
+                      <span className="font-medium text-foreground">Non ancora dovuti</span>: lezioni future non ancora svolte.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </>
         )}
