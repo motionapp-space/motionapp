@@ -25,7 +25,7 @@ export function Button({ href, children, variant = 'primary' }: ButtonProps) {
         fontSize: '14px',
         fontWeight: 600,
         padding: '12px 24px',
-        borderRadius: borderRadius.md,
+        borderRadius: '8px',
         textDecoration: 'none',
         display: 'inline-block',
         border: isPrimary ? 'none' : `2px solid ${colors.primary}`,

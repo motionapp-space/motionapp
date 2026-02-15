@@ -16,7 +16,7 @@ export function InfoBox({ children, variant = 'default' }: InfoBoxProps) {
   let borderColor = colors.border;
   
   if (variant === 'highlight') {
-    backgroundColor = '#e8f0fe'; // Light blue
+    backgroundColor = '#eef0f3'; // Light Ink tint
     borderColor = colors.primary;
   } else if (variant === 'warning') {
     backgroundColor = '#fff3e0'; // Light orange
