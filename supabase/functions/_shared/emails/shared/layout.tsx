@@ -9,8 +9,8 @@ interface LayoutProps {
 
 /**
  * Layout wrapper comune per tutte le email.
- * Include header con logo, contenuto e footer.
- * Usa HTML puro per evitare conflitti di versioni React.
+ * Include header con logo testuale "Motion", contenuto e footer.
+ * Header con sfondo "Dark Signature" (Ink) coerente con la sidebar dell'app.
  */
 export function Layout({ preview, children }: LayoutProps) {
   return (
@@ -35,12 +35,7 @@ export function Layout({ preview, children }: LayoutProps) {
           <tbody>
             <tr>
               <td style={headerStyle}>
-                <img
-                  src="https://qadgzwsmiadxwwvsrauz.supabase.co/storage/v1/object/public/assets/logo.png"
-                  alt="Motion"
-                  width="120"
-                  style={{ display: 'block', margin: '0 auto' }}
-                />
+                <span style={logoStyle}>Motion</span>
               </td>
             </tr>
             
@@ -87,10 +82,18 @@ const containerStyle: React.CSSProperties = {
 };
 
 const headerStyle: React.CSSProperties = {
-  backgroundColor: colors.background,
+  backgroundColor: colors.primary,
   padding: spacing.lg,
   textAlign: 'center',
-  borderBottom: `1px solid ${colors.border}`,
+};
+
+const logoStyle: React.CSSProperties = {
+  color: '#ffffff',
+  fontFamily: fonts.base,
+  fontSize: '22px',
+  fontWeight: 700,
+  letterSpacing: '-0.02em',
+  textDecoration: 'none',
 };
 
 const contentStyle: React.CSSProperties = {
