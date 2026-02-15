@@ -1,124 +1,171 @@
-## Sezione Pagamenti - "Money Inbox" per il Coach
+
+
+## Refactor KPI Pagamenti — Versione Definitiva (Residuo-Based, Partial-Pay Ready)
 
 ### Panoramica
 
-Nuova pagina `/payments` che funge da centro di comando finanziario. Il coach vede tutti i pagamenti pendenti (ordini e pacchetti) in un feed unificato, con KPI riassuntive e filtri strategici. Si basa interamente sulla tabella `orders` unificata nelle fasi precedenti.
+Riscrittura completa della sezione KPI: da 3 card animate a 2 card editoriali. Introduce `paid_amount_cents` nel DB per supportare pagamenti parziali futuri. Tutta la logica KPI diventa residuo-based (mai status-based). Aggiunge selettore mese per "Incassato".
 
 ---
 
-### Struttura file
+### Passo 1 — Migrazione DB
 
-```text
-src/pages/Payments.tsx                          -- Pagina principale (routing + topbar)
-src/features/payments/
-  api/payments.api.ts                           -- Query Supabase per orders + join client
-  hooks/usePayments.ts                          -- React Query hook
-  hooks/usePaymentKPIs.ts                       -- KPI calculations (da incassare, incassato mese, in attesa)
-  hooks/useMarkOrderPaid.ts                     -- Mutation wrapper per RPC mark_order_as_paid
-  components/PaymentKPICards.tsx                 -- 3 Card animate con framer-motion
-  components/PaymentFeed.tsx                     -- Lista unificata con filtri e ricerca
-  components/PaymentFeedItem.tsx                 -- Singola riga (lezione singola o pacchetto)
-  components/PaymentFilters.tsx                  -- Tabs + ricerca + date range
-  types.ts                                      -- Tipi TypeScript
-src/components/ui/date-range-picker.tsx          -- Componente date range picker (nuovo)
+Aggiungere colonna `paid_amount_cents` alla tabella `orders` e backfillare gli ordini gia' pagati:
+
+```sql
+ALTER TABLE orders
+  ADD COLUMN paid_amount_cents integer NOT NULL DEFAULT 0;
+
+UPDATE orders
+SET paid_amount_cents = amount_cents
+WHERE status = 'paid';
 ```
 
 ---
 
-### 1. Routing e Navigazione
+### Passo 2 — Aggiornare RPC `mark_order_as_paid`
 
-**App.tsx**: Aggiungere rotta `/payments` dentro il blocco `CoachLayout`, prima di `Settings`.
+Aggiungere `paid_amount_cents = amount_cents` nell'UPDATE della funzione esistente:
 
-**AppSidebar.tsx** e **MobileNav.tsx**: Inserire voce "Pagamenti" con icona `Wallet` da Lucide, posizionata tra "Libreria" e "Impostazioni" nell'array `NAV_ITEMS`. La logica `active` usa `pathname.startsWith("/payments")`.
-
----
-
-### 2. Pagina `Payments.tsx`
-
-Segue il pattern standard delle altre pagine coach:
-
-- `useTopbar({ title: "Pagamenti" })`
-- Layout: `mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6`
-- Struttura: KPI cards in alto, sotto il feed filtrato
-
----
-
-### 3. Data Layer (`payments.api.ts`)
-
-Query principale sugli ordini con join per ottenere i dati cliente:
-
-```text
-SELECT orders.*, 
-  coach_clients.client_id,
-  clients.first_name, clients.last_name,
-  events.start_at as event_start_at, events.title as event_title,
-  package.name as package_name
-FROM orders
-JOIN coach_clients ON orders.coach_client_id = coach_clients.id
-JOIN clients ON coach_clients.client_id = clients.id
-LEFT JOIN events ON orders.event_id = events.id
-LEFT JOIN package ON orders.package_id = package.package_id
-WHERE coach_clients.coach_id = auth.uid()
-ORDER BY created_at DESC
+```sql
+UPDATE orders
+SET
+  status = 'paid',
+  paid_at = NOW(),
+  paid_amount_cents = amount_cents,
+  external_payment_id = COALESCE(p_external_payment_id, external_payment_id)
+WHERE id = p_order_id
+  AND status IN ('draft', 'due')
+RETURNING * INTO v_order;
 ```
 
-Il filtro RLS su `orders` gia' limita ai coach_clients del coach autenticato.
+---
+
+### Passo 3 — Types + API
+
+**`types.ts`**: Aggiungere `paid_amount_cents: number` a `PaymentOrder`.
+
+**`payments.api.ts`**: Aggiungere `paid_amount_cents` alla select e al mapping.
 
 ---
 
-### 4. KPI Cards (`PaymentKPICards.tsx`)
+### Passo 4 — Hook `usePaymentKPIs.ts` (riscrittura completa)
 
-Tre card con animazione `framer-motion` (stagger entry):
+Nuovo contratto:
 
+```text
+Input:  orders[], selectedMonth: Date
+Output: { daIncassareTotale, parteCerta, parteNonCerta, incassatoMese } (tutti in cents)
+```
 
-| KPI            | Calcolo                                                                        | Colore                     |
-| -------------- | ------------------------------------------------------------------------------ | -------------------------- |
-| Da Incassare   | `SUM(amount_cents)` dove `status = 'due'`                                      | `text-destructive` (rosso) |
-| Incassato Mese | `SUM(amount_cents)` dove `status = 'paid'` e `mese 'Febbraio', 'Marzo', ecc..` | `text-emerald-600` (verde) |
-| In Attesa      | `COUNT(*)` dove `status = 'draft'`                                             | `text-amber-500` (giallo)  |
+Logica:
 
+```text
+for each order:
+  // Hard guard: skip canceled/refunded
+  if status in ['canceled', 'refunded', 'void'] -> skip
 
-Le KPI vengono calcolate client-side dai dati gia' fetchati, senza query aggiuntive. Ogni card ha un'icona in background con opacita' ridotta e sfumatura.
+  residuo = amount_cents - paid_amount_cents
+  if residuo <= 0 -> skip (fully paid or overpaid)
 
----
+  if kind === 'package_purchase':
+    parteCerta += residuo
 
-### 5. Feed Unificato (`PaymentFeed.tsx` + `PaymentFeedItem.tsx`)
+  if kind === 'single_lesson':
+    if event_start_at != null AND event_start_at < now():
+      parteCerta += residuo
+    else:
+      parteNonCerta += residuo  // null event_start_at = anomalia, trattata come non certa
 
-Ogni item mostra:
+daIncassareTotale = parteCerta + parteNonCerta
 
-- **Lezione singola** (`kind = 'single_lesson'`): Icona `Calendar`, label "Lezione del [data evento] - [Nome Cliente]"
-- **Pacchetto** (`kind = 'package_purchase'`): Icona `Package`, label "Pacchetto [nome] - [Nome Cliente]"
-- Importo formattato in EUR
-- Badge di stato: "Non Pagato" (destructive), "In Attesa" (outline/amber), "Pagato" (default/green)
-- Azione rapida: bottone "Segna come pagato" che chiama `mark_order_as_paid` RPC
+// Incassato mese: basato su paid_at + paid_amount_cents
+for each order:
+  if paid_at is in selectedMonth AND paid_amount_cents > 0:
+    incassatoMese += paid_amount_cents
+```
 
-Card design: `rounded-2xl`, hover con `hover:shadow-sm hover:border-primary/20`, transizione delicata.
-
----
-
-### 6. Filtri (`PaymentFilters.tsx`)
-
-- **Segmented Control**: Tabs shadcn con valori "Tutti", "Da Pagare" (default, `status IN ('due')`), "Pagati" (`status = 'paid'`), "In Attesa" (`status = 'draft'`)
-- **Ricerca cliente**: Input con icona `Search`, filtro client-side su `first_name + last_name`
-- **Date Range**: Nuovo componente `date-range-picker.tsx` basato su `react-day-picker` (gia' installato) + Popover shadcn. Filtra per `orders.created_at` nel range selezionato.
-
----
-
-### 7. Componente Date Range Picker
-
-Nuovo componente UI riutilizzabile `src/components/ui/date-range-picker.tsx`:
-
-- Basato su `react-day-picker` (gia' disponibile) con mode="range"
-- Trigger: bottone con icona Calendar che mostra le date selezionate
-- Wrapped in Popover shadcn
-- Locale italiano con `date-fns/locale/it`
+Vincolo dichiarato: modello "single payment event per order" finche' non esiste tabella payments/ledger.
 
 ---
 
-### Dettagli tecnici
+### Passo 5 — Componente `PaymentKPICards.tsx` (riscrittura completa)
 
-- **Nessuna migrazione DB** necessaria: tutto si basa sulla tabella `orders` gia' strutturata e popolata dalle fasi precedenti
-- **RLS**: La policy esistente "Coaches can manage order_payments" copre gia' SELECT per i coach sui propri ordini
-- **Formattazione importi**: `(amount_cents / 100).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })`
-- **Empty state**: Componente `empty-state.tsx` gia' esistente, usato quando non ci sono ordini da mostrare
-- **Responsive**: Feed in lista verticale su mobile, KPI cards in griglia 1->3 colonne con breakpoint `grid-cols-1 sm:grid-cols-3`
+Eliminare: framer-motion, icone decorative, 3 card.
+
+**Layout**: Grid 3 colonne desktop (gap-6). "Da incassare" = col-span-2. "Incassato" = col-span-1. Stack su mobile.
+
+**Card 1 — "Da incassare"**:
+- Card bianca, border `border`, rounded-2xl, p-6, no shadow
+- Label: "Da incassare" text-sm text-muted-foreground
+- Importo: text-3xl font-semibold text-foreground
+- Breakdown (mt-3, space-y-2), righe visibili solo se valore > 0:
+  - Dot verde + "X,XX EUR gia' dovuti" text-sm text-emerald-600
+  - Dot grigio + "X,XX EUR non ancora dovuti" text-sm text-muted-foreground
+- Barra stacked (h-2.5 rounded-full mt-3, solo se totale > 0):
+  - Segmento emerald-500 (parteCerta/totale), segmento muted (resto)
+- Riga helper: "Gia' dovuti = pacchetti venduti o lezioni svolte. Non ancora dovuti = lezioni future." text-xs text-muted-foreground mt-2
+- Hover: border-foreground/20, cursor-pointer, transition-colors duration-150
+- Click: callback `onFilterOutstanding()` che filtra feed su residuo > 0
+
+**Card 2 — "Incassato a [Mese Anno]"**:
+- Stesso stile card, 1 colonna
+- Label dinamica: "Incassato a Feb 2026" text-sm text-muted-foreground
+- Importo: text-3xl font-semibold text-emerald-700
+- Subtext: "Basato sulla data di pagamento" text-xs text-muted-foreground mt-2
+- Click: callback `onFilterPaidInMonth()`
+
+**Edge cases**:
+- Totale 0: mostrare "0,00 EUR", nascondere breakdown, barra, e riga helper
+- Solo parte certa: solo riga "gia' dovuti", barra 100% verde
+- Solo parte non certa: solo riga "non ancora dovuti", barra 100% grigia
+
+---
+
+### Passo 6 — Selettore mese
+
+Ghost button rounded-full text-sm posizionato top-right nella riga sopra le KPI (allineato con TabHeader). Label: "Feb 2026" + ChevronDown. Dropdown (Popover + Command o semplice lista) con mese corrente + ultimi 6 mesi.
+
+Impatto: cambia SOLO "Incassato nel mese", NON "Da incassare".
+
+---
+
+### Passo 7 — Pagina `Payments.tsx`
+
+- State `selectedMonth` (default: mese corrente)
+- Passare `selectedMonth` a `usePaymentKPIs`
+- Rendere selettore mese
+- Skeleton loading: grid 3 col, skeleton col-span-2 + skeleton col-span-1
+- Callbacks click KPI che impostano filtri nel feed con logica residuo-based (non status-based)
+- Il feed riceve un nuovo prop per il filtro "outstanding" (residuo > 0) e "paid in month"
+
+---
+
+### Passo 8 — PaymentFeed adattamento
+
+Il PaymentFeed deve supportare un filtro aggiuntivo residuo-based proveniente dal click KPI. Il filtro status tabs resta, ma si aggiunge la possibilita' di filtrare per `amount_cents - paid_amount_cents > 0` (outstanding) o per `paid_at nel mese selezionato` (paid in month), attivabili dai click sulle KPI cards.
+
+---
+
+### Riepilogo file
+
+```text
+MIGRAZIONE DB:
+  - ADD COLUMN paid_amount_cents + backfill
+  - UPDATE mark_order_as_paid RPC
+
+CODICE MODIFICATO:
+  src/features/payments/types.ts                     -- +paid_amount_cents
+  src/features/payments/api/payments.api.ts          -- +paid_amount_cents nella select
+  src/features/payments/hooks/usePaymentKPIs.ts      -- Riscrittura completa
+  src/features/payments/components/PaymentKPICards.tsx -- Riscrittura completa (2 card editoriali)
+  src/pages/Payments.tsx                             -- selectedMonth + selettore + callbacks + skeleton
+  src/features/payments/components/PaymentFeed.tsx   -- Supporto filtro residuo-based da KPI click
+
+INVARIATI:
+  src/features/payments/components/PaymentFeedItem.tsx
+  src/features/payments/components/PaymentFilters.tsx
+  src/features/payments/hooks/useMarkOrderPaid.ts
+  src/features/payments/hooks/usePayments.ts
+```
+
