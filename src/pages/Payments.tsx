@@ -38,6 +38,8 @@ export default function Payments() {
     );
   }, [selectedMonth]);
 
+  const handleResetKpiFilter = useCallback(() => setKpiFilter(null), []);
+
   return (
     <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6 space-y-6">
       <TabHeader
@@ -65,6 +67,7 @@ export default function Payments() {
             orders={orders ?? []}
             kpiFilter={kpiFilter}
             selectedMonth={selectedMonth}
+            onResetKpiFilter={handleResetKpiFilter}
           />
         </>
       )}
