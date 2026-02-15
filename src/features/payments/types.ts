@@ -20,4 +20,4 @@ export interface PaymentOrder {
   package_name: string | null;
 }
 
-export type PaymentStatusFilter = "all" | "due" | "paid" | "draft";
+export type PaymentStatusFilter = "all" | "outstanding" | "paid";
