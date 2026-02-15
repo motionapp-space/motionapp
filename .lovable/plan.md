@@ -1,51 +1,70 @@
 
 
-## Allineamento template email al design system Motion
+## Fix: Cancellazione coach dall'agenda non ripristina crediti e non genera notifica in-app
 
-### Problema attuale
+### Causa radice
 
-I template email usano uno stile vecchio (blu `#2264d1`, sfondo bianco puro `#ffffff`) che non riflette il design system "Motion Editorial" della piattaforma, basato su colori "Ink" (quasi nero) e superfici "Editorial White" (non bianco puro).
+La pagina **Calendar.tsx** usa l'hook `useDeleteEvent`, che esegue un `DELETE FROM events` diretto. Questo bypassa completamente:
 
-Inoltre, il logo nell'header e' un'immagine caricata su Supabase Storage (`logo.png`). La piattaforma stessa usa il testo "Motion" come logo (senza immagine). L'immagine potrebbe non esistere o non essere accessibile, causando un header vuoto nelle email.
+1. **La RPC `cancel_event_with_ledger`** che gestisce il ripristino crediti nel pacchetto (HOLD_RELEASE nel ledger + aggiornamento contatori)
+2. **Il trigger `notify_client_event_canceled`** che genera la notifica in-app al cliente -- il trigger si attiva su `UPDATE session_status = 'canceled' + canceled_by = 'coach'`, ma il DELETE rimuove la riga senza mai fare l'UPDATE
 
-### Modifiche previste
+L'email invece arriva perche' `useDeleteEvent` la accoda manualmente tramite `queueBookingEmailWithSnapshot`.
 
-**1. `styles.ts` - Aggiornamento palette colori**
+### Soluzione
 
-| Token | Vecchio valore | Nuovo valore | Motivazione |
-|---|---|---|---|
-| `primary` | `#2264d1` (blu) | `#191d23` (Ink) | Allineamento al Primary "Ink" della piattaforma |
-| `primaryDark` | `#1a4fa8` | `#121518` | Hover coerente con Ink |
-| `background` | `#ffffff` | `#f9fafb` | Editorial White (HSL 220 14% 98%) |
-| `backgroundMuted` | `#f5f5f5` | `#f2f3f5` | Muted surface coerente |
-| `text` | `#333333` | `#191d23` | Foreground Ink |
-| `textMuted` | `#666666` | `#6b7280` | Muted foreground allineato |
-| `border` | `#e5e5e5` | `#e2e4e8` | Border token allineato |
+Riscrivere `useDeleteEvent` per usare la RPC `cancel_event_with_ledger` con `p_actor: 'coach'` invece del DELETE diretto. L'evento verra' marcato come `session_status = 'canceled'` + `canceled_by = 'coach'` (soft-delete) anziche' eliminato fisicamente.
 
-**2. `layout.tsx` - Logo testuale al posto dell'immagine**
-
-Sostituire il tag `<img>` con testo "Motion" in stile bold, coerente con la sidebar dell'app. Questo garantisce che il logo sia sempre visibile indipendentemente dalla disponibilita' dell'immagine su Storage.
-
-L'header avra' sfondo scuro "Ink" con testo bianco, richiamando la "Dark Signature" della sidebar.
-
-**3. `button.tsx` - CTA con stile Ink**
-
-Il pulsante primary usera' sfondo Ink (quasi nero) con testo bianco, coerente con i pulsanti CTA della piattaforma. Border radius aggiornato a `8px` (coerente con `--radius: 1rem` del design system).
-
-**4. `info-box.tsx` - Varianti aggiornate**
-
-- Variante `highlight`: sfondo con tinta Ink leggera invece del blu
-- Variante `warning`: invariata (gia' coerente col token semantico)
+Questo risolve entrambi i bug in un colpo solo:
+- La RPC gestisce il ledger e i contatori del pacchetto (credito restituito)
+- L'UPDATE su `session_status` fa scattare il trigger che crea la notifica in-app per il cliente
 
 ### Dettagli tecnici
 
-File modificati (tutti in `supabase/functions/_shared/emails/shared/`):
-- `styles.ts` — nuova palette colori
-- `layout.tsx` — header con logo testuale "Motion" su sfondo Ink
-- `button.tsx` — border-radius aggiornato (palette cambia automaticamente via styles.ts)
-- `info-box.tsx` — variante highlight aggiornata
+**File modificato: `src/features/events/hooks/useDeleteEvent.ts`**
 
-Nessun template email (client-invite, appointment/*) richiede modifiche: usano tutti i componenti shared che vengono aggiornati centralmente.
+Riscrittura della `mutationFn`:
+- Costruire lo snapshot email PRIMA (invariato)
+- Chiamare `supabase.rpc('cancel_event_with_ledger', { p_event_id, p_actor: 'coach' })` invece di `deleteEvent(id)`
+- Parsare il risultato JSON per mostrare toast appropriati (gia' cancelato, credito rilasciato, ecc.)
 
-Dopo le modifiche, sara' necessario fare il deploy della edge function `email-worker` per applicare i nuovi stili.
+Riscrittura della `onSuccess`:
+- Invalidare anche `["packages"]` e `["package-ledger"]` (attualmente mancanti)
+- Mantenere il log activity e l'accodamento email con snapshot
 
+**File modificato: `src/test/no-dangerous-cancel-paths.test.ts`**
+
+Aggiungere un test anti-regressione:
+- `Calendar.tsx` non deve importare `deleteEvent` da `events.api` (il DELETE diretto)
+- Verificare che `useDeleteEvent` contenga `cancel_event_with_ledger`
+
+**Nessuna migrazione SQL necessaria**: la RPC e il trigger esistono gia' e funzionano correttamente.
+
+### Flusso dopo il fix
+
+```text
+Coach clicca "Elimina" in agenda
+        |
+        v
+useDeleteEvent.mutationFn
+        |
+        +-- buildEventSnapshot (per email)
+        |
+        +-- supabase.rpc('cancel_event_with_ledger', { p_actor: 'coach' })
+        |       |
+        |       +-- Ledger: HOLD_RELEASE (credito restituito)
+        |       +-- Package: on_hold_sessions - 1
+        |       +-- Event: session_status = 'canceled', canceled_by = 'coach'
+        |       |
+        |       +-- [TRIGGER] notify_client_event_canceled
+        |               +-- INSERT client_notifications (tipo: appointment_canceled_by_coach)
+        |
+        +-- queueBookingEmailWithSnapshot (email al cliente)
+```
+
+### Impatto
+
+- Crediti pacchetto sempre ripristinati quando il coach cancella
+- Notifica in-app sempre generata per il cliente
+- Email di cancellazione invariata (gia' funzionante)
+- Nessun impatto su altri flussi (client cancel, series cancel)
