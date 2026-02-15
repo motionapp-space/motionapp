@@ -1,15 +1,13 @@
-// Generate consistent colors for clients
+// Generate consistent colors for clients using design tokens
 const CLIENT_COLORS = [
-  "hsl(var(--primary))",
-  "hsl(220, 90%, 56%)", // blue
-  "hsl(142, 71%, 45%)", // green
-  "hsl(262, 83%, 58%)", // purple
-  "hsl(24, 95%, 53%)",  // orange
-  "hsl(199, 89%, 48%)", // cyan
-  "hsl(326, 78%, 69%)", // pink
-  "hsl(45, 93%, 47%)",  // yellow
-  "hsl(168, 76%, 42%)", // teal
-  "hsl(346, 87%, 43%)", // red
+  "hsl(var(--client-1))",
+  "hsl(var(--client-2))",
+  "hsl(var(--client-3))",
+  "hsl(var(--client-4))",
+  "hsl(var(--client-5))",
+  "hsl(var(--client-6))",
+  "hsl(var(--client-7))",
+  "hsl(var(--client-8))",
 ];
 
 const clientColorMap = new Map<string, string>();

@@ -25,7 +25,7 @@ export function LegendBottomSheet({ open, onOpenChange }: LegendBottomSheetProps
           </div>
           
           <div className="flex items-center gap-3">
-            <span className="h-[22px] px-2 text-[12px] rounded-full inline-flex items-center bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400">
+            <span className="h-[22px] px-2 text-[12px] rounded-full inline-flex items-center bg-success/20 text-foreground dark:text-success">
               3/3
             </span>
             <span className="text-[14px] text-muted-foreground">Serie complete</span>

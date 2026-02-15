@@ -62,11 +62,11 @@ const ClientAuth = () => {
   };
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(0,0%,96%)] p-4">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-muted p-4">
       <div className="w-full max-w-md space-y-8">
         {/* Logo and Branding */}
         <div className="flex flex-col items-center space-y-4">
-          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[hsl(220,70%,95%)]">
+          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[hsl(var(--accent-soft-6))]">
             <Dumbbell className="h-10 w-10 text-primary" />
           </div>
           <div className="text-center">

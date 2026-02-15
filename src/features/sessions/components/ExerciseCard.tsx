@@ -41,12 +41,12 @@ export function ExerciseCard({
   // Get badge color based on completion status
   const getBadgeStyles = () => {
     if (actuals.length < exercise.sets) {
-      return "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400";
+      return "bg-warning/20 text-foreground dark:text-warning";
     }
     if (actuals.length === exercise.sets) {
-      return "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400";
+      return "bg-success/20 text-foreground dark:text-success";
     }
-    return "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400";
+    return "bg-warning/20 text-foreground dark:text-warning";
   };
 
   return (

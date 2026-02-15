@@ -38,14 +38,14 @@ export function AvailableSlotsOverlay({
         return (
           <div
             key={`${slot.start}-${index}`}
-            className="absolute left-0 right-0 bg-green-500/10 border border-green-500/30 rounded cursor-pointer hover:bg-green-500/20 transition-colors group"
+            className="absolute left-0 right-0 bg-success/10 border border-success/30 rounded cursor-pointer hover:bg-success/20 transition-colors group"
             style={{ top, height: Math.max(24, height) }}
             onClick={() => onSlotClick?.(slot)}
             role="button"
             tabIndex={0}
             aria-label={`Slot disponibile ${format(start, "HH:mm")} - ${format(end, "HH:mm")}`}
           >
-            <div className="px-2 py-1 text-xs text-green-700 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="px-2 py-1 text-xs text-success font-medium opacity-0 group-hover:opacity-100 transition-opacity">
               {format(start, "HH:mm")} - {format(end, "HH:mm")}
             </div>
           </div>

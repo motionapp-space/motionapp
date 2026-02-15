@@ -127,7 +127,7 @@ export const GroupCard = ({
           className={
             group.type === "superset"
               ? "bg-primary/10 text-primary font-medium"
-              : "bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium"
+              : "bg-primary/10 text-primary font-medium"
           }
         >
           {group.type === "superset" ? "Superset" : "Circuit"}

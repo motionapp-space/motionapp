@@ -60,17 +60,17 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                 onClick={handleNavClick}
                 className={cn(
                   "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-base leading-6 transition-colors duration-150",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-0 focus-visible:bg-muted",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent))] focus-visible:ring-offset-0",
                   "min-h-[44px]",
                   active
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-[hsl(var(--accent-soft-6))] border border-[hsl(var(--selection-border))] text-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-[hsl(var(--accent-soft-2))] hover:text-foreground"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[28px] rounded-full bg-primary/80" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[28px] rounded-full bg-[hsl(var(--accent))]" />
                 )}
                 <Icon className="h-5 w-5 shrink-0" />
                 <span>{item.label}</span>
