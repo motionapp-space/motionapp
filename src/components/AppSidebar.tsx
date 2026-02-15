@@ -32,7 +32,7 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "sticky top-0 h-screen shrink-0 bg-muted flex flex-col transition-[width] duration-200 ease-in-out",
+          "sticky top-0 h-screen shrink-0 bg-sidebar border-r border-sidebar-border text-sidebar-foreground flex flex-col transition-[width] duration-200 ease-in-out",
           collapsed ? "w-16" : "w-[232px]"
         )}
         data-testid="sidebar"
@@ -43,9 +43,9 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
         collapsed ? "justify-center px-2" : "px-5"
       )}>
         {collapsed ? (
-          <span className="text-xl font-bold tracking-tight text-primary">M</span>
+          <span className="text-xl font-bold tracking-tight text-sidebar-foreground">M</span>
         ) : (
-          <span className="text-xl font-bold tracking-tight">Motion</span>
+          <span className="text-xl font-bold tracking-tight text-sidebar-foreground">Motion</span>
         )}
       </div>
 
@@ -72,23 +72,23 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
                 onClick={onNavClick}
                 className={cn(
                   "group relative flex items-center rounded-full transition-[background-color,color] duration-[120ms] ease-out",
-                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:bg-foreground/14 focus-visible:text-foreground",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:text-sidebar-foreground",
                   collapsed
                     ? "justify-center px-2 py-2.5"
                     : "gap-3 px-3 py-2.5",
                   active
-                    ? "bg-primary/15 text-primary font-semibold hover:bg-primary/18"
-                    : "text-muted-foreground hover:bg-foreground/14 hover:text-foreground"
+                    ? "bg-sidebar-active text-sidebar-foreground font-semibold hover:bg-sidebar-active"
+                    : "text-sidebar-muted hover:bg-sidebar-item-hover hover:text-sidebar-foreground"
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={item.label}
               >
                 {/* Active indicator bar */}
                 {active && !collapsed && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[28px] rounded-full bg-primary/80" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[28px] rounded-full bg-[hsl(var(--accent))]" />
                 )}
                 {active && collapsed && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-full bg-primary/80" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-full bg-[hsl(var(--accent))]" />
                 )}
                 <Icon className="h-5 w-5 shrink-0" />
                 {!collapsed && (
