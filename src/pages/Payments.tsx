@@ -60,7 +60,6 @@ export default function Payments() {
           <PaymentKPICards
             kpis={kpis}
             monthLabel={monthLabel}
-            activeFilter={kpiFilter?.type === "outstanding" ? "outstanding" : kpiFilter?.type === "paidInMonth" ? "paidInMonth" : null}
             onFilterOutstanding={handleFilterOutstanding}
             onFilterPaidInMonth={handleFilterPaidInMonth}
           />
