@@ -3,7 +3,6 @@ import type { DateRange } from "react-day-picker";
 import { Wallet } from "lucide-react";
 import { PaymentFilters } from "./PaymentFilters";
 import { PaymentFeedItem } from "./PaymentFeedItem";
-import { useMarkOrderPaid } from "../hooks/useMarkOrderPaid";
 import type { PaymentOrder, PaymentStatusFilter } from "../types";
 import type { KpiFilter } from "@/pages/Payments";
 import { format } from "date-fns";
@@ -35,8 +34,6 @@ export function PaymentFeed({ orders, kpiFilter, selectedMonth, onResetKpiFilter
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [onlyDueNow, setOnlyDueNow] = useState(false);
-
-  const markPaid = useMarkOrderPaid();
 
   // KPI-tab sync
   useEffect(() => {
@@ -161,13 +158,11 @@ export function PaymentFeed({ orders, kpiFilter, selectedMonth, onResetKpiFilter
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-border">
+        <div className="rounded-2xl border border-border overflow-hidden divide-y divide-border">
           {filtered.map((order) => (
             <PaymentFeedItem
               key={order.id}
               order={order}
-              onMarkPaid={(id) => markPaid.mutate(id)}
-              isPending={markPaid.isPending}
             />
           ))}
         </div>

@@ -2354,6 +2354,64 @@ export type Database = {
         Args: { p_external_payment_id?: string; p_order_id: string }
         Returns: Json
       }
+      register_order_payment: {
+        Args: { p_amount_cents: number; p_order_id: string }
+        Returns: {
+          amount_cents: number
+          canceled_at: string | null
+          coach_client_id: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          due_at: string | null
+          event_id: string | null
+          external_payment_id: string | null
+          id: string
+          kind: string
+          note: string | null
+          package_id: string | null
+          paid_amount_cents: number
+          paid_at: string | null
+          product_id: string | null
+          refunded_at: string | null
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reset_order_payment: {
+        Args: { p_order_id: string }
+        Returns: {
+          amount_cents: number
+          canceled_at: string | null
+          coach_client_id: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          due_at: string | null
+          event_id: string | null
+          external_payment_id: string | null
+          id: string
+          kind: string
+          note: string | null
+          package_id: string | null
+          paid_amount_cents: number
+          paid_at: string | null
+          product_id: string | null
+          refunded_at: string | null
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       select_fefo_package_internal: {
         Args: {
           p_coach_client_id: string
