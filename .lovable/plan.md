@@ -1,171 +1,211 @@
 
 
-## Refactor KPI Pagamenti — Versione Definitiva (Residuo-Based, Partial-Pay Ready)
+## Refactor Filtri + Lista Pagamenti (Residuo-Based, KPI-Coherent) — Versione Definitiva
 
 ### Panoramica
 
-Riscrittura completa della sezione KPI: da 3 card animate a 2 card editoriali. Introduce `paid_amount_cents` nel DB per supportare pagamenti parziali futuri. Tutta la logica KPI diventa residuo-based (mai status-based). Aggiunge selettore mese per "Incassato".
+Riscrivere filtri e lista pagamenti per allinearli al modello residuo-based delle KPI. Tabs diventano "Tutti / Da incassare / Pagati". Le righe della lista adottano un layout a 3 blocchi con badge semantici. I click KPI sincronizzano i tabs con chip removibili. Tutte le 6 correzioni della review sono integrate.
 
 ---
 
-### Passo 1 — Migrazione DB
-
-Aggiungere colonna `paid_amount_cents` alla tabella `orders` e backfillare gli ordini gia' pagati:
-
-```sql
-ALTER TABLE orders
-  ADD COLUMN paid_amount_cents integer NOT NULL DEFAULT 0;
-
-UPDATE orders
-SET paid_amount_cents = amount_cents
-WHERE status = 'paid';
-```
-
----
-
-### Passo 2 — Aggiornare RPC `mark_order_as_paid`
-
-Aggiungere `paid_amount_cents = amount_cents` nell'UPDATE della funzione esistente:
-
-```sql
-UPDATE orders
-SET
-  status = 'paid',
-  paid_at = NOW(),
-  paid_amount_cents = amount_cents,
-  external_payment_id = COALESCE(p_external_payment_id, external_payment_id)
-WHERE id = p_order_id
-  AND status IN ('draft', 'due')
-RETURNING * INTO v_order;
-```
-
----
-
-### Passo 3 — Types + API
-
-**`types.ts`**: Aggiungere `paid_amount_cents: number` a `PaymentOrder`.
-
-**`payments.api.ts`**: Aggiungere `paid_amount_cents` alla select e al mapping.
-
----
-
-### Passo 4 — Hook `usePaymentKPIs.ts` (riscrittura completa)
-
-Nuovo contratto:
+### File modificati
 
 ```text
-Input:  orders[], selectedMonth: Date
-Output: { daIncassareTotale, parteCerta, parteNonCerta, incassatoMese } (tutti in cents)
+src/features/payments/types.ts                      -- PaymentStatusFilter aggiornato
+src/features/payments/components/PaymentFilters.tsx  -- Nuovi tabs + toggle + chip filtri attivi
+src/features/payments/components/PaymentFeed.tsx     -- Filtri residuo-based + sorting + KPI-tab sync
+src/features/payments/components/PaymentFeedItem.tsx -- Riscrittura completa layout row 3 blocchi
+src/pages/Payments.tsx                              -- KPI click sincronizza tab + reset su cambio tab manuale
 ```
 
-Logica:
+---
+
+### 1. Types (`types.ts`)
 
 ```text
-for each order:
-  // Hard guard: skip canceled/refunded
-  if status in ['canceled', 'refunded', 'void'] -> skip
-
-  residuo = amount_cents - paid_amount_cents
-  if residuo <= 0 -> skip (fully paid or overpaid)
-
-  if kind === 'package_purchase':
-    parteCerta += residuo
-
-  if kind === 'single_lesson':
-    if event_start_at != null AND event_start_at < now():
-      parteCerta += residuo
-    else:
-      parteNonCerta += residuo  // null event_start_at = anomalia, trattata come non certa
-
-daIncassareTotale = parteCerta + parteNonCerta
-
-// Incassato mese: basato su paid_at + paid_amount_cents
-for each order:
-  if paid_at is in selectedMonth AND paid_amount_cents > 0:
-    incassatoMese += paid_amount_cents
+Prima:  "all" | "due" | "paid" | "draft"
+Dopo:   "all" | "outstanding" | "paid"
 ```
 
-Vincolo dichiarato: modello "single payment event per order" finche' non esiste tabella payments/ledger.
+---
+
+### 2. PaymentFilters — Riscrittura
+
+**Tabs**: 3 valori
+
+- "Tutti" (all)
+- "Da incassare" (outstanding)
+- "Pagati" (paid)
+
+**Riga sotto tabs** (flex orizzontale, gap-3):
+
+- Search input (invariato, placeholder "Cerca cliente...")
+- DateRangePicker (invariato)
+- Toggle "Solo gia' dovuti" — piccolo Switch o Button toggle, visibile SOLO quando tab = "outstanding"
+
+**Nuove props**:
+
+- `onlyDueNow: boolean` + `onOnlyDueNowChange: (v: boolean) => void`
+
+**Chip filtri attivi** (riga sotto i filtri, flex wrap gap-2):
+
+- Chip removibili: rounded-full, bg-foreground/5, text-xs, con X (lucide X icon)
+- Appaiono quando:
+  - KPI filter attivo (chip "Da incassare" o "Pagati a Feb 2026")
+  - Toggle "Solo gia' dovuti" attivo
+- Props per gestire i chip: `kpiChipLabel?: string`, `onRemoveKpiChip?: () => void`
 
 ---
 
-### Passo 5 — Componente `PaymentKPICards.tsx` (riscrittura completa)
+### 3. PaymentFeed — Logica filtri e sorting
 
-Eliminare: framer-motion, icone decorative, 3 card.
-
-**Layout**: Grid 3 colonne desktop (gap-6). "Da incassare" = col-span-2. "Incassato" = col-span-1. Stack su mobile.
-
-**Card 1 — "Da incassare"**:
-- Card bianca, border `border`, rounded-2xl, p-6, no shadow
-- Label: "Da incassare" text-sm text-muted-foreground
-- Importo: text-3xl font-semibold text-foreground
-- Breakdown (mt-3, space-y-2), righe visibili solo se valore > 0:
-  - Dot verde + "X,XX EUR gia' dovuti" text-sm text-emerald-600
-  - Dot grigio + "X,XX EUR non ancora dovuti" text-sm text-muted-foreground
-- Barra stacked (h-2.5 rounded-full mt-3, solo se totale > 0):
-  - Segmento emerald-500 (parteCerta/totale), segmento muted (resto)
-- Riga helper: "Gia' dovuti = pacchetti venduti o lezioni svolte. Non ancora dovuti = lezioni future." text-xs text-muted-foreground mt-2
-- Hover: border-foreground/20, cursor-pointer, transition-colors duration-150
-- Click: callback `onFilterOutstanding()` che filtra feed su residuo > 0
-
-**Card 2 — "Incassato a [Mese Anno]"**:
-- Stesso stile card, 1 colonna
-- Label dinamica: "Incassato a Feb 2026" text-sm text-muted-foreground
-- Importo: text-3xl font-semibold text-emerald-700
-- Subtext: "Basato sulla data di pagamento" text-xs text-muted-foreground mt-2
-- Click: callback `onFilterPaidInMonth()`
-
-**Edge cases**:
-- Totale 0: mostrare "0,00 EUR", nascondere breakdown, barra, e riga helper
-- Solo parte certa: solo riga "gia' dovuti", barra 100% verde
-- Solo parte non certa: solo riga "non ancora dovuti", barra 100% grigia
-
----
-
-### Passo 6 — Selettore mese
-
-Ghost button rounded-full text-sm posizionato top-right nella riga sopra le KPI (allineato con TabHeader). Label: "Feb 2026" + ChevronDown. Dropdown (Popover + Command o semplice lista) con mese corrente + ultimi 6 mesi.
-
-Impatto: cambia SOLO "Incassato nel mese", NON "Da incassare".
-
----
-
-### Passo 7 — Pagina `Payments.tsx`
-
-- State `selectedMonth` (default: mese corrente)
-- Passare `selectedMonth` a `usePaymentKPIs`
-- Rendere selettore mese
-- Skeleton loading: grid 3 col, skeleton col-span-2 + skeleton col-span-1
-- Callbacks click KPI che impostano filtri nel feed con logica residuo-based (non status-based)
-- Il feed riceve un nuovo prop per il filtro "outstanding" (residuo > 0) e "paid in month"
-
----
-
-### Passo 8 — PaymentFeed adattamento
-
-Il PaymentFeed deve supportare un filtro aggiuntivo residuo-based proveniente dal click KPI. Il filtro status tabs resta, ma si aggiunge la possibilita' di filtrare per `amount_cents - paid_amount_cents > 0` (outstanding) o per `paid_at nel mese selezionato` (paid in month), attivabili dai click sulle KPI cards.
-
----
-
-### Riepilogo file
+**Costante globale** per stati esclusi:
 
 ```text
-MIGRAZIONE DB:
-  - ADD COLUMN paid_amount_cents + backfill
-  - UPDATE mark_order_as_paid RPC
-
-CODICE MODIFICATO:
-  src/features/payments/types.ts                     -- +paid_amount_cents
-  src/features/payments/api/payments.api.ts          -- +paid_amount_cents nella select
-  src/features/payments/hooks/usePaymentKPIs.ts      -- Riscrittura completa
-  src/features/payments/components/PaymentKPICards.tsx -- Riscrittura completa (2 card editoriali)
-  src/pages/Payments.tsx                             -- selectedMonth + selettore + callbacks + skeleton
-  src/features/payments/components/PaymentFeed.tsx   -- Supporto filtro residuo-based da KPI click
-
-INVARIATI:
-  src/features/payments/components/PaymentFeedItem.tsx
-  src/features/payments/components/PaymentFilters.tsx
-  src/features/payments/hooks/useMarkOrderPaid.ts
-  src/features/payments/hooks/usePayments.ts
+SKIP_STATUSES = ['canceled', 'refunded', 'void']
 ```
+
+**Helper residuo** (usato ovunque, con clamp):
+
+```text
+residuo = Math.max(0, amount_cents - paid_amount_cents)
+```
+
+**Filtri per tab** (tutti escludono SKIP_STATUSES):
+
+```text
+tab "all":         status NOT IN SKIP_STATUSES
+
+tab "outstanding": residuo > 0
+                   AND status NOT IN SKIP_STATUSES
+
+tab "paid":        residuo <= 0
+                   AND paid_amount_cents > 0
+                   AND status NOT IN SKIP_STATUSES
+```
+
+Fix #1: tab "paid" include anche il guard su SKIP_STATUSES (no ordini rimborsati mostrati come "Pagati").
+
+Fix #3: ordini con amount=0 e paid=0 (gratuiti) rientrano in tab "paid" come "Pagato" con totale 0 EUR (non nascosti). La condizione `paid_amount_cents > 0` li escluderebbe, quindi per gli ordini gratuiti: se `amount_cents === 0 AND residuo === 0` -> trattare come "pagato/chiuso" e includerli nel tab "paid" e "all".
+
+**Toggle "Solo gia' dovuti"** (attivo solo in tab outstanding):
+
+- Mostra solo ordini dove:
+  - `kind === 'package_purchase'` (sempre dovuti by design)
+  - `kind === 'single_lesson'` AND `event_start_at != null` AND `event_start_at < now()`
+
+**KPI-tab sync** (Fix #5):
+
+Quando `kpiFilter` arriva dal parent:
+- `outstanding` -> imposta tab interno su "outstanding", reset onlyDueNow
+- `paidInMonth` -> imposta tab interno su "paid", applica filtro paid_at nel mese
+
+Quando utente cambia tab manualmente:
+- Reset `kpiFilter` nel parent (callback `onResetKpiFilter`)
+- Reset `onlyDueNow` a false
+
+Il tab e' la fonte di verita' visiva. Il kpiFilter e' un "suggerimento" dal parent che viene tradotto in tab + filtri interni.
+
+**Sorting** (Fix #6, con fallback stabile):
+
+```text
+Tab "outstanding":
+  1. isDueNow = true prima (pacchetti + lezioni passate)
+  2. isDueNow = false dopo (lezioni future)
+  3. Dentro ogni gruppo: residuo desc
+  4. Fallback: created_at desc
+
+Tab "paid":
+  1. paid_at desc
+  2. Fallback: created_at desc
+
+Tab "all":
+  1. created_at desc (invariato)
+```
+
+**Container lista**: da `space-y-2` (card separate) a `divide-y divide-border` (border-b divider tra righe).
+
+---
+
+### 4. PaymentFeedItem — Riscrittura completa
+
+Eliminare: icona circolare decorativa, badge status vecchio ("Non Pagato", "In Attesa"), rounded-2xl card border.
+
+**Layout row** — flex items-center, py-3 px-4, hover:bg-muted/30 transition-colors duration-150:
+
+```text
+[Sinistra - flex-1 min-w-0]     [Centro - shrink-0]      [Destra - shrink-0 text-right]
+Titolo prodotto (truncate)       Badge "Da incassare"     Residuo (bold)
+Cliente                          + "Parziale" pill        "Pagato X · Totale Y"
+Meta + badge dovuto (solo SL)
+```
+
+**Blocco sinistro** (flex-1 min-w-0):
+
+- Titolo: text-sm font-medium text-foreground truncate
+  - Single lesson: "Lezione del 5 feb 2026"
+  - Pacchetto: "Pacchetto [nome]"
+- Sottotitolo: "Mario Rossi" — text-sm text-muted-foreground
+- Meta (text-xs text-muted-foreground, mt-1):
+  - Single lesson: data/ora sessione + badge inline:
+    - "Gia' dovuta" (bg-foreground/5 text-foreground) se event_start_at < now
+    - "Non ancora dovuta" (bg-muted text-muted-foreground) se event_start_at >= now o null
+    - Se event_start_at null: meta dice "Data lezione non disponibile"
+  - Pacchetto: "Venduto il [data creazione]" — nessun badge dovuto (Fix #4: pacchetti sempre dovuti, distinzione solo logica interna)
+
+**Blocco centro** (shrink-0, flex items-center gap-1.5):
+
+- Badge principale:
+  - Outstanding (residuo > 0): "Da incassare" — bg-foreground/5 text-foreground (Fix UI #1)
+  - Fully paid (residuo <= 0): "Pagato" — bg-emerald-50 text-emerald-700
+- Badge secondario (solo se isPartial = paid > 0 AND residuo > 0):
+  - "Parziale" — bg-amber-50 text-amber-700, text-xs
+
+**Blocco destro** (shrink-0, text-right):
+
+- Se outstanding:
+  - Riga 1: formatEur(residuo) — text-sm font-semibold
+  - Riga 2 (solo se isPartial): "Pagato X · Totale Y" — text-xs text-muted-foreground
+  - Riga 2 (se non partial): "Totale Y" — text-xs text-muted-foreground
+- Se fully paid:
+  - Riga 1: formatEur(amount_cents) — text-sm font-semibold
+  - Riga 2: "Pagato il [paid_at formattata]" — text-xs text-muted-foreground (se paid_at presente)
+
+**CTA "Pagato"**: Button ghost text-xs con Check icon, visibile solo se residuo > 0 (non piu' basato su status).
+
+---
+
+### 5. Payments.tsx — KPI sync
+
+Aggiungere callback `onResetKpiFilter` passato al Feed:
+
+```text
+const handleResetKpiFilter = useCallback(() => setKpiFilter(null), []);
+```
+
+Il Feed riceve `onResetKpiFilter` e lo chiama quando l'utente cambia tab manualmente.
+
+---
+
+### 6. Riepilogo edge cases
+
+| Caso | Comportamento |
+|------|--------------|
+| event_start_at null (single_lesson) | Badge "Non ancora dovuta", meta "Data lezione non disponibile" |
+| Ordine gratuito (amount=0, paid=0) | Mostrato come "Pagato" con totale 0,00 EUR |
+| paid > amount (overpayment) | Residuo clampato a 0, mostrato come "Pagato" |
+| canceled/refunded/void | Esclusi da tutti i tab di default |
+| Importi 0 outstanding | Mostra "0,00 EUR", nessun breakdown |
+
+---
+
+### Cose che NON cambiano
+
+- PaymentKPICards.tsx (gia' refactored)
+- MonthSelector.tsx
+- usePaymentKPIs.ts
+- useMarkOrderPaid.ts
+- usePayments.ts
+- payments.api.ts
+- DateRangePicker
 
