@@ -1,120 +1,69 @@
 
 
-## Micro-hardening UI/State — Versione Matura Finale
+## Refactor filtro Periodo — DateRangePicker chiaro, azzerabile, hardened
 
-### 4 interventi chirurgici
+### Panoramica
 
----
-
-### 1. Toggle KPI "Da incassare" — Reset completo stato feed
-
-In `Payments.tsx`:
-- Il `handleFilterOutstanding` deve comunicare al feed anche il tab desiderato
-- Quando si **disattiva** (click su card gia' attiva): `setKpiFilter(null)` — il feed deve tornare a tab "all" e `onlyDueNow=false`
-- Quando si **attiva**: `setKpiFilter({ type: "outstanding" })` — il feed switcha a tab "outstanding"
-
-Implementazione: il feed gia' reagisce a `kpiFilter` via `useEffect`. Basta estendere l'effetto:
-- Aggiungere un ramo `if (kpiFilter === null)`: `setStatus("all")` + `setOnlyDueNow(false)`
-
-Attenzione: oggi il `useEffect` ha `if (!kpiFilter) return` come prima riga, che skippa il reset. Cambiare in: gestire esplicitamente il caso `null`.
-
-Ma c'e' un problema: al mount iniziale `kpiFilter` e' `null` e non vogliamo forzare "all" (il default e' "outstanding"). Soluzione: usare un `useRef` per tracciare se il kpiFilter e' mai stato attivo, oppure piu' semplicemente tracciare il valore precedente. Approccio piu' pulito: reagire solo quando `kpiFilter` cambia **da un valore non-null a null** usando un ref `prevKpiFilter`.
-
-In `PaymentFeed.tsx`:
-```
-const prevKpiFilter = useRef(kpiFilter);
-useEffect(() => {
-  if (kpiFilter?.type === "outstanding") {
-    setStatus("outstanding");
-    setOnlyDueNow(false);
-  } else if (prevKpiFilter.current && !kpiFilter) {
-    // Was active, now reset
-    setStatus("all");
-    setOnlyDueNow(false);
-  }
-  prevKpiFilter.current = kpiFilter;
-}, [kpiFilter]);
-```
+Riscrittura completa del `DateRangePicker` con trigger "Dal/Al", stato draft interno, footer Applica/Azzera, e reset sicuro da 3 punti. Aggiunta chip periodo in `PaymentFilters`.
 
 ---
 
-### 2. Micro-label KPI — Evitare layout shift
+### 1. Riscrittura `src/components/ui/date-range-picker.tsx`
 
-In `PaymentKPICards.tsx`:
-- La label in alto a destra della card "Da incassare" deve occupare sempre la stessa area
-- Usare una pill con `min-w-[5rem] text-center` (o equivalente) per entrambi gli stati
-- Default: "Filtra" — `text-xs text-muted-foreground`
-- Attivo: "Filtro attivo" — `text-xs text-foreground font-medium`
-- Stessa dimensione contenitore, cambia solo testo e colore
+**Stato interno:**
+- `open`: controlled popover state
+- `draft: DateRange | undefined`: stato locale, inizializzato da `value`
+- Quando il popover si apre (`onOpenChange(true)`): sync `draft = value`
+- Quando `open === false` e `value` cambia esternamente (es. chip reset): sync `draft = value` via `useEffect`
 
-Nuova prop: `isOutstandingActive: boolean`
+**Trigger (bottone unico, due segmenti):**
+- Container: `h-9 rounded-full border border-border bg-background px-3 text-sm flex items-center gap-2`
+- Segmento start: "Dal 12 feb 2026" o "Dal —" (vuoto in `text-muted-foreground`, pieno in `text-foreground`)
+- Divider: `h-4 w-px bg-border`
+- Segmento end: "Al 20 feb 2026" o "Al —"
+- Reset X a destra (solo se `value?.from || value?.to`):
+  - `onMouseDown`: `preventDefault()` + `stopPropagation()` (impedisce apertura popover)
+  - `onClick`: `preventDefault()` + `stopPropagation()` + `onChange(undefined)`
+  - `aria-label="Azzera periodo"`
+  - Classi: `ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full hover:bg-muted/60 text-muted-foreground hover:text-foreground`
 
-Layout card 1 header: flex row con "Da incassare" a sinistra e pill a destra.
+**Popover contenuto:**
+- Hint in alto: "Seleziona una data di inizio e una di fine" (`text-xs text-muted-foreground`)
+- Helper condizionale: se `draft?.from && !draft?.to` mostra "Seleziona anche la data di fine"
+- Calendario: `mode="range"`, `selected={draft}`, `onSelect={setDraft}`
+- Footer sticky:
+  - Sinistra: "Azzera" (ghost), disabilitato se `!draft?.from && !draft?.to`. Click: reset draft, chiude, chiama `onChange(undefined)` solo se `value` non era gia' `undefined`
+  - Destra: "Applica" (default), disabilitato se `!draft?.to`. Click: `onChange(draft)`, chiude
 
 ---
 
-### 3. Card "Incassato" — Comunicare non-interattivita'
+### 2. Update `src/features/payments/components/PaymentFilters.tsx`
 
-In `PaymentKPICards.tsx`:
-- Rimuovere: `onClick={onFilterPaidInMonth}`, `cursor-pointer`, `transition-colors duration-150`, `hover:border-foreground/20`
-- Aggiungere: `select-none`, `border-border/70` (bordo piu' soft del default)
-- Label: "Incassato nel mese" (statica)
-- Sotto importo: "Incassi registrati nel mese (parziali inclusi)" in `text-xs text-muted-foreground mt-2`
-- Rimuovere prop `onFilterPaidInMonth` dall'interfaccia
-
----
-
-### 4. Rimuovere `paidInMonth` + chip KPI + cleanup props
-
-In `Payments.tsx`:
-- Tipo `KpiFilter = { type: "outstanding" } | null`
-- Rimuovere `handleFilterPaidInMonth`
-- Rimuovere prop `onFilterPaidInMonth` da `PaymentKPICards`
-- Passare `isOutstandingActive={kpiFilter?.type === "outstanding"}`
-- Rimuovere `subtitle` da `TabHeader`
-
-In `PaymentFeed.tsx`:
-- Rimuovere ramo `paidInMonth` da useEffect (gia' rimpiazzato dal ref logic sopra)
-- Rimuovere blocco filtro `paidInMonth` dal useMemo
-- Rimuovere `kpiChipLabel` e `onRemoveKpiChip` dal passaggio a `PaymentFilters`
-- Rimuovere import `format`/`it` (non piu' necessari per chip label)
-- Rimuovere prop `selectedMonth` dall'interfaccia (non piu' usata)
-
-In `PaymentFilters.tsx`:
-- Rimuovere props `kpiChipLabel` e `onRemoveKpiChip` dall'interfaccia
-- Rimuovere la logica chip KPI dal rendering
-- I chip restano solo per "Solo gia' dovuti"
+**Chip periodo** (aggiunto all'array `chips` esistente):
+- Condizione: `dateRange?.from && dateRange?.to`
+- Formato label intelligente:
+  - Stesso mese e anno: `Periodo: 12–20 feb 2026`
+  - Mesi diversi, stesso anno: `Periodo: 28 gen – 5 feb 2026`
+  - Anni diversi: `Periodo: 28 dic 2025 – 5 gen 2026`
+- Click X: `onDateRangeChange(undefined)`
 
 ---
 
 ### Sezione tecnica — File modificati
 
 ```text
-src/pages/Payments.tsx
-  - KpiFilter = { type: "outstanding" } | null
-  - Rimuovere handleFilterPaidInMonth, subtitle
-  - Passare isOutstandingActive a PaymentKPICards
-  - Rimuovere selectedMonth da PaymentFeed props
-
-src/features/payments/components/PaymentKPICards.tsx
-  - Rimuovere prop onFilterPaidInMonth
-  - Aggiungere prop isOutstandingActive: boolean
-  - Card 1: flex header con pill "Filtra"/"Filtro attivo" (min-w fissa)
-  - Card 1: hover:bg-muted/20, stato attivo border-foreground/40
-  - Card 1: barra h-2.5 -> h-1.5, rimuovere paragrafo lungo
-  - Card 2: no onClick, no hover, select-none, border-border/70
-  - Card 2: label statica + nota editoriale
-
-src/features/payments/components/PaymentFeed.tsx
-  - useRef per prevKpiFilter: reset a "all" solo quando kpiFilter va da attivo a null
-  - Rimuovere tutta la logica paidInMonth
-  - Non passare kpiChipLabel/onRemoveKpiChip a PaymentFilters
-  - Rimuovere prop selectedMonth
+src/components/ui/date-range-picker.tsx
+  - Riscrittura completa
+  - Controlled popover (open state)
+  - Draft state + sync su open e su value change esterno
+  - Trigger con segmenti "Dal/Al" + X reset (onMouseDown hardened)
+  - Popover: hint, helper condizionale, footer Azzera/Applica
+  - Rimuovere prop placeholder (non piu' usato)
 
 src/features/payments/components/PaymentFilters.tsx
-  - Rimuovere props kpiChipLabel e onRemoveKpiChip
-  - Chip solo per "Solo gia' dovuti"
+  - Aggiungere chip "Periodo: ..." nel blocco chips
+  - Format condizionale con date-fns (format, isSameMonth, isSameYear)
+  - Nessuna modifica ai props dell'interfaccia
 ```
 
 Nessun file nuovo. Nessuna modifica backend.
-
