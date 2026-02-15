@@ -1,4 +1,4 @@
-import { CheckCircle, XCircle, Clock, ClipboardList, type LucideIcon } from "lucide-react";
+import { CheckCircle, XCircle, Clock, ClipboardList, CalendarPlus, type LucideIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
 import type { ClientNotification, ClientNotificationType } from "../types";
@@ -24,6 +24,10 @@ function getNotificationIcon(type: ClientNotificationType): LucideIcon {
       return XCircle;
     case "plan_assigned":
       return ClipboardList;
+    case "appointment_created_by_coach":
+      return CalendarPlus;
+    default:
+      return CheckCircle;
   }
 }
 
@@ -42,6 +46,10 @@ function getIconColorClass(type: ClientNotificationType): string {
       return "text-destructive";
     case "plan_assigned":
       return "text-primary";
+    case "appointment_created_by_coach":
+      return "text-success";
+    default:
+      return "text-muted-foreground";
   }
 }
 
