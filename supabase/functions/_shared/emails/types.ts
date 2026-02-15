@@ -45,6 +45,9 @@ export interface AppointmentCounterProposedTemplateData extends AppointmentBaseT
   notes?: string;
 }
 
+/** Dati per appuntamento creato dal coach */
+export interface AppointmentCreatedByCoachTemplateData extends AppointmentBaseTemplateData {}
+
 /** Dati per appuntamento cancellato */
 export interface AppointmentCancelledTemplateData extends AppointmentBaseTemplateData {
   cancelled_by: 'coach' | 'client';

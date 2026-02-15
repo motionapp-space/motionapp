@@ -621,6 +621,26 @@ export function EventEditorModal({
           toast.success(`Creati ${successCount} appuntamenti ricorrenti`, { description: desc });
         }
 
+        // Queue email for first occurrence only (avoid spam)
+        try {
+          const firstStart = setMinutes(setHours(startOfDay(occurrences[0]), startH), startM);
+          const firstEnd = setMinutes(setHours(startOfDay(occurrences[0]), endH), endM);
+          const snapshot = await buildEventSnapshot({
+            id: 'recurring-series',
+            title: 'Appuntamento',
+            start_at: firstStart.toISOString(),
+            end_at: firstEnd.toISOString(),
+            coach_client_id: coachClientId,
+          }, 'coach');
+          await queueBookingEmailWithSnapshot({
+            type: 'appointment_created_by_coach',
+            actorUserId: coachId,
+            snapshot,
+          });
+        } catch (e) {
+          console.warn('Could not queue email for recurring series:', e);
+        }
+
         queryClient.invalidateQueries({ queryKey: ["events"], exact: false });
         queryClient.invalidateQueries({ queryKey: ["packages"], exact: false });
         onOpenChange(false);
@@ -629,6 +649,24 @@ export function EventEditorModal({
       
       // === EVENTO SINGOLO ===
       await createSingleEvent(eventStartDateTime, eventEndDateTime);
+
+      // Queue email to client
+      try {
+        const snapshot = await buildEventSnapshot({
+          id: 'new-event',
+          title: 'Appuntamento',
+          start_at: eventStartDateTime.toISOString(),
+          end_at: eventEndDateTime.toISOString(),
+          coach_client_id: coachClientId,
+        }, 'coach');
+        await queueBookingEmailWithSnapshot({
+          type: 'appointment_created_by_coach',
+          actorUserId: coachId,
+          snapshot,
+        });
+      } catch (e) {
+        console.warn('Could not queue email for new event:', e);
+      }
 
       // Toast based on lesson type
       if (lessonType === "free") {

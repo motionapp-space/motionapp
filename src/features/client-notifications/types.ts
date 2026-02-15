@@ -5,7 +5,8 @@ export type ClientNotificationType =
   | "counter_proposal_received"
   | "booking_request_canceled"
   | "booking_request_declined"
-  | "plan_assigned";
+  | "plan_assigned"
+  | "appointment_created_by_coach";
 
 export interface ClientNotification {
   id: string;

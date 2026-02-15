@@ -16,6 +16,7 @@ import { acceptedClientTemplate } from "./appointment/accepted-client.tsx";
 import { counterProposedClientTemplate } from "./appointment/counter-proposed-client.tsx";
 import { cancelledCoachTemplate } from "./appointment/cancelled-coach.tsx";
 import { cancelledClientTemplate } from "./appointment/cancelled-client.tsx";
+import { createdByCoachClientTemplate } from "./appointment/created-by-coach-client.tsx";
 
 /**
  * Registry dei template.
@@ -42,6 +43,9 @@ const TEMPLATE_REGISTRY: Record<string, EmailTemplate<any>> = {
   // - Coach cancella → client riceve notifica
   'appointment_cancelled:coach': cancelledCoachTemplate,
   'appointment_cancelled:client': cancelledClientTemplate,
+  
+  // Appuntamento creato dal coach (coach → client riceve notifica)
+  'appointment_created_by_coach:client': createdByCoachClientTemplate,
 };
 
 /**
