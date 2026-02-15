@@ -105,6 +105,8 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
           active: "hsl(var(--sidebar-active))",
+          "item-hover": "hsl(var(--sidebar-item-hover))",
+          muted: "hsl(var(--sidebar-muted))",
         },
         "client-1": "hsl(var(--client-1))",
         "client-2": "hsl(var(--client-2))",

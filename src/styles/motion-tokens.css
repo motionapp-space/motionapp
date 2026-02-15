@@ -78,7 +78,7 @@
     /* ═══════════════════════════════════════════
        SIDEBAR (Dark Signature)
        ═══════════════════════════════════════════ */
-    --sidebar-background: 220 15% 8%;
+    --sidebar-background: 220 15% 6%;
     --sidebar-foreground: 0 0% 90%;
     --sidebar-primary: 0 0% 100%;
     --sidebar-primary-foreground: 220 15% 8%;
@@ -86,7 +86,9 @@
     --sidebar-accent-foreground: 0 0% 90%;
     --sidebar-border: 220 12% 18%;
     --sidebar-ring: 222 35% 68%;
-    --sidebar-active: 220 12% 14%;
+    --sidebar-active: 220 12% 18%;
+    --sidebar-item-hover: 220 12% 16%;
+    --sidebar-muted: 220 10% 65%;
 
     /* ═══════════════════════════════════════════
        CLIENT COLORS (Calendar events)
@@ -168,7 +170,9 @@
     --sidebar-accent-foreground: 0 0% 90%;
     --sidebar-border: 220 12% 16%;
     --sidebar-ring: 222 35% 72%;
-    --sidebar-active: 220 12% 12%;
+    --sidebar-active: 220 12% 14%;
+    --sidebar-item-hover: 220 12% 11%;
+    --sidebar-muted: 220 10% 60%;
 
     /* ═══════════════════════════════════════════
        CLIENT COLORS — Dark

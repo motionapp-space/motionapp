@@ -46,7 +46,7 @@ export const motionTokens = {
     ring: "222 35% 68%",
   },
   sidebar: {
-    "sidebar-background": "220 15% 8%",
+    "sidebar-background": "220 15% 6%",
     "sidebar-foreground": "0 0% 90%",
     "sidebar-primary": "0 0% 100%",
     "sidebar-primary-foreground": "220 15% 8%",
@@ -54,6 +54,8 @@ export const motionTokens = {
     "sidebar-accent-foreground": "0 0% 90%",
     "sidebar-border": "220 12% 18%",
     "sidebar-ring": "222 35% 68%",
-    "sidebar-active": "220 12% 14%",
+    "sidebar-active": "220 12% 18%",
+    "sidebar-item-hover": "220 12% 16%",
+    "sidebar-muted": "220 10% 65%",
   },
 } as const;
