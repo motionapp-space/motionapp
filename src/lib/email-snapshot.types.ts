@@ -39,4 +39,5 @@ export type BookingEmailType =
   | 'appointment_request_created'
   | 'appointment_accepted'
   | 'appointment_counter_proposed'
-  | 'appointment_cancelled';
+  | 'appointment_cancelled'
+  | 'appointment_created_by_coach';
