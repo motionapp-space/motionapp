@@ -12,7 +12,6 @@ import { MonthSelector } from "@/features/payments/components/MonthSelector";
 
 export type KpiFilter =
   | { type: "outstanding" }
-  | { type: "paidInMonth"; month: Date }
   | null;
 
 export default function Payments() {
@@ -32,19 +31,12 @@ export default function Payments() {
     );
   }, []);
 
-  const handleFilterPaidInMonth = useCallback(() => {
-    setKpiFilter((prev) =>
-      prev?.type === "paidInMonth" ? null : { type: "paidInMonth", month: selectedMonth }
-    );
-  }, [selectedMonth]);
-
   const handleResetKpiFilter = useCallback(() => setKpiFilter(null), []);
 
   return (
     <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-6 space-y-6">
       <TabHeader
         title="Pagamenti"
-        subtitle="Gestisci i pagamenti dei tuoi clienti"
         action={
           <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
         }
@@ -61,12 +53,11 @@ export default function Payments() {
             kpis={kpis}
             monthLabel={monthLabel}
             onFilterOutstanding={handleFilterOutstanding}
-            onFilterPaidInMonth={handleFilterPaidInMonth}
+            isOutstandingActive={kpiFilter?.type === "outstanding"}
           />
           <PaymentFeed
             orders={orders ?? []}
             kpiFilter={kpiFilter}
-            selectedMonth={selectedMonth}
             onResetKpiFilter={handleResetKpiFilter}
           />
         </>

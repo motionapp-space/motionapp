@@ -1,12 +1,10 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import type { DateRange } from "react-day-picker";
 import { Wallet } from "lucide-react";
 import { PaymentFilters } from "./PaymentFilters";
 import { PaymentFeedItem } from "./PaymentFeedItem";
 import type { PaymentOrder, PaymentStatusFilter } from "../types";
 import type { KpiFilter } from "@/pages/Payments";
-import { format } from "date-fns";
-import { it } from "date-fns/locale";
 
 const SKIP_STATUSES = new Set(["canceled", "refunded", "void"]);
 
@@ -25,26 +23,27 @@ function isDueNow(o: PaymentOrder): boolean {
 interface Props {
   orders: PaymentOrder[];
   kpiFilter?: KpiFilter;
-  selectedMonth?: Date;
   onResetKpiFilter?: () => void;
 }
 
-export function PaymentFeed({ orders, kpiFilter, selectedMonth, onResetKpiFilter }: Props) {
+export function PaymentFeed({ orders, kpiFilter, onResetKpiFilter }: Props) {
   const [status, setStatus] = useState<PaymentStatusFilter>("outstanding");
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [onlyDueNow, setOnlyDueNow] = useState(false);
 
-  // KPI-tab sync
+  // KPI-tab sync with ref to avoid resetting on mount
+  const prevKpiFilter = useRef(kpiFilter);
   useEffect(() => {
-    if (!kpiFilter) return;
-    if (kpiFilter.type === "outstanding") {
+    if (kpiFilter?.type === "outstanding") {
       setStatus("outstanding");
       setOnlyDueNow(false);
-    } else if (kpiFilter.type === "paidInMonth") {
-      setStatus("paid");
+    } else if (prevKpiFilter.current && !kpiFilter) {
+      // Was active, now reset
+      setStatus("all");
       setOnlyDueNow(false);
     }
+    prevKpiFilter.current = kpiFilter;
   }, [kpiFilter]);
 
   const handleStatusChange = (v: PaymentStatusFilter) => {
@@ -52,16 +51,6 @@ export function PaymentFeed({ orders, kpiFilter, selectedMonth, onResetKpiFilter
     setOnlyDueNow(false);
     onResetKpiFilter?.();
   };
-
-  // KPI chip label
-  const kpiChipLabel = useMemo(() => {
-    if (!kpiFilter) return undefined;
-    if (kpiFilter.type === "outstanding") return "Da incassare";
-    if (kpiFilter.type === "paidInMonth" && selectedMonth) {
-      return `Pagati a ${format(selectedMonth, "MMM yyyy", { locale: it })}`;
-    }
-    return undefined;
-  }, [kpiFilter, selectedMonth]);
 
   const filtered = useMemo(() => {
     let result = orders.filter((o) => !SKIP_STATUSES.has(o.status));
@@ -72,19 +61,7 @@ export function PaymentFeed({ orders, kpiFilter, selectedMonth, onResetKpiFilter
     } else if (status === "paid") {
       result = result.filter((o) => {
         const res = getResiduo(o);
-        // Include fully paid OR free orders (amount=0, paid=0)
         return (res <= 0 && o.paid_amount_cents > 0) || (o.amount_cents === 0 && res === 0);
-      });
-    }
-
-    // KPI paidInMonth filter (applied on top of tab "paid")
-    if (kpiFilter?.type === "paidInMonth" && selectedMonth) {
-      const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
-      const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0, 23, 59, 59, 999);
-      result = result.filter((o) => {
-        if (!o.paid_at) return false;
-        const d = new Date(o.paid_at);
-        return d >= monthStart && d <= monthEnd;
       });
     }
 
@@ -132,7 +109,7 @@ export function PaymentFeed({ orders, kpiFilter, selectedMonth, onResetKpiFilter
     });
 
     return result;
-  }, [orders, status, search, dateRange, kpiFilter, selectedMonth, onlyDueNow]);
+  }, [orders, status, search, dateRange, onlyDueNow]);
 
   return (
     <div className="space-y-4">
@@ -145,8 +122,6 @@ export function PaymentFeed({ orders, kpiFilter, selectedMonth, onResetKpiFilter
         onDateRangeChange={setDateRange}
         onlyDueNow={onlyDueNow}
         onOnlyDueNowChange={setOnlyDueNow}
-        kpiChipLabel={kpiChipLabel}
-        onRemoveKpiChip={onResetKpiFilter}
       />
 
       {filtered.length === 0 ? (
