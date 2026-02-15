@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RegisterPaymentDialog } from "./RegisterPaymentDialog";
+import { useRegisterPayment } from "../hooks/useRegisterPayment";
 import { useResetPayment } from "../hooks/useResetPayment";
 import type { PaymentOrder } from "../types";
 
@@ -35,6 +36,7 @@ interface Props {
 export function PaymentFeedItem({ order }: Props) {
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [resetAlertOpen, setResetAlertOpen] = useState(false);
+  const registerPayment = useRegisterPayment();
   const resetPayment = useResetPayment();
 
   const residuo = Math.max(0, order.amount_cents - order.paid_amount_cents);
@@ -138,10 +140,17 @@ export function PaymentFeedItem({ order }: Props) {
             size="sm"
             variant="ghost"
             className="shrink-0 text-xs gap-1"
-            onClick={() => setPayDialogOpen(true)}
+            disabled={isSingle && registerPayment.isPending}
+            onClick={() => {
+              if (isSingle) {
+                registerPayment.mutate({ orderId: order.id, amountCents: residuo });
+              } else {
+                setPayDialogOpen(true);
+              }
+            }}
           >
             <Check className="h-3.5 w-3.5" />
-            Registra pagamento
+            {isSingle && registerPayment.isPending ? "Registrazione…" : "Registra pagamento"}
           </Button>
         )}
 
@@ -162,12 +171,14 @@ export function PaymentFeedItem({ order }: Props) {
         )}
       </div>
 
-      {/* Register payment dialog */}
-      <RegisterPaymentDialog
-        open={payDialogOpen}
-        onOpenChange={setPayDialogOpen}
-        order={order}
-      />
+      {/* Register payment dialog (only for packages) */}
+      {!isSingle && (
+        <RegisterPaymentDialog
+          open={payDialogOpen}
+          onOpenChange={setPayDialogOpen}
+          order={order}
+        />
+      )}
 
       {/* Reset confirmation */}
       <AlertDialog open={resetAlertOpen} onOpenChange={setResetAlertOpen}>

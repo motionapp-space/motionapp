@@ -10,7 +10,6 @@ function formatEur(cents: number) {
 interface Props {
   kpis: PaymentKPIs;
   monthLabel: string;
-  activeFilter?: "outstanding" | "paidInMonth" | null;
   onFilterOutstanding?: () => void;
   onFilterPaidInMonth?: () => void;
 }
@@ -18,7 +17,6 @@ interface Props {
 export function PaymentKPICards({
   kpis,
   monthLabel,
-  activeFilter,
   onFilterOutstanding,
   onFilterPaidInMonth,
 }: Props) {
@@ -30,11 +28,7 @@ export function PaymentKPICards({
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
       {/* Card 1 — Da incassare */}
       <div
-        className={`col-span-1 sm:col-span-2 rounded-2xl border bg-card p-6 cursor-pointer transition-colors duration-150 hover:bg-muted/20 ${
-          activeFilter === "outstanding"
-            ? "border-foreground ring-1 ring-foreground/10 bg-foreground/5"
-            : "hover:border-foreground/20"
-        }`}
+        className="col-span-1 sm:col-span-2 rounded-2xl border bg-card p-6 cursor-pointer transition-colors duration-150 hover:border-foreground/20"
         onClick={onFilterOutstanding}
       >
         <p className="text-sm text-muted-foreground">Da incassare</p>
@@ -79,11 +73,7 @@ export function PaymentKPICards({
 
       {/* Card 2 — Incassato nel mese */}
       <div
-        className={`col-span-1 rounded-2xl border bg-card p-6 cursor-pointer transition-colors duration-150 hover:bg-muted/20 ${
-          activeFilter === "paidInMonth"
-            ? "border-foreground ring-1 ring-foreground/10 bg-foreground/5"
-            : "hover:border-foreground/20"
-        }`}
+        className="col-span-1 rounded-2xl border bg-card p-6 cursor-pointer transition-colors duration-150 hover:border-foreground/20"
         onClick={onFilterPaidInMonth}
       >
         <p className="text-sm text-muted-foreground">

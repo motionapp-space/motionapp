@@ -30,9 +30,12 @@ export function RegisterPaymentDialog({ open, onOpenChange, order }: Props) {
   const [amountCents, setAmountCents] = useState(residuo);
   const registerPayment = useRegisterPayment();
 
-  // Reset amount when dialog opens
+  // Reset amount when dialog opens (only on open, not on close)
   useEffect(() => {
-    if (open) setAmountCents(residuo);
+    if (open) {
+      // Use setTimeout to avoid interfering with PriceInput blur during close
+      setAmountCents(residuo);
+    }
   }, [open, residuo]);
 
   const isValid = amountCents >= 1 && amountCents <= residuo;
@@ -55,7 +58,7 @@ export function RegisterPaymentDialog({ open, onOpenChange, order }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Registra pagamento</DialogTitle>
           <DialogDescription>
