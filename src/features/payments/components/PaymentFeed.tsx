@@ -5,12 +5,15 @@ import { PaymentFilters } from "./PaymentFilters";
 import { PaymentFeedItem } from "./PaymentFeedItem";
 import { useMarkOrderPaid } from "../hooks/useMarkOrderPaid";
 import type { PaymentOrder, PaymentStatusFilter } from "../types";
+import type { KpiFilter } from "@/pages/Payments";
 
 interface Props {
   orders: PaymentOrder[];
+  kpiFilter?: KpiFilter;
+  selectedMonth?: Date;
 }
 
-export function PaymentFeed({ orders }: Props) {
+export function PaymentFeed({ orders, kpiFilter, selectedMonth }: Props) {
   const [status, setStatus] = useState<PaymentStatusFilter>("due");
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -20,8 +23,22 @@ export function PaymentFeed({ orders }: Props) {
   const filtered = useMemo(() => {
     let result = orders;
 
-    if (status !== "all") {
-      result = result.filter((o) => o.status === status);
+    // KPI filter takes priority when active
+    if (kpiFilter?.type === "outstanding") {
+      result = result.filter((o) => o.amount_cents - o.paid_amount_cents > 0);
+    } else if (kpiFilter?.type === "paidInMonth" && selectedMonth) {
+      const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+      const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0, 23, 59, 59, 999);
+      result = result.filter((o) => {
+        if (!o.paid_at || o.paid_amount_cents <= 0) return false;
+        const d = new Date(o.paid_at);
+        return d >= monthStart && d <= monthEnd;
+      });
+    } else {
+      // Normal status filter
+      if (status !== "all") {
+        result = result.filter((o) => o.status === status);
+      }
     }
 
     if (search.trim()) {
@@ -42,7 +59,7 @@ export function PaymentFeed({ orders }: Props) {
     }
 
     return result;
-  }, [orders, status, search, dateRange]);
+  }, [orders, status, search, dateRange, kpiFilter, selectedMonth]);
 
   return (
     <div className="space-y-4">

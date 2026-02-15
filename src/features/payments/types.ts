@@ -1,6 +1,7 @@
 export interface PaymentOrder {
   id: string;
   amount_cents: number;
+  paid_amount_cents: number;
   currency_code: string;
   status: string;
   kind: string;

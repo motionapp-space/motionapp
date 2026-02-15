@@ -7,6 +7,7 @@ export async function fetchPaymentOrders(): Promise<PaymentOrder[]> {
     .select(`
       id,
       amount_cents,
+      paid_amount_cents,
       currency_code,
       status,
       kind,
@@ -39,6 +40,7 @@ export async function fetchPaymentOrders(): Promise<PaymentOrder[]> {
   return (data ?? []).map((row: any) => ({
     id: row.id,
     amount_cents: row.amount_cents,
+    paid_amount_cents: row.paid_amount_cents ?? 0,
     currency_code: row.currency_code,
     status: row.status,
     kind: row.kind,

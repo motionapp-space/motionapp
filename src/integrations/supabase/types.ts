@@ -1349,6 +1349,7 @@ export type Database = {
           kind: string
           note: string | null
           package_id: string | null
+          paid_amount_cents: number
           paid_at: string | null
           product_id: string | null
           refunded_at: string | null
@@ -1368,6 +1369,7 @@ export type Database = {
           kind: string
           note?: string | null
           package_id?: string | null
+          paid_amount_cents?: number
           paid_at?: string | null
           product_id?: string | null
           refunded_at?: string | null
@@ -1387,6 +1389,7 @@ export type Database = {
           kind?: string
           note?: string | null
           package_id?: string | null
+          paid_amount_cents?: number
           paid_at?: string | null
           product_id?: string | null
           refunded_at?: string | null
