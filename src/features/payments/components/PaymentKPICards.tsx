@@ -11,14 +11,14 @@ interface Props {
   kpis: PaymentKPIs;
   monthLabel: string;
   onFilterOutstanding?: () => void;
-  onFilterPaidInMonth?: () => void;
+  isOutstandingActive?: boolean;
 }
 
 export function PaymentKPICards({
   kpis,
   monthLabel,
   onFilterOutstanding,
-  onFilterPaidInMonth,
+  isOutstandingActive,
 }: Props) {
   const { daIncassareTotale, parteCerta, parteNonCerta, incassatoMese } = kpis;
   const certaPct =
@@ -26,12 +26,25 @@ export function PaymentKPICards({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-      {/* Card 1 — Da incassare */}
+      {/* Card 1 — Da incassare (operativa) */}
       <div
-        className="col-span-1 sm:col-span-2 rounded-2xl border bg-card p-6 cursor-pointer transition-colors duration-150 hover:border-foreground/20"
+        className={`col-span-1 sm:col-span-2 rounded-2xl border bg-card p-6 cursor-pointer transition-colors duration-150 hover:bg-muted/20 hover:border-foreground/20 ${
+          isOutstandingActive ? "border-foreground/40" : ""
+        }`}
         onClick={onFilterOutstanding}
       >
-        <p className="text-sm text-muted-foreground">Da incassare</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">Da incassare</p>
+          <span
+            className={`min-w-[5rem] text-center text-xs ${
+              isOutstandingActive
+                ? "text-foreground font-medium"
+                : "text-muted-foreground"
+            }`}
+          >
+            {isOutstandingActive ? "Filtro attivo" : "Filtra"}
+          </span>
+        </div>
         <p className="text-3xl font-semibold text-foreground mt-1">
           {formatEur(daIncassareTotale)}
         </p>
@@ -54,7 +67,7 @@ export function PaymentKPICards({
             </div>
 
             {/* Stacked bar */}
-            <div className="mt-3 h-2.5 w-full rounded-full bg-muted overflow-hidden flex">
+            <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden flex">
               {certaPct > 0 && (
                 <div
                   className="h-full bg-emerald-500 rounded-l-full"
@@ -62,28 +75,18 @@ export function PaymentKPICards({
                 />
               )}
             </div>
-
-            <p className="text-xs text-muted-foreground mt-2">
-              Già dovuti = pacchetti venduti o lezioni svolte. Non ancora dovuti
-              = lezioni future.
-            </p>
           </>
         )}
       </div>
 
-      {/* Card 2 — Incassato nel mese */}
-      <div
-        className="col-span-1 rounded-2xl border bg-card p-6 cursor-pointer transition-colors duration-150 hover:border-foreground/20"
-        onClick={onFilterPaidInMonth}
-      >
-        <p className="text-sm text-muted-foreground">
-          Incassato a {monthLabel}
-        </p>
+      {/* Card 2 — Incassato nel mese (informativa, non cliccabile) */}
+      <div className="col-span-1 rounded-2xl border border-border/70 bg-card p-6 select-none">
+        <p className="text-sm text-muted-foreground">Incassato nel mese</p>
         <p className="text-3xl font-semibold text-emerald-700 mt-1">
           {formatEur(incassatoMese)}
         </p>
         <p className="text-xs text-muted-foreground mt-2">
-          Basato sulla data di pagamento
+          Incassi registrati nel mese (parziali inclusi)
         </p>
       </div>
     </div>
