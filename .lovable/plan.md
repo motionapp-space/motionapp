@@ -1,120 +1,123 @@
 
 
-## Micro-hardening UI/State — Versione Matura Finale
+## Pagamento Parziale Reale — RPC Bulletproof + Dialog + Reset
 
-### 4 interventi chirurgici
+### Panoramica
 
----
-
-### 1. Toggle KPI "Da incassare" — Reset completo stato feed
-
-In `Payments.tsx`:
-- Il `handleFilterOutstanding` deve comunicare al feed anche il tab desiderato
-- Quando si **disattiva** (click su card gia' attiva): `setKpiFilter(null)` — il feed deve tornare a tab "all" e `onlyDueNow=false`
-- Quando si **attiva**: `setKpiFilter({ type: "outstanding" })` — il feed switcha a tab "outstanding"
-
-Implementazione: il feed gia' reagisce a `kpiFilter` via `useEffect`. Basta estendere l'effetto:
-- Aggiungere un ramo `if (kpiFilter === null)`: `setStatus("all")` + `setOnlyDueNow(false)`
-
-Attenzione: oggi il `useEffect` ha `if (!kpiFilter) return` come prima riga, che skippa il reset. Cambiare in: gestire esplicitamente il caso `null`.
-
-Ma c'e' un problema: al mount iniziale `kpiFilter` e' `null` e non vogliamo forzare "all" (il default e' "outstanding"). Soluzione: usare un `useRef` per tracciare se il kpiFilter e' mai stato attivo, oppure piu' semplicemente tracciare il valore precedente. Approccio piu' pulito: reagire solo quando `kpiFilter` cambia **da un valore non-null a null** usando un ref `prevKpiFilter`.
-
-In `PaymentFeed.tsx`:
-```
-const prevKpiFilter = useRef(kpiFilter);
-useEffect(() => {
-  if (kpiFilter?.type === "outstanding") {
-    setStatus("outstanding");
-    setOnlyDueNow(false);
-  } else if (prevKpiFilter.current && !kpiFilter) {
-    // Was active, now reset
-    setStatus("all");
-    setOnlyDueNow(false);
-  }
-  prevKpiFilter.current = kpiFilter;
-}, [kpiFilter]);
-```
+Implementare il flusso completo di pagamento parziale end-to-end con le 3 fix di hardening integrate: status coerente in entrambe le RPC, `search_path` hardened, e ownership check via join.
 
 ---
 
-### 2. Micro-label KPI — Evitare layout shift
+### 1. Migrazione Database — Due nuove RPC
 
-In `PaymentKPICards.tsx`:
-- La label in alto a destra della card "Da incassare" deve occupare sempre la stessa area
-- Usare una pill con `min-w-[5rem] text-center` (o equivalente) per entrambi gli stati
-- Default: "Filtra" — `text-xs text-muted-foreground`
-- Attivo: "Filtro attivo" — `text-xs text-foreground font-medium`
-- Stessa dimensione contenitore, cambia solo testo e colore
+**`register_order_payment(p_order_id, p_amount_cents)`**
+- `SECURITY DEFINER` con `SET search_path = public`
+- `FOR UPDATE` per race safety
+- Ownership check via join `coach_clients.coach_id = auth.uid()`
+- Guard: amount > 0, ordine esistente, status non in canceled/refunded/void
+- Clamp: `paid_amount_cents = LEAST(amount_cents, paid_amount_cents + p_amount_cents)`
+- `paid_at = now()`
+- Status allineato:
+  - fully paid -> `status = 'paid'`
+  - parziale -> `status = 'due'` (normalizza sempre a stato coerente)
 
-Nuova prop: `isOutstandingActive: boolean`
+**`reset_order_payment(p_order_id)`**
+- Stesse protezioni (SECURITY DEFINER, search_path, ownership, guard status)
+- `paid_amount_cents = 0`, `paid_at = NULL`
+- Status: se era `'paid'` -> torna a `'due'`, altrimenti invariato
 
-Layout card 1 header: flex row con "Da incassare" a sinistra e pill a destra.
-
----
-
-### 3. Card "Incassato" — Comunicare non-interattivita'
-
-In `PaymentKPICards.tsx`:
-- Rimuovere: `onClick={onFilterPaidInMonth}`, `cursor-pointer`, `transition-colors duration-150`, `hover:border-foreground/20`
-- Aggiungere: `select-none`, `border-border/70` (bordo piu' soft del default)
-- Label: "Incassato nel mese" (statica)
-- Sotto importo: "Incassi registrati nel mese (parziali inclusi)" in `text-xs text-muted-foreground mt-2`
-- Rimuovere prop `onFilterPaidInMonth` dall'interfaccia
+La RPC `mark_order_as_paid` esistente resta invariata (backward compat).
 
 ---
 
-### 4. Rimuovere `paidInMonth` + chip KPI + cleanup props
-
-In `Payments.tsx`:
-- Tipo `KpiFilter = { type: "outstanding" } | null`
-- Rimuovere `handleFilterPaidInMonth`
-- Rimuovere prop `onFilterPaidInMonth` da `PaymentKPICards`
-- Passare `isOutstandingActive={kpiFilter?.type === "outstanding"}`
-- Rimuovere `subtitle` da `TabHeader`
-
-In `PaymentFeed.tsx`:
-- Rimuovere ramo `paidInMonth` da useEffect (gia' rimpiazzato dal ref logic sopra)
-- Rimuovere blocco filtro `paidInMonth` dal useMemo
-- Rimuovere `kpiChipLabel` e `onRemoveKpiChip` dal passaggio a `PaymentFilters`
-- Rimuovere import `format`/`it` (non piu' necessari per chip label)
-- Rimuovere prop `selectedMonth` dall'interfaccia (non piu' usata)
-
-In `PaymentFilters.tsx`:
-- Rimuovere props `kpiChipLabel` e `onRemoveKpiChip` dall'interfaccia
-- Rimuovere la logica chip KPI dal rendering
-- I chip restano solo per "Solo gia' dovuti"
-
----
-
-### Sezione tecnica — File modificati
+### 2. File nuovi
 
 ```text
-src/pages/Payments.tsx
-  - KpiFilter = { type: "outstanding" } | null
-  - Rimuovere handleFilterPaidInMonth, subtitle
-  - Passare isOutstandingActive a PaymentKPICards
-  - Rimuovere selectedMonth da PaymentFeed props
-
-src/features/payments/components/PaymentKPICards.tsx
-  - Rimuovere prop onFilterPaidInMonth
-  - Aggiungere prop isOutstandingActive: boolean
-  - Card 1: flex header con pill "Filtra"/"Filtro attivo" (min-w fissa)
-  - Card 1: hover:bg-muted/20, stato attivo border-foreground/40
-  - Card 1: barra h-2.5 -> h-1.5, rimuovere paragrafo lungo
-  - Card 2: no onClick, no hover, select-none, border-border/70
-  - Card 2: label statica + nota editoriale
-
-src/features/payments/components/PaymentFeed.tsx
-  - useRef per prevKpiFilter: reset a "all" solo quando kpiFilter va da attivo a null
-  - Rimuovere tutta la logica paidInMonth
-  - Non passare kpiChipLabel/onRemoveKpiChip a PaymentFilters
-  - Rimuovere prop selectedMonth
-
-src/features/payments/components/PaymentFilters.tsx
-  - Rimuovere props kpiChipLabel e onRemoveKpiChip
-  - Chip solo per "Solo gia' dovuti"
+src/features/payments/hooks/useRegisterPayment.ts
+src/features/payments/hooks/useResetPayment.ts
+src/features/payments/components/RegisterPaymentDialog.tsx
 ```
 
-Nessun file nuovo. Nessuna modifica backend.
+### 3. File modificati
+
+```text
+src/features/payments/components/PaymentFeedItem.tsx
+src/features/payments/components/PaymentFeed.tsx
+src/features/payments/components/PaymentKPICards.tsx
+src/pages/Payments.tsx
+```
+
+---
+
+### Sezione tecnica
+
+**`useRegisterPayment.ts`**
+- `useMutation` che chiama `supabase.rpc('register_order_payment', { p_order_id, p_amount_cents })`
+- `onSuccess`: `queryClient.invalidateQueries({ queryKey: ["payments"] })`, toast "Pagamento registrato"
+
+**`useResetPayment.ts`**
+- `useMutation` che chiama `supabase.rpc('reset_order_payment', { p_order_id })`
+- `onSuccess`: stessa invalidazione, toast "Pagamento annullato"
+
+**`RegisterPaymentDialog.tsx`**
+- Props: `open`, `onOpenChange`, `order: PaymentOrder`
+- Usa `useRegisterPayment` internamente
+- Campo importo editabile tramite `PriceInput` (gia' esistente nel progetto, lavora in centesimi)
+- Default = residuo
+- Validazioni: min 1 cent, max = residuo (no overpay)
+- Copy dinamica:
+  - importo == residuo -> "Segnerai l'ordine come pagato"
+  - importo < residuo -> "Pagamento parziale: resteranno X,XX EUR da incassare"
+- Header: "Registra pagamento" + sottotitolo cliente e ordine
+- Helper sotto campo: "Residuo: X,XX EUR"
+- Footer: "Annulla" (ghost) + "Conferma pagamento" (default)
+- Nessun campo data (backend usa `now()`)
+
+**`PaymentFeedItem.tsx`**
+- Rimuovere props `onMarkPaid` e `isPending`
+- Se outstanding (residuo > 0):
+  - Button ghost "Registra pagamento" apre `RegisterPaymentDialog` (stato locale `open`)
+- Se fully paid (residuo == 0):
+  - Button ghost con icona `MoreVertical` -> `DropdownMenu` con "Ripristina come da incassare"
+  - Click -> `AlertDialog` conferma -> chiama `useResetPayment`
+- Aggiungere `tabular-nums` al blocco importi
+- Padding da `py-3 px-4` a `py-4 px-6`
+
+**`PaymentFeed.tsx`**
+- Rimuovere `useMarkOrderPaid` e relative props
+- Wrappare lista in contenitore `rounded-2xl border border-border overflow-hidden`
+- `PaymentFeedItem` non riceve piu' `onMarkPaid`/`isPending` (gestisce tutto internamente)
+
+**`PaymentKPICards.tsx`**
+- Nuova prop `activeFilter?: "outstanding" | "paidInMonth" | null`
+- Stile attivo: `border-foreground ring-1 ring-foreground/10 bg-foreground/5`
+- Micro-label in alto a destra: "Filtra" (default) / "Filtro attivo" (quando selezionato)
+
+**`Payments.tsx`**
+- Passare `activeFilter` derivato da `kpiFilter` alle KPI cards
+
+---
+
+### Edge cases
+
+| Caso | Comportamento |
+|------|--------------|
+| Double click | `FOR UPDATE` nel DB previene race condition |
+| Overpay da UI | Input clampato a max = residuo, CTA disabilitata |
+| Overpay da DB | `LEAST()` nel SQL clamp a `amount_cents` |
+| Reset ordine paid | Status torna a `'due'` (coerente con altre parti del sistema) |
+| Reset ordine gia' due | Status resta invariato |
+| Pagamento parziale | Status = `'due'` (non `'paid'`) |
+| canceled/refunded/void | RPC rifiuta con eccezione |
+
+---
+
+### Cose che NON cambiano
+
+- `usePaymentKPIs.ts` (usa stessa query key `["payments"]`, riceve dati aggiornati via invalidazione)
+- `usePayments.ts`
+- `payments.api.ts`
+- `PaymentFilters.tsx`
+- `types.ts`
+- `mark_order_as_paid` RPC (resta per backward compat)
 
