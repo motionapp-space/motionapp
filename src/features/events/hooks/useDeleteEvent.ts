@@ -34,6 +34,7 @@ export function useDeleteEvent() {
         p_event_id: id,
         p_actor: 'coach',
         p_now: new Date().toISOString(),
+        p_client_user_id: null,
       });
 
       if (error) {
