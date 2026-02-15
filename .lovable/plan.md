@@ -1,32 +1,26 @@
 
 
-## Fix: Ambiguita' overload RPC `cancel_event_with_ledger`
+## Fix: Disambiguare completamente l'overload RPC
 
 ### Problema
 
-Esistono due versioni della funzione RPC `cancel_event_with_ledger`:
-- `(p_event_id, p_actor, p_now)` -- senza client_user_id
-- `(p_event_id, p_actor, p_now, p_client_user_id)` -- con client_user_id
-
-Quando si passano solo `p_event_id` e `p_actor`, PostgREST non riesce a scegliere quale delle due chiamare perche' entrambe matchano (i parametri mancanti sono tutti opzionali).
+Passare 3 parametri (`p_event_id`, `p_actor`, `p_now`) non basta: PostgREST vede che entrambi gli overload matchano perche' `p_client_user_id` ha un valore di default nella seconda versione.
 
 ### Soluzione
 
-Passare esplicitamente `p_now` nella chiamata RPC dentro `useDeleteEvent.ts`. Questo disambigua verso il primo overload (senza `p_client_user_id`), che e' quello corretto per il coach.
+Passare esplicitamente `p_client_user_id: null` nella chiamata RPC. Questo forza PostgREST a usare l'overload a 4 parametri con `p_client_user_id = NULL`, eliminando ogni ambiguita'.
 
-### Dettagli tecnici
+### Dettaglio tecnico
 
-**File: `src/features/events/hooks/useDeleteEvent.ts`**
-
-Aggiungere `p_now: new Date().toISOString()` alla chiamata RPC:
+**File: `src/features/events/hooks/useDeleteEvent.ts`** (riga 33-37)
 
 ```typescript
 const { data, error } = await supabase.rpc('cancel_event_with_ledger', {
   p_event_id: id,
   p_actor: 'coach',
   p_now: new Date().toISOString(),
+  p_client_user_id: null,   // <-- aggiunta per disambiguare
 });
 ```
 
 Modifica di una sola riga, nessun altro file coinvolto.
-
