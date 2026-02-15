@@ -1,71 +1,91 @@
-import { motion } from "framer-motion";
-import { Wallet, TrendingUp, Clock } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import type { PaymentKPIs } from "../hooks/usePaymentKPIs";
 
 function formatEur(cents: number) {
-  return (cents / 100).toLocaleString("it-IT", { style: "currency", currency: "EUR" });
+  return (cents / 100).toLocaleString("it-IT", {
+    style: "currency",
+    currency: "EUR",
+  });
 }
 
 interface Props {
-  totalDue: number;
-  paidThisMonth: number;
-  draftCount: number;
+  kpis: PaymentKPIs;
+  monthLabel: string;
+  onFilterOutstanding?: () => void;
+  onFilterPaidInMonth?: () => void;
 }
 
-const cards = [
-  {
-    key: "due",
-    label: "Da Incassare",
-    Icon: Wallet,
-    color: "text-destructive",
-    bgColor: "bg-destructive/10",
-    getValue: (p: Props) => formatEur(p.totalDue),
-  },
-  {
-    key: "paid",
-    label: "Incassato Mese",
-    Icon: TrendingUp,
-    color: "text-emerald-600",
-    bgColor: "bg-emerald-500/10",
-    getValue: (p: Props) => formatEur(p.paidThisMonth),
-  },
-  {
-    key: "draft",
-    label: "In Attesa",
-    Icon: Clock,
-    color: "text-amber-500",
-    bgColor: "bg-amber-500/10",
-    getValue: (p: Props) => String(p.draftCount),
-  },
-] as const;
+export function PaymentKPICards({
+  kpis,
+  monthLabel,
+  onFilterOutstanding,
+  onFilterPaidInMonth,
+}: Props) {
+  const { daIncassareTotale, parteCerta, parteNonCerta, incassatoMese } = kpis;
+  const certaPct =
+    daIncassareTotale > 0 ? (parteCerta / daIncassareTotale) * 100 : 0;
 
-export function PaymentKPICards(props: Props) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      {cards.map((c, i) => (
-        <motion.div
-          key={c.key}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.08, duration: 0.35, ease: "easeOut" }}
-        >
-          <Card className="relative overflow-hidden">
-            <CardContent className="pt-5 pb-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{c.label}</p>
-                  <p className={`text-2xl font-bold mt-1 ${c.color}`}>
-                    {c.getValue(props)}
-                  </p>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      {/* Card 1 — Da incassare */}
+      <div
+        className="col-span-1 sm:col-span-2 rounded-2xl border bg-card p-6 cursor-pointer transition-colors duration-150 hover:border-foreground/20"
+        onClick={onFilterOutstanding}
+      >
+        <p className="text-sm text-muted-foreground">Da incassare</p>
+        <p className="text-3xl font-semibold text-foreground mt-1">
+          {formatEur(daIncassareTotale)}
+        </p>
+
+        {daIncassareTotale > 0 && (
+          <>
+            <div className="mt-3 space-y-2">
+              {parteCerta > 0 && (
+                <div className="flex items-center gap-2 text-sm text-emerald-600">
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                  {formatEur(parteCerta)} già dovuti
                 </div>
-                <div className={`rounded-full p-2.5 ${c.bgColor}`}>
-                  <c.Icon className={`h-5 w-5 ${c.color}`} />
+              )}
+              {parteNonCerta > 0 && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground/40 shrink-0" />
+                  {formatEur(parteNonCerta)} non ancora dovuti
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      ))}
+              )}
+            </div>
+
+            {/* Stacked bar */}
+            <div className="mt-3 h-2.5 w-full rounded-full bg-muted overflow-hidden flex">
+              {certaPct > 0 && (
+                <div
+                  className="h-full bg-emerald-500 rounded-l-full"
+                  style={{ width: `${certaPct}%` }}
+                />
+              )}
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-2">
+              Già dovuti = pacchetti venduti o lezioni svolte. Non ancora dovuti
+              = lezioni future.
+            </p>
+          </>
+        )}
+      </div>
+
+      {/* Card 2 — Incassato nel mese */}
+      <div
+        className="col-span-1 rounded-2xl border bg-card p-6 cursor-pointer transition-colors duration-150 hover:border-foreground/20"
+        onClick={onFilterPaidInMonth}
+      >
+        <p className="text-sm text-muted-foreground">
+          Incassato a {monthLabel}
+        </p>
+        <p className="text-3xl font-semibold text-emerald-700 mt-1">
+          {formatEur(incassatoMese)}
+        </p>
+        <p className="text-xs text-muted-foreground mt-2">
+          Basato sulla data di pagamento
+        </p>
+      </div>
     </div>
   );
 }
