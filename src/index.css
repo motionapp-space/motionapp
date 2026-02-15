@@ -1,12 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@import './styles/motion-tokens.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Design system layout & typography. Colors are in src/styles/motion-tokens.css */
 
 @layer base {
   :root {
@@ -62,107 +61,6 @@ All colors MUST be HSL.
 
     /* Interaction */
     --hit-min: 44px;
-    --background: 0 0% 99%;
-    --foreground: 220 15% 20%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 220 15% 20%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 20%;
-
-    --primary: 220 70% 45%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 220 70% 40%;
-
-    --secondary: 220 15% 96%;
-    --secondary-foreground: 220 15% 20%;
-
-    --muted: 220 14% 94%;
-    --muted-foreground: 220 9% 46%;
-
-    --accent: 150 60% 45%;
-    --accent-foreground: 0 0% 100%;
-    --accent-hover: 150 60% 40%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 220 15% 90%;
-    --input: 220 15% 90%;
-    --ring: 220 70% 45%;
-
-    --radius: 1rem;
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 15% 20%;
-    --sidebar-primary: 220 70% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 96%;
-    --sidebar-accent-foreground: 220 15% 20%;
-    --sidebar-border: 220 15% 90%;
-    --sidebar-ring: 220 70% 45%;
-
-    /* Client colors for calendar events */
-    --client-1: 226 80% 52%;
-    --client-2: 171 65% 38%;
-    --client-3: 16 78% 50%;
-    --client-4: 280 60% 55%;
-    --client-5: 197 70% 42%;
-    --client-6: 340 65% 50%;
-    --client-7: 40 85% 50%;
-    --client-8: 120 45% 40%;
-  }
-
-  .dark {
-    --background: 220 20% 10%;
-    --foreground: 0 0% 95%;
-
-    --card: 220 20% 12%;
-    --card-foreground: 0 0% 95%;
-
-    --popover: 220 20% 12%;
-    --popover-foreground: 0 0% 95%;
-
-    --primary: 220 70% 50%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 220 70% 45%;
-
-    --secondary: 220 20% 18%;
-    --secondary-foreground: 0 0% 95%;
-
-    --muted: 220 20% 16%;
-    --muted-foreground: 220 10% 72%;
-
-    --accent: 150 60% 50%;
-    --accent-foreground: 0 0% 100%;
-    --accent-hover: 150 60% 45%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 220 20% 20%;
-    --input: 220 20% 20%;
-    --ring: 220 70% 50%;
-
-    --sidebar-background: 220 20% 12%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 220 70% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 18%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 220 20% 20%;
-    --sidebar-ring: 220 70% 50%;
-
-    /* Client colors for calendar events (dark mode) */
-    --client-1: 226 75% 60%;
-    --client-2: 171 60% 45%;
-    --client-3: 16 75% 58%;
-    --client-4: 280 55% 62%;
-    --client-5: 197 65% 50%;
-    --client-6: 340 60% 58%;
-    --client-7: 40 80% 58%;
-    --client-8: 120 40% 48%;
   }
 
   /* Responsive type tweaks */
@@ -279,7 +177,7 @@ All colors MUST be HSL.
   .token-card {
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
-    background: var(--background, #fff);
+    background: hsl(var(--background));
     padding: var(--space-16);
   }
 

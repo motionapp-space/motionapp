@@ -214,11 +214,11 @@ const Auth = () => {
   const showInviteLoading = inviteCode && inviteValidation.status === "loading";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[hsl(0,0%,96%)] p-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted p-4">
       <div className="w-full max-w-md space-y-8">
         {/* Icon and Title */}
         <div className="text-center space-y-4">
-          <div className="mx-auto w-20 h-20 bg-[hsl(220,70%,95%)] rounded-3xl flex items-center justify-center">
+          <div className="mx-auto w-20 h-20 bg-[hsl(var(--accent-soft-6))] rounded-3xl flex items-center justify-center">
             <Dumbbell className="h-10 w-10 text-primary" />
           </div>
           <div>
@@ -410,8 +410,8 @@ const Auth = () => {
                     <div className="flex items-center gap-2 text-sm mt-1">
                       {passwordsMatch ? (
                         <>
-                          <Check className="h-3.5 w-3.5 text-green-600" />
-                          <span className="text-green-600">Le password corrispondono</span>
+                          <Check className="h-3.5 w-3.5 text-success" />
+                          <span className="text-success">Le password corrispondono</span>
                         </>
                       ) : (
                         <>

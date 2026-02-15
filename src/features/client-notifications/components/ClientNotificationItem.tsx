@@ -30,18 +30,18 @@ function getNotificationIcon(type: ClientNotificationType): LucideIcon {
 function getIconColorClass(type: ClientNotificationType): string {
   switch (type) {
     case "appointment_confirmed":
-      return "text-green-500";
+      return "text-success";
     case "appointment_canceled_by_coach":
       return "text-destructive";
     case "appointment_canceled_confirmed":
     case "booking_request_canceled":
       return "text-muted-foreground";
     case "counter_proposal_received":
-      return "text-amber-500";
+      return "text-warning";
     case "booking_request_declined":
       return "text-destructive";
     case "plan_assigned":
-      return "text-blue-500";
+      return "text-primary";
   }
 }
 

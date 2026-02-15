@@ -121,9 +121,9 @@ export function DayView({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Day Header - IN FLOW (not absolute), h-10 (40px) */}
-      <div className="h-10 bg-white flex shrink-0 shadow-sm">
+      <div className="h-10 bg-card flex shrink-0 shadow-sm">
         {/* Spacer for hour column */}
-        <div className="w-14 shrink-0 border-r border-slate-200/40" />
+        <div className="w-14 shrink-0 border-r border-border/40" />
         
         {/* Day header content */}
         <div className={cn(
@@ -152,7 +152,7 @@ export function DayView({
       >
         <div className="flex pt-2">
         {/* Hour column */}
-        <div className="w-14 shrink-0 border-r border-slate-200/40 text-[11px] text-muted-foreground">
+        <div className="w-14 shrink-0 border-r border-border/40 text-[11px] text-muted-foreground">
           <div className="relative" style={{ height: gridHeight }}>
             {hours.map((hour, i) => (
               <div 
@@ -202,7 +202,7 @@ export function DayView({
           {hours.map((_, i) => (
             <div 
               key={i} 
-              className="absolute left-0 right-0 border-t border-slate-200/80" 
+              className="absolute left-0 right-0 border-t border-border/80" 
               style={{ top: i * 60 * MINUTE_HEIGHT }} 
             />
           ))}

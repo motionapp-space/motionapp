@@ -8,8 +8,8 @@ interface ClientViewBannerProps {
 
 export function ClientViewBanner({ onBackToCoach }: ClientViewBannerProps) {
   return (
-    <Alert className="border-blue-200 bg-blue-50/50 mb-4 [&>svg]:top-[20px]">
-      <Eye className="h-4 w-4 text-blue-600" />
+    <Alert className="border-primary/20 bg-primary/5 mb-4 [&>svg]:top-[20px]">
+      <Eye className="h-4 w-4 text-foreground" />
       <AlertTitle className="text-base font-semibold text-foreground">
         Stai simulando la vista cliente
       </AlertTitle>

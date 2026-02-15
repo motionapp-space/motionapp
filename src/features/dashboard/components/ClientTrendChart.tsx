@@ -50,7 +50,7 @@ export function ClientTrendChart({ data }: ClientTrendChartProps) {
           <p className="text-sm text-muted-foreground">Totale clienti</p>
           <div className="flex items-baseline gap-2">
             <p className="text-2xl font-bold">{latestCount}</p>
-            <span className={`text-sm font-medium ${totalChange >= 0 ? "text-green-600" : "text-red-600"}`}>
+            <span className={`text-sm font-medium ${totalChange >= 0 ? "text-success" : "text-destructive"}`}>
               {totalChange >= 0 ? "+" : ""}{totalChange.toFixed(1)}%
             </span>
           </div>

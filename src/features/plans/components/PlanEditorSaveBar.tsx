@@ -71,7 +71,7 @@ export function PlanEditorSaveBar({
               </>
             ) : (
               <>
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-success" />
                 <span className="text-sm text-muted-foreground hidden sm:inline">
                   Salvato
                 </span>

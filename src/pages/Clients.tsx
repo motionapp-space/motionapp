@@ -623,8 +623,8 @@ const Clients = () => {
                       className={cn(
                         "h-9 px-3 transition-colors",
                         advancedOpen
-                          ? "bg-green-600 text-white hover:bg-green-700 hover:text-white"
-                          : "text-muted-foreground hover:bg-green-600 hover:text-white"
+                          ? "bg-primary text-primary-foreground hover:bg-primary-hover hover:text-primary-foreground"
+                          : "text-muted-foreground hover:bg-primary hover:text-primary-foreground"
                       )}
                     >
                       Filtri avanzati
@@ -1079,7 +1079,7 @@ const Clients = () => {
   return (
     <div className="flex flex-col bg-background w-full">
       {/* Sticky Header: Search + CTA + Filters */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm shadow-sm">
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm shadow-sm">
         <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-3 pb-3 md:pt-4 md:pb-4 space-y-3">
           {/* Toolbar Row: Search + CTA */}
           <div className="flex items-center justify-between gap-3">
@@ -1169,8 +1169,8 @@ const Clients = () => {
                       className={cn(
                         "h-9 px-3 transition-colors",
                         advancedOpen
-                          ? "bg-green-600 text-white hover:bg-green-700 hover:text-white"
-                          : "text-muted-foreground hover:bg-green-600 hover:text-white"
+                          ? "bg-primary text-primary-foreground hover:bg-primary-hover hover:text-primary-foreground"
+                          : "text-muted-foreground hover:bg-primary hover:text-primary-foreground"
                       )}
                     >
                       Filtri avanzati

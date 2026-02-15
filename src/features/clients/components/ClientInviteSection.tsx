@@ -31,13 +31,13 @@ export function ClientInviteSection({ clientId, email, hasUserAccount }: ClientI
   // If client already has an account
   if (hasUserAccount) {
     return (
-      <div className="flex items-center gap-3 p-4 rounded-lg bg-green-50 border border-green-200">
-        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-          <Check className="h-5 w-5 text-green-600" />
+      <div className="flex items-center gap-3 p-4 rounded-lg bg-success/10 border border-success/40">
+        <div className="h-10 w-10 rounded-full bg-success/20 flex items-center justify-center">
+          <Check className="h-5 w-5 text-success" />
         </div>
         <div>
-          <p className="font-medium text-green-900">{toSentenceCase("Account attivo")}</p>
-          <p className="text-sm text-green-700">
+          <p className="font-medium text-foreground">{toSentenceCase("Account attivo")}</p>
+          <p className="text-sm text-muted-foreground">
             Il cliente ha completato la registrazione e può accedere all'app.
           </p>
         </div>
@@ -101,13 +101,13 @@ export function ClientInviteSection({ clientId, email, hasUserAccount }: ClientI
   const getStatusBadge = (status: ClientInvite["status"]) => {
     switch (status) {
       case "pending":
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">In attesa</Badge>;
+        return <Badge variant="outline" className="bg-warning/10 text-foreground border-warning/40">In attesa</Badge>;
       case "accepted":
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Accettato</Badge>;
+        return <Badge variant="outline" className="bg-success/10 text-foreground border-success/40">Accettato</Badge>;
       case "expired":
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Scaduto</Badge>;
+        return <Badge variant="outline" className="bg-destructive/10 text-foreground border-destructive/40">Scaduto</Badge>;
       case "revoked":
-        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Revocato</Badge>;
+        return <Badge variant="outline" className="bg-muted text-muted-foreground border-border">Revocato</Badge>;
       default:
         return null;
     }
@@ -127,13 +127,13 @@ export function ClientInviteSection({ clientId, email, hasUserAccount }: ClientI
   if (generatedLink) {
     return (
       <div className="space-y-4">
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-green-50 border border-green-200">
-          <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-            <Check className="h-5 w-5 text-green-600" />
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-success/10 border border-success/40">
+          <div className="h-10 w-10 rounded-full bg-success/20 flex items-center justify-center shrink-0">
+            <Check className="h-5 w-5 text-success" />
           </div>
           <div className="flex-1">
-            <p className="font-medium text-green-900">{toSentenceCase("Nuovo invito generato")}</p>
-            <p className="text-sm text-green-700 mt-1">
+            <p className="font-medium text-foreground">{toSentenceCase("Nuovo invito generato")}</p>
+            <p className="text-sm text-muted-foreground mt-1">
               Un'email con il link di attivazione verrà inviata a breve.
             </p>
           </div>
@@ -194,19 +194,19 @@ export function ClientInviteSection({ clientId, email, hasUserAccount }: ClientI
     <div className="space-y-4">
       {/* Status Card */}
       <div className={`flex items-start gap-3 p-4 rounded-lg border ${
-        isPending ? "bg-yellow-50 border-yellow-200" : 
-        isExpired ? "bg-red-50 border-red-200" : 
+        isPending ? "bg-warning/10 border-warning/40" : 
+        isExpired ? "bg-destructive/10 border-destructive/40" : 
         "bg-muted"
       }`}>
         <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${
-          isPending ? "bg-yellow-100" : 
-          isExpired ? "bg-red-100" : 
+          isPending ? "bg-warning/20" : 
+          isExpired ? "bg-destructive/20" : 
           "bg-muted-foreground/10"
         }`}>
           {isPending ? (
-            <Clock className="h-5 w-5 text-yellow-600" />
+            <Clock className="h-5 w-5 text-warning" />
           ) : isExpired ? (
-            <AlertCircle className="h-5 w-5 text-red-600" />
+            <AlertCircle className="h-5 w-5 text-destructive" />
           ) : (
             <Mail className="h-5 w-5 text-muted-foreground" />
           )}

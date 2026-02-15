@@ -211,8 +211,8 @@ export function SlotSelector({
 
       {/* Selected Slot Confirmation */}
       {selectedSlot && (
-        <Alert className="bg-green-50 border-green-200">
-          <AlertDescription className="text-green-700 text-sm">
+        <Alert className="bg-success/10 border-success/40">
+          <AlertDescription className="text-foreground text-sm">
             Appuntamento nello slot{" "}
             <span className="font-semibold">
               {format(new Date(selectedSlot.start), "HH:mm")}–
