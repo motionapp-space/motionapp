@@ -1,211 +1,247 @@
 
 
-## Refactor Filtri + Lista Pagamenti (Residuo-Based, KPI-Coherent) — Versione Definitiva
+## Pagamento Parziale Reale — RPC Bulletproof + Dialog + Reset + Hardening Finale
 
 ### Panoramica
 
-Riscrivere filtri e lista pagamenti per allinearli al modello residuo-based delle KPI. Tabs diventano "Tutti / Da incassare / Pagati". Le righe della lista adottano un layout a 3 blocchi con badge semantici. I click KPI sincronizzano i tabs con chip removibili. Tutte le 6 correzioni della review sono integrate.
+Implementare il flusso completo di pagamento parziale end-to-end: due nuove RPC backend hardened, due nuovi hook React, un Dialog modale per registrare importi editabili, aggiornamento feed item con CTA e menu reset. Include tutte le fix di sicurezza e i 3 patch finali di hardening.
 
 ---
 
-### File modificati
+### 1. Migrazione Database — Due nuove RPC
+
+**`register_order_payment(p_order_id, p_amount_cents)`**
+- `SECURITY DEFINER` con `SET search_path = public`
+- `FOR UPDATE` per race safety
+- Ownership check via join `coach_clients.coach_id = auth.uid()`
+- Guard:
+  - `p_amount_cents` nullo o <= 0 -> errore
+  - Ordine non trovato -> errore
+  - Status in canceled/refunded/void -> errore
+  - **Ordine gratuito** (`amount_cents <= 0`) -> errore "cannot register payment for free order"
+  - **Gia' fully paid** (`paid_amount_cents >= amount_cents`) -> errore "order already fully paid"
+- Clamp: `paid_amount_cents = LEAST(amount_cents, paid_amount_cents + p_amount_cents)`
+- `paid_at = now()`
+- Status allineato:
+  - fully paid (`v_new_paid >= amount_cents`) -> `status = 'paid'`
+  - parziale -> `status = 'due'`
+
+**`reset_order_payment(p_order_id)`**
+- Stesse protezioni (SECURITY DEFINER, search_path, ownership, guard status)
+- `paid_amount_cents = 0`, `paid_at = NULL`
+- Status: se era `'paid'` -> torna a `'due'`, altrimenti invariato
+
+La RPC `mark_order_as_paid` esistente resta invariata (backward compat).
+
+---
+
+### 2. File nuovi
 
 ```text
-src/features/payments/types.ts                      -- PaymentStatusFilter aggiornato
-src/features/payments/components/PaymentFilters.tsx  -- Nuovi tabs + toggle + chip filtri attivi
-src/features/payments/components/PaymentFeed.tsx     -- Filtri residuo-based + sorting + KPI-tab sync
-src/features/payments/components/PaymentFeedItem.tsx -- Riscrittura completa layout row 3 blocchi
-src/pages/Payments.tsx                              -- KPI click sincronizza tab + reset su cambio tab manuale
+src/features/payments/hooks/useRegisterPayment.ts
+src/features/payments/hooks/useResetPayment.ts
+src/features/payments/components/RegisterPaymentDialog.tsx
+```
+
+### 3. File modificati
+
+```text
+src/features/payments/components/PaymentFeedItem.tsx
+src/features/payments/components/PaymentFeed.tsx
+src/features/payments/components/PaymentKPICards.tsx
+src/pages/Payments.tsx
 ```
 
 ---
 
-### 1. Types (`types.ts`)
+### Sezione tecnica
+
+#### RPC SQL — `register_order_payment`
 
 ```text
-Prima:  "all" | "due" | "paid" | "draft"
-Dopo:   "all" | "outstanding" | "paid"
+create or replace function public.register_order_payment(
+  p_order_id uuid,
+  p_amount_cents integer
+) returns public.orders
+language plpgsql security definer set search_path = public
+as $$
+declare
+  v_order public.orders;
+  v_new_paid integer;
+  v_is_owner boolean;
+begin
+  -- Input validation
+  if p_amount_cents is null or p_amount_cents <= 0 then
+    raise exception 'amount must be > 0';
+  end if;
+
+  -- Lock row
+  select * into v_order from public.orders
+  where id = p_order_id for update;
+
+  if not found then raise exception 'order not found'; end if;
+
+  -- Status guard
+  if v_order.status in ('canceled', 'refunded', 'void') then
+    raise exception 'cannot register payment for canceled/refunded/void order';
+  end if;
+
+  -- Free order guard
+  if v_order.amount_cents <= 0 then
+    raise exception 'cannot register payment for free order';
+  end if;
+
+  -- Already fully paid guard (idempotency)
+  if v_order.paid_amount_cents >= v_order.amount_cents then
+    raise exception 'order already fully paid';
+  end if;
+
+  -- Ownership check
+  select exists (
+    select 1 from public.coach_clients cc
+    where cc.id = v_order.coach_client_id and cc.coach_id = auth.uid()
+  ) into v_is_owner;
+  if not v_is_owner then raise exception 'not allowed'; end if;
+
+  -- Clamp and update
+  v_new_paid := least(v_order.amount_cents, coalesce(v_order.paid_amount_cents, 0) + p_amount_cents);
+
+  update public.orders set
+    paid_amount_cents = v_new_paid,
+    paid_at = now(),
+    status = case when v_new_paid >= v_order.amount_cents then 'paid' else 'due' end
+  where id = p_order_id
+  returning * into v_order;
+
+  return v_order;
+end; $$;
 ```
+
+#### RPC SQL — `reset_order_payment`
+
+```text
+create or replace function public.reset_order_payment(
+  p_order_id uuid
+) returns public.orders
+language plpgsql security definer set search_path = public
+as $$
+declare
+  v_order public.orders;
+  v_is_owner boolean;
+begin
+  select * into v_order from public.orders
+  where id = p_order_id for update;
+
+  if not found then raise exception 'order not found'; end if;
+
+  if v_order.status in ('canceled', 'refunded', 'void') then
+    raise exception 'cannot reset payment for canceled/refunded/void order';
+  end if;
+
+  select exists (
+    select 1 from public.coach_clients cc
+    where cc.id = v_order.coach_client_id and cc.coach_id = auth.uid()
+  ) into v_is_owner;
+  if not v_is_owner then raise exception 'not allowed'; end if;
+
+  update public.orders set
+    paid_amount_cents = 0,
+    paid_at = null,
+    status = case when v_order.status = 'paid' then 'due' else v_order.status end
+  where id = p_order_id
+  returning * into v_order;
+
+  return v_order;
+end; $$;
+```
+
+#### `useRegisterPayment.ts`
+
+- `useMutation` che chiama `supabase.rpc('register_order_payment', { p_order_id, p_amount_cents })`
+- `onSuccess`: `queryClient.invalidateQueries({ queryKey: ["payments"] })`, toast "Pagamento registrato"
+- `onError`: toast con messaggio errore dal backend
+
+Nota: le KPI sono derivate da `useMemo` sugli stessi `orders` (queryKey `["payments"]`), quindi un singolo `invalidateQueries` aggiorna sia feed che KPI automaticamente.
+
+#### `useResetPayment.ts`
+
+- `useMutation` che chiama `supabase.rpc('reset_order_payment', { p_order_id })`
+- `onSuccess`: stessa invalidazione, toast "Pagamento annullato"
+
+#### `RegisterPaymentDialog.tsx`
+
+- Props: `open`, `onOpenChange`, `order: PaymentOrder`
+- Usa `useRegisterPayment` internamente
+- Campo importo tramite `PriceInput` (gia' nel progetto, lavora in centesimi, supporta virgola e punto nativamente)
+- Default = residuo (`Math.max(0, amount_cents - paid_amount_cents)`)
+- Validazioni:
+  - Min 1 cent
+  - Max = residuo (no overpay da UI)
+  - CTA disabilitata se importo invalido o 0
+- Copy dinamica sotto il campo:
+  - importo == residuo -> "Segnerai l'ordine come interamente pagato"
+  - importo < residuo -> "Pagamento parziale: resteranno X,XX EUR da incassare"
+- Header: "Registra pagamento"
+- Subtitle: nome cliente + titolo ordine
+- Helper sotto campo: "Residuo: X,XX EUR"
+- Footer: "Annulla" (outline) + "Conferma pagamento" (default)
+- Nessun campo data (backend usa `now()`)
+
+#### `PaymentFeedItem.tsx`
+
+- Rimuovere props `onMarkPaid` e `isPending`
+- Se outstanding (residuo > 0):
+  - Button ghost "Registra pagamento" apre `RegisterPaymentDialog` (stato locale)
+- Se fully paid (residuo == 0, escludendo ordini gratuiti con amount=0):
+  - Button ghost con icona `MoreVertical` -> `DropdownMenu` con "Ripristina come da incassare"
+  - Click -> `AlertDialog` conferma -> chiama `useResetPayment`
+- Padding da `py-3 px-4` a `py-4 px-6`
+- Aggiungere `tabular-nums` al blocco importi destro
+
+#### `PaymentFeed.tsx`
+
+- Rimuovere `useMarkOrderPaid` e relative props
+- `PaymentFeedItem` non riceve piu' `onMarkPaid`/`isPending`
+- Wrappare lista in contenitore `rounded-2xl border border-border overflow-hidden`
+
+#### `PaymentKPICards.tsx`
+
+- Nuova prop `activeFilter?: "outstanding" | "paidInMonth" | null`
+- Card base: aggiungere `hover:bg-muted/20`
+- Card attiva: `border-foreground ring-1 ring-foreground/10 bg-foreground/5`
+- Micro-label in alto a destra di ogni card:
+  - Default: testo "Filtra" in `text-xs text-muted-foreground`
+  - Attivo: badge "Filtro attivo" in `text-xs bg-foreground/10 text-foreground rounded-full px-2 py-0.5`
+
+#### `Payments.tsx`
+
+- Passare `activeFilter` derivato da `kpiFilter` alle KPI cards
 
 ---
 
-### 2. PaymentFilters — Riscrittura
-
-**Tabs**: 3 valori
-
-- "Tutti" (all)
-- "Da incassare" (outstanding)
-- "Pagati" (paid)
-
-**Riga sotto tabs** (flex orizzontale, gap-3):
-
-- Search input (invariato, placeholder "Cerca cliente...")
-- DateRangePicker (invariato)
-- Toggle "Solo gia' dovuti" — piccolo Switch o Button toggle, visibile SOLO quando tab = "outstanding"
-
-**Nuove props**:
-
-- `onlyDueNow: boolean` + `onOnlyDueNowChange: (v: boolean) => void`
-
-**Chip filtri attivi** (riga sotto i filtri, flex wrap gap-2):
-
-- Chip removibili: rounded-full, bg-foreground/5, text-xs, con X (lucide X icon)
-- Appaiono quando:
-  - KPI filter attivo (chip "Da incassare" o "Pagati a Feb 2026")
-  - Toggle "Solo gia' dovuti" attivo
-- Props per gestire i chip: `kpiChipLabel?: string`, `onRemoveKpiChip?: () => void`
-
----
-
-### 3. PaymentFeed — Logica filtri e sorting
-
-**Costante globale** per stati esclusi:
-
-```text
-SKIP_STATUSES = ['canceled', 'refunded', 'void']
-```
-
-**Helper residuo** (usato ovunque, con clamp):
-
-```text
-residuo = Math.max(0, amount_cents - paid_amount_cents)
-```
-
-**Filtri per tab** (tutti escludono SKIP_STATUSES):
-
-```text
-tab "all":         status NOT IN SKIP_STATUSES
-
-tab "outstanding": residuo > 0
-                   AND status NOT IN SKIP_STATUSES
-
-tab "paid":        residuo <= 0
-                   AND paid_amount_cents > 0
-                   AND status NOT IN SKIP_STATUSES
-```
-
-Fix #1: tab "paid" include anche il guard su SKIP_STATUSES (no ordini rimborsati mostrati come "Pagati").
-
-Fix #3: ordini con amount=0 e paid=0 (gratuiti) rientrano in tab "paid" come "Pagato" con totale 0 EUR (non nascosti). La condizione `paid_amount_cents > 0` li escluderebbe, quindi per gli ordini gratuiti: se `amount_cents === 0 AND residuo === 0` -> trattare come "pagato/chiuso" e includerli nel tab "paid" e "all".
-
-**Toggle "Solo gia' dovuti"** (attivo solo in tab outstanding):
-
-- Mostra solo ordini dove:
-  - `kind === 'package_purchase'` (sempre dovuti by design)
-  - `kind === 'single_lesson'` AND `event_start_at != null` AND `event_start_at < now()`
-
-**KPI-tab sync** (Fix #5):
-
-Quando `kpiFilter` arriva dal parent:
-- `outstanding` -> imposta tab interno su "outstanding", reset onlyDueNow
-- `paidInMonth` -> imposta tab interno su "paid", applica filtro paid_at nel mese
-
-Quando utente cambia tab manualmente:
-- Reset `kpiFilter` nel parent (callback `onResetKpiFilter`)
-- Reset `onlyDueNow` a false
-
-Il tab e' la fonte di verita' visiva. Il kpiFilter e' un "suggerimento" dal parent che viene tradotto in tab + filtri interni.
-
-**Sorting** (Fix #6, con fallback stabile):
-
-```text
-Tab "outstanding":
-  1. isDueNow = true prima (pacchetti + lezioni passate)
-  2. isDueNow = false dopo (lezioni future)
-  3. Dentro ogni gruppo: residuo desc
-  4. Fallback: created_at desc
-
-Tab "paid":
-  1. paid_at desc
-  2. Fallback: created_at desc
-
-Tab "all":
-  1. created_at desc (invariato)
-```
-
-**Container lista**: da `space-y-2` (card separate) a `divide-y divide-border` (border-b divider tra righe).
-
----
-
-### 4. PaymentFeedItem — Riscrittura completa
-
-Eliminare: icona circolare decorativa, badge status vecchio ("Non Pagato", "In Attesa"), rounded-2xl card border.
-
-**Layout row** — flex items-center, py-3 px-4, hover:bg-muted/30 transition-colors duration-150:
-
-```text
-[Sinistra - flex-1 min-w-0]     [Centro - shrink-0]      [Destra - shrink-0 text-right]
-Titolo prodotto (truncate)       Badge "Da incassare"     Residuo (bold)
-Cliente                          + "Parziale" pill        "Pagato X · Totale Y"
-Meta + badge dovuto (solo SL)
-```
-
-**Blocco sinistro** (flex-1 min-w-0):
-
-- Titolo: text-sm font-medium text-foreground truncate
-  - Single lesson: "Lezione del 5 feb 2026"
-  - Pacchetto: "Pacchetto [nome]"
-- Sottotitolo: "Mario Rossi" — text-sm text-muted-foreground
-- Meta (text-xs text-muted-foreground, mt-1):
-  - Single lesson: data/ora sessione + badge inline:
-    - "Gia' dovuta" (bg-foreground/5 text-foreground) se event_start_at < now
-    - "Non ancora dovuta" (bg-muted text-muted-foreground) se event_start_at >= now o null
-    - Se event_start_at null: meta dice "Data lezione non disponibile"
-  - Pacchetto: "Venduto il [data creazione]" — nessun badge dovuto (Fix #4: pacchetti sempre dovuti, distinzione solo logica interna)
-
-**Blocco centro** (shrink-0, flex items-center gap-1.5):
-
-- Badge principale:
-  - Outstanding (residuo > 0): "Da incassare" — bg-foreground/5 text-foreground (Fix UI #1)
-  - Fully paid (residuo <= 0): "Pagato" — bg-emerald-50 text-emerald-700
-- Badge secondario (solo se isPartial = paid > 0 AND residuo > 0):
-  - "Parziale" — bg-amber-50 text-amber-700, text-xs
-
-**Blocco destro** (shrink-0, text-right):
-
-- Se outstanding:
-  - Riga 1: formatEur(residuo) — text-sm font-semibold
-  - Riga 2 (solo se isPartial): "Pagato X · Totale Y" — text-xs text-muted-foreground
-  - Riga 2 (se non partial): "Totale Y" — text-xs text-muted-foreground
-- Se fully paid:
-  - Riga 1: formatEur(amount_cents) — text-sm font-semibold
-  - Riga 2: "Pagato il [paid_at formattata]" — text-xs text-muted-foreground (se paid_at presente)
-
-**CTA "Pagato"**: Button ghost text-xs con Check icon, visibile solo se residuo > 0 (non piu' basato su status).
-
----
-
-### 5. Payments.tsx — KPI sync
-
-Aggiungere callback `onResetKpiFilter` passato al Feed:
-
-```text
-const handleResetKpiFilter = useCallback(() => setKpiFilter(null), []);
-```
-
-Il Feed riceve `onResetKpiFilter` e lo chiama quando l'utente cambia tab manualmente.
-
----
-
-### 6. Riepilogo edge cases
+### Edge cases
 
 | Caso | Comportamento |
 |------|--------------|
-| event_start_at null (single_lesson) | Badge "Non ancora dovuta", meta "Data lezione non disponibile" |
-| Ordine gratuito (amount=0, paid=0) | Mostrato come "Pagato" con totale 0,00 EUR |
-| paid > amount (overpayment) | Residuo clampato a 0, mostrato come "Pagato" |
-| canceled/refunded/void | Esclusi da tutti i tab di default |
-| Importi 0 outstanding | Mostra "0,00 EUR", nessun breakdown |
+| Double click | `FOR UPDATE` nel DB previene race condition |
+| Overpay da UI | Input clampato a max = residuo, CTA disabilitata |
+| Overpay da DB | `LEAST()` nel SQL clamp a `amount_cents` |
+| Ordine gia' fully paid | RPC rifiuta: "order already fully paid" |
+| Ordine gratuito (amount=0) | RPC rifiuta: "cannot register payment for free order" |
+| Reset ordine paid | Status torna a `'due'` |
+| Reset ordine gia' due | Status resta invariato |
+| Pagamento parziale | Status = `'due'` (coerente) |
+| canceled/refunded/void | RPC rifiuta con eccezione |
+| Input con virgola (12,50) | Gestito nativamente da `PriceInput` |
 
 ---
 
 ### Cose che NON cambiano
 
-- PaymentKPICards.tsx (gia' refactored)
-- MonthSelector.tsx
-- usePaymentKPIs.ts
-- useMarkOrderPaid.ts
-- usePayments.ts
-- payments.api.ts
-- DateRangePicker
-
+- `usePaymentKPIs.ts` (derivato da stessi orders, aggiornato via invalidazione)
+- `usePayments.ts`
+- `payments.api.ts`
+- `PaymentFilters.tsx`
+- `types.ts`
+- `mark_order_as_paid` RPC (backward compat)
+- `PriceInput` component (gia' supporta virgola/punto)
