@@ -16,8 +16,6 @@ interface Props {
   onDateRangeChange: (v: DateRange | undefined) => void;
   onlyDueNow: boolean;
   onOnlyDueNowChange: (v: boolean) => void;
-  kpiChipLabel?: string;
-  onRemoveKpiChip?: () => void;
 }
 
 export function PaymentFilters({
@@ -29,14 +27,9 @@ export function PaymentFilters({
   onDateRangeChange,
   onlyDueNow,
   onOnlyDueNowChange,
-  kpiChipLabel,
-  onRemoveKpiChip,
 }: Props) {
   const chips: { label: string; onRemove: () => void }[] = [];
 
-  if (kpiChipLabel && onRemoveKpiChip) {
-    chips.push({ label: kpiChipLabel, onRemove: onRemoveKpiChip });
-  }
   if (onlyDueNow && status === "outstanding") {
     chips.push({ label: "Solo già dovuti", onRemove: () => onOnlyDueNowChange(false) });
   }

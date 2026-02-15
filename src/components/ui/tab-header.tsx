@@ -1,8 +1,8 @@
 import * as React from "react";
 
-interface TabHeaderProps {
+export interface TabHeaderProps {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   action?: React.ReactNode;
 }
 
