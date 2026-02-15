@@ -76,4 +76,19 @@ describe("No dangerous cancel paths (anti-regression)", () => {
       expect(rpcPos).toBeLessThan(resetPos);
     }
   });
+
+  it("useDeleteEvent should use cancel_event_with_ledger RPC, not deleteEvent", () => {
+    const file = readFile("src/features/events/hooks/useDeleteEvent.ts");
+    
+    // Should use RPC
+    expect(file).toContain("cancel_event_with_ledger");
+    expect(file).toContain("p_actor: 'coach'");
+    
+    // Should NOT call deleteEvent (direct DELETE)
+    expect(file).not.toContain("deleteEvent(");
+    
+    // Should invalidate package queries
+    expect(file).toContain('"packages"');
+    expect(file).toContain('"package-ledger"');
+  });
 });
