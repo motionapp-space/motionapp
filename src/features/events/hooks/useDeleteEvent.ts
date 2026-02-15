@@ -33,6 +33,7 @@ export function useDeleteEvent() {
       const { data, error } = await supabase.rpc('cancel_event_with_ledger', {
         p_event_id: id,
         p_actor: 'coach',
+        p_now: new Date().toISOString(),
       });
 
       if (error) {
