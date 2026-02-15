@@ -1,66 +1,120 @@
 
 
-## Fix UX Pagamenti — CTA condizionale, bug dialog, KPI cards
+## Micro-hardening UI/State — Versione Matura Finale
 
-### 3 interventi
-
----
-
-### 1. CTA "Registra pagamento" condizionale per tipo ordine
-
-**Lezione singola** (`kind === "single_lesson"`): il click su "Registra pagamento" chiama direttamente `useRegisterPayment` con `amountCents = residuo` (full pay), senza aprire la modale. Il pagamento di una lezione e' sempre totale, mai parziale.
-
-**Pacchetto** (`kind === "package_purchase"`): il click apre la modale `RegisterPaymentDialog` precompilata con l'importo totale del residuo (gia' funzionante, il default e' `residuo`).
-
-Modifica in `PaymentFeedItem.tsx`:
-- Importare `useRegisterPayment`
-- Se `isSingle`: il Button chiama direttamente `registerPayment.mutate({ orderId, amountCents: residuo })`
-- Se pacchetto: il Button apre il dialog come oggi
-- La modale `RegisterPaymentDialog` viene renderizzata solo per pacchetti (non per lezioni singole)
+### 4 interventi chirurgici
 
 ---
 
-### 2. Bug dialog: click su X non chiude la modale
+### 1. Toggle KPI "Da incassare" — Reset completo stato feed
 
-Il problema e' nel componente `PriceInput`: quando si clicca sulla X del Dialog, il focus lascia il `PriceInput`, che triggera `handleBlur`. Il blur riscrive lo stato locale e potrebbe interferire con la chiusura del dialog.
+In `Payments.tsx`:
+- Il `handleFilterOutstanding` deve comunicare al feed anche il tab desiderato
+- Quando si **disattiva** (click su card gia' attiva): `setKpiFilter(null)` — il feed deve tornare a tab "all" e `onlyDueNow=false`
+- Quando si **attiva**: `setKpiFilter({ type: "outstanding" })` — il feed switcha a tab "outstanding"
 
-Fix in `RegisterPaymentDialog.tsx`:
-- Aggiungere `onInteractOutside` al `DialogContent` per prevenire interferenze, oppure piu' semplicemente assicurarsi che il `PriceInput` non blocchi il propagarsi dell'evento.
-- Fix concreto: il problema e' che `DialogContent` di Radix usa `onPointerDownOutside` e `onInteractOutside`. La X e' dentro il DialogContent, ma il blur del PriceInput potrebbe triggerare un re-render che resetta lo stato `open`. Verificare se il problema e' nel `PriceInput.handleBlur` che chiama `onChange(0)` quando il valore e' vuoto durante la chiusura. Fix: nel `useEffect` che sincronizza, non resettare quando `open` passa a `false`.
+Implementazione: il feed gia' reagisce a `kpiFilter` via `useEffect`. Basta estendere l'effetto:
+- Aggiungere un ramo `if (kpiFilter === null)`: `setStatus("all")` + `setOnlyDueNow(false)`
+
+Attenzione: oggi il `useEffect` ha `if (!kpiFilter) return` come prima riga, che skippa il reset. Cambiare in: gestire esplicitamente il caso `null`.
+
+Ma c'e' un problema: al mount iniziale `kpiFilter` e' `null` e non vogliamo forzare "all" (il default e' "outstanding"). Soluzione: usare un `useRef` per tracciare se il kpiFilter e' mai stato attivo, oppure piu' semplicemente tracciare il valore precedente. Approccio piu' pulito: reagire solo quando `kpiFilter` cambia **da un valore non-null a null** usando un ref `prevKpiFilter`.
+
+In `PaymentFeed.tsx`:
+```
+const prevKpiFilter = useRef(kpiFilter);
+useEffect(() => {
+  if (kpiFilter?.type === "outstanding") {
+    setStatus("outstanding");
+    setOnlyDueNow(false);
+  } else if (prevKpiFilter.current && !kpiFilter) {
+    // Was active, now reset
+    setStatus("all");
+    setOnlyDueNow(false);
+  }
+  prevKpiFilter.current = kpiFilter;
+}, [kpiFilter]);
+```
 
 ---
 
-### 3. KPI Cards — Rimuovere affordance nuova, tornare allo stile precedente
+### 2. Micro-label KPI — Evitare layout shift
 
-Rimuovere da `PaymentKPICards.tsx`:
-- La logica condizionale `activeFilter === "outstanding"` / `activeFilter === "paidInMonth"` per lo stile delle card
-- Il ring, il bg-foreground/5, e il border-foreground
-- Tornare allo stile base uniforme: `rounded-2xl border bg-card p-6 cursor-pointer transition-colors duration-150 hover:border-foreground/20`
+In `PaymentKPICards.tsx`:
+- La label in alto a destra della card "Da incassare" deve occupare sempre la stessa area
+- Usare una pill con `min-w-[5rem] text-center` (o equivalente) per entrambi gli stati
+- Default: "Filtra" — `text-xs text-muted-foreground`
+- Attivo: "Filtro attivo" — `text-xs text-foreground font-medium`
+- Stessa dimensione contenitore, cambia solo testo e colore
 
-Rimuovere la prop `activeFilter` da `PaymentKPICards.tsx` e da `Payments.tsx` (dove viene passata).
+Nuova prop: `isOutstandingActive: boolean`
 
-I filtri (tabs, search, date range, toggle "Solo gia' dovuti", chip KPI) restano invariati.
+Layout card 1 header: flex row con "Da incassare" a sinistra e pill a destra.
+
+---
+
+### 3. Card "Incassato" — Comunicare non-interattivita'
+
+In `PaymentKPICards.tsx`:
+- Rimuovere: `onClick={onFilterPaidInMonth}`, `cursor-pointer`, `transition-colors duration-150`, `hover:border-foreground/20`
+- Aggiungere: `select-none`, `border-border/70` (bordo piu' soft del default)
+- Label: "Incassato nel mese" (statica)
+- Sotto importo: "Incassi registrati nel mese (parziali inclusi)" in `text-xs text-muted-foreground mt-2`
+- Rimuovere prop `onFilterPaidInMonth` dall'interfaccia
+
+---
+
+### 4. Rimuovere `paidInMonth` + chip KPI + cleanup props
+
+In `Payments.tsx`:
+- Tipo `KpiFilter = { type: "outstanding" } | null`
+- Rimuovere `handleFilterPaidInMonth`
+- Rimuovere prop `onFilterPaidInMonth` da `PaymentKPICards`
+- Passare `isOutstandingActive={kpiFilter?.type === "outstanding"}`
+- Rimuovere `subtitle` da `TabHeader`
+
+In `PaymentFeed.tsx`:
+- Rimuovere ramo `paidInMonth` da useEffect (gia' rimpiazzato dal ref logic sopra)
+- Rimuovere blocco filtro `paidInMonth` dal useMemo
+- Rimuovere `kpiChipLabel` e `onRemoveKpiChip` dal passaggio a `PaymentFilters`
+- Rimuovere import `format`/`it` (non piu' necessari per chip label)
+- Rimuovere prop `selectedMonth` dall'interfaccia (non piu' usata)
+
+In `PaymentFilters.tsx`:
+- Rimuovere props `kpiChipLabel` e `onRemoveKpiChip` dall'interfaccia
+- Rimuovere la logica chip KPI dal rendering
+- I chip restano solo per "Solo gia' dovuti"
 
 ---
 
 ### Sezione tecnica — File modificati
 
 ```text
-src/features/payments/components/PaymentFeedItem.tsx
-  - Import useRegisterPayment
-  - CTA condizionale: single -> mutate diretto, package -> apre dialog
-  - Disabilitare CTA se isPending (per single)
-
-src/features/payments/components/RegisterPaymentDialog.tsx
-  - Fix bug chiusura: gestire correttamente il blur del PriceInput durante la chiusura
+src/pages/Payments.tsx
+  - KpiFilter = { type: "outstanding" } | null
+  - Rimuovere handleFilterPaidInMonth, subtitle
+  - Passare isOutstandingActive a PaymentKPICards
+  - Rimuovere selectedMonth da PaymentFeed props
 
 src/features/payments/components/PaymentKPICards.tsx
-  - Rimuovere prop activeFilter
-  - Rimuovere stili condizionali (ring, bg-foreground/5)
-  - Tornare a stile base uniforme
+  - Rimuovere prop onFilterPaidInMonth
+  - Aggiungere prop isOutstandingActive: boolean
+  - Card 1: flex header con pill "Filtra"/"Filtro attivo" (min-w fissa)
+  - Card 1: hover:bg-muted/20, stato attivo border-foreground/40
+  - Card 1: barra h-2.5 -> h-1.5, rimuovere paragrafo lungo
+  - Card 2: no onClick, no hover, select-none, border-border/70
+  - Card 2: label statica + nota editoriale
 
-src/pages/Payments.tsx
-  - Rimuovere prop activeFilter passata a PaymentKPICards
+src/features/payments/components/PaymentFeed.tsx
+  - useRef per prevKpiFilter: reset a "all" solo quando kpiFilter va da attivo a null
+  - Rimuovere tutta la logica paidInMonth
+  - Non passare kpiChipLabel/onRemoveKpiChip a PaymentFilters
+  - Rimuovere prop selectedMonth
+
+src/features/payments/components/PaymentFilters.tsx
+  - Rimuovere props kpiChipLabel e onRemoveKpiChip
+  - Chip solo per "Solo gia' dovuti"
 ```
 
 Nessun file nuovo. Nessuna modifica backend.
+
