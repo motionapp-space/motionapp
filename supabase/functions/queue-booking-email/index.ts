@@ -36,7 +36,8 @@ type BookingEmailType =
   | 'appointment_request_created'
   | 'appointment_accepted'
   | 'appointment_counter_proposed'
-  | 'appointment_cancelled';
+  | 'appointment_cancelled'
+  | 'appointment_created_by_coach';
 
 interface QueueBookingEmailRequest {
   type: BookingEmailType;
@@ -53,6 +54,7 @@ const REQUIRED_FIELDS: Record<BookingEmailType, (keyof BookingEmailSnapshot)[]> 
   appointment_accepted: ['start_at', 'end_at', 'client_email', 'client_name', 'coach_name'],
   appointment_counter_proposed: ['original_start_at', 'original_end_at', 'proposed_start_at', 'proposed_end_at', 'client_email', 'client_name', 'coach_name'],
   appointment_cancelled: ['start_at', 'end_at', 'client_name', 'actor_role', 'coach_email', 'client_email'],
+  appointment_created_by_coach: ['start_at', 'end_at', 'client_email', 'client_name', 'coach_name', 'actor_role'],
 };
 
 function validateSnapshot(type: BookingEmailType, snapshot: BookingEmailSnapshot): void {

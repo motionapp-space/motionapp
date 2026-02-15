@@ -136,7 +136,7 @@ export async function buildBookingRequestSnapshot(
  * Centralizza la chiamata alla edge function.
  */
 export async function queueBookingEmailWithSnapshot(params: {
-  type: 'appointment_request_created' | 'appointment_accepted' | 'appointment_counter_proposed' | 'appointment_cancelled';
+  type: 'appointment_request_created' | 'appointment_accepted' | 'appointment_counter_proposed' | 'appointment_cancelled' | 'appointment_created_by_coach';
   actorUserId: string;
   snapshot: BookingEmailSnapshot;
 }): Promise<void> {

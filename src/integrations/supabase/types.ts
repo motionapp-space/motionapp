@@ -2462,6 +2462,7 @@ export type Database = {
         | "appointment_accepted"
         | "appointment_counter_proposed"
         | "appointment_cancelled"
+        | "appointment_created_by_coach"
       invite_status: "pending" | "accepted" | "expired" | "revoked"
       ledger_reason:
         | "CONFIRM"
@@ -2650,6 +2651,7 @@ export const Constants = {
         "appointment_accepted",
         "appointment_counter_proposed",
         "appointment_cancelled",
+        "appointment_created_by_coach",
       ],
       invite_status: ["pending", "accepted", "expired", "revoked"],
       ledger_reason: [

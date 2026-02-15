@@ -83,6 +83,7 @@ export function buildTemplateData(
       };
 
     case 'appointment_accepted':
+    case 'appointment_created_by_coach':
     default:
       return baseData;
   }
