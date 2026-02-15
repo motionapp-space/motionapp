@@ -37,8 +37,8 @@ export function InviteLinkDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-              <Check className="h-5 w-5 text-green-600" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10">
+              <Check className="h-5 w-5 text-success" />
             </div>
             Cliente creato con successo!
           </DialogTitle>

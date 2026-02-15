@@ -239,7 +239,7 @@ export const OutOfOfficeManager = forwardRef<OutOfOfficeManagerHandle, OutOfOffi
                             }}
                             placeholder="Seleziona data fine"
                             className={cn(
-                              isEndBeforeStart(formData.start_at, formData.end_at) && "border-red-500 focus-visible:ring-red-500"
+                              isEndBeforeStart(formData.start_at, formData.end_at) && "border-destructive focus-visible:ring-destructive"
                             )}
                           />
                         ) : (
@@ -250,12 +250,12 @@ export const OutOfOfficeManager = forwardRef<OutOfOfficeManagerHandle, OutOfOffi
                             }}
                             placeholder="Seleziona data e ora fine"
                             className={cn(
-                              isEndBeforeStart(formData.start_at, formData.end_at) && "border-red-500 focus-visible:ring-red-500"
+                              isEndBeforeStart(formData.start_at, formData.end_at) && "border-destructive focus-visible:ring-destructive"
                             )}
                           />
                         )}
                         {isEndBeforeStart(formData.start_at, formData.end_at) && (
-                          <p className="text-xs text-red-500 mt-1">La data di fine deve essere successiva alla data di inizio</p>
+                          <p className="text-xs text-destructive mt-1">La data di fine deve essere successiva alla data di inizio</p>
                         )}
                       </div>
                     </div>
@@ -378,7 +378,7 @@ export const OutOfOfficeManager = forwardRef<OutOfOfficeManagerHandle, OutOfOffi
                       }}
                       placeholder="Seleziona data fine"
                       className={cn(
-                        isEndBeforeStart(formData.start_at, formData.end_at) && "border-red-500 focus-visible:ring-red-500"
+                        isEndBeforeStart(formData.start_at, formData.end_at) && "border-destructive focus-visible:ring-destructive"
                       )}
                     />
                   ) : (
@@ -389,12 +389,12 @@ export const OutOfOfficeManager = forwardRef<OutOfOfficeManagerHandle, OutOfOffi
                       }}
                       placeholder="Seleziona data e ora fine"
                       className={cn(
-                        isEndBeforeStart(formData.start_at, formData.end_at) && "border-red-500 focus-visible:ring-red-500"
+                        isEndBeforeStart(formData.start_at, formData.end_at) && "border-destructive focus-visible:ring-destructive"
                       )}
                     />
                   )}
                   {isEndBeforeStart(formData.start_at, formData.end_at) && (
-                    <p className="text-xs text-red-500 mt-1">La data di fine deve essere successiva alla data di inizio</p>
+                    <p className="text-xs text-destructive mt-1">La data di fine deve essere successiva alla data di inizio</p>
                   )}
                 </div>
               </div>

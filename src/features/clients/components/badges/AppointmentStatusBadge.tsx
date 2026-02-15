@@ -19,12 +19,12 @@ export function AppointmentStatusBadge({ status, nextAppointmentDate }: Appointm
     planned: {
       label: "Pianificato",
       icon: Calendar,
-      className: "border-green-500/50 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+      className: "border-success/50 bg-success/10 text-foreground dark:text-success"
     },
     unplanned: {
       label: "Da pianificare",
       icon: CalendarX,
-      className: "border-yellow-500/50 bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300"
+      className: "border-warning/50 bg-warning/10 text-foreground dark:text-warning"
     }
   };
 

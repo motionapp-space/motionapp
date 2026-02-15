@@ -125,7 +125,7 @@ export function BookingRequestDrawer({
                 In attesa risposta cliente
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-blue-600 border-blue-600">
+              <Badge variant="outline" className="text-foreground border-primary/20">
                 <Clock className="h-3 w-3 mr-1" />
                 In attesa di approvazione
               </Badge>

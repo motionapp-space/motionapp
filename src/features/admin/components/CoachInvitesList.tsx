@@ -40,9 +40,9 @@ export function CoachInvitesList({ invites, isLoading }: CoachInvitesListProps) 
     
     switch (status) {
       case "valid":
-        return <Badge variant="default" className="bg-green-600">Valido</Badge>;
+        return <Badge variant="default" className="bg-success text-success-foreground">Valido</Badge>;
       case "expired":
-        return <Badge variant="secondary" className="bg-yellow-500 text-black">Scaduto</Badge>;
+        return <Badge variant="secondary" className="bg-warning text-warning-foreground">Scaduto</Badge>;
       case "used":
         return <Badge variant="destructive">Usato</Badge>;
     }
@@ -94,7 +94,7 @@ export function CoachInvitesList({ invites, isLoading }: CoachInvitesListProps) 
                 disabled={getInviteStatus(invite) !== "valid"}
               >
                 {copiedId === invite.id ? (
-                  <Check className="h-4 w-4 text-green-600" />
+                  <Check className="h-4 w-4 text-success" />
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}

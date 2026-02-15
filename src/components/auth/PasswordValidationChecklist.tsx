@@ -12,51 +12,51 @@ export const PasswordValidationChecklist = ({ validation }: PasswordValidationCh
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           {validation.minLength ? (
-            <Check className="h-3.5 w-3.5 text-green-600" />
+            <Check className="h-3.5 w-3.5 text-success" />
           ) : (
             <X className="h-3.5 w-3.5 text-destructive" />
           )}
-          <span className={validation.minLength ? "text-green-600" : "text-muted-foreground"}>
+          <span className={validation.minLength ? "text-success" : "text-muted-foreground"}>
             Almeno 8 caratteri
           </span>
         </div>
         <div className="flex items-center gap-2">
           {validation.hasUppercase ? (
-            <Check className="h-3.5 w-3.5 text-green-600" />
+            <Check className="h-3.5 w-3.5 text-success" />
           ) : (
             <X className="h-3.5 w-3.5 text-destructive" />
           )}
-          <span className={validation.hasUppercase ? "text-green-600" : "text-muted-foreground"}>
+          <span className={validation.hasUppercase ? "text-success" : "text-muted-foreground"}>
             Almeno una lettera maiuscola
           </span>
         </div>
         <div className="flex items-center gap-2">
           {validation.hasLowercase ? (
-            <Check className="h-3.5 w-3.5 text-green-600" />
+            <Check className="h-3.5 w-3.5 text-success" />
           ) : (
             <X className="h-3.5 w-3.5 text-destructive" />
           )}
-          <span className={validation.hasLowercase ? "text-green-600" : "text-muted-foreground"}>
+          <span className={validation.hasLowercase ? "text-success" : "text-muted-foreground"}>
             Almeno una lettera minuscola
           </span>
         </div>
         <div className="flex items-center gap-2">
           {validation.hasNumber ? (
-            <Check className="h-3.5 w-3.5 text-green-600" />
+            <Check className="h-3.5 w-3.5 text-success" />
           ) : (
             <X className="h-3.5 w-3.5 text-destructive" />
           )}
-          <span className={validation.hasNumber ? "text-green-600" : "text-muted-foreground"}>
+          <span className={validation.hasNumber ? "text-success" : "text-muted-foreground"}>
             Almeno un numero
           </span>
         </div>
         <div className="flex items-center gap-2">
           {validation.hasSpecial ? (
-            <Check className="h-3.5 w-3.5 text-green-600" />
+            <Check className="h-3.5 w-3.5 text-success" />
           ) : (
             <X className="h-3.5 w-3.5 text-destructive" />
           )}
-          <span className={validation.hasSpecial ? "text-green-600" : "text-muted-foreground"}>
+          <span className={validation.hasSpecial ? "text-success" : "text-muted-foreground"}>
             Almeno un carattere speciale (!@#$%^&*...)
           </span>
         </div>

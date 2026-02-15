@@ -832,7 +832,7 @@ export function EventEditorModal({
     switch (badgeType) {
       case "CANCELED":
         return (
-          <Badge className="ml-2 bg-red-50 text-red-700 border-0 text-xs font-medium px-2.5 py-1 rounded-full">
+          <Badge className="ml-2 bg-destructive/10 text-destructive border-0 text-xs font-medium px-2.5 py-1 rounded-full">
             Annullato
           </Badge>
         );
@@ -1524,7 +1524,7 @@ export function EventEditorModal({
                                     </p>
                                   )}
                                   {canCover && (
-                                    <p className="text-xs text-green-600 font-medium">
+                                    <p className="text-xs text-success font-medium">
                                       ✓ Copre tutte le {occurrences.length} occorrenze
                                     </p>
                                   )}
@@ -1588,9 +1588,9 @@ export function EventEditorModal({
 
             {/* Warnings */}
             {overlappingEvents.length > 0 && (
-              <Alert variant="default" className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+              <Alert variant="default" className="border-warning bg-warning/10">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <AlertDescription className="text-foreground">
                   Questo appuntamento si sovrappone con {overlappingEvents.length} altro{overlappingEvents.length > 1 ? 'i' : ''} evento{overlappingEvents.length > 1 ? 'i' : ''}
                 </AlertDescription>
               </Alert>
@@ -1598,9 +1598,9 @@ export function EventEditorModal({
 
             {/* Hint per modalità creazione */}
             {viewMode === 'new' && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 mt-4">
-                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-700 dark:text-blue-300">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20 mt-4">
+                <Info className="h-4 w-4 text-foreground flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-foreground">
                   Dopo la creazione potrai avviare la sessione dall'evento in Agenda.
                 </p>
               </div>

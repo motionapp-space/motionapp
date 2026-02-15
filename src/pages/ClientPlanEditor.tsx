@@ -745,8 +745,8 @@ const ClientPlanEditor = () => {
     <div className="min-h-screen bg-background pb-16">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 max-w-6xl">
         {isNewFromTemplate && (
-          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mb-6">
-            <p className="text-blue-900 dark:text-blue-100">
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm mb-6">
+            <p className="text-foreground">
               {toSentenceCase("Stai personalizzando un piano basato sul template")} "
               {template.name}".{" "}
               {toSentenceCase("Le modifiche non influiscono sul template originale")}.
@@ -754,8 +754,8 @@ const ClientPlanEditor = () => {
           </div>
         )}
         {id && !isNewFromTemplate && plan?.derived_from_template_id && derivedTemplate && (
-          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm mb-6">
-            <p className="text-blue-900 dark:text-blue-100">
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm mb-6">
+            <p className="text-foreground">
               {toSentenceCase("Questo piano è stato creato a partire dal template")} "
               {derivedTemplate.name}".{" "}
               {toSentenceCase("Le modifiche non influiscono sul template originale")}.

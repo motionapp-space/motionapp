@@ -15,8 +15,8 @@ export function ActivePlanBadge({ hasActivePlan }: ActivePlanBadgeProps) {
     return (
       <Badge variant="outline" className={cn(
         "font-medium gap-1",
-        "border-green-500/50 bg-green-50 text-green-700",
-        "dark:bg-green-950 dark:text-green-300"
+        "border-success/50 bg-success/10 text-foreground",
+        "dark:bg-success/10 dark:text-success"
       )}>
         <CheckCircle className="h-3 w-3" />
         Attivo
@@ -27,7 +27,7 @@ export function ActivePlanBadge({ hasActivePlan }: ActivePlanBadgeProps) {
   return (
     <Badge variant="outline" className={cn(
       "font-medium gap-1",
-      "border-gray-300 bg-gray-50 text-gray-600 dark:bg-gray-900 dark:text-gray-400"
+      "border-border bg-muted text-muted-foreground"
     )}>
       <MinusCircle className="h-3 w-3" />
       Nessuno

@@ -18,22 +18,22 @@ export function PackageStatusBadge({ status, sessionsUsed, sessionsTotal }: Pack
     active: {
       label: "Attivo",
       icon: Package,
-      className: "border-green-500/50 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+      className: "border-success/50 bg-success/10 text-foreground dark:text-success"
     },
     low: {
       label: "In esaurimento",
       icon: AlertTriangle,
-      className: "border-yellow-500/50 bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300"
+      className: "border-warning/50 bg-warning/10 text-foreground dark:text-warning"
     },
     expired: {
       label: "Da rinnovare",
       icon: XCircle,
-      className: "border-red-500/50 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"
+      className: "border-destructive/50 bg-destructive/10 text-foreground dark:text-destructive"
     },
     none: {
       label: "Nessuno",
       icon: MinusCircle,
-      className: "border-gray-300 bg-gray-50 text-gray-600 dark:bg-gray-900 dark:text-gray-400"
+      className: "border-border bg-muted text-muted-foreground"
     }
   };
 

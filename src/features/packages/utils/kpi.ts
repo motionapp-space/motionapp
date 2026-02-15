@@ -52,7 +52,7 @@ export function getUsageStatusInfo(status: Package['usage_status']) {
 export function getPaymentStatusInfo(status: Package['payment_status']) {
   const statusMap = {
     unpaid: { label: 'Da pagare', icon: '🟠', color: 'text-warning' },
-    partial: { label: 'Acconto', icon: '🟡', color: 'text-yellow-600' },
+    partial: { label: 'Acconto', icon: '🟡', color: 'text-warning' },
     paid: { label: 'Pagato', icon: '🟢', color: 'text-success' },
     refunded: { label: 'Rimborsato', icon: '🌀', color: 'text-info' },
   };

@@ -89,11 +89,11 @@ const BookingManagement = () => {
         <div className="space-y-6">
           {/* Alert when bookings disabled */}
           {!isLoadingSettings && bookingSettings?.enabled !== true && (
-            <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
+            <Card className="border-warning/40 bg-warning/5">
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
-                  <div className="rounded-full bg-amber-500/10 p-2.5 shrink-0">
-                    <CalendarX className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <div className="rounded-full bg-warning/10 p-2.5 shrink-0">
+                    <CalendarX className="h-5 w-5 text-warning" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base font-semibold text-foreground">
@@ -118,9 +118,9 @@ const BookingManagement = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Da approvare</p>
-                    <p className="text-3xl font-bold text-blue-600">{pendingRequests.length}</p>
+                    <p className="text-3xl font-bold text-foreground">{pendingRequests.length}</p>
                   </div>
-                  <Clock className="h-8 w-8 text-blue-600 opacity-50" />
+                  <Clock className="h-8 w-8 text-muted-foreground opacity-50" />
                 </div>
               </CardContent>
             </Card>

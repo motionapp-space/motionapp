@@ -28,10 +28,10 @@ export function ChangeProposalBanner({
   const formattedTime = `${format(proposedStart, "HH:mm")} – ${format(proposedEnd, "HH:mm")}`;
 
   return (
-    <Alert className="border-blue-200 bg-blue-50/50">
-      <CalendarClock className="h-4 w-4 text-blue-600" />
-      <AlertTitle className="text-blue-900">Proposta di modifica</AlertTitle>
-      <AlertDescription className="text-blue-700">
+    <Alert className="border-primary/20 bg-primary/5">
+      <CalendarClock className="h-4 w-4 text-foreground" />
+      <AlertTitle className="text-foreground">Proposta di modifica</AlertTitle>
+      <AlertDescription className="text-muted-foreground">
         <p className="mb-3 text-[15px] leading-6">
           Il coach propone un nuovo orario per <strong>{appointment.title}</strong>:
         </p>
