@@ -101,7 +101,7 @@ export function PaymentFeedItem({ order }: Props) {
             </Badge>
           ) : (
             <Badge variant="outline" className="border-success/50 bg-success/10 text-foreground dark:text-success text-xs">
-              Pagato
+              Incassato
             </Badge>
           )}
           {isPartial && (
@@ -118,7 +118,7 @@ export function PaymentFeedItem({ order }: Props) {
               <p className="text-sm font-semibold">{formatEur(residuo)}</p>
               <p className="text-xs text-muted-foreground">
                 {isPartial
-                  ? `Pagato ${formatEur(order.paid_amount_cents)} · Totale ${formatEur(order.amount_cents)}`
+                  ? `Incassato ${formatEur(order.paid_amount_cents)} · Totale ${formatEur(order.amount_cents)}`
                   : `Totale ${formatEur(order.amount_cents)}`}
               </p>
             </>
@@ -127,7 +127,7 @@ export function PaymentFeedItem({ order }: Props) {
               <p className="text-sm font-semibold">{formatEur(order.amount_cents)}</p>
               {order.paid_at && (
                 <p className="text-xs text-muted-foreground">
-                  Pagato il {format(new Date(order.paid_at), "d MMM yyyy", { locale: it })}
+                  Incassato il {format(new Date(order.paid_at), "d MMM yyyy", { locale: it })}
                 </p>
               )}
             </>
