@@ -20,34 +20,34 @@ function getStatusBadge(status: ClientAppointmentStatus) {
   switch (status) {
     case 'CONFIRMED':
       return (
-        <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
+        <Badge variant="outline" className="border-success/50 bg-success/10 text-foreground dark:text-success">
           <CheckCircle2 className="h-3 w-3 mr-1" />
           Confermato
         </Badge>
       );
     case 'REQUESTED':
       return (
-        <Badge variant="secondary">
+        <Badge variant="outline" className="border-warning/50 bg-warning/10 text-foreground dark:text-warning">
           <Hourglass className="h-3 w-3 mr-1" />
           In attesa
         </Badge>
       );
     case 'CHANGE_PROPOSED':
       return (
-        <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200">
+        <Badge variant="outline" className="border-warning/50 bg-warning/10 text-foreground dark:text-warning">
           Proposta modifica
         </Badge>
       );
     case 'CANCELLED':
       return (
-        <Badge variant="destructive">
+        <Badge variant="outline" className="border-destructive/50 bg-destructive/10 text-foreground dark:text-destructive">
           <XCircle className="h-3 w-3 mr-1" />
           Annullato
         </Badge>
       );
     case 'COMPLETED':
       return (
-        <Badge variant="outline">
+        <Badge variant="outline" className="border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground">
           <CheckCheck className="h-3 w-3 mr-1" />
           Completato
         </Badge>

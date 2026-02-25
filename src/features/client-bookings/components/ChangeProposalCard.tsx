@@ -38,7 +38,7 @@ export function ChangeProposalCard({
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 Proposta del coach
               </p>
-              <Badge variant="outline" className="text-xs text-amber-700 border-amber-300 bg-amber-100">
+              <Badge variant="outline" className="text-xs border-warning/50 bg-warning/10 text-foreground dark:text-warning">
                 In attesa
               </Badge>
             </div>

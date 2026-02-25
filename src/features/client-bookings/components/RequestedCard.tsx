@@ -29,7 +29,7 @@ export function RequestedCard({ appointment, onClick }: RequestedCardProps) {
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 Richiesta in attesa
               </p>
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="outline" className="text-xs border-warning/50 bg-warning/10 text-foreground dark:text-warning">
                 In attesa
               </Badge>
             </div>
