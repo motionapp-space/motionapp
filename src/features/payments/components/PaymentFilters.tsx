@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -28,12 +28,6 @@ export function PaymentFilters({
   onlyDueNow,
   onOnlyDueNowChange,
 }: Props) {
-  const chips: { label: string; onRemove: () => void }[] = [];
-
-  if (onlyDueNow && status === "outstanding") {
-    chips.push({ label: "Solo già dovuti", onRemove: () => onOnlyDueNowChange(false) });
-  }
-
   return (
     <div className="space-y-3">
       <Tabs
@@ -75,20 +69,6 @@ export function PaymentFilters({
         )}
       </div>
 
-      {chips.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {chips.map((chip) => (
-            <button
-              key={chip.label}
-              onClick={chip.onRemove}
-              className="inline-flex items-center gap-1 rounded-full bg-foreground/5 px-2.5 py-1 text-xs text-foreground hover:bg-foreground/10 transition-colors"
-            >
-              {chip.label}
-              <X className="h-3 w-3" />
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
