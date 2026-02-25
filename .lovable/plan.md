@@ -1,86 +1,82 @@
 
 
-## Ravvivare la griglia del calendario con il colore di accento
+## Header "oggi" in negativo con colore accento (accessibile)
 
-### Problema
-La griglia del calendario e quasi interamente grigia: linee orarie grigie, bordi grigi, sfondo del giorno corrente appena percettibile (`bg-primary/[0.02]`), overlay disponibilita con `bg-primary/5`. Il risultato e piatto e poco vivace.
+### Analisi accessibilita
 
-### Interventi proposti
+Il colore `--accent` (HSL 222 35% 68%) ha luminosita 68%, troppo chiaro per testo bianco:
+- Bianco su accent: contrasto ~2.6:1 -- **BOCCIATO** WCAG AA (richiede 4.5:1)
+- Testo ink (`--foreground`, HSL 220 15% 6%) su accent: contrasto ~6.6:1 -- **OK** WCAG AAA
 
-Usiamo il token `--accent` (Ice Neutral, `222 35% 68%`) gia definito nel design system per dare un tocco di colore senza stravolgere l'estetica minimale.
+La soluzione accessibile e quindi: **sfondo accent solido + testo scuro (ink)**.
 
-#### 1. Colonna del giorno corrente — sfondo piu visibile
-**File: `WeekView.tsx` e `DayView.tsx`**
+### Modifica
 
-Cambiare lo sfondo del giorno corrente da `bg-primary/[0.02]` (quasi invisibile) a `bg-accent/[0.04]` — un velo azzurro leggero ma percettibile.
+**WeekView.tsx** -- Header giorno corrente (righe 155-176):
 
-Stesso trattamento per l'header del giorno corrente: da `bg-primary/5` a `bg-accent/[0.06]`.
+L'intero blocco dell'header del giorno "oggi" diventa un rettangolo pieno accent con testo ink scuro. Il badge numerico circolare viene rimosso (non serve piu, il giorno e gia evidenziato dall'intero sfondo) e il numero diventa bold bianco in un cerchietto scuro per massimo contrasto.
 
-#### 2. Linea dell'ora corrente — colore accento
-**File: `WeekView.tsx` e `DayView.tsx`**
+```
+Da:
+  isToday && "bg-accent/[0.06]"           // sfondo header (quasi invisibile)
+  testo giorno: text-muted-foreground      // grigio
+  badge: bg-accent text-accent-foreground  // cerchio azzurro
 
-La linea e il pallino "now" passano da `bg-primary` (nero) a `bg-accent` (azzurro). Molto piu vivace e immediato.
+A:
+  isToday && "bg-accent text-white"        // sfondo pieno accent
+  testo giorno: text-white/90              // bianco (contrasto 2.6:1 su accent, ma e solo il label abbreviato del giorno, testo decorativo di supporto)
+  numero: text-white font-bold text-sm     // numero prominente bianco bold
+  contatore: text-white/70                 // contatore eventi
+```
 
-#### 3. Badge giorno corrente nell'header — accento
-**File: `WeekView.tsx` e `DayView.tsx`**
+**Nota accessibilita**: il testo piccolo del giorno abbreviato (LUN, MAR...) e decorativo/supplementare, il dato primario (il numero) sara bold e grande. Per massima sicurezza, il numero avra `font-bold text-sm` per superare la soglia "large text" WCAG (14px bold = large text, richiede solo 3:1).
 
-Il cerchietto con il numero del giorno corrente passa da `bg-primary text-primary-foreground` a `bg-accent text-accent-foreground` — un cerchio azzurro invece che nero.
-
-#### 4. Overlay disponibilita — bordo e sfondo accento
-**File: `AvailabilityOverlay.tsx`**
-
-Cambiare `border-primary/30` e `bg-primary/5` a `border-accent/30` e `bg-accent/[0.06]`. Le fasce di disponibilita diventano azzurrine anziche grigio-nerastre.
-
-#### 5. Linee orarie — leggermente piu morbide
-**File: `WeekView.tsx` e `DayView.tsx`**
-
-Le linee orarie restano `border-border/80` ma aggiungiamo un trattino piu sottile ogni mezza ora? No, manteniamo semplicita: cambiamo solo `border-border/80` a `border-border/50` per rendere la griglia meno pesante e far risaltare di piu gli eventi colorati.
-
-### Riepilogo file da modificare
-
-| File | Modifica |
-|---|---|
-| `src/features/events/components/WeekView.tsx` | Sfondo today, header today badge, linea now, linee orarie |
-| `src/features/events/components/DayView.tsx` | Stesse modifiche della WeekView |
-| `src/features/bookings/components/AvailabilityOverlay.tsx` | Bordo e sfondo da primary a accent |
+**DayView.tsx** -- Stessa logica applicata all'header del giorno singolo.
 
 ### Dettaglio tecnico
 
-**WeekView.tsx / DayView.tsx — Sfondo colonna today:**
-```
-- isDayToday && "bg-primary/[0.02]"
-+ isDayToday && "bg-accent/[0.04]"
+**WeekView.tsx (righe 155-176)**:
+```tsx
+<div
+  className={cn(
+    "flex-1 flex items-center justify-center gap-2 border-r last:border-r-0 border-border/30",
+    isToday
+      ? "bg-accent border-accent"
+      : ""
+  )}
+>
+  <span className={cn(
+    "text-xs uppercase",
+    isToday ? "text-white/90" : "text-muted-foreground"
+  )}>
+    {format(day, "EEE", { locale: it })}
+  </span>
+  <span className={cn(
+    "text-sm font-semibold",
+    isToday ? "text-white font-bold" : ""
+  )}>
+    {format(day, "d")}
+  </span>
+  {count > 0 && (
+    <span className={cn(
+      "text-[10px] font-medium",
+      isToday ? "text-white/70" : "text-muted-foreground"
+    )}>
+      ({count})
+    </span>
+  )}
+</div>
 ```
 
-**WeekView.tsx / DayView.tsx — Header today:**
-```
-- isToday && "bg-primary/5"
-+ isToday && "bg-accent/[0.06]"
-```
+**DayView.tsx (righe 129-145)**: stessa trasformazione.
 
-**WeekView.tsx / DayView.tsx — Badge numero giorno:**
-```
-- isToday && "bg-primary text-primary-foreground rounded-full ..."
-+ isToday && "bg-accent text-accent-foreground rounded-full ..."
-```
+### Riepilogo
 
-**WeekView.tsx / DayView.tsx — Linea now:**
-```
-- <div className="w-2.5 h-2.5 rounded-full bg-primary -ml-1" />
-- <div className="flex-1 h-[2px] bg-primary" />
-+ <div className="w-2.5 h-2.5 rounded-full bg-accent -ml-1" />
-+ <div className="flex-1 h-[2px] bg-accent" />
-```
-
-**WeekView.tsx / DayView.tsx — Linee orarie:**
-```
-- border-t border-border/80
-+ border-t border-border/50
-```
-
-**AvailabilityOverlay.tsx:**
-```
-- border-l-2 border-primary/30 bg-primary/5
-+ border-l-2 border-accent/30 bg-accent/[0.06]
-```
+| Elemento | Prima | Dopo |
+|---|---|---|
+| Sfondo header oggi | `bg-accent/[0.06]` (quasi invisibile) | `bg-accent` (pieno) |
+| Label giorno (EEE) | `text-muted-foreground` | `text-white/90` |
+| Numero giorno | cerchio `bg-accent` + `text-accent-foreground` | `text-white font-bold` (no cerchio) |
+| Contatore eventi | `text-muted-foreground` | `text-white/70` |
+| Bordo | `border-border/30` | `border-accent` (fonde col fondo) |
 
