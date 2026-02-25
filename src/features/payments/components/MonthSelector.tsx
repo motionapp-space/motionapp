@@ -8,12 +8,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 
 interface Props {
   value: Date;
   onChange: (month: Date) => void;
-  variant?: "default" | "light";
 }
 
 function buildMonthOptions(): Date[] {
@@ -25,7 +23,7 @@ function buildMonthOptions(): Date[] {
   return months;
 }
 
-export function MonthSelector({ value, onChange, variant = "default" }: Props) {
+export function MonthSelector({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const months = buildMonthOptions();
 
@@ -35,12 +33,7 @@ export function MonthSelector({ value, onChange, variant = "default" }: Props) {
         <Button
           variant="ghost"
           size="sm"
-          className={cn(
-            "rounded-full text-sm gap-1",
-            variant === "light"
-              ? "text-white/80 hover:text-white hover:bg-white/10"
-              : ""
-          )}
+          className="rounded-full text-sm gap-1"
         >
           {format(value, "MMM yyyy", { locale: it })}
           <ChevronDown className="h-3.5 w-3.5" />
