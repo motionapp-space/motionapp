@@ -184,7 +184,7 @@ export function PackageCard({
         </div>
         <Progress 
           value={progressPercent} 
-          className="h-2 rounded-full" 
+          className="h-2 rounded-full bg-muted" 
         />
       </div>
 
