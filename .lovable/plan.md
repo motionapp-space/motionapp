@@ -1,70 +1,30 @@
 
 
-## Aggiunta "Ultimo accesso" alla Overview Coaches
+## Aggiunta PostHog Analytics
 
 ### Cosa cambia
 
-Aggiungere una colonna **Ultimo accesso** nella tabella coaches overview, mostrando la data dell'ultimo login di ciascun coach.
+Inserire lo snippet PostHog nel `<head>` di `index.html`, subito prima del tag `</head>` di chiusura.
 
-### Fonte dato
+### File da modificare
 
-Il campo `auth.users.last_sign_in_at` contiene il timestamp dell'ultimo login. Essendo nello schema `auth`, non e accessibile via client — ma una funzione `security definer` puo leggerlo.
+**`index.html`**
 
-### Modifica alla funzione DB `admin_get_coaches_overview`
+Aggiungere il seguente blocco script alla fine del `<head>`:
 
-Aggiungere `last_sign_in_at timestamptz` al tipo di ritorno e joinare `auth.users` nella query:
-
-```sql
-create or replace function public.admin_get_coaches_overview()
-returns table (
-  id uuid,
-  email text,
-  first_name text,
-  last_name text,
-  created_at timestamptz,
-  active_clients_count bigint,
-  total_events_count bigint,
-  total_plans_count bigint,
-  last_sign_in_at timestamptz   -- NUOVO
-)
-language sql stable security definer
-set search_path = public
-as $$
-  select
-    c.id,
-    u.email,
-    u.first_name,
-    u.last_name,
-    c.created_at,
-    (select count(*) from coach_clients cc where cc.coach_id = c.id and cc.status = 'active'),
-    (select count(*) from events e join coach_clients cc on cc.id = e.coach_client_id where cc.coach_id = c.id),
-    (select count(*) from client_plans cp join coach_clients cc on cc.id = cp.coach_client_id where cc.coach_id = c.id),
-    au.last_sign_in_at            -- NUOVO: da auth.users
-  from coaches c
-  join users u on u.id = c.id
-  join auth.users au on au.id = c.id   -- NUOVO join
-  where has_role(auth.uid(), 'admin')
-  order by c.created_at desc
-$$;
+```html
+<script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group identify setPersonProperties setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags resetGroups onFeatureFlags addFeatureFlagsHandler onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_iE8tqdJXuUWx2Xg8S7tLpbHoYFfNk2OIMGVJ7qcaZo9', {
+        api_host: 'https://eu.i.posthog.com',
+        defaults: '2026-01-30'
+    })
+</script>
 ```
 
-Nota: la funzione e `security definer`, quindi puo accedere a `auth.users` anche se l'utente normale non potrebbe. Il check `has_role(auth.uid(), 'admin')` resta la guardia di sicurezza.
+### Note
 
-### Modifiche frontend
-
-**`src/features/admin/api/coachesOverview.api.ts`**
-- Aggiungere `last_sign_in_at` al tipo di ritorno
-
-**`src/features/admin/components/CoachesOverviewTable.tsx`**
-- Aggiungere colonna "Ultimo accesso" nella tabella
-- Formattare con `format(date, 'd MMM yyyy')` o mostrare "Mai" se `null`
-- Posizionare dopo "Iscritto il"
-
-### Layout risultante
-
-```text
-Nome     Email      Iscritto il  Ultimo accesso  Clienti  Sessioni  Piani
-Harry P. potter@..  7 feb 26     25 feb 26        4        8         9
-Lex L.   lex@..     3 feb 26     Mai              9        0         5
-```
+- Lo snippet e asincrono, quindi non blocca il caricamento della pagina.
+- L'API host punta al cluster EU (`eu.i.posthog.com`) per conformita GDPR.
+- Nessun altro file da modificare: il tracking si attiva automaticamente al caricamento di ogni pagina.
 
