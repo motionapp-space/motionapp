@@ -51,7 +51,6 @@ export default function Payments() {
               <MonthSelector
                 value={selectedMonth}
                 onChange={setSelectedMonth}
-                variant="light"
               />
             }
           />
