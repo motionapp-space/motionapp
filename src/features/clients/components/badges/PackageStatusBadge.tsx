@@ -33,7 +33,7 @@ export function PackageStatusBadge({ status, sessionsUsed, sessionsTotal }: Pack
     none: {
       label: "Nessuno",
       icon: MinusCircle,
-      className: "border-border bg-muted text-muted-foreground"
+      className: "border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground"
     }
   };
 
