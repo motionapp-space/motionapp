@@ -27,7 +27,7 @@ export function PendingRequestCard({ request, onCancel, isLoading }: PendingRequ
             <p className="font-medium capitalize text-foreground">{formattedDate}</p>
             <p className="text-[15px] leading-6 text-muted-foreground">{formattedTime}</p>
           </div>
-          <Badge variant="secondary" className="text-xs shrink-0">
+          <Badge variant="outline" className="text-xs shrink-0 border-warning/50 bg-warning/10 text-foreground dark:text-warning">
             In attesa
           </Badge>
         </div>

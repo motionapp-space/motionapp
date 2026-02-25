@@ -120,12 +120,12 @@ export function BookingRequestDrawer({
           {/* Status Badge */}
           <div className="flex items-center gap-2">
             {isCounterProposed ? (
-              <Badge variant="outline" className="text-amber-600 border-amber-600">
+              <Badge variant="outline" className="border-warning/50 bg-warning/10 text-foreground dark:text-warning">
                 <MessageSquare className="h-3 w-3 mr-1" />
                 In attesa risposta cliente
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-foreground border-primary/20">
+              <Badge variant="outline" className="border-warning/50 bg-warning/10 text-foreground dark:text-warning">
                 <Clock className="h-3 w-3 mr-1" />
                 In attesa di approvazione
               </Badge>

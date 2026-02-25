@@ -870,26 +870,26 @@ export function EventEditorModal({
     switch (badgeType) {
       case "CANCELED":
         return (
-          <Badge className="ml-2 bg-destructive/10 text-destructive border-0 text-xs font-medium px-2.5 py-1 rounded-full">
+          <Badge variant="outline" className="ml-2 border-destructive/50 bg-destructive/10 text-foreground dark:text-destructive text-xs font-medium px-2.5 py-1 rounded-full">
             Annullato
           </Badge>
         );
       case "PROPOSAL_PENDING":
         return (
-          <Badge className="ml-2 bg-amber-50 text-amber-700 border-0 text-xs font-medium px-2.5 py-1 rounded-full">
+          <Badge variant="outline" className="ml-2 border-warning/50 bg-warning/10 text-foreground dark:text-warning text-xs font-medium px-2.5 py-1 rounded-full">
             In proposta
           </Badge>
         );
       case "COMPLETED":
         return (
-          <Badge className="ml-2 bg-muted/80 text-muted-foreground/80 border-0 text-xs font-medium px-2.5 py-1 rounded-full">
+          <Badge variant="outline" className="ml-2 border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground text-xs font-medium px-2.5 py-1 rounded-full">
             Completato
           </Badge>
         );
       case "CONFIRMED":
       default:
         return (
-          <Badge className="ml-2 bg-emerald-50 text-emerald-700 border-0 text-xs font-medium px-2.5 py-1 rounded-full">
+          <Badge variant="outline" className="ml-2 border-success/50 bg-success/10 text-foreground dark:text-success text-xs font-medium px-2.5 py-1 rounded-full">
             Confermato
           </Badge>
         );

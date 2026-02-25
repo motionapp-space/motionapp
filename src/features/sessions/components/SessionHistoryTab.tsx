@@ -60,28 +60,21 @@ export function SessionHistoryTab({ clientId }: SessionHistoryTabProps) {
   };
 
   const getStatusBadge = (status: string) => {
-    // Only show badges for non-completed sessions
     switch (status) {
       case "in_progress":
         return (
-          <Badge 
-            variant="secondary" 
-            className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-foreground"
-          >
+          <Badge variant="outline" className="text-xs font-medium px-2 py-0.5 rounded-full border-warning/50 bg-warning/10 text-foreground dark:text-warning">
             In corso
           </Badge>
         );
       case "discarded":
         return (
-          <Badge 
-            variant="outline" 
-            className="text-xs font-medium px-2 py-0.5 rounded-full text-muted-foreground"
-          >
+          <Badge variant="outline" className="text-xs font-medium px-2 py-0.5 rounded-full border-destructive/50 bg-destructive/10 text-foreground dark:text-destructive">
             Scartata
           </Badge>
         );
       default:
-        return null; // completed sessions show no badge
+        return null;
     }
   };
 

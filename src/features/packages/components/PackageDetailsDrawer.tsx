@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -185,18 +186,18 @@ export function PackageDetailsDrawer({
 
   if (!pkg) return null;
 
-  const usageStatusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-    active: { label: "Attivo", variant: "default" },
-    completed: { label: "Completato", variant: "secondary" },
-    suspended: { label: "Sospeso", variant: "destructive" },
-    archived: { label: "Archiviato", variant: "outline" },
+  const usageStatusMap: Record<string, { label: string; className: string }> = {
+    active: { label: "Attivo", className: "border-success/50 bg-success/10 text-foreground dark:text-success" },
+    completed: { label: "Completato", className: "border-warning/50 bg-warning/10 text-foreground dark:text-warning" },
+    suspended: { label: "Sospeso", className: "border-destructive/50 bg-destructive/10 text-foreground dark:text-destructive" },
+    archived: { label: "Archiviato", className: "border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground" },
   };
 
-  const paymentStatusMap: Record<PackagePaymentStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-    unpaid: { label: "Non pagato", variant: "destructive" },
-    partial: { label: "Parziale", variant: "secondary" },
-    paid: { label: "Pagato", variant: "default" },
-    refunded: { label: "Rimborsato", variant: "outline" },
+  const paymentStatusMap: Record<PackagePaymentStatus, { label: string; className: string }> = {
+    unpaid: { label: "Non pagato", className: "border-destructive/50 bg-destructive/10 text-foreground dark:text-destructive" },
+    partial: { label: "Parziale", className: "border-warning/50 bg-warning/10 text-foreground dark:text-warning" },
+    paid: { label: "Pagato", className: "border-success/50 bg-success/10 text-foreground dark:text-success" },
+    refunded: { label: "Rimborsato", className: "border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground" },
   };
 
   const availableSessions = pkg.total_sessions - pkg.consumed_sessions - pkg.on_hold_sessions;
@@ -229,10 +230,10 @@ export function PackageDetailsDrawer({
                 {pkg.name}
               </SheetTitle>
               <div className="flex gap-2 mt-3">
-                <Badge variant={usageStatusMap[pkg.usage_status]?.variant || "default"} className="rounded-md">
+                <Badge variant="outline" className={cn("rounded-md", usageStatusMap[pkg.usage_status]?.className)}>
                   {usageStatusMap[pkg.usage_status]?.label || pkg.usage_status}
                 </Badge>
-                <Badge variant={paymentStatusMap[paymentStatus]?.variant || "default"} className="rounded-md">
+                <Badge variant="outline" className={cn("rounded-md", paymentStatusMap[paymentStatus]?.className)}>
                   {paymentStatusMap[paymentStatus]?.label || paymentStatus}
                 </Badge>
               </div>
@@ -428,7 +429,7 @@ export function PackageDetailsDrawer({
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge variant={paymentStatusMap[paymentStatus]?.variant || "default"}>
+                      <Badge variant="outline" className={paymentStatusMap[paymentStatus]?.className}>
                         {paymentStatusMap[paymentStatus]?.label || paymentStatus}
                       </Badge>
                     )}

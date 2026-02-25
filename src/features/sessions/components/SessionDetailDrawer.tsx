@@ -48,11 +48,11 @@ export function SessionDetailDrawer({ open, onOpenChange, sessionId }: SessionDe
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
-        return <Badge variant="default">Completata</Badge>;
+        return <Badge variant="outline" className="border-success/50 bg-success/10 text-foreground dark:text-success">Completata</Badge>;
       case "in_progress":
-        return <Badge variant="secondary">In corso</Badge>;
+        return <Badge variant="outline" className="border-warning/50 bg-warning/10 text-foreground dark:text-warning">In corso</Badge>;
       case "discarded":
-        return <Badge variant="outline" className="text-muted-foreground">Scartata</Badge>;
+        return <Badge variant="outline" className="border-destructive/50 bg-destructive/10 text-foreground dark:text-destructive">Scartata</Badge>;
       default:
         return null;
     }

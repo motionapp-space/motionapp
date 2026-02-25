@@ -29,7 +29,7 @@ export function ConfirmedCard({ appointment, onClick }: ConfirmedCardProps) {
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 Prossimo appuntamento
               </p>
-              <Badge className="text-xs bg-primary/10 text-primary hover:bg-primary/20 border-0">
+              <Badge variant="outline" className="text-xs border-success/50 bg-success/10 text-foreground dark:text-success">
                 Confermato
               </Badge>
             </div>

@@ -42,7 +42,7 @@ export function CounterProposedRequestCard({
         {/* Header with status badge */}
         <div className="bg-amber-50 dark:bg-amber-950/30 px-4 py-2 border-b border-amber-100 dark:border-amber-900/50">
           <div className="flex items-center justify-between">
-            <Badge className="bg-amber-500 hover:bg-amber-500 text-white font-medium">
+            <Badge variant="outline" className="border-warning/50 bg-warning/10 text-foreground dark:text-warning font-medium">
               IN ATTESA DEL CLIENTE
             </Badge>
             <span className="text-xs text-amber-600 dark:text-amber-400">

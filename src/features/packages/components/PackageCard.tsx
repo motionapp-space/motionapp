@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -72,8 +73,13 @@ export function PackageCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge 
-                  variant={pkg.usage_status === 'active' ? 'default' : 'secondary'}
-                  className="cursor-help"
+                  variant="outline"
+                  className={cn("cursor-help", 
+                    pkg.usage_status === 'active' ? "border-success/50 bg-success/10 text-foreground dark:text-success" :
+                    pkg.usage_status === 'suspended' ? "border-destructive/50 bg-destructive/10 text-foreground dark:text-destructive" :
+                    pkg.usage_status === 'completed' ? "border-warning/50 bg-warning/10 text-foreground dark:text-warning" :
+                    "border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground"
+                  )}
                 >
                   {usageInfo.label}
                 </Badge>
@@ -86,12 +92,13 @@ export function PackageCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge 
-                  variant={
-                    pkg.payment_status === 'paid' ? 'default' : 
-                    pkg.payment_status === 'unpaid' ? 'destructive' : 
-                    'secondary'
-                  }
-                  className="cursor-help"
+                  variant="outline"
+                  className={cn("cursor-help",
+                    pkg.payment_status === 'paid' ? "border-success/50 bg-success/10 text-foreground dark:text-success" :
+                    pkg.payment_status === 'unpaid' ? "border-destructive/50 bg-destructive/10 text-foreground dark:text-destructive" :
+                    pkg.payment_status === 'partial' ? "border-warning/50 bg-warning/10 text-foreground dark:text-warning" :
+                    "border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground"
+                  )}
                 >
                   {paymentInfo.label}
                 </Badge>

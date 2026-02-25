@@ -15,11 +15,11 @@ interface NextAppointmentCardProps {
 function getStatusBadge(status: ClientAppointmentView["status"]) {
   switch (status) {
     case "CONFIRMED":
-      return <Badge variant="default" className="bg-success/10 text-foreground border-success/40">Confermato</Badge>;
+      return <Badge variant="outline" className="border-success/50 bg-success/10 text-foreground dark:text-success">Confermato</Badge>;
     case "REQUESTED":
-      return <Badge variant="secondary" className="bg-warning/10 text-foreground border-warning/40">In attesa</Badge>;
+      return <Badge variant="outline" className="border-warning/50 bg-warning/10 text-foreground dark:text-warning">In attesa</Badge>;
     case "CHANGE_PROPOSED":
-      return <Badge variant="secondary" className="bg-primary/5 text-foreground border-primary/20">Proposta modifica</Badge>;
+      return <Badge variant="outline" className="border-warning/50 bg-warning/10 text-foreground dark:text-warning">Proposta modifica</Badge>;
     default:
       return null;
   }
