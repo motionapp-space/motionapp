@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import type { DateRange } from "react-day-picker";
 import { Wallet } from "lucide-react";
 import { PaymentFilters } from "./PaymentFilters";
@@ -7,6 +7,29 @@ import type { PaymentOrder, PaymentStatusFilter } from "../types";
 import type { KpiFilter } from "@/pages/Payments";
 
 const SKIP_STATUSES = new Set(["canceled", "refunded", "void"]);
+
+function getScrollContainer(): HTMLElement | null {
+  return (
+    document.getElementById("coach-scroll-container") ??
+    document.getElementById("client-scroll-container") ??
+    null
+  );
+}
+
+function preserveScroll(fn: () => void) {
+  const el = getScrollContainer();
+  const top = el ? el.scrollTop : window.scrollY;
+  fn();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (el) {
+        el.scrollTop = top;
+      } else {
+        window.scrollTo(0, top);
+      }
+    });
+  });
+}
 
 function getResiduo(o: PaymentOrder) {
   return Math.max(0, o.amount_cents - o.paid_amount_cents);
@@ -36,20 +59,23 @@ export function PaymentFeed({ orders, kpiFilter, onResetKpiFilter }: Props) {
   const prevKpiFilter = useRef(kpiFilter);
   useEffect(() => {
     if (kpiFilter?.type === "outstanding") {
-      setStatus("outstanding");
+      preserveScroll(() => setStatus("outstanding"));
     } else if (prevKpiFilter.current && !kpiFilter) {
-      // Was active, now reset
-      setStatus("all");
-      setOnlyDueNow(false);
+      preserveScroll(() => {
+        setStatus("all");
+        setOnlyDueNow(false);
+      });
     }
     prevKpiFilter.current = kpiFilter;
   }, [kpiFilter]);
 
-  const handleStatusChange = (v: PaymentStatusFilter) => {
-    setStatus(v);
-    setOnlyDueNow(false);
+  const handleStatusChange = useCallback((v: PaymentStatusFilter) => {
+    preserveScroll(() => {
+      setStatus(v);
+      setOnlyDueNow(false);
+    });
     onResetKpiFilter?.();
-  };
+  }, [onResetKpiFilter]);
 
   const filtered = useMemo(() => {
     let result = orders.filter((o) => !SKIP_STATUSES.has(o.status));
