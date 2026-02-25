@@ -133,7 +133,7 @@ export function PaymentFeed({ orders, kpiFilter, onResetKpiFilter }: Props) {
           </p>
         </div>
       ) : (
-        <div className="rounded-2xl border border-border overflow-hidden divide-y divide-border">
+        <div className="rounded-2xl border border-border overflow-hidden divide-y divide-border/60">
           {filtered.map((order) => (
             <PaymentFeedItem
               key={order.id}
