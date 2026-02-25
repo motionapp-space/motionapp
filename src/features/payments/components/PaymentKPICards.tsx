@@ -48,26 +48,27 @@ export function PaymentKPICards({
 
         {daIncassareTotale > 0 && (
           <>
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 space-y-2 text-sm">
+              <p className="text-muted-foreground">Di cui:</p>
               {parteCerta > 0 && (
-                <div className="flex items-center gap-2 text-sm text-foreground">
-                  <span className="inline-block h-2 w-2 rounded-full bg-success shrink-0" />
-                  <span className="tabular-nums">{formatEur(parteCerta)}</span> già dovuti
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground">Già dovuti</span>
+                  <span className="tabular-nums font-medium text-foreground">{formatEur(parteCerta)}</span>
                 </div>
               )}
               {parteNonCerta > 0 && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground/40 shrink-0" />
-                  <span className="tabular-nums">{formatEur(parteNonCerta)}</span> non ancora dovuti
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Non ancora dovuti</span>
+                  <span className="tabular-nums text-muted-foreground">{formatEur(parteNonCerta)}</span>
                 </div>
               )}
             </div>
 
             {/* Stacked bar */}
-            <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden flex">
+            <div className="mt-4 h-2 w-full rounded-full bg-muted overflow-hidden">
               {certaPct > 0 && (
                 <div
-                  className="h-full bg-success rounded-l-full"
+                  className="h-full bg-success rounded-full"
                   style={{ width: `${certaPct}%` }}
                 />
               )}
@@ -109,7 +110,7 @@ export function PaymentKPICards({
         <p className="text-4xl font-semibold tracking-tight tabular-nums text-foreground mt-3">
           {formatEur(incassatoMese)}
         </p>
-        <p className="text-xs text-muted-foreground mt-2">
+        <p className="text-sm text-success mt-2">
           Incassi registrati nel mese (parziali inclusi)
         </p>
       </div>
