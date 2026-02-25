@@ -79,12 +79,14 @@ export function PaymentFeedItem({ order }: Props) {
 
   return (
     <>
-      <div className="relative grid min-w-0 gap-3 px-4 py-4 md:px-6 md:py-4 md:grid-cols-[minmax(0,1fr)_140px_180px_170px] md:items-start md:gap-4 hover:bg-muted/30 transition-colors duration-150">
+      <div className="relative grid min-w-0 px-4 py-6 gap-4 md:px-6 md:py-6 md:gap-4 md:grid-cols-[minmax(0,1fr)_140px_180px_170px] md:items-start hover:bg-muted/30 transition-colors duration-150">
         {/* Column 1: Title / Client / Meta */}
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">{title}</p>
-          <p className="text-sm text-muted-foreground truncate">{clientName}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground leading-5">
+        <div className="min-w-0 space-y-2">
+          <div className="min-w-0">
+            <p className="text-sm font-medium leading-6 text-foreground truncate">{title}</p>
+            <p className="text-sm leading-6 text-muted-foreground truncate">{clientName}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs leading-5 text-muted-foreground">
             {isSingle ? (
               <>
                 <span>
@@ -114,8 +116,8 @@ export function PaymentFeedItem({ order }: Props) {
         </div>
 
         {/* Mobile: badge + amount side by side */}
-        <div className="flex items-center justify-between md:hidden">
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between gap-4 md:hidden">
+          <div className="flex items-center gap-2">
             <Badge variant="outline" className={badgeMainClass}>
               {badgeMainLabel}
             </Badge>
@@ -132,7 +134,7 @@ export function PaymentFeedItem({ order }: Props) {
         </div>
 
         {/* Column 2: Status badge (desktop only) */}
-        <div className="hidden md:flex items-center gap-1.5 md:pt-[3px]">
+        <div className="hidden md:flex items-center gap-2 pt-1">
           <Badge variant="outline" className={badgeMainClass}>
             {badgeMainLabel}
           </Badge>
@@ -144,17 +146,17 @@ export function PaymentFeedItem({ order }: Props) {
         </div>
 
         {/* Column 3: Amount (desktop only) */}
-        <div className="hidden md:block text-right tabular-nums md:pt-[3px]">
-          <p className="text-sm font-semibold text-foreground">{amountMain}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{amountSub}</p>
+        <div className="hidden md:block text-right tabular-nums pt-1">
+          <p className="text-sm font-semibold leading-6 text-foreground">{amountMain}</p>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">{amountSub}</p>
         </div>
 
         {/* Column 4: Action */}
-        <div className="flex items-center justify-end pt-1 md:pt-[3px]">
+        <div className="flex items-center justify-end pt-1 md:pl-4">
           {isOutstanding ? (
             <Button
               variant="ghost"
-              className="h-9 px-3 text-sm gap-1.5"
+              className="h-9 px-3 text-sm gap-2 whitespace-nowrap"
               disabled={isSingle && registerPayment.isPending}
               onClick={() => {
                 if (isSingle) {
