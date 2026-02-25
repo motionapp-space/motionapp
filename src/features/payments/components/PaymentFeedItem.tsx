@@ -79,7 +79,7 @@ export function PaymentFeedItem({ order }: Props) {
 
   return (
     <>
-      <div className="relative grid min-w-0 gap-3 px-4 py-4 md:px-6 md:py-4 md:grid-cols-[minmax(0,1fr)_140px_160px_200px] md:items-start md:gap-6 hover:bg-muted/30 transition-colors duration-150">
+      <div className="relative grid min-w-0 gap-3 px-4 py-4 md:px-6 md:py-4 md:grid-cols-[minmax(0,1fr)_140px_160px_200px] md:items-center md:gap-6 hover:bg-muted/30 transition-colors duration-150">
         {/* Column 1: Title / Client / Meta */}
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{title}</p>
@@ -132,7 +132,7 @@ export function PaymentFeedItem({ order }: Props) {
         </div>
 
         {/* Column 2: Status badge (desktop only) */}
-        <div className="hidden md:flex items-center gap-1.5 md:pt-[3px]">
+        <div className="hidden md:flex items-center gap-1.5">
           <Badge variant="outline" className={badgeMainClass}>
             {badgeMainLabel}
           </Badge>
@@ -144,13 +144,13 @@ export function PaymentFeedItem({ order }: Props) {
         </div>
 
         {/* Column 3: Amount (desktop only) */}
-        <div className="hidden md:block text-right tabular-nums md:pt-[3px]">
+        <div className="hidden md:block text-right tabular-nums">
           <p className="text-sm font-semibold text-foreground">{amountMain}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">{amountSub}</p>
         </div>
 
         {/* Column 4: Action */}
-        <div className="flex items-center justify-end pt-1 md:pt-[3px]">
+        <div className="flex items-center justify-end pt-1 md:pt-0">
           {isOutstanding ? (
             <Button
               variant="ghost"
