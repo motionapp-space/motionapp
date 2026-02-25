@@ -1,44 +1,44 @@
 
-Obiettivo
-- Evitare che lo scroll della pagina (/payments) torni in alto quando si passa tra le tab filtro: “Tutti”, “Da incassare”, “Incassati”.
+## Rimuovere badge "Parziale" e stabilizzare subline importi
 
-Cosa ho verificato nel codice
-- `ScrollToTop` è globale ma reagisce a `location.pathname`, quindi non dovrebbe intervenire sui tab interni di `PaymentFeed` (che non cambiano route).
-- Il cambio tab in `PaymentFeed` aggiorna stato locale (`status`) e ricompone la lista; durante questo re-render lo scroll del container può essere “perso”/ricalcolato dal browser in alcuni casi.
-- Non ci sono altri reset espliciti di scroll in `PaymentFeed` al cambio tab.
+### Cosa cambia
 
-Implementazione proposta
+Eliminare il badge "Parziale" (rumore visivo) e rendere la subline degli importi sempre su 2 righe stabili per evitare oscillazioni di layout tra righe parziali e non.
 
-1) Preservare scroll attorno al cambio tab in `PaymentFeed`
-- File: `src/features/payments/components/PaymentFeed.tsx`
-- Aggiungere una utility locale che:
-  - individua il container corretto (`coach-scroll-container`, fallback `client-scroll-container`, fallback `window`);
-  - salva la posizione corrente (`scrollTop` o `window.scrollY`);
-  - applica il cambio stato;
-  - ripristina la posizione con doppio `requestAnimationFrame` (per coprire render + layout pass).
-- Applicare questa utility dentro `handleStatusChange` (quando si cliccano le tab).
+### File: `src/features/payments/components/PaymentFeedItem.tsx`
 
-2) Applicare la stessa preservazione anche nei cambi stato “indiretti”
-- Sempre in `PaymentFeed.tsx`, nell’`useEffect` di sync KPI (`kpiFilter`):
-  - quando forza `setStatus("outstanding")` o `setStatus("all")`, usare la stessa utility di preservazione scroll.
-- Così anche i cambi tab pilotati dai KPI non causano jump.
+**1. Rimuovere i badge "Parziale"**
+- Eliminare i 2 blocchi `{isPartial && (<Badge ...>Parziale</Badge>)}` (mobile riga 124-128, desktop riga 142-146)
+- Rimuovere la variabile `isPartial` (riga 45) dato che non serve piu altrove
 
-3) Stabilizzare il comportamento senza alterare la UX attuale
-- Non cambiare logica dei filtri (toggle, search, date range), solo la gestione dello scroll durante i cambi tab.
-- Nessuna modifica a componenti globali (`ScrollToTop`) per evitare side effect su altre pagine.
+**2. Subline a 2 righe stabili**
 
-Validazione (E2E)
-- In `/payments`, scrollare in basso (metà e fondo lista), poi cambiare:
-  - `Da incassare` → `Incassati`
-  - `Incassati` → `Tutti`
-  - `Tutti` → `Da incassare`
-- Verificare che la pagina non torni in alto dopo il click tab.
-- Ripetere test con:
-  - ricerca attiva,
-  - range date attivo,
-  - toggle “Solo già dovuti” attivo,
-  - liste corte (pochi elementi) e vuote.
-- Verificare anche su mobile viewport.
+Sostituire la singola `<p>` subline con 2 righe fisse:
 
-Note tecniche
-- Caso limite: se si passa a una tab con contenuto molto più corto, il browser può comunque “clampare” lo scroll al massimo disponibile (comportamento nativo). Con il ripristino esplicito evitiamo i reset non necessari e manteniamo la posizione quando possibile.
+- **Outstanding parziale**: riga 1 = `Incassato 100,00 €`, riga 2 = `Totale 225,00 €`
+- **Outstanding non parziale**: riga 1 = `Totale 225,00 €`, riga 2 = placeholder invisibile (`\u00A0` o `min-h`)
+- **Incassato**: riga 1 = `Pagato il 5 feb 2026` (o "Pagato"), riga 2 = placeholder invisibile
+
+Questo garantisce altezza uniforme su ogni riga del feed, sia mobile che desktop.
+
+**3. Struttura JSX risultante (blocco importi)**
+
+```tsx
+<div className="text-right tabular-nums">
+  <p className="text-sm font-semibold text-foreground">{amountMain}</p>
+  <p className="mt-0.5 text-xs text-muted-foreground">
+    {isPartial ? `Incassato ${formatEur(order.paid_amount_cents)}` : amountSub}
+  </p>
+  <p className="text-xs text-muted-foreground">
+    {isPartial ? `Totale ${formatEur(order.amount_cents)}` : "\u00A0"}
+  </p>
+</div>
+```
+
+Dove `amountSub` per non-parziale outstanding = `Totale X`, per incassato = data pagamento.
+
+**4. Applicare a entrambi i breakpoint**
+- Blocco mobile (riga 130-133)
+- Blocco desktop (riga 150-153)
+
+Nota: `isPartial` viene mantenuta come variabile locale solo per la logica subline (non piu per badge).
