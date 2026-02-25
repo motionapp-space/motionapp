@@ -1,192 +1,116 @@
 
 
-## Refactor PaymentFeedItem a Grid -- Piano Definitivo 10/10
+## Spacing Premium 8pt — PaymentFeedItem + PaymentFeed
 
-### File unico: `src/features/payments/components/PaymentFeedItem.tsx`
+### File coinvolti
+1. `src/features/payments/components/PaymentFeedItem.tsx` — spacing/layout
+2. `src/features/payments/components/PaymentFeed.tsx` — divider softening
 
-Nessuna modifica a logica, calcoli, filtri, sort, RPC. Solo layout/UI.
+Nessuna logica cambia. Solo classi CSS.
 
 ---
 
-### 1. Wrapper principale (riga 62)
+### 1. Wrapper row (riga 82)
 
-Da flex a grid responsive con `relative` e `min-w-0` globale:
-
-```tsx
-// Da:
-<div className="flex items-center gap-4 py-4 px-6 hover:bg-muted/30 transition-colors duration-150">
-
-// A:
-<div className="relative grid min-w-0 gap-3 px-4 py-4 md:px-6 md:py-4
-  md:grid-cols-[minmax(0,1fr)_140px_180px_170px] md:items-start md:gap-4
-  hover:bg-muted/30 transition-colors duration-150">
+```
+px-4 py-4 gap-3 md:px-6 md:py-4 md:gap-4
+```
+diventa:
+```
+px-4 py-6 gap-4 md:px-6 md:py-6 md:gap-4
 ```
 
-`md:items-start` ancora le colonne 2/3/4 in alto. `relative` e `min-w-0` prevengono overflow con truncate.
+- `py-6` (24px) su entrambi i breakpoint per ritmo 8pt.
+- `gap-4` (16px) anche su mobile (era `gap-3`).
 
 ---
 
-### 2. Colonna 1 -- Titolo / Cliente / Meta (righe 64-93)
+### 2. Colonna 1: stack editorial (righe 84-113)
 
-Container con `min-w-0`. Meta con `flex-wrap` e `leading-5`:
+Wrapper da `<div className="min-w-0">` a `<div className="min-w-0 space-y-2">`.
 
+Titolo e cliente raggruppati in un sub-div con `leading-6`:
 ```tsx
 <div className="min-w-0">
-  <p className="text-sm font-medium text-foreground truncate">{title}</p>
-  <p className="text-sm text-muted-foreground truncate">{clientName}</p>
-  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground leading-5">
-    {/* meta contenuti invariati */}
-  </div>
+  <p className="text-sm font-medium leading-6 text-foreground truncate">{title}</p>
+  <p className="text-sm leading-6 text-muted-foreground truncate">{clientName}</p>
 </div>
 ```
 
-Il `flex-wrap` previene clipping quando meta e lunga. `leading-5` stabilizza altezza riga.
+Meta: rimuovere `mt-1`, ereditata da `space-y-2` (8px). Aggiungere `leading-5`:
+```tsx
+<div className="flex flex-wrap items-center gap-2 text-xs leading-5 text-muted-foreground">
+```
 
 ---
 
-### 3. Riga mobile badge+importo (NUOVA, solo mobile)
+### 3. Mobile badge+importo (righe 117-132)
 
-Subito dopo la colonna 1, blocco `md:hidden` con badge e importo affiancati:
-
+Aggiungere `gap-4` al wrapper e `gap-2` ai badge:
 ```tsx
-<div className="flex items-center justify-between md:hidden">
-  {/* Badge (stessi del desktop) */}
-  <div className="flex items-center gap-1.5">
-    <Badge variant="outline" className={cn(
-      "h-7 min-w-[120px] justify-center px-3 text-xs font-medium",
-      isOutstanding
-        ? "border-border bg-muted/60 text-foreground"
-        : "border-success/40 bg-success/10 text-foreground"
-    )}>
-      {isOutstanding ? "Da incassare" : "Incassato"}
-    </Badge>
-    {isPartial && (
-      <Badge variant="outline" className="h-6 rounded-full border border-warning/40 bg-warning/10 px-2 text-[10px] font-medium text-foreground">
-        Parziale
-      </Badge>
-    )}
-  </div>
-  {/* Importo */}
-  <div className="text-right tabular-nums">
-    <p className="text-sm font-semibold text-foreground">
-      {isOutstanding ? formatEur(residuo) : formatEur(order.amount_cents)}
-    </p>
-    <p className="mt-0.5 text-xs text-muted-foreground">
-      {isOutstanding
-        ? isPartial
-          ? `Incassato ${formatEur(order.paid_amount_cents)} · Totale ${formatEur(order.amount_cents)}`
-          : `Totale ${formatEur(order.amount_cents)}`
-        : order.paid_at
-          ? `Pagato il ${format(new Date(order.paid_at), "d MMM yyyy", { locale: it })}`
-          : "Pagato"}
-    </p>
-  </div>
+<div className="flex items-center justify-between gap-4 md:hidden">
+  <div className="flex items-center gap-2">
+```
+
+Subline: `mt-0.5` resta (2px, ok per coppia importo/subline).
+
+---
+
+### 4. Colonna 2 desktop badges (riga 135)
+
+Da `gap-1.5 md:pt-[3px]` a `gap-2 pt-1`:
+```tsx
+<div className="hidden md:flex items-center gap-2 pt-1">
+```
+
+`pt-1` (4px) per allineamento ottico con titolo `leading-6`.
+
+---
+
+### 5. Colonna 3 desktop amount (righe 147-150)
+
+Da `md:pt-[3px]` a `pt-1`. Subline da `mt-0.5` a `mt-2` (8px):
+```tsx
+<div className="hidden md:block text-right tabular-nums pt-1">
+  <p className="text-sm font-semibold leading-6 text-foreground">{amountMain}</p>
+  <p className="mt-2 text-xs leading-5 text-muted-foreground">{amountSub}</p>
 </div>
 ```
 
 ---
 
-### 4. Colonna 2 -- Badge stato (solo desktop)
+### 6. Colonna 4 azione (riga 153)
 
-`hidden md:flex` con `md:pt-[3px]`. Badge senza colori testo semantici (Motion-compliant):
-
+Da `pt-1 md:pt-[3px]` a `pt-1 md:pl-4`. Aggiungere `whitespace-nowrap` e `gap-2` alla CTA:
 ```tsx
-<div className="hidden md:flex items-center gap-1.5 md:pt-[3px]">
-  <Badge variant="outline" className={cn(
-    "h-7 min-w-[120px] justify-center px-3 text-xs font-medium",
-    isOutstanding
-      ? "border-border bg-muted/60 text-foreground"
-      : "border-success/40 bg-success/10 text-foreground"
-  )}>
-    {isOutstanding ? "Da incassare" : "Incassato"}
-  </Badge>
-  {isPartial && (
-    <Badge variant="outline" className="h-6 rounded-full border border-warning/40 bg-warning/10 px-2 text-[10px] font-medium text-foreground">
-      Parziale
-    </Badge>
-  )}
-</div>
+<div className="flex items-center justify-end pt-1 md:pl-4">
 ```
 
-Niente `dark:text-success` o `dark:text-warning`. Solo `text-foreground` sempre.
-
----
-
-### 5. Colonna 3 -- Importo (solo desktop)
-
-`hidden md:block` con `md:pt-[3px]`. Subline sempre presente con fallback:
-
+Button CTA:
 ```tsx
-<div className="hidden md:block text-right tabular-nums md:pt-[3px]">
-  <p className="text-sm font-semibold text-foreground">
-    {isOutstanding ? formatEur(residuo) : formatEur(order.amount_cents)}
-  </p>
-  <p className="mt-0.5 text-xs text-muted-foreground">
-    {isOutstanding
-      ? isPartial
-        ? `Incassato ${formatEur(order.paid_amount_cents)} · Totale ${formatEur(order.amount_cents)}`
-        : `Totale ${formatEur(order.amount_cents)}`
-      : order.paid_at
-        ? `Pagato il ${format(new Date(order.paid_at), "d MMM yyyy", { locale: it })}`
-        : "Pagato"}
-  </p>
-</div>
-```
-
-Subline su paid: "Pagato il ..." (umano) con fallback "Pagato".
-
----
-
-### 6. Colonna 4 -- Azione (slot unico, sempre presente)
-
-`pt-1` su mobile per aria, `md:pt-[3px]` su desktop per allineamento ottico:
-
-```tsx
-<div className="flex items-center justify-end pt-1 md:pt-[3px]">
-  {isOutstanding ? (
-    <Button variant="ghost" className="h-9 px-3 text-sm gap-1.5"
-      disabled={isSingle && registerPayment.isPending}
-      onClick={() => { /* logica invariata */ }}>
-      <Check className="h-3.5 w-3.5" />
-      {isSingle && registerPayment.isPending ? "Registrazione..." : "Registra pagamento"}
-    </Button>
-  ) : !isFree ? (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-9 w-9 p-0">
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      {/* menu content invariato */}
-    </DropdownMenu>
-  ) : null}
-</div>
+<Button variant="ghost" className="h-9 px-3 text-sm gap-2 whitespace-nowrap">
 ```
 
 ---
 
-### 7. Dialoghi (righe 174-208)
+### 7. Divider soft in PaymentFeed (riga 136)
 
-Restano completamente invariati, fuori dalla grid.
+Da `divide-y divide-border` a `divide-y divide-border/60`:
+```tsx
+<div className="rounded-2xl border border-border overflow-hidden divide-y divide-border/60">
+```
 
 ---
 
-### Riepilogo 6 micro-fix applicati
+### Riepilogo cambi
 
-| # | Fix | Dettaglio |
-|---|-----|-----------|
-| 1 | Wrapper | `relative min-w-0` aggiunto |
-| 2 | Meta wrap | `flex-wrap` + `leading-5` |
-| 3 | Badge colori | Niente `dark:text-success/warning`, solo `text-foreground` + `border-success/40` / `border-warning/40` |
-| 4 | Subline paid | "Pagato il ..." (non "Incassato il"), fallback "Pagato" |
-| 5 | CTA mobile | `pt-1` per aria su mobile |
-| 6 | Allineamento ottico | `md:pt-[3px]` (non 2px) su col 2/3/4 |
-
-### Import aggiuntivo necessario
-
-Aggiungere `cn` (gia disponibile in `@/lib/utils`) nell'import:
-
-```tsx
-import { cn } from "@/lib/utils";
-```
+| # | Dove | Da | A |
+|---|------|----|---|
+| 1 | Wrapper py/gap | `py-4 gap-3` | `py-6 gap-4` |
+| 2 | Col 1 | flat div | `space-y-2` + `leading-6` titoli |
+| 3 | Mobile badges | `gap-1.5` | `gap-2` + `gap-4` wrapper |
+| 4 | Desktop badges | `gap-1.5 md:pt-[3px]` | `gap-2 pt-1` |
+| 5 | Desktop amount | `mt-0.5, md:pt-[3px]` | `mt-2, pt-1` + `leading-6/5` |
+| 6 | CTA | `gap-1.5` | `gap-2 whitespace-nowrap` + `md:pl-4` |
+| 7 | Divider | `divide-border` | `divide-border/60` |
 
