@@ -33,7 +33,7 @@ export function Topbar({ showMenuButton = false, onMenuClick }: TopbarProps) {
               variant="ghost"
               size="icon"
               onClick={onBack}
-              className="shrink-0 h-8 w-8 border border-border hover:bg-muted"
+              className="shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
