@@ -1,30 +1,29 @@
 
 
-## Aggiunta PostHog Analytics
+## Favicon dinamica in base al tema (chiaro/scuro)
 
 ### Cosa cambia
 
-Inserire lo snippet PostHog nel `<head>` di `index.html`, subito prima del tag `</head>` di chiusura.
+Inserire le due SVG come favicon e usare l'attributo `media` con `prefers-color-scheme` per far sì che il browser scelga automaticamente la versione corretta in base al tema di sistema.
 
-### File da modificare
+### File coinvolti
 
-**`index.html`**
+**1. Copiare gli asset nella cartella `public/`**
+- `user-uploads://M-white.svg` → `public/favicon-light.svg` (sfondo chiaro, "M" scura — per tema chiaro)
+- `user-uploads://M-black.svg` → `public/favicon-dark.svg` (sfondo scuro, "M" chiara — per tema scuro)
 
-Aggiungere il seguente blocco script alla fine del `<head>`:
+**2. Modificare `index.html`**
+
+Aggiungere due tag `<link rel="icon">` con media query:
 
 ```html
-<script>
-    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group identify setPersonProperties setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags resetGroups onFeatureFlags addFeatureFlagsHandler onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-    posthog.init('phc_iE8tqdJXuUWx2Xg8S7tLpbHoYFfNk2OIMGVJ7qcaZo9', {
-        api_host: 'https://eu.i.posthog.com',
-        defaults: '2026-01-30'
-    })
-</script>
+<link rel="icon" href="/favicon-light.svg" type="image/svg+xml" media="(prefers-color-scheme: light)" />
+<link rel="icon" href="/favicon-dark.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)" />
 ```
 
-### Note
+Questo è lo standard HTML nativo — nessun JavaScript necessario. Il browser sceglie la favicon giusta in base alle preferenze di sistema dell'utente.
 
-- Lo snippet e asincrono, quindi non blocca il caricamento della pagina.
-- L'API host punta al cluster EU (`eu.i.posthog.com`) per conformita GDPR.
-- Nessun altro file da modificare: il tracking si attiva automaticamente al caricamento di ogni pagina.
+### Note
+- SVG come favicon è supportato da tutti i browser moderni (Chrome, Firefox, Edge, Safari 15+).
+- Se servisse un fallback PNG per browser vecchi si può aggiungere in futuro, ma per ora SVG è sufficiente.
 

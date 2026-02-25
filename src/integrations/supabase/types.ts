@@ -2137,20 +2137,6 @@ export type Database = {
       }
     }
     Functions: {
-      admin_get_coaches_overview: {
-        Args: never
-        Returns: {
-          active_clients_count: number
-          created_at: string
-          email: string
-          first_name: string
-          id: string
-          last_name: string
-          last_sign_in_at: string
-          total_events_count: number
-          total_plans_count: number
-        }[]
-      }
       cancel_event_with_ledger:
         | {
             Args: { p_actor: string; p_event_id: string; p_now?: string }
