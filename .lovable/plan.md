@@ -1,91 +1,86 @@
 
 
-## Card "Incassato nel mese" con sfondo accent e MonthSelector integrato
+## Ravvivare la griglia del calendario con il colore di accento
 
-### Cosa cambia
+### Problema
+La griglia del calendario e quasi interamente grigia: linee orarie grigie, bordi grigi, sfondo del giorno corrente appena percettibile (`bg-primary/[0.02]`), overlay disponibilita con `bg-primary/5`. Il risultato e piatto e poco vivace.
 
-**1. Sfondo accent pieno sulla card**
-La card "Incassato nel mese" passa da sfondo bianco/card a sfondo `bg-accent` con testi chiari, creando un punto focale vivace nella pagina.
+### Interventi proposti
 
-**2. MonthSelector spostato dentro la card**
-Il selettore mese viene rimosso dalla posizione isolata in alto a destra e integrato nell'header della card, in alto a destra dentro la card stessa. Questo chiarisce immediatamente che il filtro temporale si applica solo a quel dato.
+Usiamo il token `--accent` (Ice Neutral, `222 35% 68%`) gia definito nel design system per dare un tocco di colore senza stravolgere l'estetica minimale.
 
-### Accessibilita
+#### 1. Colonna del giorno corrente — sfondo piu visibile
+**File: `WeekView.tsx` e `DayView.tsx`**
 
-| Elemento | Stile | Contrasto su accent |
-|---|---|---|
-| Importo (3xl bold) | `text-white font-bold` | ~2.6:1 -- OK (large text, soglia 3:1) |
-| Label "Incassato nel mese" | `text-white/90` | OK (testo di supporto) |
-| Sottotitolo | `text-white/70` | Decorativo/supplementare |
-| MonthSelector button | `text-white/80 hover:text-white` | Interattivo con hover |
+Cambiare lo sfondo del giorno corrente da `bg-primary/[0.02]` (quasi invisibile) a `bg-accent/[0.04]` — un velo azzurro leggero ma percettibile.
 
-### Dettaglio tecnico
+Stesso trattamento per l'header del giorno corrente: da `bg-primary/5` a `bg-accent/[0.06]`.
 
-**`PaymentKPICards.tsx`** -- Card 2 diventa:
+#### 2. Linea dell'ora corrente — colore accento
+**File: `WeekView.tsx` e `DayView.tsx`**
 
-```tsx
-{/* Card 2 — Incassato nel mese (sfondo accent, con MonthSelector) */}
-<div className="col-span-1 rounded-2xl bg-accent p-6 select-none">
-  <div className="flex items-start justify-between">
-    <p className="text-sm text-white/80">Incassato nel mese</p>
-    {monthSelector}
-  </div>
-  <p className="text-3xl font-bold text-white mt-1">
-    {formatEur(incassatoMese)}
-  </p>
-  <p className="text-xs text-white/60 mt-2">
-    Incassi registrati nel mese (parziali inclusi)
-  </p>
-</div>
-```
+La linea e il pallino "now" passano da `bg-primary` (nero) a `bg-accent` (azzurro). Molto piu vivace e immediato.
 
-Il componente riceve il `monthSelector` come prop `React.ReactNode` per mantenere lo stato nel parent.
+#### 3. Badge giorno corrente nell'header — accento
+**File: `WeekView.tsx` e `DayView.tsx`**
 
-**`MonthSelector.tsx`** -- Variante chiara:
+Il cerchietto con il numero del giorno corrente passa da `bg-primary text-primary-foreground` a `bg-accent text-accent-foreground` — un cerchio azzurro invece che nero.
 
-Il MonthSelector riceve una prop opzionale `variant?: "default" | "light"`. Quando `light`:
-- Il trigger button usa `text-white/80 hover:text-white hover:bg-white/10` invece dello stile ghost standard
-- Il chevron diventa bianco
+#### 4. Overlay disponibilita — bordo e sfondo accento
+**File: `AvailabilityOverlay.tsx`**
 
-```tsx
-<Button
-  variant="ghost"
-  size="sm"
-  className={cn(
-    "rounded-full text-sm gap-1",
-    variant === "light"
-      ? "text-white/80 hover:text-white hover:bg-white/10"
-      : ""
-  )}
->
-```
+Cambiare `border-primary/30` e `bg-primary/5` a `border-accent/30` e `bg-accent/[0.06]`. Le fasce di disponibilita diventano azzurrine anziche grigio-nerastre.
 
-**`Payments.tsx`** -- Rimozione MonthSelector dall'header:
+#### 5. Linee orarie — leggermente piu morbide
+**File: `WeekView.tsx` e `DayView.tsx`**
 
-- Rimuovere il `<div className="flex justify-end">` con il MonthSelector
-- Passare il MonthSelector come prop `monthSelector` a `PaymentKPICards`
+Le linee orarie restano `border-border/80` ma aggiungiamo un trattino piu sottile ogni mezza ora? No, manteniamo semplicita: cambiamo solo `border-border/80` a `border-border/50` per rendere la griglia meno pesante e far risaltare di piu gli eventi colorati.
 
-```tsx
-<PaymentKPICards
-  kpis={kpis}
-  monthLabel={monthLabel}
-  onFilterOutstanding={handleFilterOutstanding}
-  isOutstandingActive={kpiFilter?.type === "outstanding"}
-  monthSelector={
-    <MonthSelector
-      value={selectedMonth}
-      onChange={setSelectedMonth}
-      variant="light"
-    />
-  }
-/>
-```
-
-### Riepilogo modifiche
+### Riepilogo file da modificare
 
 | File | Modifica |
 |---|---|
-| `PaymentKPICards.tsx` | Card 2: sfondo `bg-accent`, testi bianchi, rimozione bordo, aggiunta slot `monthSelector` |
-| `MonthSelector.tsx` | Aggiunta prop `variant: "light"` per trigger bianco su sfondo accent |
-| `Payments.tsx` | Rimozione MonthSelector dall'header, passaggio come prop a PaymentKPICards |
+| `src/features/events/components/WeekView.tsx` | Sfondo today, header today badge, linea now, linee orarie |
+| `src/features/events/components/DayView.tsx` | Stesse modifiche della WeekView |
+| `src/features/bookings/components/AvailabilityOverlay.tsx` | Bordo e sfondo da primary a accent |
+
+### Dettaglio tecnico
+
+**WeekView.tsx / DayView.tsx — Sfondo colonna today:**
+```
+- isDayToday && "bg-primary/[0.02]"
++ isDayToday && "bg-accent/[0.04]"
+```
+
+**WeekView.tsx / DayView.tsx — Header today:**
+```
+- isToday && "bg-primary/5"
++ isToday && "bg-accent/[0.06]"
+```
+
+**WeekView.tsx / DayView.tsx — Badge numero giorno:**
+```
+- isToday && "bg-primary text-primary-foreground rounded-full ..."
++ isToday && "bg-accent text-accent-foreground rounded-full ..."
+```
+
+**WeekView.tsx / DayView.tsx — Linea now:**
+```
+- <div className="w-2.5 h-2.5 rounded-full bg-primary -ml-1" />
+- <div className="flex-1 h-[2px] bg-primary" />
++ <div className="w-2.5 h-2.5 rounded-full bg-accent -ml-1" />
++ <div className="flex-1 h-[2px] bg-accent" />
+```
+
+**WeekView.tsx / DayView.tsx — Linee orarie:**
+```
+- border-t border-border/80
++ border-t border-border/50
+```
+
+**AvailabilityOverlay.tsx:**
+```
+- border-l-2 border-primary/30 bg-primary/5
++ border-l-2 border-accent/30 bg-accent/[0.06]
+```
 
