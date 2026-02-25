@@ -77,7 +77,7 @@ export function PaymentFeedItem({ order }: Props) {
       : order.paid_at
         ? `Pagato il ${format(new Date(order.paid_at), "d MMM yyyy", { locale: it })}`
         : "Pagato";
-  const subLine2 = isPartial ? `Totale ${formatEur(order.amount_cents)}` : "\u00A0";
+  const subLine2 = isPartial ? `Totale ${formatEur(order.amount_cents)}` : null;
 
   return (
     <>
@@ -124,7 +124,7 @@ export function PaymentFeedItem({ order }: Props) {
           <div className="text-right tabular-nums">
             <p className="text-sm font-semibold text-foreground">{amountMain}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">{subLine1}</p>
-            <p className="text-xs text-muted-foreground">{subLine2}</p>
+            {subLine2 && <p className="text-xs text-muted-foreground">{subLine2}</p>}
           </div>
         </div>
 
@@ -140,7 +140,7 @@ export function PaymentFeedItem({ order }: Props) {
         <div className="hidden md:block text-right tabular-nums">
           <p className="text-sm font-semibold text-foreground">{amountMain}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">{subLine1}</p>
-          <p className="text-xs text-muted-foreground">{subLine2}</p>
+          {subLine2 && <p className="text-xs text-muted-foreground">{subLine2}</p>}
         </div>
 
         {/* Column 4: Action */}
