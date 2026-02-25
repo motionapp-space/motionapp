@@ -1,38 +1,47 @@
 
-
-## Fix: Hover del pulsante "Indietro" nella Topbar
+## Fix: Badge "Nessuno" — Allineamento stile grafico
 
 ### Problema
-Il pulsante freccia indietro nella Topbar usa `hover:bg-muted` (grigio chiaro), mentre tutte le altre icone (notifiche, utente, legenda) usano il variant `ghost` standard che applica `hover:bg-accent hover:text-accent-foreground` (Ice Neutral + bianco).
+Il badge "Nessuno" nel `PackageStatusBadge` usa uno stile neutro piatto (`bg-muted border-border text-muted-foreground`) che non segue la regola grafica degli altri badge:
 
-Il pulsante ha anche `border border-border` e dimensioni ridotte (`h-8 w-8`) che lo rendono visivamente diverso dagli altri.
+| Badge | Sfondo | Bordo | Testo | Coerente? |
+|-------|--------|-------|-------|-----------|
+| Attivo | `bg-success/10` | `border-success/50` | `text-foreground` | Si |
+| Da pianificare | `bg-warning/10` | `border-warning/50` | `text-foreground` | Si |
+| **Nessuno** | `bg-muted` | `border-border` | `text-muted-foreground` | **No** |
+
+La regola e: sfondo colorato leggero (10% opacita), bordo dello stesso colore ma piu intenso (50% opacita), testo nero (`text-foreground`).
 
 ### Soluzione
-Modificare il className del pulsante indietro in `src/components/Topbar.tsx` per allinearsi al comportamento hover delle altre icone, rimuovendo l'override `hover:bg-muted` e il bordo, e usando il variant `ghost` + size `icon` standard.
+Applicare la stessa regola usando il token `muted-foreground` come colore semantico per "neutro/assente". Il risultato sara un badge con sfondo grigio leggero e bordo grigio piu marcato, coerente con gli altri.
 
-### Dettagli tecnici
+### Dettaglio tecnico
 
-**File: `src/components/Topbar.tsx`** (riga 35-42)
+**File: `src/features/clients/components/badges/PackageStatusBadge.tsx`** (riga 36)
 
 Da:
 ```tsx
-<Button
-  variant="ghost"
-  size="icon"
-  onClick={onBack}
-  className="shrink-0 h-8 w-8 border border-border hover:bg-muted"
->
+className: "border-border bg-muted text-muted-foreground"
 ```
 
 A:
 ```tsx
-<Button
-  variant="ghost"
-  size="icon"
-  onClick={onBack}
-  className="shrink-0"
->
+className: "border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground"
 ```
 
-Questo allinea il pulsante indietro alle stesse regole di hover (accent + bianco) usate da NotificationBell, UserMenu e il pulsante legenda, mantenendo la dimensione standard `icon` (44x44px) coerente con il design system Motion.
+**File: `src/features/clients/components/badges/ActivePlanBadge.tsx`** (riga 32-33)
 
+Stesso fix per il badge "Nessuno" in ActivePlanBadge:
+
+Da:
+```tsx
+"border-border bg-muted text-muted-foreground"
+```
+
+A:
+```tsx
+"border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground"
+```
+
+### Risultato visivo atteso
+Tutti e tre i badge seguiranno lo stesso pattern: sfondo leggero + bordo piu scuro della stessa famiglia cromatica + testo nero. "Nessuno" avra una tinta grigia neutra ma con la stessa struttura visiva di "Attivo" (verde) e "Da pianificare" (arancione).
