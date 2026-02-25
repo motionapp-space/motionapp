@@ -27,7 +27,7 @@ export function ActivePlanBadge({ hasActivePlan }: ActivePlanBadgeProps) {
   return (
     <Badge variant="outline" className={cn(
       "font-medium gap-1",
-      "border-border bg-muted text-muted-foreground"
+      "border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground"
     )}>
       <MinusCircle className="h-3 w-3" />
       Nessuno
