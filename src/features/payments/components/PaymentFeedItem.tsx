@@ -79,7 +79,7 @@ export function PaymentFeedItem({ order }: Props) {
 
   return (
     <>
-      <div className="relative grid min-w-0 gap-3 px-4 py-4 md:px-6 md:py-4 md:grid-cols-[minmax(0,1fr)_140px_180px_170px] md:items-start md:gap-4 hover:bg-muted/30 transition-colors duration-150">
+      <div className="relative grid min-w-0 gap-3 px-4 py-4 md:px-6 md:py-4 md:grid-cols-[minmax(0,1fr)_140px_160px_200px] md:items-start md:gap-6 hover:bg-muted/30 transition-colors duration-150">
         {/* Column 1: Title / Client / Meta */}
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{title}</p>
