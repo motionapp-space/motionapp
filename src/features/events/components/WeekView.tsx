@@ -156,7 +156,7 @@ export function WeekView({
               key={day.toISOString()}
               className={cn(
                 "flex-1 flex items-center justify-center gap-2 border-r last:border-r-0 border-border/30",
-                isToday && "bg-primary/5"
+                isToday && "bg-accent/[0.06]"
               )}
             >
               <span className="text-xs text-muted-foreground uppercase">
@@ -164,7 +164,7 @@ export function WeekView({
               </span>
               <span className={cn(
                 "text-sm font-semibold",
-                isToday && "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                isToday && "bg-accent text-accent-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs"
               )}>
                 {format(day, "d")}
               </span>
@@ -215,7 +215,7 @@ export function WeekView({
                 key={day.toISOString()} 
                 className={cn(
                   "flex-1 relative border-r last:border-r-0 border-border/40",
-                  isDayToday && "bg-primary/[0.02]",
+                  isDayToday && "bg-accent/[0.04]",
                   isPreviewMode ? 'cursor-default' : 'cursor-pointer'
                 )}
                 onClick={(e) => {
@@ -246,7 +246,7 @@ export function WeekView({
                 {hours.map((_, i) => (
                   <div 
                     key={i} 
-                    className="absolute left-0 right-0 border-t border-border/80" 
+                    className="absolute left-0 right-0 border-t border-border/50" 
                     style={{ top: i * 60 * MINUTE_HEIGHT }} 
                   />
                 ))}
@@ -261,8 +261,8 @@ export function WeekView({
                     className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
                     style={{ top: minutesFromDayStart(new Date()) * MINUTE_HEIGHT }}
                   >
-                    <div className="w-2.5 h-2.5 rounded-full bg-primary -ml-1" />
-                    <div className="flex-1 h-[2px] bg-primary" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-accent -ml-1" />
+                    <div className="flex-1 h-[2px] bg-accent" />
                   </div>
                 )}
 
