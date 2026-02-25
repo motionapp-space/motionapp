@@ -16,20 +16,20 @@ interface AppointmentsListProps {
   onSelect: (appointment: ClientAppointmentView) => void;
 }
 
-function getStatusBadge(status: ClientAppointmentStatus): { label: string; variant: "default" | "secondary" | "outline" | "destructive" } {
+function getStatusBadge(status: ClientAppointmentStatus): { label: string; variant: "outline"; className: string } {
   switch (status) {
     case 'CONFIRMED':
-      return { label: 'Confermato', variant: 'secondary' };
+      return { label: 'Confermato', variant: 'outline', className: 'border-success/50 bg-success/10 text-foreground dark:text-success' };
     case 'REQUESTED':
-      return { label: 'In attesa', variant: 'outline' };
+      return { label: 'In attesa', variant: 'outline', className: 'border-warning/50 bg-warning/10 text-foreground dark:text-warning' };
     case 'CANCELLED':
-      return { label: 'Annullato', variant: 'destructive' };
+      return { label: 'Annullato', variant: 'outline', className: 'border-destructive/50 bg-destructive/10 text-foreground dark:text-destructive' };
     case 'COMPLETED':
-      return { label: 'Completato', variant: 'secondary' };
+      return { label: 'Completato', variant: 'outline', className: 'border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground' };
     case 'CHANGE_PROPOSED':
-      return { label: 'Proposta', variant: 'outline' };
+      return { label: 'Proposta', variant: 'outline', className: 'border-warning/50 bg-warning/10 text-foreground dark:text-warning' };
     default:
-      return { label: '', variant: 'secondary' };
+      return { label: '', variant: 'outline', className: '' };
   }
 }
 

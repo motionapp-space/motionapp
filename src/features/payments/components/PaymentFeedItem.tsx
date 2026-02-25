@@ -96,16 +96,16 @@ export function PaymentFeedItem({ order }: Props) {
         {/* Center block */}
         <div className="shrink-0 flex items-center gap-1.5">
           {isOutstanding ? (
-            <Badge variant="outline" className="border-0 bg-foreground/5 text-foreground text-xs">
+            <Badge variant="outline" className="border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground text-xs">
               Da incassare
             </Badge>
           ) : (
-            <Badge variant="outline" className="border-0 bg-emerald-50 text-emerald-700 text-xs">
+            <Badge variant="outline" className="border-success/50 bg-success/10 text-foreground dark:text-success text-xs">
               Pagato
             </Badge>
           )}
           {isPartial && (
-            <Badge variant="outline" className="border-0 bg-amber-50 text-amber-700 text-[10px] px-1.5 py-0">
+            <Badge variant="outline" className="border-warning/50 bg-warning/10 text-foreground dark:text-warning text-[10px] px-1.5 py-0">
               Parziale
             </Badge>
           )}

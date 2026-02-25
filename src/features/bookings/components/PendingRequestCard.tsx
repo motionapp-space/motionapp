@@ -51,7 +51,7 @@ export function PendingRequestCard({
         <div className="space-y-1">
           {/* Row 1: Badge + Date/Time */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge className="bg-primary/10 text-primary text-xs font-medium px-2 py-1 pointer-events-none">
+            <Badge variant="outline" className="border-warning/50 bg-warning/10 text-foreground dark:text-warning text-xs font-medium px-2 py-1 pointer-events-none">
               Da approvare
             </Badge>
             <span className="text-sm text-muted-foreground">

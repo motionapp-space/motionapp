@@ -10,6 +10,7 @@ interface ClientHistoryItemProps {
   badge?: {
     label: string;
     variant?: "default" | "secondary" | "outline" | "destructive";
+    className?: string;
     icon?: LucideIcon;
   };
   onClick?: () => void;
@@ -54,7 +55,7 @@ export function ClientHistoryItem({
       {badge && (
         <Badge 
           variant={badge.variant || "secondary"} 
-          className="text-xs flex-shrink-0 h-6"
+          className={cn("text-xs flex-shrink-0 h-6", badge.className)}
         >
           {badge.icon && <badge.icon className="h-3 w-3 mr-1" />}
           {badge.label}
