@@ -44,7 +44,7 @@ export function PaymentFilters({
         <TabsList>
           <TabsTrigger value="all">Tutti</TabsTrigger>
           <TabsTrigger value="outstanding">Da incassare</TabsTrigger>
-          <TabsTrigger value="paid">Pagati</TabsTrigger>
+          <TabsTrigger value="paid">Incassati</TabsTrigger>
         </TabsList>
       </Tabs>
 
