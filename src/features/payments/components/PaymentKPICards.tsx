@@ -100,16 +100,16 @@ export function PaymentKPICards({
         )}
       </div>
 
-      {/* Card 2 — Incassato nel mese (sfondo accent, con MonthSelector) */}
-      <div className="col-span-1 rounded-2xl bg-accent p-6 select-none">
+      {/* Card 2 — Incassato nel mese (con MonthSelector) */}
+      <div className="col-span-1 rounded-2xl border border-border/70 bg-card p-6 select-none">
         <div className="flex items-start justify-between">
-          <p className="text-sm text-white/80">Incassato nel mese</p>
+          <p className="text-sm text-muted-foreground">Incassato nel mese</p>
           {monthSelector}
         </div>
-        <p className="text-3xl font-bold text-white mt-1">
+        <p className="text-3xl font-semibold text-emerald-700 mt-1">
           {formatEur(incassatoMese)}
         </p>
-        <p className="text-xs text-white/60 mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           Incassi registrati nel mese (parziali inclusi)
         </p>
       </div>
