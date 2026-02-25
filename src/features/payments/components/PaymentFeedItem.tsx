@@ -62,8 +62,8 @@ export function PaymentFeedItem({ order }: Props) {
   const badgeMainClass = cn(
     "h-7 min-w-[120px] justify-center px-3 text-xs font-medium",
     isOutstanding
-      ? "border-border bg-muted/60 text-foreground"
-      : "border-success/40 bg-success/10 text-foreground"
+      ? "border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground"
+      : "border-success/50 bg-success/10 text-foreground dark:text-success"
   );
   const badgeMainLabel = isOutstanding ? "Da incassare" : "Incassato";
 
@@ -120,7 +120,7 @@ export function PaymentFeedItem({ order }: Props) {
               {badgeMainLabel}
             </Badge>
             {isPartial && (
-              <Badge variant="outline" className="h-6 rounded-full border border-warning/40 bg-warning/10 px-2 text-[10px] font-medium text-foreground">
+              <Badge variant="outline" className="h-6 rounded-full border-warning/50 bg-warning/10 px-2 text-[10px] font-medium text-foreground dark:text-warning">
                 Parziale
               </Badge>
             )}
@@ -137,7 +137,7 @@ export function PaymentFeedItem({ order }: Props) {
             {badgeMainLabel}
           </Badge>
           {isPartial && (
-            <Badge variant="outline" className="h-6 rounded-full border border-warning/40 bg-warning/10 px-2 text-[10px] font-medium text-foreground">
+            <Badge variant="outline" className="h-6 rounded-full border-warning/50 bg-warning/10 px-2 text-[10px] font-medium text-foreground dark:text-warning">
               Parziale
             </Badge>
           )}
