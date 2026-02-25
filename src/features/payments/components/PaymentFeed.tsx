@@ -37,7 +37,6 @@ export function PaymentFeed({ orders, kpiFilter, onResetKpiFilter }: Props) {
   useEffect(() => {
     if (kpiFilter?.type === "outstanding") {
       setStatus("outstanding");
-      setOnlyDueNow(false);
     } else if (prevKpiFilter.current && !kpiFilter) {
       // Was active, now reset
       setStatus("all");
