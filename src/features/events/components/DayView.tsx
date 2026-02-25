@@ -128,14 +128,14 @@ export function DayView({
         {/* Day header content */}
         <div className={cn(
           "flex-1 flex items-center justify-center gap-2",
-          isToday && "bg-primary/5"
+          isToday && "bg-accent/[0.06]"
         )}>
           <span className="text-xs text-muted-foreground uppercase">
             {format(date, "EEEE", { locale: it })}
           </span>
           <span className={cn(
             "text-sm font-semibold",
-            isToday && "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs"
+            isToday && "bg-accent text-accent-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs"
           )}>
             {format(date, "d")}
           </span>
@@ -170,7 +170,7 @@ export function DayView({
         <div 
           className={cn(
             "flex-1 relative",
-            isToday && "bg-primary/[0.02]",
+            isToday && "bg-accent/[0.04]",
             isPreviewMode ? 'cursor-default' : 'cursor-pointer'
           )}
           style={{ height: gridHeight }}
@@ -202,7 +202,7 @@ export function DayView({
           {hours.map((_, i) => (
             <div 
               key={i} 
-              className="absolute left-0 right-0 border-t border-border/80" 
+              className="absolute left-0 right-0 border-t border-border/50" 
               style={{ top: i * 60 * MINUTE_HEIGHT }} 
             />
           ))}
@@ -217,8 +217,8 @@ export function DayView({
               className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
               style={{ top: minutesFromDayStart(new Date()) * MINUTE_HEIGHT }}
             >
-              <div className="w-2.5 h-2.5 rounded-full bg-primary -ml-1" />
-              <div className="flex-1 h-[2px] bg-primary" />
+              <div className="w-2.5 h-2.5 rounded-full bg-accent -ml-1" />
+              <div className="flex-1 h-[2px] bg-accent" />
             </div>
           )}
 

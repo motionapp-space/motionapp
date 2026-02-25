@@ -44,8 +44,8 @@ export function AvailabilityOverlay({ date, windows, interactive = false }: Avai
       {overlayWindows.map((window) => (
         <div
           key={window.id}
-          className={`absolute inset-x-0 border-l-2 border-primary/30 ${
-            interactive ? 'bg-primary/5 pointer-events-none' : 'bg-primary/5 pointer-events-none'
+          className={`absolute inset-x-0 border-l-2 border-accent/30 ${
+            interactive ? 'bg-accent/[0.06] pointer-events-none' : 'bg-accent/[0.06] pointer-events-none'
           }`}
           style={{
             top: window.top,
