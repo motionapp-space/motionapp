@@ -42,7 +42,7 @@ export function PaymentFeedItem({ order }: Props) {
 
   const residuo = Math.max(0, order.amount_cents - order.paid_amount_cents);
   const isOutstanding = residuo > 0;
-  const isPartial = order.paid_amount_cents > 0 && residuo > 0;
+  const isPartial = order.paid_amount_cents > 0 && residuo > 0; // used for subline logic only
   const isSingle = order.kind === "single_lesson";
   const isFree = order.amount_cents === 0;
 
@@ -70,13 +70,14 @@ export function PaymentFeedItem({ order }: Props) {
 
   // Shared amount rendering
   const amountMain = isOutstanding ? formatEur(residuo) : formatEur(order.amount_cents);
-  const amountSub = isOutstanding
-    ? isPartial
-      ? `Incassato ${formatEur(order.paid_amount_cents)} · Totale ${formatEur(order.amount_cents)}`
-      : `Totale ${formatEur(order.amount_cents)}`
-    : order.paid_at
-      ? `Pagato il ${format(new Date(order.paid_at), "d MMM yyyy", { locale: it })}`
-      : "Pagato";
+  const subLine1 = isPartial
+    ? `Incassato ${formatEur(order.paid_amount_cents)}`
+    : isOutstanding
+      ? `Totale ${formatEur(order.amount_cents)}`
+      : order.paid_at
+        ? `Pagato il ${format(new Date(order.paid_at), "d MMM yyyy", { locale: it })}`
+        : "Pagato";
+  const subLine2 = isPartial ? `Totale ${formatEur(order.amount_cents)}` : "\u00A0";
 
   return (
     <>
@@ -116,40 +117,30 @@ export function PaymentFeedItem({ order }: Props) {
 
         {/* Mobile: badge + amount side by side */}
         <div className="flex items-center justify-between md:hidden">
-          <div className="flex items-center gap-1.5">
-            <Badge variant="outline" className={badgeMainClass}>
-              <BadgeIcon className="h-3 w-3" />
-              {badgeMainLabel}
-            </Badge>
-            {isPartial && (
-              <Badge variant="outline" className="h-6 rounded-full border-warning/50 bg-warning/10 px-2 text-[10px] font-medium text-foreground dark:text-warning">
-                Parziale
-              </Badge>
-            )}
-          </div>
-          <div className="text-right tabular-nums">
-            <p className="text-sm font-semibold text-foreground">{amountMain}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{amountSub}</p>
-          </div>
-        </div>
-
-        {/* Column 2: Status badge (desktop only) */}
-        <div className="hidden md:flex items-center gap-1.5">
           <Badge variant="outline" className={badgeMainClass}>
             <BadgeIcon className="h-3 w-3" />
             {badgeMainLabel}
           </Badge>
-          {isPartial && (
-            <Badge variant="outline" className="h-6 rounded-full border-warning/50 bg-warning/10 px-2 text-[10px] font-medium text-foreground dark:text-warning">
-              Parziale
-            </Badge>
-          )}
+          <div className="text-right tabular-nums">
+            <p className="text-sm font-semibold text-foreground">{amountMain}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{subLine1}</p>
+            <p className="text-xs text-muted-foreground">{subLine2}</p>
+          </div>
+        </div>
+
+        {/* Column 2: Status badge (desktop only) */}
+        <div className="hidden md:flex items-center">
+          <Badge variant="outline" className={badgeMainClass}>
+            <BadgeIcon className="h-3 w-3" />
+            {badgeMainLabel}
+          </Badge>
         </div>
 
         {/* Column 3: Amount (desktop only) */}
         <div className="hidden md:block text-right tabular-nums">
           <p className="text-sm font-semibold text-foreground">{amountMain}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{amountSub}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{subLine1}</p>
+          <p className="text-xs text-muted-foreground">{subLine2}</p>
         </div>
 
         {/* Column 4: Action */}
