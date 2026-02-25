@@ -1,44 +1,29 @@
 
-## Rimuovere badge "Parziale" e stabilizzare subline importi
+
+## Favicon dinamica in base al tema (chiaro/scuro)
 
 ### Cosa cambia
 
-Eliminare il badge "Parziale" (rumore visivo) e rendere la subline degli importi sempre su 2 righe stabili per evitare oscillazioni di layout tra righe parziali e non.
+Inserire le due SVG come favicon e usare l'attributo `media` con `prefers-color-scheme` per far sì che il browser scelga automaticamente la versione corretta in base al tema di sistema.
 
-### File: `src/features/payments/components/PaymentFeedItem.tsx`
+### File coinvolti
 
-**1. Rimuovere i badge "Parziale"**
-- Eliminare i 2 blocchi `{isPartial && (<Badge ...>Parziale</Badge>)}` (mobile riga 124-128, desktop riga 142-146)
-- Rimuovere la variabile `isPartial` (riga 45) dato che non serve piu altrove
+**1. Copiare gli asset nella cartella `public/`**
+- `user-uploads://M-white.svg` → `public/favicon-light.svg` (sfondo chiaro, "M" scura — per tema chiaro)
+- `user-uploads://M-black.svg` → `public/favicon-dark.svg` (sfondo scuro, "M" chiara — per tema scuro)
 
-**2. Subline a 2 righe stabili**
+**2. Modificare `index.html`**
 
-Sostituire la singola `<p>` subline con 2 righe fisse:
+Aggiungere due tag `<link rel="icon">` con media query:
 
-- **Outstanding parziale**: riga 1 = `Incassato 100,00 €`, riga 2 = `Totale 225,00 €`
-- **Outstanding non parziale**: riga 1 = `Totale 225,00 €`, riga 2 = placeholder invisibile (`\u00A0` o `min-h`)
-- **Incassato**: riga 1 = `Pagato il 5 feb 2026` (o "Pagato"), riga 2 = placeholder invisibile
-
-Questo garantisce altezza uniforme su ogni riga del feed, sia mobile che desktop.
-
-**3. Struttura JSX risultante (blocco importi)**
-
-```tsx
-<div className="text-right tabular-nums">
-  <p className="text-sm font-semibold text-foreground">{amountMain}</p>
-  <p className="mt-0.5 text-xs text-muted-foreground">
-    {isPartial ? `Incassato ${formatEur(order.paid_amount_cents)}` : amountSub}
-  </p>
-  <p className="text-xs text-muted-foreground">
-    {isPartial ? `Totale ${formatEur(order.amount_cents)}` : "\u00A0"}
-  </p>
-</div>
+```html
+<link rel="icon" href="/favicon-light.svg" type="image/svg+xml" media="(prefers-color-scheme: light)" />
+<link rel="icon" href="/favicon-dark.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)" />
 ```
 
-Dove `amountSub` per non-parziale outstanding = `Totale X`, per incassato = data pagamento.
+Questo è lo standard HTML nativo — nessun JavaScript necessario. Il browser sceglie la favicon giusta in base alle preferenze di sistema dell'utente.
 
-**4. Applicare a entrambi i breakpoint**
-- Blocco mobile (riga 130-133)
-- Blocco desktop (riga 150-153)
+### Note
+- SVG come favicon è supportato da tutti i browser moderni (Chrome, Firefox, Edge, Safari 15+).
+- Se servisse un fallback PNG per browser vecchi si può aggiungere in futuro, ma per ora SVG è sufficiente.
 
-Nota: `isPartial` viene mantenuta come variabile locale solo per la logica subline (non piu per badge).
