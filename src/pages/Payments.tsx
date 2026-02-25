@@ -27,7 +27,7 @@ export default function Payments() {
 
   const handleFilterOutstanding = useCallback(() => {
     setKpiFilter((prev) =>
-      prev?.type === "outstanding" ? null : { type: "outstanding" }
+      prev?.type === "outstanding" ? prev : { type: "outstanding" }
     );
   }, []);
 
