@@ -156,20 +156,28 @@ export function WeekView({
               key={day.toISOString()}
               className={cn(
                 "flex-1 flex items-center justify-center gap-2 border-r last:border-r-0 border-border/30",
-                isToday && "bg-accent/[0.06]"
+                isToday
+                  ? "bg-accent border-accent"
+                  : ""
               )}
             >
-              <span className="text-xs text-muted-foreground uppercase">
+              <span className={cn(
+                "text-xs uppercase",
+                isToday ? "text-white/90" : "text-muted-foreground"
+              )}>
                 {format(day, "EEE", { locale: it })}
               </span>
               <span className={cn(
                 "text-sm font-semibold",
-                isToday && "bg-accent text-accent-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                isToday ? "text-white font-bold" : ""
               )}>
                 {format(day, "d")}
               </span>
               {count > 0 && (
-                <span className="text-[10px] font-medium text-muted-foreground">
+                <span className={cn(
+                  "text-[10px] font-medium",
+                  isToday ? "text-white/70" : "text-muted-foreground"
+                )}>
                   ({count})
                 </span>
               )}
