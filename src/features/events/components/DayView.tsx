@@ -128,26 +128,18 @@ export function DayView({
         {/* Day header content */}
         <div className={cn(
           "flex-1 flex items-center justify-center gap-2",
-          isToday
-            ? "bg-accent border-accent"
-            : ""
+          isToday && "bg-accent/[0.06]"
         )}>
-          <span className={cn(
-            "text-xs uppercase",
-            isToday ? "text-white/90" : "text-muted-foreground"
-          )}>
+          <span className="text-xs text-muted-foreground uppercase">
             {format(date, "EEEE", { locale: it })}
           </span>
           <span className={cn(
             "text-sm font-semibold",
-            isToday ? "text-white font-bold" : ""
+            isToday && "bg-accent text-accent-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs"
           )}>
             {format(date, "d")}
           </span>
-          <span className={cn(
-            "text-xs",
-            isToday ? "text-white/70" : "text-muted-foreground"
-          )}>
+          <span className="text-xs text-muted-foreground">
             {format(date, "MMMM yyyy", { locale: it })}
           </span>
         </div>
