@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, MoreVertical } from "lucide-react";
+import { Check, CheckCircle, Clock, MoreVertical } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -60,11 +60,12 @@ export function PaymentFeedItem({ order }: Props) {
 
   // Shared badge classes
   const badgeMainClass = cn(
-    "h-7 min-w-[120px] justify-center px-3 text-xs font-medium",
+    "h-7 min-w-[120px] justify-center px-3 text-xs font-medium gap-1",
     isOutstanding
-      ? "border-muted-foreground/50 bg-muted-foreground/10 text-foreground dark:text-muted-foreground"
+      ? "border-warning/50 bg-warning/10 text-foreground dark:text-warning"
       : "border-success/50 bg-success/10 text-foreground dark:text-success"
   );
+  const BadgeIcon = isOutstanding ? Clock : CheckCircle;
   const badgeMainLabel = isOutstanding ? "Da incassare" : "Incassato";
 
   // Shared amount rendering
@@ -117,6 +118,7 @@ export function PaymentFeedItem({ order }: Props) {
         <div className="flex items-center justify-between md:hidden">
           <div className="flex items-center gap-1.5">
             <Badge variant="outline" className={badgeMainClass}>
+              <BadgeIcon className="h-3 w-3" />
               {badgeMainLabel}
             </Badge>
             {isPartial && (
@@ -134,6 +136,7 @@ export function PaymentFeedItem({ order }: Props) {
         {/* Column 2: Status badge (desktop only) */}
         <div className="hidden md:flex items-center gap-1.5">
           <Badge variant="outline" className={badgeMainClass}>
+            <BadgeIcon className="h-3 w-3" />
             {badgeMainLabel}
           </Badge>
           {isPartial && (
