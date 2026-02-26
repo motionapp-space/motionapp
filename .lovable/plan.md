@@ -1,22 +1,31 @@
 
 
-## Problema
+## Analisi
 
-Entrambe le edge function `compute-client-data` e `client-fsm` **non sono presenti in `supabase/config.toml`**. Senza la riga `verify_jwt = false`, il gateway Supabase applica la validazione JWT di default che con il sistema signing-keys **non funziona** — restituendo 401 prima ancora che il codice della funzione venga eseguito (per questo non ci sono log).
+Ho confrontato le edge function presenti in `supabase/functions/` con quelle dichiarate in `supabase/config.toml`.
 
-Entrambe le funzioni già validano l'autenticazione nel codice tramite `getUser()`, quindi è sicuro disabilitare la verifica JWT a livello di gateway.
+### Edge functions esistenti (16):
+`accept-invite`, `auto-complete-events`, `client-appointment-actions`, `client-fsm`, `compute-client-data`, `copilot`, `create-client-auth`, `create-invite`, `email-preview`, `email-worker`, `expire-packages`, `queue-booking-email`, `signup-coach`, `validate-coach-invite`, `validate-invite`
+
+### Dichiarate in config.toml (14):
+Tutte le 16 tranne **`copilot`**.
+
+(`compute-client-data` e `client-fsm` sono state appena aggiunte nell'ultimo fix.)
+
+### Funzione mancante: `copilot`
+
+La funzione `copilot` **non** ha `verify_jwt = false` in `config.toml`. Questo significa che il gateway Supabase applica la validazione JWT di default, causando un **401** in produzione prima che il codice venga eseguito — lo stesso identico problema di `compute-client-data` e `client-fsm`.
+
+La funzione `copilot` non implementa alcuna autenticazione interna (non usa `getUser()` né `getClaims()`), ma è chiamata dal client tramite `supabase.functions.invoke()` che invia automaticamente il token dell'utente. Tuttavia, con il sistema signing-keys, il gateway lo rifiuta comunque.
 
 ## Fix
 
 **File: `supabase/config.toml`** — aggiungere:
 
 ```toml
-[functions.compute-client-data]
-verify_jwt = false
-
-[functions.client-fsm]
+[functions.copilot]
 verify_jwt = false
 ```
 
-Nessuna altra modifica necessaria. Dopo il deploy, le funzioni gestiranno l'auth internamente come già fanno.
+Questa e l'unica funzione mancante. Dopo questo fix, tutte le 16 edge function saranno correttamente configurate.
 
