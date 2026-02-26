@@ -1,29 +1,48 @@
 
+## Fix: doppio click su "Crea appuntamento"
 
-## Favicon dinamica in base al tema (chiaro/scuro)
+### Problema
 
-### Cosa cambia
+Il bottone usa `createEvent.isPending` per disabilitarsi, ma quando il tipo economico non e "none" la creazione avviene tramite `supabase.rpc()` diretto, non tramite `createEvent.mutateAsync`. Quindi `isPending` resta `false` e il bottone rimane cliccabile durante la chiamata.
 
-Inserire le due SVG come favicon e usare l'attributo `media` con `prefers-color-scheme` per far sì che il browser scelga automaticamente la versione corretta in base al tema di sistema.
+### Soluzione
 
-### File coinvolti
+Aggiungere uno stato locale `isSubmitting` che viene settato a `true` all'inizio di `handleCreate` e a `false` alla fine (nel `finally`). Usare questo stato per disabilitare il bottone e mostrare il testo "Salvataggio...".
 
-**1. Copiare gli asset nella cartella `public/`**
-- `user-uploads://M-white.svg` → `public/favicon-light.svg` (sfondo chiaro, "M" scura — per tema chiaro)
-- `user-uploads://M-black.svg` → `public/favicon-dark.svg` (sfondo scuro, "M" chiara — per tema scuro)
+### Modifiche in `src/features/events/components/EventEditorModal.tsx`
 
-**2. Modificare `index.html`**
+**1. Aggiungere stato `isSubmitting`** (tra gli altri `useState`)
 
-Aggiungere due tag `<link rel="icon">` con media query:
-
-```html
-<link rel="icon" href="/favicon-light.svg" type="image/svg+xml" media="(prefers-color-scheme: light)" />
-<link rel="icon" href="/favicon-dark.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)" />
+```tsx
+const [isSubmitting, setIsSubmitting] = useState(false);
 ```
 
-Questo è lo standard HTML nativo — nessun JavaScript necessario. Il browser sceglie la favicon giusta in base alle preferenze di sistema dell'utente.
+**2. Wrappare `handleCreate`**
 
-### Note
-- SVG come favicon è supportato da tutti i browser moderni (Chrome, Firefox, Edge, Safari 15+).
-- Se servisse un fallback PNG per browser vecchi si può aggiungere in futuro, ma per ora SVG è sufficiente.
+```tsx
+const handleCreate = async () => {
+  if (!isValid || isSubmitting) return;  // guard aggiuntivo
+  setIsSubmitting(true);
+  try {
+    // ... tutto il codice esistente ...
+  } catch (...) {
+    // ... gestione errori esistente ...
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+```
 
+**3. Aggiornare il bottone** (riga ~1772-1777)
+
+```tsx
+<Button
+  onClick={handleCreate}
+  disabled={!isValid || isSubmitting}
+  className="h-10 px-5 font-semibold"
+>
+  {isSubmitting ? 'Salvataggio...' : 'Crea appuntamento'}
+</Button>
+```
+
+Stessa logica per il bottone "Salva modifiche" in modalita edit, se presente con lo stesso pattern.
