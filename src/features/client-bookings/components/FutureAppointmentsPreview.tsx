@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRight } from "lucide-react";
 import { format } from "date-fns";
@@ -7,14 +6,12 @@ import type { ClientAppointmentView } from "../types";
 
 interface FutureAppointmentsPreviewProps {
   appointments: ClientAppointmentView[];
-  hasMore: boolean;
   hasNextAppointment: boolean;
   onAppointmentClick: (appointment: ClientAppointmentView) => void;
 }
 
 export function FutureAppointmentsPreview({ 
   appointments, 
-  hasMore,
   hasNextAppointment,
   onAppointmentClick
 }: FutureAppointmentsPreviewProps) {
@@ -55,15 +52,6 @@ export function FutureAppointmentsPreview({
           );
         })}
       </div>
-
-      {hasMore && (
-        <Link 
-          to="/client/app/appointments/all" 
-          className="block text-sm text-primary hover:underline mt-3 text-center"
-        >
-          Vedi tutti gli appuntamenti
-        </Link>
-      )}
     </section>
   );
 }

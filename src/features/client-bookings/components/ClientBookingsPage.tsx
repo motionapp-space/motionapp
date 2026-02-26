@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { History, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClientPageHeader } from "@/components/client/ClientPageHeader";
 import { ClientPageShell } from "@/components/client/ClientPageShell";
@@ -29,7 +31,6 @@ export function ClientBookingsPage() {
     nextConfirmed,
     activeRequests,
     futureConfirmed,
-    hasMoreFuture
   } = useMemo(() => {
     if (!appointments) {
       return { 
@@ -61,8 +62,7 @@ export function ClientBookingsPage() {
     return {
       nextConfirmed: confirmed[0] || null,
       activeRequests: requests,
-      futureConfirmed: confirmed.slice(1, 4), // Max 3, excluding hero
-      hasMoreFuture: confirmed.length > 4     // More than hero + 3
+      futureConfirmed: confirmed.slice(1), // All future except hero
     };
   }, [appointments]);
 
@@ -142,10 +142,21 @@ export function ClientBookingsPage() {
       {/* Section 3: Future Appointments Preview */}
       <FutureAppointmentsPreview
         appointments={futureConfirmed}
-        hasMore={hasMoreFuture}
         hasNextAppointment={!!nextConfirmed}
         onAppointmentClick={handleViewDetail}
       />
+
+      {/* History Link - always visible */}
+      <Link
+        to="/client/app/appointments/all"
+        className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <History className="h-5 w-5 text-muted-foreground" />
+          <span className="text-sm font-medium">Storico appuntamenti</span>
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </Link>
 
       {/* Detail Sheet */}
       <AppointmentDetailSheet
