@@ -1,31 +1,37 @@
 
 
-## Analisi completata
+## Diagnosi
 
-Ho verificato lo stato attuale del DB:
-- **`finalize_booking_request`**: riga 226 usa `'single_session'` (errato), riga 232 usa `'pending'` (errato)
-- **`chk_order_kind_refs`**: contiene valori legacy `charge`, `refund`, `deposit` — zero righe in DB con questi valori, quindi safe da rimuovere
-- **`chk_order_kind`**: già corretto (`single_lesson`, `package_purchase`)
-- **`chk_order_status`**: già corretto (`draft`, `due`, `paid`, `canceled`, `refunded`, `refund_pending`)
+Dai log Supabase, i **401** in produzione provengono dalle edge function `client-fsm` e `compute-client-data`. Il flusso è:
 
-## Migration SQL
+1. Il browser chiama `supabase.functions.invoke()` che include l'header `Authorization`
+2. L'edge function crea un client Supabase con quell'header e chiama `getUser()`
+3. `getUser()` fa una richiesta a `/auth/v1/user` — e questa fallisce con `no_authorization`
 
-Una singola migration con 2 interventi:
+**Causa principale**: gli header CORS delle edge function sono incompleti. La versione `@supabase/supabase-js@2.75+` invia header aggiuntivi (`x-supabase-client-platform`, `x-supabase-client-platform-version`, etc.). Se il preflight CORS non li autorizza, il browser blocca la richiesta effettiva — l'edge function non riceve mai l'header `Authorization` e restituisce 401.
 
-### 1. Ricreare `finalize_booking_request`
-Identica alla versione corrente ma con 2 fix:
-- `kind = 'single_session'` → `'single_lesson'`
-- `status = 'pending'` → `'draft'`
+## Piano
 
-### 2. Allineare `chk_order_kind_refs`
-Rimuovere i 3 valori legacy mai raggiungibili:
-```sql
-ALTER TABLE orders DROP CONSTRAINT chk_order_kind_refs;
-ALTER TABLE orders ADD CONSTRAINT chk_order_kind_refs CHECK (
-  (kind = 'single_lesson' AND event_id IS NOT NULL AND package_id IS NULL)
-  OR (kind = 'package_purchase' AND package_id IS NOT NULL AND event_id IS NULL)
-);
+Aggiornare gli header CORS in **tutte le edge function** che usano il pattern ridotto. Sostituire:
+
+```
+'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 ```
 
-Nessuna modifica al codice frontend. Fix interamente nel DB.
+con:
+
+```
+'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version'
+```
+
+### File da modificare
+
+1. `supabase/functions/client-fsm/index.ts` (riga 5)
+2. `supabase/functions/compute-client-data/index.ts` (riga 5)
+3. Tutte le altre edge function che usano lo stesso pattern ridotto (da verificare: `copilot`, `client-appointment-actions`, `queue-booking-email`, `create-invite`, `validate-invite`, `accept-invite`, `signup-coach`, `validate-coach-invite`, `create-client-auth`, `auto-complete-events`, `expire-packages`, `email-preview`, `email-worker`)
+
+### Dopo la modifica
+
+- Deploy di tutte le edge function modificate
+- Pubblicare in produzione per applicare il fix su `motionapp.xyz`
 
