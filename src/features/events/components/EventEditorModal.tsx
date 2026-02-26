@@ -203,6 +203,7 @@ export function EventEditorModal({
   const updateEvent = useUpdateEvent();
   const createSession = useCreateSession();
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: clientsData } = useClientsQuery({ q: "", page: 1, limit: 100 });
   const clients = clientsData?.items || [];
   const { data: clientPackages } = useClientPackages(formData.clientId);
@@ -523,7 +524,8 @@ export function EventEditorModal({
 
   // Handlers
   const handleCreate = async () => {
-    if (!isValid) return;
+    if (!isValid || isSubmitting) return;
+    setIsSubmitting(true);
 
     try {
       const coachClientId = await getCoachClientId(formData.clientId);
@@ -685,11 +687,14 @@ export function EventEditorModal({
     } catch (error: any) {
       console.error('Create event error:', error);
       toast.error("Errore nella creazione", { description: error.message });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleUpdate = async () => {
-    if (!isValid || !event) return;
+    if (!isValid || !event || isSubmitting) return;
+    setIsSubmitting(true);
 
     try {
       const coachClientId = await getCoachClientId(formData.clientId);
@@ -709,6 +714,8 @@ export function EventEditorModal({
       onOpenChange(false);
     } catch (error) {
       console.error('Update event error:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1735,12 +1742,12 @@ export function EventEditorModal({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span>
-                            <Button
+                              <Button
                               onClick={handleUpdate}
-                              disabled={!isValid || updateEvent.isPending}
+                              disabled={!isValid || isSubmitting}
                               className="h-10 px-5 font-semibold"
                             >
-                              {updateEvent.isPending ? 'Salvataggio...' : 'Salva modifiche'}
+                              {isSubmitting ? 'Salvataggio...' : 'Salva modifiche'}
                             </Button>
                           </span>
                         </TooltipTrigger>
@@ -1771,10 +1778,10 @@ export function EventEditorModal({
                         <span>
                           <Button
                             onClick={handleCreate}
-                            disabled={!isValid || createEvent.isPending}
+                            disabled={!isValid || isSubmitting}
                             className="h-10 px-5 font-semibold"
                           >
-                            {createEvent.isPending ? 'Salvataggio...' : 'Crea appuntamento'}
+                            {isSubmitting ? 'Salvataggio...' : 'Crea appuntamento'}
                           </Button>
                         </span>
                       </TooltipTrigger>
