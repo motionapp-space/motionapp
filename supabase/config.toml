@@ -35,3 +35,9 @@ verify_jwt = false
 
 [functions.validate-coach-invite]
 verify_jwt = false
+
+[functions.compute-client-data]
+verify_jwt = false
+
+[functions.client-fsm]
+verify_jwt = false
