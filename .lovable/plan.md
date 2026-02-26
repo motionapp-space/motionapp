@@ -1,31 +1,31 @@
 
 
-## Analisi
+## Analisi completata
 
-Ho confrontato le edge function presenti in `supabase/functions/` con quelle dichiarate in `supabase/config.toml`.
+Ho verificato lo stato attuale del DB:
+- **`finalize_booking_request`**: riga 226 usa `'single_session'` (errato), riga 232 usa `'pending'` (errato)
+- **`chk_order_kind_refs`**: contiene valori legacy `charge`, `refund`, `deposit` — zero righe in DB con questi valori, quindi safe da rimuovere
+- **`chk_order_kind`**: già corretto (`single_lesson`, `package_purchase`)
+- **`chk_order_status`**: già corretto (`draft`, `due`, `paid`, `canceled`, `refunded`, `refund_pending`)
 
-### Edge functions esistenti (16):
-`accept-invite`, `auto-complete-events`, `client-appointment-actions`, `client-fsm`, `compute-client-data`, `copilot`, `create-client-auth`, `create-invite`, `email-preview`, `email-worker`, `expire-packages`, `queue-booking-email`, `signup-coach`, `validate-coach-invite`, `validate-invite`
+## Migration SQL
 
-### Dichiarate in config.toml (14):
-Tutte le 16 tranne **`copilot`**.
+Una singola migration con 2 interventi:
 
-(`compute-client-data` e `client-fsm` sono state appena aggiunte nell'ultimo fix.)
+### 1. Ricreare `finalize_booking_request`
+Identica alla versione corrente ma con 2 fix:
+- `kind = 'single_session'` → `'single_lesson'`
+- `status = 'pending'` → `'draft'`
 
-### Funzione mancante: `copilot`
-
-La funzione `copilot` **non** ha `verify_jwt = false` in `config.toml`. Questo significa che il gateway Supabase applica la validazione JWT di default, causando un **401** in produzione prima che il codice venga eseguito — lo stesso identico problema di `compute-client-data` e `client-fsm`.
-
-La funzione `copilot` non implementa alcuna autenticazione interna (non usa `getUser()` né `getClaims()`), ma è chiamata dal client tramite `supabase.functions.invoke()` che invia automaticamente il token dell'utente. Tuttavia, con il sistema signing-keys, il gateway lo rifiuta comunque.
-
-## Fix
-
-**File: `supabase/config.toml`** — aggiungere:
-
-```toml
-[functions.copilot]
-verify_jwt = false
+### 2. Allineare `chk_order_kind_refs`
+Rimuovere i 3 valori legacy mai raggiungibili:
+```sql
+ALTER TABLE orders DROP CONSTRAINT chk_order_kind_refs;
+ALTER TABLE orders ADD CONSTRAINT chk_order_kind_refs CHECK (
+  (kind = 'single_lesson' AND event_id IS NOT NULL AND package_id IS NULL)
+  OR (kind = 'package_purchase' AND package_id IS NOT NULL AND event_id IS NULL)
+);
 ```
 
-Questa e l'unica funzione mancante. Dopo questo fix, tutte le 16 edge function saranno correttamente configurate.
+Nessuna modifica al codice frontend. Fix interamente nel DB.
 
