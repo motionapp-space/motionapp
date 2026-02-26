@@ -31,7 +31,6 @@ export function ClientBookingsPage() {
     nextConfirmed,
     activeRequests,
     futureConfirmed,
-    hasMoreFuture
   } = useMemo(() => {
     if (!appointments) {
       return { 
@@ -63,8 +62,7 @@ export function ClientBookingsPage() {
     return {
       nextConfirmed: confirmed[0] || null,
       activeRequests: requests,
-      futureConfirmed: confirmed.slice(1, 4), // Max 3, excluding hero
-      hasMoreFuture: confirmed.length > 4     // More than hero + 3
+      futureConfirmed: confirmed.slice(1), // All future except hero
     };
   }, [appointments]);
 
@@ -144,7 +142,6 @@ export function ClientBookingsPage() {
       {/* Section 3: Future Appointments Preview */}
       <FutureAppointmentsPreview
         appointments={futureConfirmed}
-        hasMore={hasMoreFuture}
         hasNextAppointment={!!nextConfirmed}
         onAppointmentClick={handleViewDetail}
       />
