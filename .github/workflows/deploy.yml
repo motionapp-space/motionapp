@@ -1,4 +1,4 @@
-name: Deploy to Supabase and Netlify
+name: Deploy to Supabase
 
 on:
   push:
