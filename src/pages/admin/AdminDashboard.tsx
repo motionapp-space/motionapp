@@ -1,4 +1,4 @@
-import { Shield, Users, Mail, Settings, LogOut } from "lucide-react";
+import { Shield, Users, Mail, MessageSquare, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import SectionShell from "@/components/layout/SectionShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,35 +64,39 @@ export default function AdminDashboard() {
           </Card>
         </Link>
 
-        <Card className="opacity-60">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-base">Utenti</CardTitle>
-            </div>
-            <CardDescription className="text-sm">
-              Panoramica utenti sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Coming soon</p>
-          </CardContent>
-        </Card>
+        <Link to="/admin/coaches">
+          <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <CardTitle className="text-base">Coach</CardTitle>
+              </div>
+              <CardDescription className="text-sm">
+                Panoramica coach iscritti
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-primary font-medium">Visualizza →</p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="opacity-60">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-base">Sistema</CardTitle>
-            </div>
-            <CardDescription className="text-sm">
-              Configurazioni e log
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Coming soon</p>
-          </CardContent>
-        </Card>
+        <Link to="/admin/feedback">
+          <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-primary" />
+                <CardTitle className="text-base">Feedback</CardTitle>
+              </div>
+              <CardDescription className="text-sm">
+                Feedback ricevuti dagli utenti
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-primary font-medium">Leggi →</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </SectionShell>
   );

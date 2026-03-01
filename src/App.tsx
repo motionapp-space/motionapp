@@ -36,6 +36,8 @@ import Notifications from "./pages/Notifications";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminInvites from "./pages/admin/AdminInvites";
+import AdminCoaches from "./pages/admin/AdminCoaches";
+import AdminFeedback from "./pages/admin/AdminFeedback";
 import ClientAuth from "./pages/client/ClientAuth";
 import ClientAcceptInvite from "./pages/client/ClientAcceptInvite";
 import ClientHome from "./pages/client/ClientHome";
@@ -148,41 +150,41 @@ const App = () => {
           <BrowserRouter>
             <AuthProvider user={user} isLoading={loading}>
               <ScrollToTop />
-              {/* Initialize session bridge for coaches - outside Routes */}
               {isCoach && user && <CoachSessionInitializer userId={user.id} />}
               <Routes>
-                {/* Client area routes - always accessible, no coach auth required */}
+
+                {/* Client area routes */}
                 <Route path="/client/auth" element={<ClientAuth />} />
                 <Route path="/client/accept-invite" element={<ClientAcceptInvite />} />
-                
-                {/* Live session - immersive layout (BEFORE /client/app for correct matching) */}
+
                 <Route path="/client/app/session" element={<ClientSessionLayout />}>
                   <Route index element={<ClientLiveSession />} />
                 </Route>
-                
-                {/* Client app - standard layout */}
+
                 <Route path="/client/app" element={<ClientAppLayout />}>
                   <Route index element={<Navigate to="workouts" replace />} />
-                <Route path="workouts" element={<ClientWorkouts />} />
+                  <Route path="workouts" element={<ClientWorkouts />} />
                   <Route path="appointments" element={<ClientAppointments />} />
                   <Route path="appointments/all" element={<ClientAllAppointments />} />
                   <Route path="notifications" element={<ClientNotifications />} />
                 </Route>
 
-                {/* Public routes - accessible without authentication */}
+                {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/share/:token" element={<SharedPlan />} />
                 <Route path="/booking/:coachId" element={<ClientBooking />} />
 
-                {/* Admin area routes - require admin role */}
+                {/* Admin routes (keep ALL from develop) */}
                 <Route element={<AdminLayout />}>
                   <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/admin/invites" element={<AdminInvites />} />
+                  <Route path="/admin/coaches" element={<AdminCoaches />} />
+                  <Route path="/admin/feedback" element={<AdminFeedback />} />
                 </Route>
 
-                {/* Coach area routes - require authentication */}
+                {/* Coach routes */}
                 <Route element={<CoachLayout isAuthenticated={!!user} />}>
                   <Route path="/" element={<Clients />} />
                   <Route path="/library" element={<Library />} />
@@ -202,6 +204,7 @@ const App = () => {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
+
               </Routes>
             </AuthProvider>
           </BrowserRouter>
