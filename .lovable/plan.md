@@ -1,29 +1,13 @@
 
 
-## Allineamento bottone "Home" nelle pagine Admin
+## Messaggio completo su hover nella tabella Feedback
 
-Le pagine **Coach** e **Feedback** usano il prop `toolbar` di `SectionShell` per il bottone di ritorno (posizionato a destra del titolo). La pagina **Inviti** invece lo posiziona come elemento autonomo sotto il titolo, prima della Card.
+Attualmente la colonna "Messaggio" usa `truncate` e taglia il testo. Aggiungere un `HoverCard` che mostra il messaggio completo al passaggio del mouse.
 
-### Modifiche
+### Modifica
 
-Allineare Coach e Feedback allo stesso pattern di Inviti:
+**`src/features/admin/components/FeedbackTable.tsx`** — Wrappare la cella del messaggio in un `HoverCard` (già disponibile in `@/components/ui/hover-card`):
 
-**`src/pages/admin/AdminCoaches.tsx`** — Rimuovere `toolbar` da SectionShell e aggiungere il bottone come `<div className="mb-4">` prima della Card, identico a Inviti.
-
-**`src/pages/admin/AdminFeedback.tsx`** — Stessa modifica: rimuovere `toolbar`, aggiungere bottone standalone sopra la Card.
-
-Pattern target (da Inviti):
-```tsx
-<SectionShell title="...">
-  <div className="mb-4">
-    <Button variant="outline" size="sm" asChild>
-      <Link to="/admin">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Home
-      </Link>
-    </Button>
-  </div>
-  <Card>...</Card>
-</SectionShell>
-```
+- Il trigger resta il testo troncato attuale
+- Il content mostra `f.message` completo con `whitespace-pre-wrap` e larghezza massima ragionevole (`max-w-md`)
 
