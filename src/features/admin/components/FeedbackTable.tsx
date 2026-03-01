@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { AdminFeedback } from "../api/feedback.api";
 
 interface Props {
@@ -46,7 +47,16 @@ export function FeedbackTable({ feedback }: Props) {
             </TableCell>
             <TableCell className="text-xs">{f.section ?? "—"}</TableCell>
             <TableCell className="text-xs font-mono">{f.page}</TableCell>
-            <TableCell className="text-sm max-w-xs truncate">{f.message}</TableCell>
+            <TableCell className="text-sm max-w-xs">
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <span className="block truncate cursor-default">{f.message}</span>
+                </HoverCardTrigger>
+                <HoverCardContent className="max-w-md whitespace-pre-wrap text-sm">
+                  {f.message}
+                </HoverCardContent>
+              </HoverCard>
+            </TableCell>
             <TableCell>
               <Badge variant="outline" className="text-xs">{f.status}</Badge>
             </TableCell>
