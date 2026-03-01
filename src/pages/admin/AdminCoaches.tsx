@@ -10,17 +10,15 @@ export default function AdminCoaches() {
   const { data: coaches, isLoading, error } = useCoachesOverview();
 
   return (
-    <SectionShell
-      title="Coach iscritti"
-      toolbar={
+    <SectionShell title="Coach iscritti">
+      <div className="mb-4">
         <Button variant="outline" size="sm" asChild>
           <Link to="/admin">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Dashboard
+            Home
           </Link>
         </Button>
-      }
-    >
+      </div>
       <Card>
         <CardContent className="p-0">
           {isLoading && (
