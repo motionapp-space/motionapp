@@ -93,12 +93,16 @@ export function useCounterProposeBookingRequest() {
       counterStart: string;
       counterEnd: string;
     }) => counterProposeBookingRequest(id, counterStart, counterEnd),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["booking-requests"] });
       toast({
         title: "Controproposta inviata",
         description: "La controproposta è stata inviata al cliente.",
       });
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.pendingActions(),
+        dashboardQueryKeys.todayEvents(),
+      ]);
     },
     onError: (error: Error) => {
       toast({
