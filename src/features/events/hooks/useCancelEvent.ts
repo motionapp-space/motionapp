@@ -60,7 +60,7 @@ export function useCancelEvent() {
       
       return { event, clientId, penaltyApplied, hasPackage: true };
     },
-    onSuccess: ({ event, clientId, penaltyApplied, hasPackage }) => {
+    onSuccess: async ({ event, clientId, penaltyApplied, hasPackage }) => {
       // Log activity
       if (clientId) {
         logClientActivity(
