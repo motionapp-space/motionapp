@@ -1,0 +1,35 @@
+import { useTopbar } from "@/contexts/TopbarContext";
+import SectionShell from "@/components/layout/SectionShell";
+import DashboardHeader from "@/features/dashboard/components/DashboardHeader";
+import KpiStrip from "@/features/dashboard/components/KpiStrip";
+import TodayEventsCard from "@/features/dashboard/components/TodayEventsCard";
+import PendingActionsCard from "@/features/dashboard/components/PendingActionsCard";
+import ClientsLowSessionsCard from "@/features/dashboard/components/ClientsLowSessionsCard";
+import InactiveClientsCard from "@/features/dashboard/components/InactiveClientsCard";
+
+export default function Dashboard() {
+  useTopbar({ title: "Dashboard" });
+
+  return (
+    <SectionShell>
+      <div className="space-y-8 pb-8">
+        <DashboardHeader />
+        <KpiStrip />
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-8">
+            <TodayEventsCard />
+          </div>
+          <div className="lg:col-span-4">
+            <PendingActionsCard />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <ClientsLowSessionsCard />
+          <InactiveClientsCard />
+        </div>
+      </div>
+    </SectionShell>
+  );
+}

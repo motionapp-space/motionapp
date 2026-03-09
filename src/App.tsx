@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
+import Dashboard from "./pages/Dashboard";
 import Plans from "./pages/Plans";
 import Library from "./pages/Library";
 import TemplateEditor from "./pages/TemplateEditor";
@@ -186,7 +187,9 @@ const App = () => {
 
                 {/* Coach routes */}
                 <Route element={<CoachLayout isAuthenticated={!!user} />}>
-                  <Route path="/" element={<Clients />} />
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/clients" element={<Clients />} />
                   <Route path="/library" element={<Library />} />
                   <Route path="/templates" element={<Navigate to="/library?tab=templates" replace />} />
                   <Route path="/templates/new" element={<TemplateEditor />} />
