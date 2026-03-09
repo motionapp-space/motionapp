@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { logClientActivity } from "@/features/clients/api/activities.api";
 import { getCoachClientDetails } from "@/lib/coach-client";
+import { invalidateDashboardQueries } from "@/features/dashboard/lib/invalidateDashboardQueries";
+import { dashboardQueryKeys } from "@/features/dashboard/lib/dashboardQueryKeys";
 
 interface CancelEventInput {
   eventId: string;
@@ -58,7 +60,7 @@ export function useCancelEvent() {
       
       return { event, clientId, penaltyApplied, hasPackage: true };
     },
-    onSuccess: ({ event, clientId, penaltyApplied, hasPackage }) => {
+    onSuccess: async ({ event, clientId, penaltyApplied, hasPackage }) => {
       // Log activity
       if (clientId) {
         logClientActivity(
@@ -91,6 +93,11 @@ export function useCancelEvent() {
           description: "Credito restituito al cliente"
         });
       }
+
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.todayEvents(),
+        dashboardQueryKeys.inactiveClients(),
+      ]);
     },
     onError: (error: Error) => {
       toast.error("Errore", {

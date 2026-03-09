@@ -3,6 +3,8 @@ import { createEvent } from "../api/events.api";
 import { toast } from "sonner";
 import { logClientActivity } from "@/features/clients/api/activities.api";
 import { getCoachClientDetails } from "@/lib/coach-client";
+import { invalidateDashboardQueries } from "@/features/dashboard/lib/invalidateDashboardQueries";
+import { dashboardQueryKeys } from "@/features/dashboard/lib/dashboardQueryKeys";
 
 /**
  * Hook for creating events
@@ -37,6 +39,11 @@ export function useCreateEvent() {
 
       // Invalidate queries (housekeeping)
       queryClient.invalidateQueries({ queryKey: ["events"], exact: false });
+
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.todayEvents(),
+        dashboardQueryKeys.inactiveClients(),
+      ]);
       
       // NO toast here - handled by EventEditorModal
       // NO package logic here - handled by EventEditorModal
