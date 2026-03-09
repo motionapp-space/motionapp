@@ -18,10 +18,10 @@ function KpiCard({ icon: Icon, label, value, sublabel }: KpiCardProps) {
         <Icon className="h-6 w-6 text-accent" />
         <span>{label}</span>
       </div>
-      <p className="text-3xl font-semibold leading-none tabular-nums tracking-tight text-foreground">
+      <p className="text-4xl font-semibold leading-none tabular-nums tracking-tight text-foreground">
         {value}
       </p>
-      <p className="text-xs text-muted-foreground">{sublabel}</p>
+      <p className="text-sm text-muted-foreground">{sublabel}</p>
     </div>
   );
 }
