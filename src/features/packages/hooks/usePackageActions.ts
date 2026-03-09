@@ -29,6 +29,9 @@ export function useArchivePackage() {
       );
       
       toast.success("Pacchetto archiviato");
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.clientsLowSessions(),
+      ]);
     },
     onError: (error: Error) => {
       toast.error("Errore", {
