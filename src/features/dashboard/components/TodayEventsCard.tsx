@@ -12,7 +12,8 @@ function EventRow({ event }: { event: TodayEvent }) {
     <button
       onClick={() => navigate("/calendar")}
       className={cn(
-        "flex flex-col gap-0.5 px-4 py-3 w-full text-left rounded-xl cursor-pointer transition-all duration-200 hover:-translate-y-[1px]",
+        "flex flex-col gap-0.5 px-3 py-2.5 w-full text-left rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[1px]",
+        "flex items-center gap-3 px-3 py-2.5 w-full text-left rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[1px]",
         event.isNext
           ? "bg-accent/15 ring-1 ring-accent/30 hover:bg-accent/20"
           : "bg-accent/8 hover:bg-accent/12"
@@ -53,7 +54,7 @@ export default function TodayEventsCard() {
       className={cn(
         "rounded-2xl p-6 flex flex-col h-full",
         hasEvents
-          ? "bg-accent/4 border border-accent/12"
+          ? "bg-accent/6 border border-accent/18"
           : "bg-card border border-border"
       )}
     >
@@ -90,7 +91,7 @@ export default function TodayEventsCard() {
           to="/calendar"
           className="text-sm text-accent font-medium hover:text-accent-hover transition-colors duration-200 inline-flex items-center gap-1"
         >
-          Vedi calendario completo
+          Vai al calendario
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
