@@ -42,9 +42,9 @@ export default function ClientsLowSessionsCard() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center text-center py-8 space-y-2">
-          <Battery className="h-12 w-12 text-muted-foreground/50" />
-          <p className="text-base font-semibold text-foreground">
+        <div className="flex flex-col items-center text-center py-5 space-y-2">
+          <Battery className="h-8 w-8 text-muted-foreground/50" />
+          <p className="text-sm font-semibold text-foreground">
             Nessun cliente con sessioni in esaurimento
           </p>
           <p className="text-sm text-muted-foreground">

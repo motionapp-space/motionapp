@@ -12,11 +12,11 @@ export default function Dashboard() {
 
   return (
     <SectionShell>
-      <div className="space-y-8 pb-8">
+      <div className="space-y-6 pb-8">
         <DashboardHeader />
         <KpiStrip />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8">
             <TodayEventsCard />
           </div>
@@ -25,7 +25,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ClientsLowSessionsCard />
           <InactiveClientsCard />
         </div>

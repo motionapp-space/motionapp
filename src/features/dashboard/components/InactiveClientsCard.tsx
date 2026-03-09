@@ -42,9 +42,9 @@ export default function InactiveClientsCard() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center text-center py-8 space-y-2">
-          <UserX className="h-12 w-12 text-muted-foreground/50" />
-          <p className="text-base font-semibold text-foreground">
+        <div className="flex flex-col items-center text-center py-5 space-y-2">
+          <UserX className="h-8 w-8 text-muted-foreground/50" />
+          <p className="text-sm font-semibold text-foreground">
             Tutti i clienti sono attivi
           </p>
           <p className="text-sm text-muted-foreground">
