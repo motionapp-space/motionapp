@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Calendar, ArrowRight } from "lucide-react";
+import { Calendar, ArrowRight, CalendarPlus } from "lucide-react";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -12,39 +12,29 @@ function EventRow({ event }: { event: TodayEvent }) {
     <button
       onClick={() => navigate("/calendar")}
       className={cn(
-        "flex items-center gap-4 px-4 py-3 w-full text-left rounded-xl cursor-pointer transition-all duration-200 hover:translate-y-[-1px]",
+        "flex flex-col gap-0.5 px-4 py-3 w-full text-left rounded-xl cursor-pointer transition-all duration-200 hover:translate-y-[-1px]",
         event.isNext
           ? "bg-accent/20 ring-1 ring-accent/30 hover:bg-accent/25"
           : "bg-white/5 hover:bg-white/10"
       )}
     >
-      <span className="text-sm tabular-nums text-primary-foreground/60 w-[52px] shrink-0">
-        {format(new Date(event.start_at), "HH:mm")}
-      </span>
-      <span className="text-sm font-medium text-primary-foreground truncate">
-        {event.client_name}
-      </span>
-      <span className="text-sm text-primary-foreground/50 truncate ml-auto">
+      <div className="flex items-center gap-3">
+        <span className="text-sm tabular-nums text-white/70 w-[52px] shrink-0">
+          {format(new Date(event.start_at), "HH:mm")}
+        </span>
+        <span className="text-sm font-medium text-white truncate">
+          {event.client_name}
+        </span>
+      </div>
+      <span className="text-xs text-white/60 truncate pl-[64px]">
         {event.title}
       </span>
     </button>
   );
 }
 
-function NextEventBanner({ event }: { event: TodayEvent }) {
-  return (
-    <div className="px-4 py-2 space-y-0.5">
-      <p className="text-xs font-medium text-accent">Prossimo evento</p>
-      <p className="text-sm text-primary-foreground/70">
-        {format(new Date(event.start_at), "HH:mm")} — {event.client_name}
-      </p>
-    </div>
-  );
-}
-
 export default function TodayEventsCard() {
   const { data: events, isLoading } = useTodayEvents();
-  const nextEvent = events?.find((e) => e.isNext);
   const hasEvents = events && events.length > 0;
 
   if (isLoading) {
@@ -75,10 +65,8 @@ export default function TodayEventsCard() {
             : "text-foreground mb-4"
         )}
       >
-        Eventi di oggi
+        Eventi di oggi{hasEvents ? ` · ${events.length}` : ""}
       </h2>
-
-      {nextEvent && <NextEventBanner event={nextEvent} />}
 
       {hasEvents ? (
         <div className="flex flex-col gap-2">
@@ -96,7 +84,10 @@ export default function TodayEventsCard() {
             Goditi il tempo libero o pianifica qualcosa di nuovo
           </p>
           <Button size="sm" variant="outline" asChild className="mt-1">
-            <Link to="/calendar">Crea evento</Link>
+            <Link to="/calendar">
+              <CalendarPlus className="h-4 w-4 mr-1.5" />
+              Crea evento
+            </Link>
           </Button>
         </div>
       )}

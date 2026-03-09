@@ -100,7 +100,7 @@ export default function ActivityTrendCard() {
                 dataKey="month"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))", fillOpacity: 0.8 }}
               />
               <YAxis hide />
               <Tooltip content={<CustomTooltip />} />
