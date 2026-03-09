@@ -21,7 +21,7 @@ export default function ClientsLowSessionsCard() {
   return (
     <div className="bg-card border border-border rounded-2xl p-6 h-full">
       <h2 className="text-lg font-semibold text-foreground mb-4">
-        Sessioni in esaurimento
+        Pacchetti in esaurimento
       </h2>
 
       {clients && clients.length > 0 ? (
