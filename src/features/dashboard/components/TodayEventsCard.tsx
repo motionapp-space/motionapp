@@ -68,8 +68,10 @@ export default function TodayEventsCard() {
     >
       <h2
         className={cn(
-          "text-lg font-semibold mb-4",
-          hasEvents ? "text-primary-foreground" : "text-foreground"
+          "text-xl font-semibold",
+          hasEvents
+            ? "text-primary-foreground mb-3 pb-3 border-b border-white/10"
+            : "text-foreground mb-4"
         )}
       >
         Eventi di oggi
