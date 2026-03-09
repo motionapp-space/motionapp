@@ -9,32 +9,28 @@ interface KpiCardProps {
   label: string;
   value: string;
   sublabel: string;
-  trend?: string;
 }
 
-function KpiCard({ icon: Icon, label, value, sublabel, trend }: KpiCardProps) {
+function KpiCard({ icon: Icon, label, value, sublabel }: KpiCardProps) {
   return (
-    <div className="bg-card border border-border rounded-2xl p-6 space-y-3">
+    <div className="bg-card border border-border rounded-2xl p-6 space-y-2 hover:shadow-sm transition-shadow duration-200">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Icon className="h-6 w-6 text-accent-strong" />
+        <Icon className="h-5 w-5 text-muted-foreground" />
         <span>{label}</span>
       </div>
-      <p className="text-4xl font-semibold leading-none tabular-nums tracking-tight text-foreground">
+      <p className="text-3xl font-semibold leading-none tabular-nums tracking-tight text-foreground">
         {value}
       </p>
       <p className="text-sm text-muted-foreground">{sublabel}</p>
-      {trend && (
-        <p className="text-xs text-accent font-medium">{trend}</p>
-      )}
     </div>
   );
 }
 
 function KpiSkeleton() {
   return (
-    <div className="bg-card border border-border rounded-2xl p-6 space-y-3">
+    <div className="bg-card border border-border rounded-2xl p-6 space-y-2">
       <Skeleton className="h-4 w-24" />
-      <Skeleton className="h-10 w-16" />
+      <Skeleton className="h-9 w-16" />
       <Skeleton className="h-3 w-32" />
     </div>
   );
@@ -77,7 +73,7 @@ export default function KpiStrip() {
         value={formatCents(unpaid?.total ?? 0)}
         sublabel={
           unpaid?.count
-            ? `${unpaid.count} ${unpaid.count === 1 ? "elemento" : "elementi"} non pagati`
+            ? `${unpaid.count} ${unpaid.count === 1 ? "pagamento da registrare" : "pagamenti da registrare"}`
             : "Tutto incassato"
         }
       />
