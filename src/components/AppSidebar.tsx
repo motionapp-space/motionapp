@@ -1,4 +1,4 @@
-import { Users, FileText, Calendar, Settings, Wallet } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Calendar, Settings, Wallet } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import React from "react";
