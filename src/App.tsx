@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
+import Dashboard from "./pages/Dashboard";
 import Plans from "./pages/Plans";
 import Library from "./pages/Library";
 import TemplateEditor from "./pages/TemplateEditor";
