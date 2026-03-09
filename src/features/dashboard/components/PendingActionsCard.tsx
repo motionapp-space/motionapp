@@ -30,7 +30,7 @@ export default function PendingActionsCard() {
             <button
               key={action.type}
               onClick={() => navigate(action.navigateTo)}
-              className="flex items-center justify-between gap-2 px-3 min-h-[48px] rounded-lg text-left text-sm text-foreground hover:bg-muted/50 transition-colors duration-200"
+              className="flex items-center justify-between gap-2 px-3 min-h-[48px] rounded-lg text-left text-sm text-foreground hover:bg-accent/10 transition-colors duration-200"
             >
               <span>{action.label}</span>
               <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
