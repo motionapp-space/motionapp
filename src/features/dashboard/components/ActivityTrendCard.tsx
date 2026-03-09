@@ -81,12 +81,12 @@ export default function ActivityTrendCard() {
                   <stop
                     offset="0%"
                     stopColor="hsl(var(--accent))"
-                    stopOpacity={0.1}
+                    stopOpacity={0.25}
                   />
                   <stop
                     offset="100%"
                     stopColor="hsl(var(--accent))"
-                    stopOpacity={0}
+                    stopOpacity={0.03}
                   />
                 </linearGradient>
               </defs>
