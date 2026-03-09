@@ -62,7 +62,7 @@ export default function TodayEventsCard() {
       className={cn(
         "rounded-2xl p-6 flex flex-col h-full",
         hasEvents
-          ? "bg-[hsl(var(--foreground)/0.96)] border border-transparent text-primary-foreground"
+          ? "bg-gradient-to-b from-neutral-950 to-neutral-900 border border-transparent text-primary-foreground"
           : "bg-card border border-border"
       )}
     >
