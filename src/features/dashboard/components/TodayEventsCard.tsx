@@ -34,7 +34,7 @@ function EventRow({ event }: { event: TodayEvent }) {
 function NextEventBanner({ event }: { event: TodayEvent }) {
   return (
     <div className="px-4 py-2 text-xs text-primary-foreground/60">
-      <span className="font-medium text-primary-foreground">Prossimo evento</span>
+      <span className="font-medium text-accent">Prossimo evento</span>
       {" — "}
       {format(new Date(event.start_at), "HH:mm")} — {event.client_name}
     </div>
