@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { invalidateDashboardQueries } from "@/features/dashboard/lib/invalidateDashboardQueries";
+import { dashboardQueryKeys } from "@/features/dashboard/lib/dashboardQueryKeys";
 
 export function useRegisterPayment() {
   const queryClient = useQueryClient();
