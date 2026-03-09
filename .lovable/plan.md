@@ -1,18 +1,13 @@
 
 
-# Center-align empty state in TodayEventsCard
+## Messaggio completo su hover nella tabella Feedback
 
-## Change
+Attualmente la colonna "Messaggio" usa `truncate` e taglia il testo. Aggiungere un `HoverCard` che mostra il messaggio completo al passaggio del mouse.
 
-**`TodayEventsCard.tsx` line 78** — Add `items-center text-center` to the empty state container div, matching the pattern used in `InactiveClientsCard` and `ClientsLowSessionsCard`.
+### Modifica
 
-```
-// Before
-<div className="py-3 space-y-1.5">
+**`src/features/admin/components/FeedbackTable.tsx`** — Wrappare la cella del messaggio in un `HoverCard` (già disponibile in `@/components/ui/hover-card`):
 
-// After
-<div className="flex flex-col items-center text-center py-3 space-y-1.5">
-```
-
-No font size changes, no CTA removal. **1 file, 1 line changed.**
+- Il trigger resta il testo troncato attuale
+- Il content mostra `f.message` completo con `whitespace-pre-wrap` e larghezza massima ragionevole (`max-w-md`)
 

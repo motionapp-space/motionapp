@@ -75,7 +75,7 @@ export default function TodayEventsCard() {
           ))}
         </div>
       ) : (
-        <div className="py-3 space-y-1.5">
+        <div className="flex flex-col items-center text-center py-3 space-y-1.5">
           <Calendar className="h-8 w-8 text-muted-foreground/60" />
           <p className="text-base font-semibold text-foreground">
             Nessun evento in programma oggi
