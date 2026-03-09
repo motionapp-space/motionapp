@@ -15,7 +15,7 @@ function KpiCard({ icon: Icon, label, value, sublabel }: KpiCardProps) {
   return (
     <div className="bg-card border border-border rounded-2xl p-6 space-y-3">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Icon className="h-5 w-5 text-accent" />
+        <Icon className="h-6 w-6 text-accent" />
         <span>{label}</span>
       </div>
       <p className="text-3xl font-semibold leading-none tabular-nums tracking-tight text-foreground">
