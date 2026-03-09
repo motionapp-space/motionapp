@@ -9,7 +9,7 @@ export default function PendingActionsCard() {
 
   if (isLoading) {
     return (
-      <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+      <div className="bg-card border border-border rounded-2xl p-6 space-y-3 h-full">
         <Skeleton className="h-5 w-32" />
         {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton key={i} className="h-12 w-full" />
@@ -19,8 +19,8 @@ export default function PendingActionsCard() {
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6 flex flex-col">
-      <h2 className="text-[17px] font-semibold text-foreground mb-4">
+    <div className="bg-card border border-border rounded-2xl p-6 flex flex-col h-full">
+      <h2 className="text-lg font-semibold text-foreground mb-4">
         Azioni in sospeso
       </h2>
 
@@ -38,7 +38,7 @@ export default function PendingActionsCard() {
           ))}
         </div>
       ) : (
-        <div className="py-6 space-y-2">
+        <div className="flex flex-col items-center text-center py-8 space-y-2">
           <CheckCircle className="h-12 w-12 text-muted-foreground/50" />
           <p className="text-base font-semibold text-foreground">
             Tutto sotto controllo

@@ -13,12 +13,12 @@ interface KpiCardProps {
 
 function KpiCard({ icon: Icon, label, value, sublabel }: KpiCardProps) {
   return (
-    <div className="bg-card border border-border rounded-xl p-6 space-y-2">
+    <div className="bg-card border border-border rounded-2xl p-6 space-y-3">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Icon className="h-4 w-4" />
+        <Icon className="h-5 w-5 text-accent" />
         <span>{label}</span>
       </div>
-      <p className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
+      <p className="text-3xl font-semibold leading-none tabular-nums tracking-tight text-foreground">
         {value}
       </p>
       <p className="text-xs text-muted-foreground">{sublabel}</p>
@@ -28,7 +28,7 @@ function KpiCard({ icon: Icon, label, value, sublabel }: KpiCardProps) {
 
 function KpiSkeleton() {
   return (
-    <div className="bg-card border border-border rounded-xl p-6 space-y-2">
+    <div className="bg-card border border-border rounded-2xl p-6 space-y-3">
       <Skeleton className="h-4 w-24" />
       <Skeleton className="h-9 w-16" />
       <Skeleton className="h-3 w-32" />
@@ -45,7 +45,7 @@ export default function KpiStrip() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <KpiSkeleton />
         <KpiSkeleton />
         <KpiSkeleton />
@@ -54,7 +54,7 @@ export default function KpiStrip() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <KpiCard
         icon={Calendar}
         label="Eventi oggi"
