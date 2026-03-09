@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { UserX } from "lucide-react";
+import { UserX, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInactiveClients } from "../hooks/useInactiveClients";
 
