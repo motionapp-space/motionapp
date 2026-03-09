@@ -47,7 +47,7 @@ export default function TodayEventsCard() {
 
   if (isLoading) {
     return (
-      <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+      <div className="bg-card border border-border rounded-2xl p-6 space-y-3 h-full">
         <Skeleton className="h-5 w-32" />
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-14 w-full" />
@@ -57,8 +57,8 @@ export default function TodayEventsCard() {
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6 flex flex-col">
-      <h2 className="text-[17px] font-semibold text-foreground mb-4">
+    <div className="bg-card border border-border rounded-2xl p-6 flex flex-col h-full">
+      <h2 className="text-lg font-semibold text-foreground mb-4">
         Eventi di oggi
       </h2>
 
@@ -71,7 +71,7 @@ export default function TodayEventsCard() {
           ))}
         </div>
       ) : (
-        <div className="py-6 space-y-2">
+        <div className="py-4 space-y-2">
           <Calendar className="h-12 w-12 text-muted-foreground/50" />
           <p className="text-base font-semibold text-foreground">
             Nessun evento in programma oggi
@@ -88,7 +88,7 @@ export default function TodayEventsCard() {
       <div className="mt-auto pt-4 border-t border-border">
         <Link
           to="/calendar"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 inline-flex items-center gap-1"
+          className="text-sm text-accent font-medium hover:text-accent-hover transition-colors duration-200 inline-flex items-center gap-1"
         >
           Vedi calendario completo
           <ArrowRight className="h-3.5 w-3.5" />
