@@ -30,7 +30,7 @@ function KpiSkeleton() {
   return (
     <div className="bg-card border border-border rounded-2xl p-6 space-y-3">
       <Skeleton className="h-4 w-24" />
-      <Skeleton className="h-9 w-16" />
+      <Skeleton className="h-10 w-16" />
       <Skeleton className="h-3 w-32" />
     </div>
   );

@@ -14,17 +14,17 @@ function EventRow({ event }: { event: TodayEvent }) {
       className={cn(
         "flex items-center gap-4 px-4 min-h-[56px] w-full text-left rounded-lg transition-colors duration-200",
         event.isNext
-          ? "bg-accent/10 hover:bg-accent/15"
-          : "hover:bg-muted/50"
+          ? "bg-accent/20 hover:bg-accent/25"
+          : "hover:bg-white/5"
       )}
     >
-      <span className="text-sm tabular-nums text-muted-foreground w-[52px] shrink-0">
+      <span className="text-sm tabular-nums text-primary-foreground/60 w-[52px] shrink-0">
         {format(new Date(event.start_at), "HH:mm")}
       </span>
-      <span className="text-sm font-medium text-foreground truncate">
+      <span className="text-sm font-medium text-primary-foreground truncate">
         {event.client_name}
       </span>
-      <span className="text-sm text-muted-foreground truncate ml-auto">
+      <span className="text-sm text-primary-foreground/50 truncate ml-auto">
         {event.title}
       </span>
     </button>
@@ -33,8 +33,8 @@ function EventRow({ event }: { event: TodayEvent }) {
 
 function NextEventBanner({ event }: { event: TodayEvent }) {
   return (
-    <div className="px-4 py-2 text-xs text-muted-foreground">
-      <span className="font-medium text-foreground">Prossimo evento</span>
+    <div className="px-4 py-2 text-xs text-primary-foreground/60">
+      <span className="font-medium text-primary-foreground">Prossimo evento</span>
       {" — "}
       {format(new Date(event.start_at), "HH:mm")} — {event.client_name}
     </div>
@@ -44,6 +44,7 @@ function NextEventBanner({ event }: { event: TodayEvent }) {
 export default function TodayEventsCard() {
   const { data: events, isLoading } = useTodayEvents();
   const nextEvent = events?.find((e) => e.isNext);
+  const hasEvents = events && events.length > 0;
 
   if (isLoading) {
     return (
@@ -57,35 +58,52 @@ export default function TodayEventsCard() {
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-6 flex flex-col h-full">
-      <h2 className="text-lg font-semibold text-foreground mb-4">
+    <div
+      className={cn(
+        "rounded-2xl p-6 flex flex-col h-full",
+        hasEvents
+          ? "bg-[hsl(var(--foreground)/0.96)] border border-transparent text-primary-foreground"
+          : "bg-card border border-border"
+      )}
+    >
+      <h2
+        className={cn(
+          "text-lg font-semibold mb-4",
+          hasEvents ? "text-primary-foreground" : "text-foreground"
+        )}
+      >
         Eventi di oggi
       </h2>
 
       {nextEvent && <NextEventBanner event={nextEvent} />}
 
-      {events && events.length > 0 ? (
+      {hasEvents ? (
         <div className="flex flex-col gap-0.5">
           {events.map((event) => (
             <EventRow key={event.id} event={event} />
           ))}
         </div>
       ) : (
-        <div className="py-4 space-y-2">
-          <Calendar className="h-12 w-12 text-muted-foreground/50" />
+        <div className="py-3 space-y-1.5">
+          <Calendar className="h-8 w-8 text-accent/40" />
           <p className="text-base font-semibold text-foreground">
             Nessun evento in programma oggi
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Goditi il tempo libero o pianifica qualcosa di nuovo
           </p>
-          <Button size="sm" variant="outline" asChild className="mt-2">
+          <Button size="sm" variant="outline" asChild className="mt-1">
             <Link to="/calendar">Crea evento</Link>
           </Button>
         </div>
       )}
 
-      <div className="mt-auto pt-4 border-t border-border">
+      <div
+        className={cn(
+          "mt-auto pt-4 border-t",
+          hasEvents ? "border-primary-foreground/10" : "border-border"
+        )}
+      >
         <Link
           to="/calendar"
           className="text-sm text-accent font-medium hover:text-accent-hover transition-colors duration-200 inline-flex items-center gap-1"
