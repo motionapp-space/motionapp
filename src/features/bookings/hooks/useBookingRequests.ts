@@ -59,12 +59,16 @@ export function useDeclineBookingRequest() {
 
   return useMutation({
     mutationFn: declineBookingRequest,
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["booking-requests"] });
       toast({
         title: "Prenotazione rifiutata",
         description: "La prenotazione è stata rifiutata.",
       });
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.pendingActions(),
+        dashboardQueryKeys.todayEvents(),
+      ]);
     },
     onError: (error: Error) => {
       toast({
