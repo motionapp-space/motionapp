@@ -22,9 +22,14 @@ export function useRegisterPayment() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       toast.success("Pagamento registrato");
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.pendingActions(),
+        dashboardQueryKeys.revenueTrend(),
+        dashboardQueryKeys.stats(),
+      ]);
     },
     onError: (err: Error) => {
       toast.error(err.message || "Errore nel registrare il pagamento");

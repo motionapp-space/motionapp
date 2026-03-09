@@ -15,9 +15,14 @@ export function useMarkOrderPaid() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       toast.success("Pagamento registrato");
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.pendingActions(),
+        dashboardQueryKeys.revenueTrend(),
+        dashboardQueryKeys.stats(),
+      ]);
     },
     onError: () => {
       toast.error("Errore nel registrare il pagamento");

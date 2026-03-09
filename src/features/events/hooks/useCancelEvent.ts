@@ -93,6 +93,11 @@ export function useCancelEvent() {
           description: "Credito restituito al cliente"
         });
       }
+
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.todayEvents(),
+        dashboardQueryKeys.inactiveClients(),
+      ]);
     },
     onError: (error: Error) => {
       toast.error("Errore", {

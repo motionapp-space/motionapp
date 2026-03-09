@@ -63,6 +63,9 @@ export function useToggleSuspension() {
       );
       
       toast.success(`Pacchetto ${action}`);
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.clientsLowSessions(),
+      ]);
     },
     onError: (error: Error) => {
       toast.error("Errore", {

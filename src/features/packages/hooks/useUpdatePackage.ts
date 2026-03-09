@@ -28,6 +28,9 @@ export function useUpdatePackage() {
       );
       
       toast.success("Pacchetto aggiornato");
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.clientsLowSessions(),
+      ]);
     },
     onError: (error: Error) => {
       toast.error("Errore", {

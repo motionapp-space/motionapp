@@ -39,6 +39,11 @@ export function useCreateEvent() {
 
       // Invalidate queries (housekeeping)
       queryClient.invalidateQueries({ queryKey: ["events"], exact: false });
+
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.todayEvents(),
+        dashboardQueryKeys.inactiveClients(),
+      ]);
       
       // NO toast here - handled by EventEditorModal
       // NO package logic here - handled by EventEditorModal

@@ -119,12 +119,16 @@ export function useDeleteBookingRequest() {
 
   return useMutation({
     mutationFn: deleteBookingRequest,
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["booking-requests"] });
       toast({
         title: "Prenotazione eliminata",
         description: "La prenotazione è stata eliminata.",
       });
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.pendingActions(),
+        dashboardQueryKeys.todayEvents(),
+      ]);
     },
     onError: (error: Error) => {
       toast({
