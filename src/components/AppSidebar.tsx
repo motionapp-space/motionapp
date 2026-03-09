@@ -13,7 +13,8 @@ import {
 type NavItem = { label: string; to: string; icon: React.ElementType };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Clienti", to: "/", icon: Users },
+  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+  { label: "Clienti", to: "/clients", icon: Users },
   { label: "Agenda", to: "/calendar", icon: Calendar },
   { label: "Pagamenti", to: "/payments", icon: Wallet },
   { label: "Libreria", to: "/library", icon: FileText },
