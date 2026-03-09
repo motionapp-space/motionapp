@@ -54,7 +54,7 @@ export default function TodayEventsCard() {
       className={cn(
         "rounded-2xl p-6 flex flex-col h-full",
         hasEvents
-          ? "bg-accent/4 border border-accent/12"
+          ? "bg-accent/6 border border-accent/18"
           : "bg-card border border-border"
       )}
     >
