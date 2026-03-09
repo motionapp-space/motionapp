@@ -12,21 +12,21 @@ function EventRow({ event }: { event: TodayEvent }) {
     <button
       onClick={() => navigate("/calendar")}
       className={cn(
-        "flex flex-col gap-0.5 px-4 py-3 w-full text-left rounded-xl cursor-pointer transition-all duration-200 hover:translate-y-[-1px]",
+        "flex flex-col gap-0.5 px-4 py-3 w-full text-left rounded-xl cursor-pointer transition-all duration-200 hover:-translate-y-[1px]",
         event.isNext
-          ? "bg-accent/20 ring-1 ring-accent/30 hover:bg-accent/25"
-          : "bg-white/5 hover:bg-white/10"
+          ? "bg-accent/15 ring-1 ring-accent/30 hover:bg-accent/20"
+          : "bg-accent/8 hover:bg-accent/12"
       )}
     >
       <div className="flex items-center gap-3">
-        <span className="text-sm tabular-nums text-white/70 w-[52px] shrink-0">
+        <span className="text-sm tabular-nums text-muted-foreground w-[52px] shrink-0">
           {format(new Date(event.start_at), "HH:mm")}
         </span>
-        <span className="text-sm font-medium text-white truncate">
+        <span className="text-sm font-medium text-foreground truncate">
           {event.client_name}
         </span>
       </div>
-      <span className="text-xs text-white/60 truncate pl-[64px]">
+      <span className="text-xs text-muted-foreground truncate pl-[64px]">
         {event.title}
       </span>
     </button>
@@ -53,18 +53,11 @@ export default function TodayEventsCard() {
       className={cn(
         "rounded-2xl p-6 flex flex-col h-full",
         hasEvents
-          ? "bg-gradient-to-b from-neutral-950 to-neutral-900 border border-transparent text-primary-foreground"
+          ? "bg-accent/4 border border-accent/12"
           : "bg-card border border-border"
       )}
     >
-      <h2
-        className={cn(
-          "text-xl font-semibold",
-          hasEvents
-            ? "text-primary-foreground mb-3 pb-3 border-b border-white/[0.08]"
-            : "text-foreground mb-4"
-        )}
-      >
+      <h2 className="text-lg font-semibold text-foreground mb-4">
         Eventi di oggi{hasEvents ? ` · ${events.length}` : ""}
       </h2>
 
@@ -75,9 +68,9 @@ export default function TodayEventsCard() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center text-center py-3 space-y-1.5">
-          <Calendar className="h-8 w-8 text-muted-foreground/60" />
-          <p className="text-base font-semibold text-foreground">
+        <div className="flex flex-col items-center text-center py-6 space-y-1.5">
+          <Calendar className="h-8 w-8 text-muted-foreground/40" />
+          <p className="text-sm font-semibold text-foreground">
             Nessun evento in programma oggi
           </p>
           <p className="text-xs text-muted-foreground">
@@ -92,12 +85,7 @@ export default function TodayEventsCard() {
         </div>
       )}
 
-      <div
-        className={cn(
-          "mt-auto pt-4 border-t",
-          hasEvents ? "border-primary-foreground/10" : "border-border"
-        )}
-      >
+      <div className="mt-auto pt-4 border-t border-border">
         <Link
           to="/calendar"
           className="text-sm text-accent font-medium hover:text-accent-hover transition-colors duration-200 inline-flex items-center gap-1"

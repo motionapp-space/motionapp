@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { subMonths, startOfMonth, format } from "date-fns";
-import { it } from "date-fns/locale";
 
 interface MonthData {
   month: string;
@@ -22,11 +21,10 @@ const MONTH_LABELS: Record<string, string> = {
   "09": "Set", "10": "Ott", "11": "Nov", "12": "Dic",
 };
 
-async function fetchRevenueTrend(userId: string): Promise<RevenueTrend> {
+async function fetchRevenueTrend(userId: string, months: number): Promise<RevenueTrend> {
   const now = new Date();
-  const sixMonthsAgo = startOfMonth(subMonths(now, 5));
+  const rangeStart = startOfMonth(subMonths(now, months - 1));
 
-  // Get coach's client IDs
   const { data: coachClients } = await supabase
     .from("coach_clients")
     .select("id")
@@ -38,19 +36,16 @@ async function fetchRevenueTrend(userId: string): Promise<RevenueTrend> {
 
   const ccIds = coachClients.map((cc) => cc.id);
 
-  // Get paid orders in last 6 months
   const { data: orders } = await supabase
     .from("orders")
     .select("paid_amount_cents, paid_at")
     .in("coach_client_id", ccIds)
     .not("paid_at", "is", null)
-    .gte("paid_at", sixMonthsAgo.toISOString());
+    .gte("paid_at", rangeStart.toISOString());
 
-  // Group by month
   const monthMap = new Map<string, number>();
 
-  // Initialize all 6 months
-  for (let i = 5; i >= 0; i--) {
+  for (let i = months - 1; i >= 0; i--) {
     const m = subMonths(now, i);
     const key = format(m, "yyyy-MM");
     monthMap.set(key, 0);
@@ -80,11 +75,11 @@ async function fetchRevenueTrend(userId: string): Promise<RevenueTrend> {
   return { data, currentMonth, previousMonth, percentChange };
 }
 
-export function useRevenueTrend() {
+export function useRevenueTrend(months: number = 6) {
   const { userId } = useAuth();
   return useQuery({
-    queryKey: ["dashboard", "revenueTrend", userId],
-    queryFn: () => fetchRevenueTrend(userId!),
+    queryKey: ["dashboard", "revenueTrend", userId, months],
+    queryFn: () => fetchRevenueTrend(userId!, months),
     enabled: !!userId,
     staleTime: 60_000,
   });
