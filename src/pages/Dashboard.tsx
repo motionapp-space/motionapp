@@ -2,6 +2,7 @@ import { useTopbar } from "@/contexts/TopbarContext";
 import SectionShell from "@/components/layout/SectionShell";
 import DashboardHeader from "@/features/dashboard/components/DashboardHeader";
 import KpiStrip from "@/features/dashboard/components/KpiStrip";
+import ActivityTrendCard from "@/features/dashboard/components/ActivityTrendCard";
 import TodayEventsCard from "@/features/dashboard/components/TodayEventsCard";
 import PendingActionsCard from "@/features/dashboard/components/PendingActionsCard";
 import ClientsLowSessionsCard from "@/features/dashboard/components/ClientsLowSessionsCard";
@@ -15,6 +16,7 @@ export default function Dashboard() {
       <div className="space-y-6 pb-8">
         <DashboardHeader />
         <KpiStrip />
+        <ActivityTrendCard />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8">
