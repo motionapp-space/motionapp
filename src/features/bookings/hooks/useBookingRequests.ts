@@ -9,6 +9,8 @@ import {
 } from "../api/booking-requests.api";
 import { toast } from "@/hooks/use-toast";
 import type { BookingRequestStatus } from "../types";
+import { invalidateDashboardQueries } from "@/features/dashboard/lib/invalidateDashboardQueries";
+import { dashboardQueryKeys } from "@/features/dashboard/lib/dashboardQueryKeys";
 
 export function useBookingRequestsQuery(filters?: { status?: BookingRequestStatus }) {
   return useQuery({
