@@ -9,9 +9,10 @@ interface KpiCardProps {
   label: string;
   value: string;
   sublabel: string;
+  trend?: string;
 }
 
-function KpiCard({ icon: Icon, label, value, sublabel }: KpiCardProps) {
+function KpiCard({ icon: Icon, label, value, sublabel, trend }: KpiCardProps) {
   return (
     <div className="bg-card border border-border rounded-2xl p-6 space-y-3">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -22,6 +23,9 @@ function KpiCard({ icon: Icon, label, value, sublabel }: KpiCardProps) {
         {value}
       </p>
       <p className="text-sm text-muted-foreground">{sublabel}</p>
+      {trend && (
+        <p className="text-xs text-accent font-medium">{trend}</p>
+      )}
     </div>
   );
 }

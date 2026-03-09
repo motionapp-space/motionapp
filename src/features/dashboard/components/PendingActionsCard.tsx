@@ -30,7 +30,7 @@ export default function PendingActionsCard() {
             <button
               key={action.type}
               onClick={() => navigate(action.navigateTo)}
-              className="flex items-center justify-between gap-2 px-3 min-h-[48px] rounded-lg text-left text-sm text-foreground hover:bg-accent/10 transition-colors duration-200"
+              className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-left text-sm text-foreground hover:bg-accent/10 hover:text-foreground transition-colors duration-200"
             >
               <span>{action.label}</span>
               <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -38,8 +38,8 @@ export default function PendingActionsCard() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center text-center py-4 space-y-2">
-          <CheckCircle className="h-8 w-8 text-muted-foreground/50" />
+        <div className="flex flex-col items-center text-center py-4 space-y-1">
+          <CheckCircle className="h-8 w-8 text-muted-foreground/60" />
           <p className="text-sm font-semibold text-foreground">
             Tutto sotto controllo
           </p>

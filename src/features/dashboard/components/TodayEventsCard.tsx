@@ -12,10 +12,10 @@ function EventRow({ event }: { event: TodayEvent }) {
     <button
       onClick={() => navigate("/calendar")}
       className={cn(
-        "flex items-center gap-4 px-4 min-h-[56px] w-full text-left rounded-lg transition-colors duration-200",
+        "flex items-center gap-4 px-4 py-3 w-full text-left rounded-xl cursor-pointer transition-all duration-200 hover:translate-y-[-1px]",
         event.isNext
-          ? "bg-accent/20 hover:bg-accent/25"
-          : "hover:bg-white/5"
+          ? "bg-accent/20 ring-1 ring-accent/30 hover:bg-accent/25"
+          : "bg-white/5 hover:bg-white/10"
       )}
     >
       <span className="text-sm tabular-nums text-primary-foreground/60 w-[52px] shrink-0">
@@ -33,10 +33,11 @@ function EventRow({ event }: { event: TodayEvent }) {
 
 function NextEventBanner({ event }: { event: TodayEvent }) {
   return (
-    <div className="px-4 py-2 text-xs text-primary-foreground/60">
-      <span className="font-medium text-accent">Prossimo evento</span>
-      {" — "}
-      {format(new Date(event.start_at), "HH:mm")} — {event.client_name}
+    <div className="px-4 py-2 space-y-0.5">
+      <p className="text-xs font-medium text-accent">Prossimo evento</p>
+      <p className="text-sm text-primary-foreground/70">
+        {format(new Date(event.start_at), "HH:mm")} — {event.client_name}
+      </p>
     </div>
   );
 }
@@ -70,7 +71,7 @@ export default function TodayEventsCard() {
         className={cn(
           "text-xl font-semibold",
           hasEvents
-            ? "text-primary-foreground mb-3 pb-3 border-b border-white/10"
+            ? "text-primary-foreground mb-3 pb-3 border-b border-white/[0.08]"
             : "text-foreground mb-4"
         )}
       >
@@ -80,14 +81,14 @@ export default function TodayEventsCard() {
       {nextEvent && <NextEventBanner event={nextEvent} />}
 
       {hasEvents ? (
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-2">
           {events.map((event) => (
             <EventRow key={event.id} event={event} />
           ))}
         </div>
       ) : (
         <div className="py-3 space-y-1.5">
-          <Calendar className="h-8 w-8 text-accent/40" />
+          <Calendar className="h-8 w-8 text-muted-foreground/60" />
           <p className="text-base font-semibold text-foreground">
             Nessun evento in programma oggi
           </p>
