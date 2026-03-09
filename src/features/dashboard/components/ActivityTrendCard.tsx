@@ -42,13 +42,13 @@ export default function ActivityTrendCard() {
   return (
     <div className="bg-card border border-border rounded-2xl p-6">
       {/* Header with stats */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 mb-6">
+      <div className="mb-6 space-y-1">
         <h2 className="text-lg font-semibold text-foreground">
           Andamento attività
         </h2>
         {hasData && trend && (
           <div className="flex items-baseline gap-3">
-            <span className="text-2xl font-semibold tabular-nums text-foreground">
+            <span className="text-3xl font-semibold tabular-nums text-foreground">
               {formatCents(trend.currentMonth)}
             </span>
             <span className="text-sm text-muted-foreground">questo mese</span>
