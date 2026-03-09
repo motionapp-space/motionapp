@@ -34,7 +34,7 @@ function EventRow({ event }: { event: TodayEvent }) {
 function NextEventBanner({ event }: { event: TodayEvent }) {
   return (
     <div className="px-4 py-2 text-xs text-primary-foreground/60">
-      <span className="font-medium text-primary-foreground">Prossimo evento</span>
+      <span className="font-medium text-accent">Prossimo evento</span>
       {" — "}
       {format(new Date(event.start_at), "HH:mm")} — {event.client_name}
     </div>
@@ -62,14 +62,16 @@ export default function TodayEventsCard() {
       className={cn(
         "rounded-2xl p-6 flex flex-col h-full",
         hasEvents
-          ? "bg-[hsl(var(--foreground)/0.96)] border border-transparent text-primary-foreground"
+          ? "bg-gradient-to-b from-neutral-950 to-neutral-900 border border-transparent text-primary-foreground"
           : "bg-card border border-border"
       )}
     >
       <h2
         className={cn(
-          "text-lg font-semibold mb-4",
-          hasEvents ? "text-primary-foreground" : "text-foreground"
+          "text-xl font-semibold",
+          hasEvents
+            ? "text-primary-foreground mb-3 pb-3 border-b border-white/10"
+            : "text-foreground mb-4"
         )}
       >
         Eventi di oggi

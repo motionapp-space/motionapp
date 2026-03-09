@@ -30,7 +30,7 @@ export default function ClientsLowSessionsCard() {
             <button
               key={c.client_id}
               onClick={() => navigate(`/clients/${c.client_id}`)}
-              className="flex items-center justify-between gap-2 px-3 min-h-[48px] rounded-lg text-left hover:bg-muted/50 transition-colors duration-200"
+              className="flex items-center justify-between gap-2 px-3 min-h-[48px] rounded-lg text-left hover:bg-accent/10 transition-colors duration-200"
             >
               <span className="text-sm font-medium text-foreground">
                 {c.first_name} {c.last_name}
@@ -42,7 +42,7 @@ export default function ClientsLowSessionsCard() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center text-center py-5 space-y-2">
+        <div className="flex flex-col items-center text-center py-4 space-y-2">
           <Battery className="h-8 w-8 text-muted-foreground/50" />
           <p className="text-sm font-semibold text-foreground">
             Nessun cliente con sessioni in esaurimento
