@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Battery } from "lucide-react";
+import { Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClientsLowSessions } from "../hooks/useClientsLowSessions";
 
@@ -43,7 +43,7 @@ export default function ClientsLowSessionsCard() {
         </div>
       ) : (
         <div className="flex flex-col items-center text-center py-3 space-y-1">
-          <Battery className="h-8 w-8 text-muted-foreground/60" />
+          <Package className="h-8 w-8 text-muted-foreground/60" />
           <p className="text-sm font-semibold text-foreground">
             Nessun cliente con pacchetti in esaurimento
           </p>
