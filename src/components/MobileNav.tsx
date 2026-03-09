@@ -44,9 +44,10 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active =
-              item.to === "/"
-                ? pathname === "/" ||
-                  pathname.startsWith("/clients") ||
+              item.to === "/dashboard"
+                ? pathname === "/dashboard"
+                : item.to === "/clients"
+                ? pathname.startsWith("/clients") ||
                   pathname.startsWith("/client-plans") ||
                   pathname.startsWith("/session/live")
                 : item.to === "/library"
