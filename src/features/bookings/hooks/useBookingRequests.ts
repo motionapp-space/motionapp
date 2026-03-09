@@ -32,13 +32,17 @@ export function useApproveBookingRequest() {
 
   return useMutation({
     mutationFn: approveBookingRequest,
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["booking-requests"] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
       toast({
         title: "Prenotazione approvata",
         description: "La prenotazione è stata approvata con successo.",
       });
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.pendingActions(),
+        dashboardQueryKeys.todayEvents(),
+      ]);
     },
     onError: (error: Error) => {
       toast({
