@@ -1,15 +1,13 @@
 
 
-# Increase Area Fill Visibility in Revenue Chart
+## Messaggio completo su hover nella tabella Feedback
 
-## Change
+Attualmente la colonna "Messaggio" usa `truncate` e taglia il testo. Aggiungere un `HoverCard` che mostra il messaggio completo al passaggio del mouse.
 
-**`ActivityTrendCard.tsx`** — Increase the gradient opacity from `0.1 → 0` to `0.25 → 0.03`:
+### Modifica
 
-- Top stop: `stopOpacity={0.1}` → `stopOpacity={0.25}`
-- Bottom stop: `stopOpacity={0}` → `stopOpacity={0.03}`
+**`src/features/admin/components/FeedbackTable.tsx`** — Wrappare la cella del messaggio in un `HoverCard` (già disponibile in `@/components/ui/hover-card`):
 
-This makes the fill clearly visible while keeping it elegant — similar to Vercel/Linear chart styling.
-
-**1 file, 2 lines changed.**
+- Il trigger resta il testo troncato attuale
+- Il content mostra `f.message` completo con `whitespace-pre-wrap` e larghezza massima ragionevole (`max-w-md`)
 
