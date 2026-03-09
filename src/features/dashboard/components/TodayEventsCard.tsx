@@ -91,7 +91,7 @@ export default function TodayEventsCard() {
           to="/calendar"
           className="text-sm text-accent font-medium hover:text-accent-hover transition-colors duration-200 inline-flex items-center gap-1"
         >
-          Vedi calendario completo
+          Vai al calendario
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>

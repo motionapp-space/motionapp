@@ -30,14 +30,17 @@ export default function InactiveClientsCard() {
             <button
               key={c.client_id}
               onClick={() => navigate(`/clients/${c.client_id}`)}
-              className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-left hover:bg-accent/10 hover:-translate-y-[1px] transition-all duration-200"
+              className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-left hover:bg-accent/10 hover:-translate-y-[1px] transition-all duration-200"
             >
               <span className="text-sm font-medium text-foreground">
                 {c.first_name} {c.last_name}
               </span>
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                Ultimo evento: {c.days_since_last_event} giorni fa
-              </span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  Ultimo evento: {c.days_since_last_event} giorni fa
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </div>
             </button>
           ))}
         </div>
