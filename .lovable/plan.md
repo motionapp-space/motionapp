@@ -1,204 +1,145 @@
 
-# Motion Coach Dashboard — Premium UX Refinements
 
-## Overview
-Implementing 10 visual and UX refinements to transform the dashboard into a premium "operational cockpit" aligned with Motion's brand identity.
+# Dashboard Consistency & Visual Hierarchy Refinements
 
----
-
-## Implementation Plan
-
-### 1. File Structure
-
-**New/Modified Files:**
-```
-src/pages/Dashboard.tsx                          (new)
-src/features/dashboard/components/
-  ├── DashboardHeader.tsx                        (new)
-  ├── KpiStrip.tsx                               (new)
-  ├── TodayEventsCard.tsx                        (new)
-  ├── PendingActionsCard.tsx                     (new)
-  ├── ClientsLowSessionsCard.tsx                 (new)
-  ├── InactiveClientsCard.tsx                    (new)
-  └── DashboardSkeleton.tsx                      (new)
-src/features/dashboard/hooks/
-  ├── useDashboardKpis.ts                        (new)
-  ├── useTodayEvents.ts                          (new)
-  ├── usePendingActions.ts                       (new)
-  ├── useClientsLowSessions.ts                   (new)
-  └── useInactiveClients.ts                      (new)
-src/App.tsx                                      (modify routing)
-src/components/AppSidebar.tsx                    (add Dashboard item)
-src/components/MobileNav.tsx                     (add Dashboard item)
-```
+## Summary
+Refactoring the dashboard to match Motion's established UI patterns: consistent topbar, neutral cards, left-aligned content, and compact empty states.
 
 ---
 
-### 2. Routing Changes
+## Changes Overview
 
-**App.tsx updates:**
-- Add `/dashboard` route pointing to new Dashboard page
+### 1. Page Structure
+**Dashboard.tsx** (new file at `src/pages/Dashboard.tsx`)
+- Uses `useTopbar({ title: "Dashboard" })` like all other pages
+- No greeting section - starts directly with quick actions
+- Uses `SectionShell` for consistent lateral padding
+
+### 2. Routing & Navigation
+**App.tsx**
+- Add `/dashboard` route → Dashboard component
 - Change `/` from `<Clients />` to `<Navigate to="/dashboard" replace />`
-- Keep `/clients` for the clients listing page
 
-**Sidebar/MobileNav:**
-- Add "Dashboard" as first item → `/dashboard`
-- Update "Clienti" → `/clients`
-
----
-
-### 3. Component Specifications
-
-#### DashboardHeader
-- **Typography:** `text-[28px] font-semibold` for greeting, `text-base text-muted-foreground` for subtitle
-- **Time-aware greeting:** Buongiorno/Buon pomeriggio/Buonasera
-- **Quick Actions:** 
-  - Primary: "Crea evento" (default Button variant)
-  - Secondary: "Aggiungi cliente", "Registra pagamento" (outline variant)
-
-#### KpiStrip (3 cards)
-- **Number size:** `text-3xl font-bold tabular-nums`
-- **Spacing:** `gap-2` between label/number/description
-- **Icons:** `text-[hsl(var(--accent))]` for Ice Blue accent
-- **Hover state:** `hover:shadow-md hover:-translate-y-[1px] transition-all duration-200`
-
-#### TodayEventsCard
-- **Accent bar:** `border-t-2 border-[hsl(var(--accent))]`
-- **Compact empty state:** `py-6` instead of `py-12`, inline icon + text
-- **Next event indicator:** Subtle highlight for events within 2 hours
-- **Footer:** Always show "Vedi calendario completo →"
-
-#### PendingActionsCard
-- **Accent bar:** Same as above
-- **Positive empty state:** "Tutto sotto controllo" / "Non ci sono azioni da gestire"
-- **Fixed order:** Booking requests → Counter proposals → Payments
-
-#### ClientsLowSessionsCard (NEW)
-- **Accent bar:** `border-t-2 border-[hsl(var(--accent))]`
-- **Query:** Aggregate sessions per client, filter remaining ≤ 2, order ASC
-- **Display:** "Anna Verdi — 1 sessione rimasta"
-- **Max 5 clients**
-
-#### InactiveClientsCard (NEW)
-- **Query:** Clients with last event > 30 days ago (excluding no-history)
-- **Display:** "Mario Rossi — Ultimo evento: 34 giorni fa"
-- **Max 5 clients**
+**AppSidebar.tsx & MobileNav.tsx**
+- Add "Dashboard" as first nav item (`/dashboard`, LayoutDashboard icon)
+- Update "Clienti" route to `/clients`
 
 ---
 
-### 4. Design Specifications
+## Component Specifications
+
+### Quick Actions Bar
+```
+[ Crea evento ]  [ Aggiungi cliente ]  [ Registra pagamento ]
+     ↑ primary (default)      ↑ outline          ↑ outline
+```
+- Horizontal row, `gap-3`
+- Primary button for "Crea evento"
+
+### KPI Strip (3 cards)
+- **Typography hierarchy:**
+  - Label: `text-sm text-muted-foreground`
+  - Number: `text-3xl font-semibold tabular-nums`
+  - Description: `text-xs text-muted-foreground`
+- **Cards:** Neutral `bg-card border rounded-xl p-6`
+- **No colored borders**
+- **Icon:** Small, `text-muted-foreground` (not accent color)
+- **Copy fix:** "Clienti totali" instead of "Nel tuo roster"
+
+### Event Card
+- **Title:** `text-lg font-semibold`
+- **Content:** Left-aligned list
+- **Empty state:** Compact (`py-6`), left-aligned
+  ```
+  [calendar icon]
+  Nessun evento oggi
+  Non ci sono eventi in programma per oggi
+  [+ Crea evento]
+  ```
+
+### Pending Actions Card
+- Same neutral card style
+- **Empty state:**
+  ```
+  [check icon]
+  Tutto sotto controllo
+  Non ci sono azioni da gestire
+  ```
+
+### Clients Low Sessions & Inactive Cards
+- Simple list with left-aligned content
+- Empty state: "Nessun cliente con sessioni in esaurimento"
+
+---
+
+## Design Specs (matching existing patterns)
+
+**Card Styling:**
+```
+bg-card border border-border rounded-xl shadow-none
+```
 
 **Section Spacing:**
-- `gap-10` (40px) between major sections
-- `gap-6` (24px) inside cards
+- `gap-8` between major sections
+- `p-6` inside cards
 
-**Premium Card Styling:**
-```css
-.premium-card {
-  @apply rounded-2xl shadow-sm bg-card p-6;
-  @apply transition-all duration-200;
-  @apply hover:shadow-md hover:-translate-y-[1px];
-}
-```
+**Typography (from memory):**
+- Section titles: `text-lg font-semibold` (19px)
+- Body: `text-sm` (14px)
+- Descriptions: `text-xs text-muted-foreground`
 
-**Accent Bar (Ice Blue):**
-```css
-.accent-card {
-  @apply border-t-2 border-[hsl(var(--accent))];
-}
-```
+**Empty States:**
+- Icon: 48px, `text-muted-foreground`
+- Title: `text-base font-semibold` (16px)
+- Description: `text-sm text-muted-foreground` (14px)
+- All content left-aligned
+- Compact height: `min-h-[160px]` not `min-h-[320px]`
 
-**Row Heights:**
-- `min-h-[56px]` for list items
-- Proper click areas
+**No hover lift effects** (removed per feedback)
 
 ---
 
-### 5. Data Hooks
+## Data Hooks Needed
 
-**useDashboardKpis:**
-- Events today count + next event time
-- Total clients count
-- Unpaid payments sum + count
+1. **useTodayEvents** - filter today's events
+2. **usePendingActions** - booking requests, counter-proposals, unpaid payments
+3. **useClientsLowSessions** - remaining sessions ≤ 2
+4. **useInactiveClients** - last event > 30 days ago
 
-**useTodayEvents:**
-- Filter events for today
-- Include client name, time, title
-- Identify "next event" (within 2 hours)
-
-**usePendingActions:**
-- Booking requests: status = 'PENDING'
-- Counter proposals: status = 'COUNTER_PROPOSED'
-- Unpaid payments: orders with status != 'paid'
-- Return in fixed order
-
-**useClientsLowSessions:**
-```sql
-SELECT c.id, c.first_name, c.last_name, 
-  SUM(p.total_sessions - p.consumed_sessions) as remaining
-FROM clients c
-JOIN coach_clients cc ON cc.client_id = c.id
-JOIN package p ON p.coach_client_id = cc.id
-GROUP BY c.id
-HAVING SUM(p.total_sessions - p.consumed_sessions) <= 2
-ORDER BY remaining ASC
-LIMIT 5
-```
-
-**useInactiveClients:**
-- Clients with at least 1 event in history
-- Last event > 30 days ago
-- Order by days since last event DESC
+Reuse existing `useDashboardStats` for client count.
 
 ---
 
-### 6. Layout Grid
+## Grid Layout
 
 ```
-Desktop (12-col grid):
-┌──────────────────────────────────────────────┐
-│ Header (greeting + quick actions)            │
-├──────────────────────────────────────────────┤
-│ KPI │ KPI │ KPI                              │ 
-├─────────────────────────┬────────────────────┤
-│ Eventi di Oggi (8 cols) │ Azioni (4 cols)    │
-├─────────────┬───────────┴────────────────────┤
-│ Low Sessions│ Inactive Clients (6 cols each) │
-└─────────────┴────────────────────────────────┘
+Desktop:
+┌──────────────────────────────────────────┐
+│ Quick Actions (horizontal)               │
+├──────────────────────────────────────────┤
+│ KPI   │   KPI   │   KPI                  │
+├────────────────────┬─────────────────────┤
+│ Eventi di oggi     │ Azioni in sospeso   │
+│ (8 cols)           │ (4 cols)            │
+├────────────────────┼─────────────────────┤
+│ Sessioni in        │ Clienti inattivi    │
+│ esaurimento (6col) │ (6 cols)            │
+└────────────────────┴─────────────────────┘
 
-Mobile (vertical stack):
-- Header
-- KPI cards (stacked vertically)
-- Today Events
-- Pending Actions
-- Low Sessions
-- Inactive Clients
+Mobile: Vertical stack, same order
 ```
 
 ---
 
-### 7. Implementation Order
+## Implementation Steps
 
-1. Create data hooks (5 hooks)
-2. Create Dashboard page with layout
-3. Build DashboardHeader with typography + actions
-4. Build KpiStrip with Ice Blue icons
-5. Build TodayEventsCard with compact empty state
-6. Build PendingActionsCard with positive empty state
-7. Build ClientsLowSessionsCard
-8. Build InactiveClientsCard
-9. Add skeleton states to all cards
-10. Update routing (App.tsx)
-11. Update navigation (AppSidebar + MobileNav)
-12. Add premium hover states + accent bars
+1. Create Dashboard page with useTopbar
+2. Create KpiStrip with neutral cards
+3. Create TodayEventsCard with compact empty state
+4. Create PendingActionsCard with positive empty state
+5. Create ClientsLowSessionsCard
+6. Create InactiveClientsCard
+7. Create data hooks
+8. Update App.tsx routing
+9. Update AppSidebar + MobileNav navigation
 
----
-
-## Technical Notes
-
-- All copy in Italian
-- Use existing Motion tokens from `motion-tokens.css`
-- Ice Blue accent: `hsl(var(--accent))`
-- Follow typography scale: 28px greeting, 17px card titles, 14px body
-- Tabular numbers for KPI values
-- Premium card interactions: subtle lift + shadow on hover
