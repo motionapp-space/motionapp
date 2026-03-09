@@ -41,10 +41,10 @@ export default function PendingActionsCard() {
         <div className="flex flex-col items-center text-center py-4 space-y-1">
           <CheckCircle className="h-8 w-8 text-muted-foreground/60" />
           <p className="text-sm font-semibold text-foreground">
-            Tutto sotto controllo
+            Nessuna azione in sospeso
           </p>
           <p className="text-sm text-muted-foreground">
-            Non ci sono azioni da gestire
+            Tutto aggiornato
           </p>
         </div>
       )}

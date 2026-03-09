@@ -42,7 +42,7 @@ export default function InactiveClientsCard() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center text-center py-4 space-y-1">
+        <div className="flex flex-col items-center text-center py-3 space-y-1">
           <UserX className="h-8 w-8 text-muted-foreground/60" />
           <p className="text-sm font-semibold text-foreground">
             Tutti i clienti sono attivi
