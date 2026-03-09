@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Battery } from "lucide-react";
+import { Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClientsLowSessions } from "../hooks/useClientsLowSessions";
 
