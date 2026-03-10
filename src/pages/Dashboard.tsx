@@ -17,19 +17,19 @@ export default function Dashboard() {
         {/* Row 1 — KPI Strip */}
         <KpiStrip />
 
-        {/* Row 2 — Ricavi 8/12 + Azioni in sospeso 4/12 */}
+        {/* Row 2 — Ricavi 8/12 + Eventi di oggi 4/12 */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8">
             <ActivityTrendCard />
           </div>
           <div className="lg:col-span-4">
-            <PendingActionsCard />
+            <TodayEventsCard />
           </div>
         </div>
 
-        {/* Row 3 — Eventi di oggi + Prossimi eventi */}
+        {/* Row 3 — Azioni in sospeso + Prossimi eventi */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TodayEventsCard />
+          <PendingActionsCard />
           <UpcomingEventsCard />
         </div>
 
