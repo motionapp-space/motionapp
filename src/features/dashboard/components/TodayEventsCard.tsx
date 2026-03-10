@@ -14,8 +14,8 @@ function EventRow({ event }: { event: TodayEvent }) {
     className={cn(
       "flex flex-col gap-0.5 px-3 py-2.5 w-full text-left rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[1px]",
         event.isNext
-          ? "bg-white/80 ring-1 ring-sky-200 hover:bg-white/90"
-          : "bg-white/60 hover:bg-white/80"
+          ? "bg-accent/20 ring-1 ring-accent/35 hover:bg-accent/25"
+          : "bg-accent/10 hover:bg-accent/14"
       )}
     >
       <div className="flex items-center gap-3">
@@ -53,7 +53,7 @@ export default function TodayEventsCard() {
       className={cn(
         "rounded-2xl p-6 flex flex-col h-full",
         hasEvents
-          ? "bg-sky-50 border border-sky-100"
+          ? "bg-accent/14 border border-accent/30"
           : "bg-card border border-border"
       )}
     >
@@ -85,7 +85,7 @@ export default function TodayEventsCard() {
         </div>
       )}
 
-      <div className="mt-auto pt-4 border-t border-sky-100">
+      <div className="mt-auto pt-4 border-t border-border">
         <Link
           to="/calendar"
           className="text-sm text-accent-strong font-medium hover:text-accent-hover transition-colors duration-200 inline-flex items-center gap-1"
