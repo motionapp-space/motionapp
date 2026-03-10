@@ -81,7 +81,7 @@ export default function UpcomingEventsCard() {
         </div>
       )}
 
-      <div className="mt-auto pt-4 border-t border-border">
+      <div className="mt-auto pt-4">
         <Link
           to="/calendar"
           className="text-sm text-accent-strong font-medium hover:text-accent-hover transition-colors duration-200 inline-flex items-center gap-1"
