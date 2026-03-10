@@ -1,23 +1,13 @@
 
-# TodayEventsCard — Switch to explicit background
 
-The `bg-accent/xx` approach doesn't work because the accent HSL token at low opacity on a near-white background is imperceptible. Time to use a real, opaque color.
+## Messaggio completo su hover nella tabella Feedback
 
-## Approach
+Attualmente la colonna "Messaggio" usa `truncate` e taglia il testo. Aggiungere un `HoverCard` che mostra il messaggio completo al passaggio del mouse.
 
-Since the design system doesn't have a `sky` token, use Tailwind's built-in `bg-sky-50` and `border-sky-100` directly. These are opaque pastels that will be immediately visible. The rows inside should be lighter than the container (white/semi-transparent white).
+### Modifica
 
-## Changes — `TodayEventsCard.tsx`
+**`src/features/admin/components/FeedbackTable.tsx`** — Wrappare la cella del messaggio in un `HoverCard` (già disponibile in `@/components/ui/hover-card`):
 
-**Container (line 56)**:
-- `bg-accent/14 border border-accent/30` → `bg-sky-50 border border-sky-100`
+- Il trigger resta il testo troncato attuale
+- Il content mostra `f.message` completo con `whitespace-pre-wrap` e larghezza massima ragionevole (`max-w-md`)
 
-**Event rows (lines 16-18)** — rows must be lighter than container:
-- Next event: `bg-white/80 ring-1 ring-sky-200 hover:bg-white/90`
-- Normal: `bg-white/60 hover:bg-white/80`
-
-**Separator (line 88)**: `border-border` → `border-sky-100` to harmonize
-
-**CTA (line 91)**: keep `text-accent-strong` — already correct.
-
-Single file, 3 edits.
