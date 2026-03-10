@@ -144,7 +144,7 @@ export default function ActivityTrendCard() {
                 dataKey="month"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))", fillOpacity: 0.8 }}
+                tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
               />
               <YAxis
                 axisLine={false}
