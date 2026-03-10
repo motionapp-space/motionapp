@@ -1,4 +1,4 @@
-import { Users, FileText, Calendar, Settings, Wallet } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Calendar, Settings, Wallet } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import React from "react";
@@ -13,7 +13,8 @@ import {
 type NavItem = { label: string; to: string; icon: React.ElementType };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Clienti", to: "/", icon: Users },
+  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+  { label: "Clienti", to: "/clients", icon: Users },
   { label: "Agenda", to: "/calendar", icon: Calendar },
   { label: "Pagamenti", to: "/payments", icon: Wallet },
   { label: "Libreria", to: "/library", icon: FileText },
@@ -55,9 +56,10 @@ export function AppSidebar({ collapsed = false, onNavClick }: AppSidebarProps) {
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active =
-              item.to === "/"
-                ? pathname === "/" ||
-                  pathname.startsWith("/clients") ||
+              item.to === "/dashboard"
+                ? pathname === "/dashboard"
+                : item.to === "/clients"
+                ? pathname.startsWith("/clients") ||
                   pathname.startsWith("/client-plans") ||
                   pathname.startsWith("/session/live")
                 : item.to === "/library"

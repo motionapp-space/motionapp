@@ -9,6 +9,8 @@ import {
 } from "../api/booking-requests.api";
 import { toast } from "@/hooks/use-toast";
 import type { BookingRequestStatus } from "../types";
+import { invalidateDashboardQueries } from "@/features/dashboard/lib/invalidateDashboardQueries";
+import { dashboardQueryKeys } from "@/features/dashboard/lib/dashboardQueryKeys";
 
 export function useBookingRequestsQuery(filters?: { status?: BookingRequestStatus }) {
   return useQuery({
@@ -30,13 +32,17 @@ export function useApproveBookingRequest() {
 
   return useMutation({
     mutationFn: approveBookingRequest,
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["booking-requests"] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
       toast({
         title: "Prenotazione approvata",
         description: "La prenotazione è stata approvata con successo.",
       });
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.pendingActions(),
+        dashboardQueryKeys.todayEvents(),
+      ]);
     },
     onError: (error: Error) => {
       toast({
@@ -53,12 +59,16 @@ export function useDeclineBookingRequest() {
 
   return useMutation({
     mutationFn: declineBookingRequest,
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["booking-requests"] });
       toast({
         title: "Prenotazione rifiutata",
         description: "La prenotazione è stata rifiutata.",
       });
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.pendingActions(),
+        dashboardQueryKeys.todayEvents(),
+      ]);
     },
     onError: (error: Error) => {
       toast({
@@ -83,12 +93,16 @@ export function useCounterProposeBookingRequest() {
       counterStart: string;
       counterEnd: string;
     }) => counterProposeBookingRequest(id, counterStart, counterEnd),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["booking-requests"] });
       toast({
         title: "Controproposta inviata",
         description: "La controproposta è stata inviata al cliente.",
       });
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.pendingActions(),
+        dashboardQueryKeys.todayEvents(),
+      ]);
     },
     onError: (error: Error) => {
       toast({
@@ -105,12 +119,16 @@ export function useDeleteBookingRequest() {
 
   return useMutation({
     mutationFn: deleteBookingRequest,
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["booking-requests"] });
       toast({
         title: "Prenotazione eliminata",
         description: "La prenotazione è stata eliminata.",
       });
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.pendingActions(),
+        dashboardQueryKeys.todayEvents(),
+      ]);
     },
     onError: (error: Error) => {
       toast({

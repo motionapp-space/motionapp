@@ -3,6 +3,8 @@ import { updatePackage } from "../api/packages.api";
 import { toast } from "sonner";
 import { logClientActivity } from "@/features/clients/api/activities.api";
 import { getCoachClientDetails } from "@/lib/coach-client";
+import { invalidateDashboardQueries } from "@/features/dashboard/lib/invalidateDashboardQueries";
+import { dashboardQueryKeys } from "@/features/dashboard/lib/dashboardQueryKeys";
 
 export function useUpdatePackage() {
   const queryClient = useQueryClient();
@@ -26,6 +28,9 @@ export function useUpdatePackage() {
       );
       
       toast.success("Pacchetto aggiornato");
+      await invalidateDashboardQueries(queryClient, [
+        dashboardQueryKeys.clientsLowSessions(),
+      ]);
     },
     onError: (error: Error) => {
       toast.error("Errore", {
