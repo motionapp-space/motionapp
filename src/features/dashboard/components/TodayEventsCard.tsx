@@ -11,9 +11,8 @@ function EventRow({ event }: { event: TodayEvent }) {
   return (
     <button
       onClick={() => navigate("/calendar")}
-      className={cn(
-        "flex flex-col gap-0.5 px-3 py-2.5 w-full text-left rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[1px]",
-        "flex items-center gap-3 px-3 py-2.5 w-full text-left rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[1px]",
+    className={cn(
+      "flex flex-col gap-0.5 px-3 py-2.5 w-full text-left rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[1px]",
         event.isNext
           ? "bg-accent/15 ring-1 ring-accent/30 hover:bg-accent/20"
           : "bg-accent/8 hover:bg-accent/12"
