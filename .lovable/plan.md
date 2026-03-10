@@ -1,14 +1,13 @@
 
 
-# Swap "Eventi di oggi" and "Azioni in sospeso" positions
+## Messaggio completo su hover nella tabella Feedback
 
-Currently in `Dashboard.tsx`:
-- Row 2: `ActivityTrendCard` (8/12) + `PendingActionsCard` (4/12)
-- Row 3: `TodayEventsCard` (6/12) + `UpcomingEventsCard` (6/12)
+Attualmente la colonna "Messaggio" usa `truncate` e taglia il testo. Aggiungere un `HoverCard` che mostra il messaggio completo al passaggio del mouse.
 
-**New layout:**
-- Row 2: `ActivityTrendCard` (8/12) + `TodayEventsCard` (4/12)
-- Row 3: `PendingActionsCard` (6/12) + `UpcomingEventsCard` (6/12)
+### Modifica
 
-Single file edit in `Dashboard.tsx` — swap the two components between rows.
+**`src/features/admin/components/FeedbackTable.tsx`** — Wrappare la cella del messaggio in un `HoverCard` (già disponibile in `@/components/ui/hover-card`):
+
+- Il trigger resta il testo troncato attuale
+- Il content mostra `f.message` completo con `whitespace-pre-wrap` e larghezza massima ragionevole (`max-w-md`)
 
