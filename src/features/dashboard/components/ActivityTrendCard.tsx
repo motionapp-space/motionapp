@@ -105,7 +105,7 @@ export default function ActivityTrendCard() {
               className={cn(
                 "px-3 py-1 text-xs font-medium rounded-md transition-colors duration-150",
                 months === p.value
-                  ? "bg-card text-foreground shadow-sm"
+                  ? "bg-card text-foreground shadow-sm border border-border"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >

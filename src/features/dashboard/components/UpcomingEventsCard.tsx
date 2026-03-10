@@ -53,7 +53,7 @@ export default function UpcomingEventsCard() {
                 onClick={() => navigate("/calendar")}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-left text-sm hover:bg-accent/10 hover:-translate-y-[1px] transition-all duration-200"
               >
-                <span className="text-muted-foreground tabular-nums shrink-0 w-[100px]">
+                <span className="text-muted-foreground tabular-nums shrink-0 w-[120px] whitespace-nowrap">
                   {dayLabel} · {time}
                 </span>
                 <span className="text-foreground font-medium truncate">
