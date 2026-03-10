@@ -80,7 +80,7 @@ export default function ActivityTrendCard() {
                 <span
                   className={cn(
                     "inline-flex items-center gap-0.5 text-sm font-medium",
-                    "text-muted-foreground"
+                    trend.percentChange >= 0 ? "text-success" : "text-destructive"
                   )}
                 >
                   {trend.percentChange >= 0 ? (
