@@ -49,7 +49,7 @@ export default function PendingActionsCard() {
             </p>
           )}
 
-          <div className="mt-auto pt-4 border-t border-border">
+          <div className="mt-auto pt-4">
             <Link
               to={visible[0].navigateTo}
               className="text-sm text-accent-strong font-medium hover:text-accent-hover transition-colors duration-200 inline-flex items-center gap-1"
