@@ -151,7 +151,7 @@ export default function ActivityTrendCard() {
                 tickLine={false}
                 width={55}
                 tickFormatter={(v) => formatCents(v)}
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))", fillOpacity: 0.7 }}
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))", fillOpacity: 0.85 }}
               />
               <Tooltip content={<CustomTooltip />} />
               <Area
