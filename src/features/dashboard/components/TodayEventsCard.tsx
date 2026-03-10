@@ -14,8 +14,8 @@ function EventRow({ event }: { event: TodayEvent }) {
     className={cn(
       "flex flex-col gap-0.5 px-3 py-2.5 w-full text-left rounded-lg cursor-pointer transition-all duration-200 hover:-translate-y-[1px]",
         event.isNext
-          ? "bg-accent/15 ring-1 ring-accent/30 hover:bg-accent/20"
-          : "bg-accent/8 hover:bg-accent/12"
+          ? "bg-accent/20 ring-1 ring-accent/35 hover:bg-accent/25"
+          : "bg-accent/10 hover:bg-accent/14"
       )}
     >
       <div className="flex items-center gap-3">
