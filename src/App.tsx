@@ -177,6 +177,7 @@ const App = () => {
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/share/:token" element={<SharedPlan />} />
                 <Route path="/booking/:coachId" element={<ClientBooking />} />
+                <Route path="/terms" element={<Terms />} />
 
                 {/* Admin routes (keep ALL from develop) */}
                 <Route element={<AdminLayout />}>
