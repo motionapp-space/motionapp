@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTopbar } from "@/contexts/TopbarContext";
@@ -247,14 +247,14 @@ const Settings = () => {
               </p>
               <div className="space-y-2">
                 <Button variant="outline" className="w-full justify-start" asChild>
-                  <a href="https://www.iubenda.com/privacy-policy" target="_blank" rel="noopener noreferrer">
+                  <Link to="/privacy">
                     Informativa Privacy
-                  </a>
+                  </Link>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
-                  <a href="https://www.iubenda.com/privacy-policy/cookie-policy" target="_blank" rel="noopener noreferrer">
-                    Politica Cookie
-                  </a>
+                  <Link to="/terms">
+                    Termini e Condizioni
+                  </Link>
                 </Button>
               </div>
             </CardContent>

@@ -1,16 +1,13 @@
 
 
-# Update Privacy Section in Settings
+## Messaggio completo su hover nella tabella Feedback
 
-## What to change
+Attualmente la colonna "Messaggio" usa `truncate` e taglia il testo. Aggiungere un `HoverCard` che mostra il messaggio completo al passaggio del mouse.
 
-Update the Privacy tab in `src/pages/Settings.tsx` (lines 238-262) to replace the external iubenda links with internal links to `/privacy` and `/terms`, and rename the tab to "Privacy e Termini" to reflect both pages.
+### Modifica
 
-## Changes in `src/pages/Settings.tsx`
+**`src/features/admin/components/FeedbackTable.tsx`** — Wrappare la cella del messaggio in un `HoverCard` (già disponibile in `@/components/ui/hover-card`):
 
-**Lines 248-258** — Replace the two external link buttons:
-- "Informativa Privacy" → internal `Link` to `/privacy`
-- "Politica Cookie" → replace with "Termini e Condizioni" linking to `/terms`
-
-Use `react-router-dom`'s `Link` component (already imported) instead of `<a>` tags. Keep the same `Button variant="outline"` pattern. Links open in same tab since they're internal pages.
+- Il trigger resta il testo troncato attuale
+- Il content mostra `f.message` completo con `whitespace-pre-wrap` e larghezza massima ragionevole (`max-w-md`)
 
