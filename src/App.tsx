@@ -15,6 +15,7 @@ import posthog from "posthog-js";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Terms from "./pages/Terms";
 
 import Dashboard from "./pages/Dashboard";
 import Plans from "./pages/Plans";
