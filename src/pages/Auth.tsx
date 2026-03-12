@@ -443,6 +443,15 @@ const Auth = () => {
                     >
                       Termini e Condizioni
                     </a>
+                    {" "}e la{" "}
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      className="text-primary hover:underline font-medium"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Privacy Policy
+                    </a>
                   </label>
                 </div>
 
