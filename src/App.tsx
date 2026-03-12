@@ -179,6 +179,7 @@ const App = () => {
                 <Route path="/share/:token" element={<SharedPlan />} />
                 <Route path="/booking/:coachId" element={<ClientBooking />} />
                 <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
 
                 {/* Admin routes (keep ALL from develop) */}
                 <Route element={<AdminLayout />}>
