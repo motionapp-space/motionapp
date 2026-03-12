@@ -241,12 +241,12 @@ const Terms = () => {
 
         {/* Footer links */}
         <footer className="pt-6 flex items-center gap-4 text-sm text-muted-foreground">
-          <Link to="/privacy" className="underline hover:text-foreground">
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
             Privacy Policy
-          </Link>
-          <Link to="/terms" className="underline hover:text-foreground">
+          </a>
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
             Terms
-          </Link>
+          </a>
         </footer>
       </article>
     </main>

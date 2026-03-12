@@ -247,14 +247,14 @@ const Settings = () => {
               </p>
               <div className="space-y-2">
                 <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/privacy">
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer">
                     Informativa Privacy
-                  </Link>
+                  </a>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/terms">
+                  <a href="/terms" target="_blank" rel="noopener noreferrer">
                     Termini e Condizioni
-                  </Link>
+                  </a>
                 </Button>
               </div>
             </CardContent>
