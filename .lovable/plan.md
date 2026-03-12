@@ -1,13 +1,22 @@
 
 
-## Messaggio completo su hover nella tabella Feedback
+# Add Privacy Policy Link to Registration Checkbox
 
-Attualmente la colonna "Messaggio" usa `truncate` e taglia il testo. Aggiungere un `HoverCard` che mostra il messaggio completo al passaggio del mouse.
+## Current state
+The registration form in `src/pages/Auth.tsx` (line 437-445) has a terms acceptance checkbox that links only to `/terms`. The `/privacy` link is missing.
 
-### Modifica
+## Change
 
-**`src/features/admin/components/FeedbackTable.tsx`** — Wrappare la cella del messaggio in un `HoverCard` (già disponibile in `@/components/ui/hover-card`):
+**`src/pages/Auth.tsx` lines 437-445** — Update the label text to include both links:
 
-- Il trigger resta il testo troncato attuale
-- Il content mostra `f.message` completo con `whitespace-pre-wrap` e larghezza massima ragionevole (`max-w-md`)
+```
+Accetto i{" "}
+<a href="/terms" target="_blank" ...>Termini e Condizioni</a>
+{" "}e la{" "}
+<a href="/privacy" target="_blank" ...>Privacy Policy</a>
+```
+
+Same styling for both links: `text-primary hover:underline font-medium` with `onClick={(e) => e.stopPropagation()}`.
+
+No other files need changes — the `/terms` link is already internal and correct.
 
