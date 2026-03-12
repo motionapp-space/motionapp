@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 
 import Dashboard from "./pages/Dashboard";
 import Plans from "./pages/Plans";
@@ -178,6 +179,7 @@ const App = () => {
                 <Route path="/share/:token" element={<SharedPlan />} />
                 <Route path="/booking/:coachId" element={<ClientBooking />} />
                 <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
 
                 {/* Admin routes (keep ALL from develop) */}
                 <Route element={<AdminLayout />}>
