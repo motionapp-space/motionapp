@@ -1,13 +1,20 @@
 
 
-## Messaggio completo su hover nella tabella Feedback
+# Open Terms & Privacy Links in New Tabs
 
-Attualmente la colonna "Messaggio" usa `truncate` e taglia il testo. Aggiungere un `HoverCard` che mostra il messaggio completo al passaggio del mouse.
+All internal links to `/terms` and `/privacy` should open in a new browser tab so users never leave their current context.
 
-### Modifica
+## Changes
 
-**`src/features/admin/components/FeedbackTable.tsx`** — Wrappare la cella del messaggio in un `HoverCard` (già disponibile in `@/components/ui/hover-card`):
+### 1. `src/pages/Settings.tsx` (lines 249-258)
+Replace `<Link to=...>` with `<a href=... target="_blank" rel="noopener noreferrer">` for both buttons.
 
-- Il trigger resta il testo troncato attuale
-- Il content mostra `f.message` completo con `whitespace-pre-wrap` e larghezza massima ragionevole (`max-w-md`)
+### 2. `src/pages/Terms.tsx` (lines 244-249)
+Replace both footer `<Link>` with `<a href=... target="_blank" rel="noopener noreferrer">`.
+
+### 3. `src/pages/Privacy.tsx` (lines 202-207)
+Same — replace both footer `<Link>` with `<a href=... target="_blank" rel="noopener noreferrer">`.
+
+### 4. `src/pages/Auth.tsx`
+Already uses `target="_blank"` — no changes needed.
 
