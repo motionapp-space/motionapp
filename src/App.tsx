@@ -15,6 +15,7 @@ import posthog from "posthog-js";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Terms from "./pages/Terms";
 
 import Dashboard from "./pages/Dashboard";
 import Plans from "./pages/Plans";
@@ -176,6 +177,7 @@ const App = () => {
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/share/:token" element={<SharedPlan />} />
                 <Route path="/booking/:coachId" element={<ClientBooking />} />
+                <Route path="/terms" element={<Terms />} />
 
                 {/* Admin routes (keep ALL from develop) */}
                 <Route element={<AdminLayout />}>
