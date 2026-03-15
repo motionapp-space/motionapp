@@ -7,7 +7,6 @@ export default {
   theme: {
     fontFamily: {
       sans: ['Montserrat', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-      heading: ['"Disket Mono"', 'monospace'],
       montserrat: ['Montserrat', 'sans-serif'],
       nunito: ['Nunito', 'sans-serif'],
     },
