@@ -1,4 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+@font-face {
+  font-family: 'Disket Mono';
+  src: url('/fonts/Disket-Mono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Disket Mono';
+  src: url('/fonts/Disket-Mono-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 @import './styles/motion-tokens.css';
 
 @tailwind base;
@@ -11,6 +27,7 @@
   :root {
     /* Typography — font family */
     --font-sans: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-heading: "Disket Mono", monospace;
 
     /* Typography base */
     --fs-xs: 12px;
@@ -106,42 +123,46 @@
   }
 
   /* Headings */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+
   h1 {
     font-size: var(--fs-h1);
     line-height: var(--lh-tight);
     letter-spacing: -0.01em;
-    @apply font-semibold;
+    @apply font-bold;
   }
 
   h2 {
     font-size: var(--fs-h2);
     line-height: var(--lh-tight);
     letter-spacing: -0.01em;
-    @apply font-semibold;
+    @apply font-bold;
   }
 
   h3 {
     font-size: var(--fs-h3);
     line-height: var(--lh-snug);
-    @apply font-semibold;
+    @apply font-bold;
   }
 
   h4 {
     font-size: var(--fs-h4);
     line-height: var(--lh-snug);
-    @apply font-semibold;
+    @apply font-bold;
   }
 
   h5 {
     font-size: var(--fs-h5);
     line-height: var(--lh-normal);
-    @apply font-semibold;
+    @apply font-bold;
   }
 
   h6 {
     font-size: var(--fs-h6);
     line-height: var(--lh-normal);
-    @apply font-semibold;
+    @apply font-bold;
   }
 
   /* Accessibility */
