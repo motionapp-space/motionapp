@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.copilot]
 verify_jwt = false
+
+[functions.parse-training-plan]
+verify_jwt = false
