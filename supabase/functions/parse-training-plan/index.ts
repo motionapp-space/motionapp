@@ -97,14 +97,14 @@ Devi analizzare ed identificare correttamente:
           type: z.enum(["Warm-up", "Main Workout", "Stretching"]).describe("Tipo di blocco. Se non specificato diversamente, tutti gli esercizi pesistici sono 'Main Workout'."),
           groups: z.array(z.object({
             type: z.enum(["single", "superset", "circuit"]).describe("Se è un singolo esercizio usa 'single'. Se ci sono esercizi collegati/in serie usa 'superset'. Se è indicato un vero circuito a tempo/giri usa 'circuit'."),
-            name: z.string().describe("Nome eventuale del gruppo o circuito. Vuoto se è single.").optional(),
-            rounds: z.number().describe("Solo per i circuiti. Saltalo altrimenti.").optional(),
+            name: z.string().describe("Nome del gruppo o circuito. Stringa vuota '' se è single."),
+            rounds: z.number().describe("Solo per i circuiti, numero di giri. Usa 0 se non applicabile."),
             exercises: z.array(z.object({
               name: z.string().describe("Nome completo dell'esercizio. Pulisci il nome da numerazioni inutili."),
               sets: z.number().describe("Numero di serie. Usa 0 se non applicabile."),
               reps: z.string().describe("Ripetizioni. Lasciale come stringa se vedi range o testi particolari (es. 'CED', '10-12', 'Max')."),
-              rest: z.string().describe("Tempo di recupero (es. '60s', '1m30s').").optional(),
-              notes: z.string().describe("Tieni traccia delle note o delle tecniche d'intensità qui (es. Drop set).").optional(),
+              rest: z.string().describe("Tempo di recupero (es. '60s', '1m30s'). Stringa vuota '' se non indicato."),
+              notes: z.string().describe("Note o tecniche d'intensità (es. Drop set). Stringa vuota '' se assente."),
             })).min(1)
           })).min(1)
         })).min(1)
