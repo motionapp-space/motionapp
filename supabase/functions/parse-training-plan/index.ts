@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { fileContent, mimeType, modelProvider = "openrouter" } = await req.json();
+    const { fileContent, mimeType, modelProvider = "auto" } = await req.json();
 
     if (!fileContent || !mimeType) {
       return new Response(
@@ -34,28 +34,52 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Initialize Vercel AI SDK Client dynamically based on env and choice
-    // Requested by user: Priority to OpenRouter and OpenAI
+    // Auto-detect the best available provider based on configured secrets.
+    // Priority: explicit modelProvider param > OpenAI key > OpenRouter key > Anthropic key
     let model;
-    
-    if (modelProvider === "openrouter" || (!Deno.env.get("OPENAI_API_KEY") && Deno.env.get("OPENROUTER_API_KEY"))) {
+    const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
+    const hasOpenRouter = !!Deno.env.get("OPENROUTER_API_KEY");
+    const hasAnthropic = !!Deno.env.get("ANTHROPIC_API_KEY");
+
+    // Resolve which provider to actually use
+    const resolvedProvider =
+      modelProvider !== "auto" ? modelProvider
+      : hasOpenAI ? "openai"
+      : hasOpenRouter ? "openrouter"
+      : hasAnthropic ? "anthropic"
+      : null;
+
+    if (resolvedProvider === "openrouter" && hasOpenRouter) {
       const openRouter = createOpenAI({
         baseURL: "https://openrouter.ai/api/v1",
         apiKey: Deno.env.get("OPENROUTER_API_KEY"),
-        compatibility: 'compatible', // needed for openrouter with standard OpenAI client
+        compatibility: 'compatible',
       });
-      // Utilizziamo i modelli top di gamma 2026 tramite hub OpenRouter
-      // In base alle tue indicazioni, potremmo usare 'google/gemini-3.1-pro' o 'anthropic/claude-3.7-sonnet' (o 4.6 se disponibile)
       model = openRouter('anthropic/claude-3.7-sonnet');
-    } else if (modelProvider === "openai" || Deno.env.get("OPENAI_API_KEY")) {
+    } else if (resolvedProvider === "openai" && hasOpenAI) {
       const openai = createOpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
-      // Attualmente o1 o gpt-4.5 (vision) sono le scelte ottimali in ambiente OpenAI puro
-      model = openai('gpt-4o'); 
-    } else if (Deno.env.get("ANTHROPIC_API_KEY")) {
+      model = openai('gpt-4o');
+    } else if (resolvedProvider === "anthropic" && hasAnthropic) {
       const anthropic = createAnthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY") });
       model = anthropic('claude-3-7-sonnet-20250219');
     } else {
-      throw new Error("Nessun provider configurato. Inserisci OPENROUTER_API_KEY o OPENAI_API_KEY nei secret di Supabase.");
+      // Fallback: try whichever key is available, regardless of modelProvider
+      if (hasOpenAI) {
+        const openai = createOpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
+        model = openai('gpt-4o');
+      } else if (hasOpenRouter) {
+        const openRouter = createOpenAI({
+          baseURL: "https://openrouter.ai/api/v1",
+          apiKey: Deno.env.get("OPENROUTER_API_KEY"),
+          compatibility: 'compatible',
+        });
+        model = openRouter('anthropic/claude-3.7-sonnet');
+      } else if (hasAnthropic) {
+        const anthropic = createAnthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY") });
+        model = anthropic('claude-3-7-sonnet-20250219');
+      } else {
+        throw new Error("Nessun provider configurato. Inserisci OPENAI_API_KEY o OPENROUTER_API_KEY nei secret di Supabase.");
+      }
     }
 
     const systemPrompt = `Sei un esperto AI per Personal Trainer. Il tuo compito è leggere il documento allegato (che può essere una foto, un PDF o uno screenshot di una scheda d'allenamento di palestra) ed estrarre il piano di allenamento strutturato.
