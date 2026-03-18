@@ -2,6 +2,7 @@ import { generateObject } from 'npm:ai';
 import { createOpenAI } from 'npm:@ai-sdk/openai';
 import { createAnthropic } from 'npm:@ai-sdk/anthropic';
 import { z } from 'npm:zod';
+import * as XLSX from 'npm:xlsx';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,29 @@ function decodeBase64(b64: string): Uint8Array {
     bytes[i] = binString.charCodeAt(i);
   }
   return bytes;
+}
+
+// MIME types that are spreadsheets (need text extraction, not vision)
+const SPREADSHEET_MIMES = [
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-excel', // .xls
+  'text/csv',
+];
+
+// Convert a spreadsheet binary to a text representation of all sheets
+function spreadsheetToText(data: Uint8Array): string {
+  const workbook = XLSX.read(data, { type: 'array' });
+  const sheets: string[] = [];
+
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName];
+    const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
+    if (csv.trim()) {
+      sheets.push(`=== Foglio: ${sheetName} ===\n${csv}`);
+    }
+  }
+
+  return sheets.join('\n\n');
 }
 
 Deno.serve(async (req) => {
@@ -35,13 +59,11 @@ Deno.serve(async (req) => {
     }
 
     // Auto-detect the best available provider based on configured secrets.
-    // Priority: explicit modelProvider param > OpenAI key > OpenRouter key > Anthropic key
     let model;
     const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
     const hasOpenRouter = !!Deno.env.get("OPENROUTER_API_KEY");
     const hasAnthropic = !!Deno.env.get("ANTHROPIC_API_KEY");
 
-    // Resolve which provider to actually use
     const resolvedProvider =
       modelProvider !== "auto" ? modelProvider
       : hasOpenAI ? "openai"
@@ -63,7 +85,6 @@ Deno.serve(async (req) => {
       const anthropic = createAnthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY") });
       model = anthropic('claude-3-7-sonnet-20250219');
     } else {
-      // Fallback: try whichever key is available, regardless of modelProvider
       if (hasOpenAI) {
         const openai = createOpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
         model = openai('gpt-4o');
@@ -82,7 +103,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const systemPrompt = `Sei un esperto AI per Personal Trainer. Il tuo compito è leggere il documento allegato (che può essere una foto, un PDF o uno screenshot di una scheda d'allenamento di palestra) ed estrarre il piano di allenamento strutturato.
+    const systemPrompt = `Sei un esperto AI per Personal Trainer. Il tuo compito è leggere il documento allegato (che può essere una foto, un PDF, un foglio Excel CSV o uno screenshot di una scheda d'allenamento di palestra) ed estrarre il piano di allenamento strutturato.
     
 Devi analizzare ed identificare correttamente:
 - I giorni di allenamento.
@@ -112,31 +133,42 @@ Devi analizzare ed identificare correttamente:
     });
 
     const uint8FileContent = decodeBase64(fileContent);
+    const isSpreadsheet = SPREADSHEET_MIMES.includes(mimeType);
 
-    // Build the content part based on MIME type: images use `image`, PDFs/docs use `file`
-    const filePart = mimeType === 'application/pdf'
-      ? { type: 'file' as const, data: uint8FileContent, mimeType: mimeType }
-      : { type: 'image' as const, image: uint8FileContent, mimeType: mimeType };
+    // Build the user message content based on file type
+    let userContent: any[];
+
+    if (isSpreadsheet) {
+      // Spreadsheets: parse to text first, then send as text-only (no vision needed)
+      const textContent = spreadsheetToText(uint8FileContent);
+      userContent = [
+        { type: 'text', text: `Per favore, analizza questo foglio Excel esportato in formato testo e restituisci la struttura Zod attesa.\n\n${textContent}` },
+      ];
+    } else if (mimeType === 'application/pdf') {
+      // PDFs: use file attachment
+      userContent = [
+        { type: 'text', text: 'Per favore, decodifica esattamente questa scheda e restituisci la struttura Zod attesa.' },
+        { type: 'file' as const, data: uint8FileContent, mimeType: mimeType },
+      ];
+    } else {
+      // Images: use image attachment
+      userContent = [
+        { type: 'text', text: 'Per favore, decodifica esattamente questa scheda e restituisci la struttura Zod attesa.' },
+        { type: 'image' as const, image: uint8FileContent, mimeType: mimeType },
+      ];
+    }
 
     const { object } = await generateObject({
       model,
       schema: planSchema,
       system: systemPrompt,
       messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: 'Per favore, decodifica esattamente questa scheda e restituisci la struttura Zod attesa.' },
-            filePart,
-          ],
-        },
+        { role: 'user', content: userContent },
       ],
       temperature: 0.1,
     });
 
     // Hydrate the AI output with `id` and `order` fields required by our Plan types.
-    // The AI schema intentionally omits these (the model can't generate valid UUIDs),
-    // so we inject them deterministically here before sending to the client.
     const hydratedDays = object.days.map((day: any, dIdx: number) => ({
       ...day,
       id: crypto.randomUUID(),
