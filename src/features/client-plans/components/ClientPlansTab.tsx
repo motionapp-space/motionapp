@@ -3,11 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { toast } from "sonner";
 import { TabHeader } from "@/components/ui/tab-header";
-import { FileText, Plus } from "lucide-react";
+import { FileText, Plus, Sparkles } from "lucide-react";
 import { ClientPlanCard } from "./ClientPlanCard";
 import { CreatePlanDialog } from "./CreatePlanDialog";
+import { MagicImportModal } from "./MagicImportModal";
+import { PlanPreviewEditorModal } from "./PlanPreviewEditorModal";
+import { useCreateClientPlan } from "../hooks/useCreateClientPlan";
 import type { ClientPlanWithActive } from "../types";
+import type { Plan } from "@/types/plan";
 
 interface ClientPlansTabProps {
   clientId: string;
@@ -30,6 +35,29 @@ export function ClientPlansTab({
 }: ClientPlansTabProps) {
   const navigate = useNavigate();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [magicImportOpen, setMagicImportOpen] = useState(false);
+  const [previewPlan, setPreviewPlan] = useState<Plan | null>(null);
+  const createPlanMutation = useCreateClientPlan();
+
+  const handleMagicImportSuccess = (parsedPlan: Plan) => {
+    setMagicImportOpen(false);
+    setPreviewPlan(parsedPlan);
+  };
+
+  const handleConfirmImport = async (finalPlan: Plan) => {
+    try {
+      await createPlanMutation.mutateAsync({
+        clientId: clientId,
+        name: finalPlan.name || "Nuovo piano da AI",
+        description: "Generato tramite Importazione Magica (AI)",
+        days: finalPlan.days
+      });
+      setPreviewPlan(null);
+      toast.success("Piano importato con successo!");
+    } catch (err) {
+      console.error("Errore salvataggio piano importato:", err);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -50,10 +78,16 @@ export function ClientPlansTab({
         title="Piani di allenamento"
         subtitle="Programmi di allenamento assegnati al cliente e visibili nell'app"
         action={
-          <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nuovo piano
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setMagicImportOpen(true)} size="sm" variant="outline" className="gap-2 border-primary/20 text-primary hover:bg-primary/10">
+              <Sparkles className="h-4 w-4" />
+              Importa con AI
+            </Button>
+            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nuovo piano
+            </Button>
+          </div>
         }
       />
 
@@ -66,8 +100,8 @@ export function ClientPlansTab({
               title="Nessun piano assegnato"
               description="Crea un piano di allenamento per mostrare al cliente come allenarsi e quali esercizi svolgere, e avere una base per le sessioni di allenamento."
               action={{
-                label: "Crea nuovo piano",
-                onClick: () => setCreateDialogOpen(true),
+                label: "Importa con AI",
+                onClick: () => setMagicImportOpen(true),
               }}
             />
           </CardContent>
@@ -129,6 +163,21 @@ export function ClientPlansTab({
         clientId={clientId}
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+      />
+
+      <MagicImportModal
+        open={magicImportOpen}
+        onOpenChange={setMagicImportOpen}
+        onSuccess={handleMagicImportSuccess}
+      />
+
+      <PlanPreviewEditorModal
+        open={!!previewPlan}
+        onOpenChange={(open) => {
+          if (!open) setPreviewPlan(null);
+        }}
+        initialPlan={previewPlan}
+        onConfirm={handleConfirmImport}
       />
     </div>
   );
